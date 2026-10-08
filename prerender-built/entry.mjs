@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T06:02:19.754Z",
+	generatedAt: "2026-10-08T06:02:42.526Z",
 	projects: [
 		{
 			"slug": "system-monitor",
@@ -5476,6 +5476,7 @@ function titleLinkClass$1(theme) {
 		borderRadius: theme.radius.sm,
 		display: "inline-block",
 		minHeight: "28px",
+		["@media (max-width: " + theme.breakpoint.md + ")"]: { minHeight: "44px" },
 		"&:hover": {
 			color: theme.color.accent,
 			textDecoration: "underline",
@@ -6215,6 +6216,7 @@ function titleLinkClass(theme) {
 		borderRadius: theme.radius.sm,
 		display: "inline-block",
 		minHeight: "28px",
+		["@media (max-width: " + theme.breakpoint.md + ")"]: { minHeight: "44px" },
 		"&:hover": {
 			color: theme.color.accent,
 			textDecoration: "underline",

@@ -118,6 +118,9 @@ function titleLinkClass(theme: Tokens): string {
     /* WCAG 2.5.8 touch target (mirrors Home.tsx title link). */
     display: 'inline-block',
     minHeight: '28px',
+    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
+      minHeight: '44px', /* R3-D: primary card affordance at phone widths */
+    },
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',

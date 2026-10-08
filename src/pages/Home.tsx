@@ -197,6 +197,9 @@ function titleLinkClass(theme: Tokens): string {
      * minimum hit area (>= the spec's e2e threshold and the 24px AA floor). */
     display: 'inline-block',
     minHeight: '28px',
+    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
+      minHeight: '44px', /* R3-D: primary card affordance at phone widths */
+    },
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',
