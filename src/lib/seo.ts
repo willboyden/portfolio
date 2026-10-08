@@ -184,6 +184,8 @@ function buildJsonLd(opts: PageMetaOptions, kind: 'person' | 'article' | 'collec
       author: { '@type': 'Person', name: SITE.author },
       publisher: { '@type': 'Person', name: SITE.author },
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+      /* R2C-8: Google's Article rich results expect an image. */
+      image: absoluteUrl(opts.image ?? SITE.defaultImagePath),
       ...(opts.publishedTime ? { datePublished: opts.publishedTime } : {}),
     };
   }
@@ -231,7 +233,9 @@ export function pageMeta(opts: PageMetaOptions): MetaResult {
     ogType,
     ...(opts.publishedTime ? { publishedTime: opts.publishedTime } : {}),
     robots: (opts.robots ?? ['index', 'follow']).join(','),
-    lang: SITE.lang,
+    /* R2C-10: og:locale wants a territory-qualified tag (en_US), not the
+     * BCP-47 page lang ("en"). Single locale until the site localizes. */
+    lang: 'en_US',
     twitterCard: opts.image ? 'summary_large_image' : 'summary',
     jsonLd: buildJsonLd({ ...opts, description }, kind, canonical),
     rssUrl: absoluteUrl(SITE.rssPath),

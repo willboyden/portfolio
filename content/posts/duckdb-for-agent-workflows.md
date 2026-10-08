@@ -7,7 +7,7 @@ slug: duckdb-for-agent-workflows
 summary: >-
   What a 14-benchmark suite says about wiring agents to DuckDB: 100K inserts
   in 27 ms, cross-database joins in 8 ms, Parquet at a quarter of CSV's size
-  — and the one DDL feature that fails loudly when you least expect it.
+  — and the DDL shapes that fail loudly when you least expect it.
 tags: [duckdb, analytics, agents, python, performance]
 date: 2026-09-15
 series: AI engineering notes
@@ -25,7 +25,9 @@ DuckDB, and the gotchas were worth the exercise by themselves.
 
 All figures below come from the project's benchmark suite (`test_benchmarks.py`
 and the integration tests that pin each practice), run against DuckDB CLI
-1.5.4+.
+v1.5.4. One machine: 8-core laptop, NVMe, DuckDB 1.5.4 (Variegata) defaults,
+single run, warm cache. Treat the ratios as the finding and the absolutes as
+indicative.
 
 **Bulk insert: `generate_series`, never `INSERT VALUES`.** 100,000 users land
 in 27 ms via a select-from-generate_series. Hand the same task to a model's
@@ -36,13 +38,16 @@ is to stop generating them past a thousand rows anyway.
 **Parquet as the ingest format, not CSV.** Parquet files came in around 27%
 of the equivalent CSV size, and `read_parquet` queries the file zero-copy
 without loading it into a database first. For agent pipelines this matters
-twice: files are what agents pass around, and smaller files mean fewer
-tokens spent on paths and less time on IO.
+twice: smaller files mean faster handoffs between pipeline stages and
+cheaper multi-copy retention — files are what agents pass around, after all.
 
 **Cross-database joins are instant.** Three attached databases of 100K rows
-each joined in 8 ms. One caveat that cost me an hour: `ATTACH` only works
-against file-backed databases, not `:memory:` — so anything doing cross-DB
-work needs temp files, which the server does for you.
+each joined in 8 ms. One caveat that cost me an hour: `ATTACH` needs a path
+within reach of the session doing the attaching (attached `:memory:`
+databases, for what it is worth, do join fine within a single v1.5.4
+session), and every CLI invocation is a fresh session — so anything doing
+cross-process cross-DB work still means temp files, which the server does
+for you.
 
 **Window functions scale flat-ish.** ROW_NUMBER, RANK, LAG/LEAD, running
 sums and NTILE at 100K rows all landed in a uniform 6.9–7.5 ms band. The
@@ -57,11 +62,13 @@ paying — but see the coercion post, because the JSON types need re-hydration.
 
 Here is the one the documentation under-sells: on DuckDB v1.5.4, `DEFAULT`,
 `UNIQUE`, `CHECK` and `FOREIGN KEY` constraints all work fine.
-`IDENTITY` and `SERIAL` fail with `Constraint not implemented!`. Any model
+`IDENTITY` fails with `Constraint not implemented!`. `SERIAL` fails earlier,
+at parse time: v1.5.4 has no `SERIAL` type at all (`Catalog Error: Type with
+name SERIAL does not exist!`). Any model
 trained on Postgres-heavy corpora will generate `SERIAL PRIMARY KEY` on
 demand, all day, and every one of those calls dies.
 
-The fix is not a prompt patch, it is a tool-level pattern:
+The fix belongs below the prompt, at the tool level:
 
 ```sql
 CREATE SEQUENCE user_id_seq;
@@ -91,5 +98,6 @@ The benchmark suite is not an argument that DuckDB beats a warehouse for
 everything — 500K rows is not big data. It is an argument that for the
 agent-tooling niche — single-node files, sub-second interactive queries,
 Parquet in the middle, JSON out the other side — the boring choice is the
-database that lets your tools encode the three patterns that work and make
-the wrong ones impossible.
+database that lets your tools encode the three patterns that work
+(`generate_series` bulk insert, `SEQUENCE` auto-increment, Parquet ingest)
+and make the wrong ones impossible.

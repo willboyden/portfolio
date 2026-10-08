@@ -4,8 +4,10 @@
  * prerendered HTML and hydrated client markup agree.
  */
 import { StrictMode, createElement, useEffect, type ComponentType, type ReactNode } from 'react';
-import { RouterProvider, Outlet, type RouteDefinition } from '@portfolio/router';
+import { RouterProvider, Outlet, useLocation, type RouteDefinition } from '@portfolio/router';
 import { retirePrerenderedTag } from '@emotion/react';
+import { applyDocumentMeta } from 'app/lib/seo';
+import { metaFor } from 'app/lib/route-meta';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 import { Layout, ThemePreferenceProvider } from 'app/components/layout';
 import { Home } from 'app/pages/Home';
@@ -40,6 +42,13 @@ function Shell(): ReactNode {
   useEffect(() => {
     retirePrerenderedTag();
   }, []);
+  /* R2C-3: SPA navigations must update <title>/description/canonical — the
+   * values come from the SAME metaFor() the prerender used, so DOM and static
+   * HTML can never drift. applyDocumentMeta is a no-op on the server. */
+  const location = useLocation();
+  useEffect(() => {
+    applyDocumentMeta(metaFor(location.pathname));
+  }, [location.pathname]);
   return createElement(Layout, {
     /* Outlet inside Layout resolves the matched route. */
     children: createElement(Outlet, { NotFound }),

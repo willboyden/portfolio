@@ -15,7 +15,10 @@ import { pathToFileURL } from 'node:url';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const DIST = join(ROOT, 'dist');
-const SITE_URL = (process.env.SITE_URL ?? 'https://example.com').replace(/\/$/, '');
+/* R2C-1: origin is derived from the app's SITE.url (via siteMeta) at write
+ * time; this env override exists only for staging previews. No fabricated
+ * default host. */
+const SITE_URL_OVERRIDE = process.env.SITE_URL ? process.env.SITE_URL.replace(/\/$/, '') : null;
 
 async function main() {
   /* React 19 renders server-side natively; alias the vendored emotion shims
@@ -57,12 +60,20 @@ function applyLimit(paths) {
 
 async function writeArtifacts(mod) {
   const { siteMeta, feedItems, sitemapPaths } = mod;
+  /* R2C-1: origin comes from the app's own SITE.url (via siteMeta) — never a
+   * divergent env default. URL FORM matches canonicals exactly (no forced
+   * trailing slash): '/' stays '/', '/writing' stays '/writing'. */
+  const ORIGIN = (SITE_URL_OVERRIDE ?? siteMeta.url).replace(/\/$/, '');
+  if (!ORIGIN || !/^https?:\/\//.test(ORIGIN)) {
+    console.error('refusing to write discovery docs without a real https origin (siteMeta.url missing?)');
+    process.exit(1);
+  }
 
-  writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`, 'utf8');
+  writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`, 'utf8');
 
   const now = new Date().toISOString();
   const urls = sitemapPaths.map(
-    (p) => `  <url><loc>${SITE_URL}${p === '/' ? '/' : p + '/'}</loc><lastmod>${now}</lastmod></url>`,
+    (p) => `  <url><loc>${ORIGIN}${p === '/' ? '/' : p}</loc><lastmod>${now}</lastmod></url>`,
   );
   writeFileSync(
     join(DIST, 'sitemap.xml'),
@@ -71,13 +82,14 @@ async function writeArtifacts(mod) {
   );
 
   const items = feedItems.map((item) => {
-    const url = `${SITE_URL}${item.path}/`;
-    const guid = `urn:uuid:${item.slug}`;
+    /* R2C-10: guid = the canonical absolute URL (permalink) — validators flag
+     * urn:uuid:<slug> as not a UUID, and it duplicated the link anyway. */
+    const url = `${ORIGIN}${item.path === '/' ? '/' : item.path}`;
     return [
       '  <item>',
       `    <title>${xmlEscape(item.title)}</title>`,
       `    <link>${url}</link>`,
-      `    <guid isPermaLink="false">${xmlEscape(guid)}</guid>`,
+      `    <guid isPermaLink="true">${xmlEscape(url)}</guid>`,
       `    <pubDate>${rfc822(item.date)}</pubDate>`,
       `    <description>${xmlEscape(item.summary)}</description>`,
       item.tags.map((t) => `    <category>${xmlEscape(t)}</category>`).join('\n'),
@@ -91,11 +103,11 @@ async function writeArtifacts(mod) {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
   <title>${xmlEscape(siteMeta.title)}</title>
-  <link>${SITE_URL}/</link>
+  <link>${ORIGIN}/</link>
   <description>${xmlEscape(siteMeta.description)}</description>
   <language>en-us</language>
   <lastBuildDate>${rfc822(now)}</lastBuildDate>
-  <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml"/>
+  <atom:link href="${ORIGIN}/rss.xml" rel="self" type="application/rss+xml"/>
 ${items.join('\n')}
 </channel>
 </rss>

@@ -782,6 +782,738 @@ function Global({ styles }) {
 	useEffect(() => {}, [cssText]);
 	return null;
 }
+//#endregion
+//#region src/lib/format.ts
+/**
+* Deterministic formatting primitives.
+*
+* Everything here is pure and timezone-pinned to UTC: the site is prerendered
+* at build time and hydrated on client machines in arbitrary timezones, so a
+* date derived from the reader's local zone would differ between server HTML
+* and client render. Pinned month names + UTC epoch math guarantee the two
+* agree byte-for-byte without depending on the host ICU data.
+*/
+var MONTHS_SHORT = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec"
+];
+/** Matches a strict ISO date or ISO datetime; anything else is unparseable. */
+var ISO_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+/**
+* Parse an `YYYY-MM-DD` (or ISO datetime) string as a UTC epoch.
+* A bare date is read as UTC midnight — NOT the local zone (that is the whole
+* point: prerender and client must agree). Returns null for anything that is
+* not an ISO string.
+*/
+function parseIsoUtc(iso) {
+	if (typeof iso !== "string") return null;
+	const m = ISO_RE.exec(iso.trim());
+	if (!m) return null;
+	const [, y, mo, d, hh, mm, ss, zone] = m;
+	const year = Number(y);
+	const month = Number(mo);
+	const day = Number(d);
+	const hour = Number(hh ?? "0");
+	const min = Number(mm ?? "0");
+	const sec = Number(ss ?? "0");
+	if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+	let epoch = Date.UTC(year, month - 1, day, hour, min, sec);
+	if (zone && zone !== "Z") {
+		const sign = zone.startsWith("-") ? -1 : 1;
+		const oh = Number(zone.slice(1, 3));
+		const om = Number(zone.slice(4).replace(":", "") || "0");
+		epoch -= sign * (oh * 36e5 + om * 6e4);
+	}
+	const date = new Date(epoch);
+	return Number.isNaN(date.getTime()) ? null : date;
+}
+var LONG_MONTHS = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+];
+/**
+* `2026-03-14` → `Mar 14, 2026` (UTC-pinned). Returns '' for unparseable
+* input rather than "Invalid Date" — a blank is honest, a bogus date is not.
+*/
+function formatDate(iso, options = {}) {
+	const date = parseIsoUtc(iso);
+	if (!date) return "";
+	const month = (options.style === "long" ? LONG_MONTHS : MONTHS_SHORT)[date.getUTCMonth()];
+	if (month === void 0) return "";
+	let out = `${month} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+	if (options.withTime) {
+		const hh = String(date.getUTCHours()).padStart(2, "0");
+		const mi = String(date.getUTCMinutes()).padStart(2, "0");
+		out += ` ${hh}:${mi} UTC`;
+	}
+	return out;
+}
+/** `5` → `5 min read`; clamps to a minimum of 1 minute. */
+function formatReadingTime(minutes) {
+	if (!Number.isFinite(minutes) || minutes <= 0) return "1 min read";
+	return `${Math.max(1, Math.round(minutes))} min read`;
+}
+/** `pluralize(2, 'post')` → `2 posts`; `pluralize(1, 'box', 'boxes')` → `1 box`. */
+function pluralize(count, singular, plural) {
+	return `${count} ${count === 1 ? singular : plural ?? `${singular}s`}`;
+}
+/**
+* Cut `text` at or before `max` characters, never mid-word, and append
+* `ellipsis` (default `…`) when anything was removed. If a single word is
+* longer than `max`, the word itself is cut (no empty result) — the cut still
+* gets the ellipsis. `max <= 0` → just the ellipsis for non-empty text.
+*/
+function truncateAtWordBoundary(text, max, ellipsis = "…") {
+	if (typeof text !== "string" || text.length === 0) return "";
+	if (max <= 0) return ellipsis;
+	if (text.length <= max) return text;
+	const slice = text.slice(0, max);
+	const boundary = Math.max(slice.lastIndexOf(" "), slice.lastIndexOf("\xA0"), slice.lastIndexOf("\n"));
+	return (boundary > 0 ? slice.slice(0, boundary) : slice).trimEnd() + ellipsis;
+}
+//#endregion
+//#region src/lib/seo.ts
+/**
+* SEO / document-head primitives — one source of truth for the prerenderer AND
+* the runtime (document.title + meta sync).
+*
+* Pinned CONTRACT §4 API:
+*   pageMeta(opts) → MetaResult
+*   buildHead(meta) → string[]        // ordered tag markup
+*
+* Honesty rules baked in:
+* - Titles are capped at 60 chars (Google's visual cut); we shorten the page
+*   part before dropping words, and the <title> text is HTML-escaped.
+* - Descriptions are capped at 160 chars and only get `…` when characters
+*   were actually removed (truncateAtWordBoundary never mid-cuts a word
+*   unless a single word overflows).
+* - Every URL goes through joinUrl(), so a SITE.url with a trailing slash or
+*   a path without a leading one can never produce `//`.
+* - JSON-LD is returned as a plain object; JSON.stringify happens in
+*   buildHead with `<` escaped so the output is safe inside <script> and
+*   still valid JSON after unescaping. Tests JSON.parse it back.
+*/
+var SITE = {
+	name: "Alex Rivera",
+	url: "https://alexrivera.dev",
+	title: "Alex Rivera — AI Engineering & Technical Consulting",
+	/** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
+	shortTitle: "Alex Rivera",
+	/** Tagline appended to the home <title> only. */
+	tagline: "Technical Consulting",
+	description: "Portfolio of Alex Rivera, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.",
+	author: "Alex Rivera",
+	/**
+	* R2-A A3: hire-me metadata a recruiter looks for in 20 seconds. UNSET =
+	* hidden (never fabricated). Owner: set these before launching the job push —
+	*   hiring: one line, e.g. "Seeking senior AI-platform / full-stack roles —
+	*           remote (UTC-5 ±3) — available from Nov 2026"
+	*   email:  the mailbox that receives engagements and recruiter mail
+	*   resume: path to a PDF in public/ (e.g. '/alex-rivera-resume.pdf')
+	*/
+	hiring: null,
+	email: null,
+	resume: null,
+	/** DRAFT: replace with the real X handle before launch (no @ prefix here). */
+	twitter: "alexriveradev",
+	lang: "en",
+	rssPath: "/rss.xml",
+	defaultImagePath: "/og-default.png"
+};
+/** Escape a string for interpolation into HTML text or a double-quoted attribute. */
+function escapeHtml(input) {
+	return String(input).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+/** Join a base URL and path segments without ever emitting `//` (scheme aside). */
+function joinUrl(base, ...segments) {
+	const baseTrim = base.replace(/\/+$/, "");
+	const tail = segments.filter((s) => s.length > 0).map((s) => s.replace(/^\/+|\/+$/g, "")).filter((s) => s.length > 0).join("/");
+	return tail.length === 0 ? `${baseTrim}/` : `${baseTrim}/${tail}`;
+}
+/** Absolute URL for a route path; paths that are already absolute pass through. */
+function absoluteUrl(path) {
+	if (/^https?:\/\//i.test(path)) return path;
+	return joinUrl(SITE.url, path);
+}
+function normalizePath$1(path) {
+	if (/^https?:\/\//i.test(path)) try {
+		path = new URL(path).pathname;
+	} catch {}
+	let p = path.replace(/\/{2,}/g, "/");
+	if (!p.startsWith("/")) p = `/${p}`;
+	if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+	return p;
+}
+/** Cap a page title so `page — SITE.name` fits 60 chars total. */
+function capTitle(rawTitle, cap = 60) {
+	const suffix = ` — ${SITE.name}`;
+	const title = rawTitle.trim();
+	const full = title.length > 0 ? `${title}${suffix}` : SITE.title;
+	if (full.length <= cap) return full;
+	if (title.length === 0) return truncateAtWordBoundary(SITE.title, cap);
+	const budget = cap - suffix.length;
+	if (budget < 10) return `${truncateAtWordBoundary(title, cap)}…`;
+	return `${truncateAtWordBoundary(title, budget)}${suffix}`;
+}
+function buildJsonLd(opts, kind, canonical) {
+	if (kind === "person") return {
+		"@context": "https://schema.org",
+		"@type": "Person",
+		name: SITE.author,
+		url: SITE.url,
+		description: opts.description.trim() || SITE.description,
+		jobTitle: "AI Engineer & Technical Consultant",
+		knowsAbout: [
+			"LLM systems",
+			"data platforms",
+			"full-stack engineering"
+		]
+	};
+	if (kind === "article") return {
+		"@context": "https://schema.org",
+		"@type": "Article",
+		headline: opts.title.trim(),
+		description: opts.description.trim(),
+		inLanguage: SITE.lang,
+		author: {
+			"@type": "Person",
+			name: SITE.author
+		},
+		publisher: {
+			"@type": "Person",
+			name: SITE.author
+		},
+		mainEntityOfPage: {
+			"@type": "WebPage",
+			"@id": canonical
+		},
+		image: absoluteUrl(opts.image ?? SITE.defaultImagePath),
+		...opts.publishedTime ? { datePublished: opts.publishedTime } : {}
+	};
+	return {
+		"@context": "https://schema.org",
+		"@type": "CollectionPage",
+		name: opts.title.trim(),
+		description: opts.description.trim(),
+		url: canonical,
+		inLanguage: SITE.lang,
+		isPartOf: {
+			"@type": "WebSite",
+			name: SITE.name,
+			url: SITE.url
+		}
+	};
+}
+/** Build the complete meta bundle for one route. Pure — no window access. */
+function pageMeta(opts) {
+	const path = normalizePath$1(opts.path);
+	const canonical = absoluteUrl(path);
+	const isHome = path === "/";
+	const type = opts.type ?? (opts.publishedTime ? "article" : "website");
+	const ogType = opts.ogType ?? (type === "article" ? "article" : isHome ? "website" : "website");
+	const titlePlain = capTitle(opts.title);
+	const descriptionRaw = opts.description.trim() || SITE.description;
+	const description = descriptionRaw.length > 160 ? truncateAtWordBoundary(descriptionRaw, 159) : descriptionRaw;
+	const kind = opts.jsonLdKind ?? (isHome ? "person" : type === "article" ? "article" : "collection");
+	return {
+		title: escapeHtml(titlePlain),
+		titlePlain,
+		description,
+		canonical,
+		path,
+		image: absoluteUrl(opts.image ?? SITE.defaultImagePath),
+		type,
+		ogType,
+		...opts.publishedTime ? { publishedTime: opts.publishedTime } : {},
+		robots: (opts.robots ?? ["index", "follow"]).join(","),
+		lang: "en_US",
+		twitterCard: opts.image ? "summary_large_image" : "summary",
+		jsonLd: buildJsonLd({
+			...opts,
+			description
+		}, kind, canonical),
+		rssUrl: absoluteUrl(SITE.rssPath)
+	};
+}
+/**
+* Ordered markup tags for the document <head>. Order is pinned (tests assert
+* it): title → meta charset-free essentials → description → canonical → RSS →
+* robots → OG block → Twitter block → JSON-LD.
+*
+* The prerenderer joins these into index.html; the runtime uses `titlePlain`
+* (see applyDocumentMeta) so DOM and prerender never disagree.
+*/
+function buildHead(meta) {
+	const tags = [];
+	tags.push(`<title>${meta.title}</title>`);
+	tags.push(`<meta name="description" content="${escapeHtml(meta.description)}">`);
+	tags.push(`<link rel="canonical" href="${escapeHtml(meta.canonical)}">`);
+	tags.push(`<link rel="alternate" type="application/rss+xml" title="${escapeHtml(`${SITE.name} RSS`)}" href="${escapeHtml(meta.rssUrl)}">`);
+	tags.push(`<meta name="robots" content="${escapeHtml(meta.robots)}">`);
+	tags.push(`<meta property="og:site_name" content="${escapeHtml(SITE.name)}">`);
+	tags.push(`<meta property="og:type" content="${escapeHtml(meta.ogType)}">`);
+	tags.push(`<meta property="og:title" content="${escapeHtml(meta.titlePlain)}">`);
+	tags.push(`<meta property="og:description" content="${escapeHtml(meta.description)}">`);
+	tags.push(`<meta property="og:url" content="${escapeHtml(meta.canonical)}">`);
+	tags.push(`<meta property="og:image" content="${escapeHtml(meta.image)}">`);
+	tags.push(`<meta property="og:locale" content="${escapeHtml(meta.lang)}">`);
+	if (meta.publishedTime) tags.push(`<meta property="article:published_time" content="${escapeHtml(meta.publishedTime)}">`);
+	tags.push(`<meta name="twitter:card" content="${escapeHtml(meta.twitterCard)}">`);
+	tags.push(`<meta name="twitter:site" content="@${escapeHtml(SITE.twitter)}">`);
+	tags.push(`<meta name="twitter:title" content="${escapeHtml(meta.titlePlain)}">`);
+	tags.push(`<meta name="twitter:description" content="${escapeHtml(meta.description)}">`);
+	tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.image)}">`);
+	const ld = JSON.stringify(meta.jsonLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
+	tags.push(`<script type="application/ld+json">${ld}<\/script>`);
+	return tags;
+}
+/**
+* Runtime counterpart (client only): set document.title + description +
+* canonical on route change. Guarded so importing this module in Node never
+* touches document.
+*/
+function applyDocumentMeta(meta) {
+	if (typeof document === "undefined") return;
+	try {
+		document.title = meta.titlePlain;
+		const set = (selector, create, attrName, value) => {
+			let el = document.head.querySelector(selector);
+			if (!el) {
+				el = create();
+				document.head.appendChild(el);
+			}
+			el.setAttribute(attrName, value);
+		};
+		set("meta[name=\"description\"]", () => document.createElement("meta"), "content", meta.description);
+		set("link[rel=\"canonical\"]", () => document.createElement("link"), "href", meta.canonical);
+	} catch {}
+}
+var content_default = {
+	generatedAt: "2026-10-08T05:34:50.889Z",
+	projects: [
+		{
+			"slug": "langfuse-dashboard",
+			"title": "Langfuse Observability Dashboard",
+			"summary": "Air-gapped observability dashboard for Langfuse traces: a re-runnable fetch pipeline (traces, observations, sessions, scores) plus a single-file, dark-theme dashboard with KPIs, time-series, model breakdown and a trace drill-down. The ingestion broker's whitelist blocks data-plane reads (403), so the shipped build honestly renders a \"no data — read blocked at broker\" state with the 403 evidence recorded verbatim in the fetched JSON.",
+			"tags": [
+				"llm",
+				"observability",
+				"langfuse",
+				"python",
+				"dashboards"
+			],
+			"date": "2026-08-16",
+			"role": "Design and implementation (solo)",
+			"status": "active",
+			"period": "2026-08",
+			"highlights": [
+				"Idempotent fetch pipeline: atomic rewrites, page- and cursor-based pagination, ~5000-item caps per collection",
+				"Credentials from environment only; no secret ever printed or written to disk",
+				"Single-file dashboard, zero network requests, data embedded as a JS const so it opens over file://",
+				"Trace explorer drills into the observations parent/child tree with latency, usage and I/O previews",
+				"Verified broker behaviour endpoint by endpoint: health/projects OK, traces/observations/sessions/scores all 403 — failure recorded, nothing fabricated"
+			],
+			"stack": [
+				"Python",
+				"Langfuse SDK v4.14.3",
+				"Langfuse 3.200.0",
+				"vanilla JS/CSS"
+			],
+			"featured": false
+		},
+		{
+			"slug": "model-quality-harness",
+			"title": "Model Quality Harness",
+			"summary": "Deterministic tool-calling reliability benchmark for local LLMs behind an OpenAI-compatible LiteLLM broker: a fixed 8-scenario suite, simulated tool execution, rule-by-rule scoring with no LLM judge, and a standalone HTML dashboard rendered from the real results JSON.",
+			"tags": [
+				"evals",
+				"llm",
+				"testing",
+				"python",
+				"dashboards"
+			],
+			"date": "2026-08-16",
+			"role": "Design and implementation (solo)",
+			"status": "shipped",
+			"period": "2026-08",
+			"highlights": [
+				"8-scenario fixed suite: single-tool lookups, multi-constraint calls, two-step dependencies, and a retry scenario where the simulator rejects the first call",
+				"Deterministic judge only — schema-valid tool-call JSON, parameter accuracy under normalization, and success criteria like call_made / params_exact / param_absent / answer_contains",
+				"Tracks silent failures HTTP 200 hides: empty_content_turns, reasoning_burn_turns (finish_reason=length with content null), finish_reason per turn",
+				"Proved the broker response-cached identical request bodies (~0.01 s replays); cache-busting user stamps restored real latency distributions (min 0.83 s / med 1.31 s / max 3.72 s)",
+				"Broker outages are recorded as failures with the real HTTP error body, never papered over"
+			],
+			"stack": [
+				"Python 3.13",
+				"stdlib only",
+				"LiteLLM broker",
+				"OpenAI-compatible API",
+				"vanilla JS/CSS"
+			],
+			"metrics": [{
+				"label": "scenarios x models x reps",
+				"value": "8 x 3 x 2"
+			}, {
+				"label": "best model run (cache-bust re-run)",
+				"value": "16/16 completed, 100% valid calls"
+			}],
+			"featured": true
+		},
+		{
+			"slug": "duckdb-mcp",
+			"title": "DuckDB MCP Server",
+			"summary": "Model Context Protocol server exposing 15 DuckDB database tools — query, schema, import/export, profiling, cross-database operations — over stdio JSON-RPC. Drives the DuckDB CLI binary via subprocess (no Python duckdb binding), and encodes 9 benchmark-proven best practices as tested utilities and SQL recipes.",
+			"tags": [
+				"mcp",
+				"duckdb",
+				"analytics",
+				"python",
+				"agents"
+			],
+			"date": "2026-07-15",
+			"role": "Design and implementation (solo)",
+			"status": "shipped",
+			"period": "2026",
+			"highlights": [
+				"15 tools spanning query, DDL/DML, CSV/Parquet import-export, profiling, ATTACH-based cross-DB joins",
+				"CLI subprocess over the Python binding: no version drift, -json output parsed with recursive type coercion to int/float/bool/None",
+				"Multi-statement SQL via temp files and duckdb -f, dodging argument-length limits",
+				"9 benchmark-proven best practices as code (bulk insert via generate_series: 100K users in 27 ms; 3x100K cross-DB join in 8 ms; Parquet at ~27% of CSV size), each pinned by an integration test",
+				"Pitfall guard for the real DuckDB failure mode: IDENTITY/SERIAL fails, so auto-increment goes through CREATE SEQUENCE + nextval()"
+			],
+			"stack": [
+				"Python 3.11+",
+				"mcp SDK",
+				"DuckDB CLI 1.5.4+",
+				"stdio JSON-RPC",
+				"pytest"
+			],
+			"metrics": [
+				{
+					"label": "tools exposed",
+					"value": "15"
+				},
+				{
+					"label": "benchmark suite",
+					"value": "14 benchmarks"
+				},
+				{
+					"label": "100K bulk insert",
+					"value": "27 ms"
+				}
+			],
+			"featured": true
+		},
+		{
+			"slug": "orchestrator",
+			"title": "Multi-MCP Orchestrator",
+			"summary": "Unified CLI frontend over six in-process MCP servers (DuckDB analytics, metrics, site audit, system telemetry, task management, wiki search), composed by direct Python imports instead of JSON-RPC, with a chained pipeline mode and DuckDB-backed trend queries.",
+			"tags": [
+				"mcp",
+				"cli",
+				"python",
+				"orchestration",
+				"duckdb"
+			],
+			"date": "2026-06-20",
+			"role": "Design and implementation (solo)",
+			"status": "shipped",
+			"period": "2026",
+			"highlights": [
+				"Direct Python import of six MCP server modules bypasses stdio/JSON-RPC overhead for same-process composition",
+				"Single _call_tool dispatcher normalizes divergent handler return shapes (tuple-with-dict vs list-of-TextContent) behind asyncio.run wrapping",
+				"Chained pipeline actions: scan, find, tasks, wiki, db, trends run as one command",
+				"Documented integration pitfalls: import order after sys.path setup, _tool_manager._tools vs _tool_map, dispatcher registration order"
+			],
+			"stack": [
+				"Python",
+				"MCP servers",
+				"DuckDB",
+				"asyncio"
+			],
+			"featured": false
+		}
+	],
+	posts: [
+		{
+			"slug": "duckdb-for-agent-workflows",
+			"title": "DuckDB is the analytics database your agent workflows needed",
+			"summary": "What a 14-benchmark suite says about wiring agents to DuckDB: 100K inserts in 27 ms, cross-database joins in 8 ms, Parquet at a quarter of CSV's size — and the one DDL feature that fails loudly when you least expect it.",
+			"tags": [
+				"duckdb",
+				"analytics",
+				"agents",
+				"python",
+				"performance"
+			],
+			"date": "2026-09-15",
+			"readingMinutes": 3,
+			"series": "AI engineering notes",
+			"html": "<p>When you build tools that let an LLM agent query data, the database choice\nstops being an architecture-slide decision and becomes a <em>failure-mode</em>\ndecision: what happens when the model does something reasonable-sounding but\nslow, or generates DDL that quietly does not work. I benchmarked that question\nthe slow way — a 14-benchmark suite behind the duckdb-mcp server, measuring\neverything from DDL speed to MCP round-trip overhead. The numbers argued for\nDuckDB, and the gotchas were worth the exercise by themselves.</p>\n<h2 id=\"the-numbers-that-changed-my-defaults\">The numbers that changed my defaults</h2>\n<p>All figures below come from the project's benchmark suite (<code>test_benchmarks.py</code>\nand the integration tests that pin each practice), run against DuckDB CLI\n1.5.4+.</p>\n<p><strong>Bulk insert: <code>generate_series</code>, never <code>INSERT VALUES</code>.</strong> 100,000 users land\nin 27 ms via a select-from-generate_series. Hand the same task to a model's\nnatural instinct — long <code>INSERT INTO ... VALUES (...), (...)</code> lists — and you\nare paying parse costs per statement, and the practice guide's rule of thumb\nis to stop generating them past a thousand rows anyway.</p>\n<p><strong>Parquet as the ingest format, not CSV.</strong> Parquet files came in around 27%\nof the equivalent CSV size, and <code>read_parquet</code> queries the file zero-copy\nwithout loading it into a database first. For agent pipelines this matters\ntwice: files are what agents pass around, and smaller files mean fewer\ntokens spent on paths and less time on IO.</p>\n<p><strong>Cross-database joins are instant.</strong> Three attached databases of 100K rows\neach joined in 8 ms. One caveat that cost me an hour: <code>ATTACH</code> only works\nagainst file-backed databases, not <code>:memory:</code> — so anything doing cross-DB\nwork needs temp files, which the server does for you.</p>\n<p><strong>Window functions scale flat-ish.</strong> ROW_NUMBER, RANK, LAG/LEAD, running\nsums and NTILE at 100K rows all landed in a uniform 6.9–7.5 ms band. The\nkind of analysis an agent is most likely to be asked for is exactly what\ncolumnar engines are boringly good at.</p>\n<p><strong>JSON output is affordable.</strong> The CLI's <code>-json</code> mode adds 9–15% overhead\nversus plain text. For machine-readable tool responses, that is a tax worth\npaying — but see the coercion post, because the JSON types need re-hydration.</p>\n<h2 id=\"the-failure-you-will-only-find-at-runtime\">The failure you will only find at runtime</h2>\n<p>Here is the one the documentation under-sells: on DuckDB v1.5.4, <code>DEFAULT</code>,\n<code>UNIQUE</code>, <code>CHECK</code> and <code>FOREIGN KEY</code> constraints all work fine.\n<code>IDENTITY</code> and <code>SERIAL</code> fail with <code>Constraint not implemented!</code>. Any model\ntrained on Postgres-heavy corpora will generate <code>SERIAL PRIMARY KEY</code> on\ndemand, all day, and every one of those calls dies.</p>\n<p>The fix is not a prompt patch, it is a tool-level pattern:</p>\n<pre><code class=\"language-sql\">CREATE SEQUENCE user_id_seq;\nCREATE TABLE users (\n  id BIGINT DEFAULT nextval('user_id_seq') PRIMARY KEY,\n  email TEXT UNIQUE CHECK (email LIKE '%@%')\n);\n</code></pre>\n<p>Auto-increment through <code>CREATE SEQUENCE</code> + <code>nextval()</code> works and keeps the\nIDs in the database, where they belong — the practice notes are blunt about\nit: <em>never generate IDs in Python, use DuckDB-native bulk patterns</em>. Because\nthe MCP server exposes schema creation through recipes that already use the\nworking pattern, the model never gets the chance to discover the failure at\n3 a.m. on someone's pipeline.</p>\n<h2 id=\"why-this-matters-for-agents-specifically\">Why this matters for agents specifically</h2>\n<p>An agent workflow is an unpredictable query generator with a budget. Three\nproperties of DuckDB line up with that: it is a library-grade database that\nneeds no server to administer (an agent can be handed a file path and be\nproductive immediately), it is columnar and fast on exactly the analytical\nshapes models tend to write, and its failure modes are loud exceptions\nrather than silent plan degradations.</p>\n<p>The benchmark suite is not an argument that DuckDB beats a warehouse for\neverything — 500K rows is not big data. It is an argument that for the\nagent-tooling niche — single-node files, sub-second interactive queries,\nParquet in the middle, JSON out the other side — the boring choice is the\ndatabase that lets your tools encode the three patterns that work and make\nthe wrong ones impossible.</p>",
+			"excerpt": "When you build tools that let an LLM agent query data, the database choice stops being an architecture-slide decision and becomes a …"
+		},
+		{
+			"slug": "mcp-production-lessons",
+			"title": "MCP in production: what the spec doesn't tell you",
+			"summary": "Field notes from shipping a 15-tool DuckDB MCP server and a six-server orchestrator: stdio lifecycle quirks, argument-length walls, JSON type erosion, return-shape chaos, and why direct imports beat JSON-RPC in-process.",
+			"tags": [
+				"mcp",
+				"agents",
+				"python",
+				"duckdb",
+				"architecture"
+			],
+			"date": "2026-09-02",
+			"readingMinutes": 3,
+			"series": "AI engineering notes",
+			"html": "<p>The MCP spec is short enough to read in an afternoon and vague enough to hide\nabout a week of debugging in every one of its &quot;implementations MAY&quot; clauses.\nI shipped two projects that live on both sides of that vagueness: <code>duckdb-mcp</code>,\na stdio MCP server exposing 15 DuckDB tools, and <code>orchestrator</code>, a CLI that\ncomposes six MCP servers in one process. Here is what the spec did not warn\nme about.</p>\n<h2 id=\"1-fastmcp-is-a-toy-the-low-level-server-is-the-job\">1. FastMCP is a toy; the low-level server is the job</h2>\n<p><code>FastMCP</code> gets you a hello world in ten lines. The moment you need a tool\nrouter, structured error semantics, or control over the JSON-RPC lifecycle,\nyou want the lower-level <code>mcp.server.stdio</code> API with an explicit <code>Server</code>\ninstance. The DuckDB server ends up as three pieces: a <code>TOOLS</code> list of\ntool-definition objects with input schemas, a <code>HANDLERS</code> dict mapping tool\nnames to async functions, and a <code>call_tool</code> router that dispatches by name.\nThat separation costs you nothing and pays for itself the first time a tool\nneeds to return a structured error instead of crashing the connection.</p>\n<h2 id=\"2-you-will-hit-the-argument-length-wall\">2. You will hit the argument-length wall</h2>\n<p>My first instinct for running SQL through the DuckDB CLI was\n<code>duckdb -c &quot;SELECT ...&quot;</code>. Multi-statement scripts, or anything with bulk\ndata, eventually dies on the OS argument-length limit. The pattern that\nholds: write the SQL to a temp file and run <code>duckdb -f tmpfile.sql</code>. Same\nfor results: <code>-json</code> mode gives you structured output that you parse\nyourself. Which leads to the next one.</p>\n<h2 id=\"3-json-over-stdio-erodes-your-types\">3. JSON over stdio erodes your types</h2>\n<p>DuckDB's <code>-json</code> output stringifies a lot of what you thought were numbers\nand booleans. If you hand that straight to a model, the model will learn\nthat <code>count</code> looks like <code>&quot;42&quot;</code> and start emitting comparisons against\nstrings. The server has a recursive <code>_coerce_types()</code> pass that walks parsed\nJSON and converts strings back to <code>int</code>, <code>float</code>, <code>bool</code>, and <code>None</code>. Every\ntool boundary where you serialize through the weakest format in the pipe\nneeds a re-hydration step on the way back. Nobody tells you this in the\nprotocol docs because the protocol has no types to lose — your data does.</p>\n<h2 id=\"4-return-shapes-are-a-folklore-not-a-standard\">4. Return shapes are a folklore, not a standard</h2>\n<p>When the orchestrator imports six MCP server modules directly (more on that\nbelow), I found their <code>call_tool</code> implementations do not agree on anything:\none returns a <code>tuple</code> of <code>(list_of_TextContent, dict)</code> where the useful\npayload lives at index 1; the rest return a bare list of <code>TextContent</code> whose\n<code>.text</code> is a JSON string. The dispatcher is 15 lines of shape-sniffing. The\nspec describes what a wire response looks like, not what your in-process\nhandler function returns, so every server you import is a small archaeology\ndig. Two more discoveries, filed under &quot;why are these not in the README&quot;:\ntool listings live on <code>_tool_manager._tools</code>, not <code>_tool_map</code>, and server\nmodules with top-level imports must be imported <em>after</em> <code>sys.path</code> is set up.</p>\n<h2 id=\"5-in-process-skip-the-wire-entirely\">5. In-process, skip the wire entirely</h2>\n<p>JSON-RPC over stdio exists to cross a process boundary. When the consumer is\nyour own Python CLI, that boundary is pure overhead — serialization,\nsubprocess lifecycle, an event loop per server. The orchestrator imports the\nserver modules directly and calls <code>asyncio.run(server.call_tool(name, kwargs))</code>.\nThat collapses &quot;run a code-quality scan, log the findings as tasks, write a\nwiki report, query the trend in DuckDB&quot; from a distributed-systems problem\ninto one command. The stdio transport stays where it belongs: for external\nclients like Claude Desktop or IDE integrations.</p>\n<h2 id=\"6-the-server-is-where-the-lessons-belong\">6. The server is where the lessons belong</h2>\n<p>The most useful thing duckdb-mcp does is not query execution — it is that\nnine benchmark-proven practices are encoded in the tools themselves: bulk\ninsert via <code>generate_series</code> instead of <code>INSERT VALUES</code>, <code>CREATE SEQUENCE</code>\ninstead of broken <code>IDENTITY</code>/<code>SERIAL</code>, Parquet-first ingest. The server stops\nthe model from choosing the wrong pattern, which is worth more than any\nprompt that says &quot;please prefer bulk inserts&quot;. Treat your MCP server as the\nplace where operational knowledge becomes a tool constraint.</p>\n<p>The spec covers the handshake. Everything above is the part you learn by\nhaving the thing fail at 2 a.m., and all of it is now a unit test.</p>",
+			"excerpt": "The MCP spec is short enough to read in an afternoon and vague enough to hide about a week of debugging in every one of its …"
+		},
+		{
+			"slug": "eval-harness-silent-regressions",
+			"title": "Building an eval harness that catches silent model regressions",
+			"summary": "How a deterministic, no-LLM-judge harness for tool-calling reliability caught three classes of failure that HTTP 200 hides: empty content turns, reasoning burn, and a response cache that was lying about latency.",
+			"tags": [
+				"evals",
+				"llm",
+				"testing",
+				"python"
+			],
+			"date": "2026-08-20",
+			"readingMinutes": 3,
+			"series": "AI engineering notes",
+			"html": "<p>Every team that ships an LLM feature eventually builds an eval harness, and\nevery harness eventually answers the same question wrong: <em>did the model\nsucceed, or did the HTTP layer just return 200?</em> This post is the methodology\nbehind the harness I built for local models behind an OpenAI-compatible\nLiteLLM broker — eight scenarios, three models, two repetitions, and a\nscoring pass that never asks another model for its opinion.</p>\n<h2 id=\"the-scenario-suite-is-fixed-and-adversarial\">The scenario suite is fixed and adversarial</h2>\n<p>The suite ships as eight JSON files. Each scenario defines an OpenAI function\nschema, a user prompt, simulated tool implementations, and success criteria.\nThe scenarios escalate deliberately:</p>\n<ul>\n<li><p><code>weather_tokyo</code> — one tool call, final answer must cite the tool's value.</p></li>\n<li><p><code>table_booking</code> — argument extraction: &quot;eight people&quot; and &quot;7:30 PM&quot; must\narrive as <code>party_size: 8</code> and <code>19:30</code>.</p></li>\n<li><p><code>pizza_distractor</code> — an expired coupon in context that must <strong>not</strong> appear\nin the call (<code>param_absent</code>).</p></li>\n<li><p><code>inventory_then_reserve</code> — a two-step dependency: query the catalog, take\nthe SKU from the tool result, reserve with it.</p></li>\n<li><p><code>fx_conversion_retry</code> — the first call uses non-ISO currency names and the\nsimulator <em>rejects</em> it; the model must retry with <code>EUR</code>/<code>USD</code>.\nThe retry scenario is the one that separates models. A single-shot accuracy\nmetric says nothing about whether a model can consume a tool error and\nrecover, which is most of what agent loops actually do.</p></li>\n</ul>\n<h2 id=\"deterministic-judging-on-purpose\">Deterministic judging, on purpose</h2>\n<p>There is no LLM-as-judge anywhere in the pipeline. Each emitted tool call is\nvalidated against the scenario's function schema — no missing required keys,\nno extras, no mistyped params — and parameter accuracy is checked under\nnormalization (numbers compared as floats, strings trimmed and\ncase-insensitive). The final answer is graded with criteria kinds like:</p>\n<pre><code class=\"language-json\">{\n  &quot;kind&quot;: &quot;params_exact_any&quot;,\n  &quot;tool&quot;: &quot;convert_currency&quot;,\n  &quot;params&quot;: { &quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot; }\n}\n</code></pre>\n<p>A fluent-but-wrong answer passes only if it actually states the expected\nvalues (<code>answer_contains</code> matches case-insensitively and tolerates thousands\nseparators, so <code>1,301.04</code> matches <code>1301.04</code>). Yes, substring checks are\ndull. They are also reproducible, which is the property an eval needs when\nits whole job is telling you that Tuesday's deploy made Thursday worse.</p>\n<h2 id=\"what-http-200-hides\">What HTTP 200 hides</h2>\n<p>Three real findings, all from logging one field deeper than the status code.</p>\n<p><strong>Empty content turns.</strong> A turn can return 200 with <code>content: null</code>. The\nharness records <code>empty_content_turns</code> per scenario; a model that &quot;completed&quot;\nwithout ever producing usable content now fails loudly instead of silently.</p>\n<p><strong>Reasoning burn.</strong> One of the tested models is a reasoning model served by\nvLLM. With a small <code>max_tokens</code> the entire output budget disappears into\n<code>reasoning_content</code> while <code>content</code> stays null and <code>finish_reason</code> reads\n<code>length</code>. That combination — <code>finish_reason=length</code> plus empty content plus\nnon-zero reasoning — is scored as a distinct failure mode (<code>reasoning_burn_turns</code>),\nand scoring calls get <code>max_tokens=2048</code> precisely to avoid measuring it as\nmodel incompetence when it is really a sampling-budget artifact.</p>\n<p><strong>The cache that flattered everyone.</strong> The broker response-caches identical\nrequest bodies. Sending the same JSON body twice returned the cached\ncompletion in ~0.01 s with the same <code>id</code> — which made rep-to-rep variance\nlook near zero and latency look phenomenal. Proof: a repeated body came back\nin 0.01 s versus ~1.4 s for a distinct one. The fix is one field: every\nrequest gets a unique <code>user: mqh-&lt;uuid&gt;</code> stamp to bust the cache. After the\nfix the same model's per-turn latency showed a real distribution — min\n0.83 s, median 1.31 s, max 3.72 s — where before it showed a flat line that\nwas never real.</p>\n<h2 id=\"outages-are-data-not-footnotes\">Outages are data, not footnotes</h2>\n<p>During one re-run, two of the three models were down at the broker: one\nreturned a LiteLLM 404 (the upstream model does not exist), the other a 500\nconnection error. Both ran anyway and both were recorded as failures with\nthe real HTTP error bodies attached, and the dashboard shows that honestly\nrather than silently shrinking the comparison to the one live model. 4xx\nresponses fail fast; only timeout/429/5xx get the single retry. A harness\nthat quietly drops unavailable models is not an eval, it is marketing.</p>\n<p>The whole thing is Python 3.13 stdlib only — no pip, no framework, ~5–10\nminutes for a full run, and a standalone vanilla-JS dashboard rendered from\nthe results JSON. The point of an eval harness is not sophistication. It is\nthat the same input gives you the same number twice, so the day the number\nmoves, you can believe it.</p>",
+			"excerpt": "Every team that ships an LLM feature eventually builds an eval harness, and every harness eventually answers the same question wrong: did …"
+		}
+	],
+	videos: [],
+	talks: []
+};
+//#endregion
+//#region src/content/schema.ts
+/**
+* Content schema (CONTRACT.md §4) — the single validation contract between
+* content/*.md files, `scripts/build-content.mjs`, and the app.
+*
+* Every entry carries the shared fields (slug/title/summary/tags/date) plus
+* type-specific fields. All schemas are `.strict()`: an unknown frontmatter
+* key is a build error, not a silent no-op — that is how content rot gets
+* caught at build time instead of at read time.
+*/
+/** `YYYY-MM-DD`, enforced as a string (JSON has no date type). */
+var IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected a YYYY-MM-DD date");
+/** kebab-case, matching the content file name minus `.md`. */
+var Slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "expected a kebab-case slug");
+/**
+* R1-C #2: z.string().url() is scheme-agnostic — it accepts javascript:,
+* data:, file:. Frontmatter URLs render straight into <a href>, so the
+* schema must enforce the SAME scheme allowlist the markdown engine's
+* sanitizeUrl applies to prose links. One policy, both entry points.
+*/
+var SafeUrl = z.string().url("expected an absolute URL").refine((u) => /^(https?:|mailto:)/i.test(u), "only http(s)/mailto URLs are allowed");
+var baseShape = {
+	slug: Slug,
+	title: z.string().min(1),
+	summary: z.string().min(1),
+	tags: z.array(z.string().min(1)),
+	date: IsoDate
+};
+var ProjectLinksSchema = z.object({
+	source: SafeUrl.optional(),
+	demo: SafeUrl.optional(),
+	paper: SafeUrl.optional()
+}).strict();
+var ProjectMetricSchema = z.object({
+	label: z.string().min(1),
+	value: z.string().min(1)
+}).strict();
+var ProjectSchema = z.object({
+	...baseShape,
+	role: z.string().min(1),
+	status: z.enum([
+		"shipped",
+		"active",
+		"archived"
+	]),
+	period: z.string().min(1),
+	highlights: z.array(z.string().min(1)).min(1),
+	stack: z.array(z.string().min(1)).min(1),
+	/** R2-A A2: links are optional — a project with no *verified* URL shows
+	* no link button at all (fabricated source URLs 404 and read as fake). */
+	links: ProjectLinksSchema.optional(),
+	metrics: z.array(ProjectMetricSchema).optional(),
+	featured: z.boolean(),
+	accent: z.string().min(1).optional(),
+	/** Optional long-form body rendered from the markdown below frontmatter. */
+	html: z.string().optional()
+}).strict();
+var PostSchema = z.object({
+	...baseShape,
+	readingMinutes: z.number().int().positive(),
+	series: z.string().min(1).optional(),
+	heroImage: z.string().min(1).optional(),
+	/** Sanitized rendered markdown — the build pipeline's output. */
+	html: z.string().min(1),
+	excerpt: z.string().min(1)
+}).strict();
+var VideoSchema = z.object({
+	...baseShape,
+	url: SafeUrl,
+	embedId: z.string().min(1).optional(),
+	provider: z.enum([
+		"youtube",
+		"vimeo",
+		"other"
+	]),
+	duration: z.string().min(1),
+	speakers: z.array(z.string().min(1)).optional(),
+	event: z.string().min(1).optional()
+}).strict();
+var TalkSchema = z.object({
+	...baseShape,
+	event: z.string().min(1),
+	location: z.string().min(1),
+	slidesUrl: SafeUrl.optional(),
+	videoUrl: SafeUrl.optional(),
+	abstract: z.string().min(1)
+}).strict();
+/** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
+var SiteContentSchema = z.object({
+	generatedAt: z.string().min(1),
+	projects: z.array(ProjectSchema),
+	posts: z.array(PostSchema),
+	videos: z.array(VideoSchema),
+	talks: z.array(TalkSchema)
+}).strict();
+//#endregion
+//#region src/content/index.ts
+/**
+* Content access layer — the app's only door to `src/content/generated/content.json`
+* (produced by scripts/build-content.mjs from content/*.md; CONTRACT §4/§5).
+*
+* The bundle is re-validated with the zod schema at import time. The build
+* script already validates, so a failure here means the JSON was hand-edited
+* or generated by a stale/mismatched pipeline — throw loudly, do not degrade.
+*/
+function validate() {
+	const parsed = SiteContentSchema.safeParse(content_default);
+	if (!parsed.success) {
+		const first = parsed.error.issues.slice(0, 5).map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
+		throw new Error(`content: generated/content.json does not match SiteContentSchema — rebuild with \`node scripts/build-content.mjs\`.\n${first}`);
+	}
+	const { generatedAt: _generatedAt, ...site } = parsed.data;
+	return site;
+}
+var content = validate();
+function getProject(slug) {
+	return content.projects.find((p) => p.slug === slug);
+}
+function getPost(slug) {
+	return content.posts.find((p) => p.slug === slug);
+}
+/** Newest first; date-identical entries keep stable slug order. */
+function postsByDate() {
+	return [...content.posts].sort((a, b) => a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1);
+}
+function featuredProjects() {
+	return content.projects.filter((p) => p.featured);
+}
+//#endregion
+//#region src/lib/route-meta.ts
+/**
+* Route metadata — the single source of truth for per-route <title> /
+* description / og:image, shared between prerender (build time) and the
+* client (SPA navigation, R2C-3).
+*
+* Keeping it here (rather than inside prerender/entry.ts) means an SPA
+* navigation updates the head with EXACTLY the values the prerendered page
+* shipped — DOM and prerender can never drift.
+*/
+var SITE_FALLBACK_DESCRIPTION = SITE.description;
+function titleFor(path) {
+	if (path === "/") return "";
+	if (path === "/404") return "Page not found";
+	const seg = path.split("/")[1];
+	const pageNames = {
+		about: "About",
+		now: "Now",
+		projects: "Projects",
+		writing: "Writing",
+		videos: "Videos",
+		talks: "Talks",
+		contact: "Contact"
+	};
+	if (seg === "projects") {
+		const slug = path.split("/")[2];
+		if (slug) return `${content.projects.find((p) => p.slug === slug)?.title ?? "Project"} — Projects`;
+		return "Projects";
+	}
+	if (seg === "writing") {
+		const slug = path.split("/")[2];
+		if (slug) return `${content.posts.find((p) => p.slug === slug)?.title ?? "Post"} — Writing`;
+		return "Writing";
+	}
+	return seg ? pageNames[seg] ?? "" : "";
+}
+function descriptionFor(path) {
+	if (path.startsWith("/projects/")) {
+		const slug = path.split("/")[2];
+		return content.projects.find((p) => p.slug === slug)?.summary ?? SITE_FALLBACK_DESCRIPTION;
+	}
+	if (path.startsWith("/writing/")) {
+		const slug = path.split("/")[2];
+		const post = content.posts.find((p) => p.slug === slug);
+		return post?.excerpt || post?.summary || SITE_FALLBACK_DESCRIPTION;
+	}
+	return SITE_FALLBACK_DESCRIPTION;
+}
+var SECTION_OG = {
+	projects: "/og/projects.png",
+	writing: "/og/writing.png"
+};
+function ogImageFor(path) {
+	const seg = path.split("/")[1];
+	return seg && SECTION_OG[seg] ? SECTION_OG[seg] : void 0;
+}
+function publishedFor(path) {
+	const slug = path.split("/")[2];
+	const post = content.posts.find((p) => p.slug === slug);
+	return post ? {
+		publishedTime: post.date,
+		type: "article"
+	} : {};
+}
+/** Full MetaResult for a route — identical at build time and in the browser. */
+function metaFor(path) {
+	return pageMeta({
+		title: titleFor(path),
+		description: descriptionFor(path),
+		path,
+		...ogImageFor(path) ? { image: ogImageFor(path) } : {},
+		...path === "/404" ? { robots: ["noindex", "nofollow"] } : {},
+		...path.startsWith("/writing/") ? publishedFor(path) : {}
+	});
+}
 /** Shared across themes: geometry and typography never flip with the theme. */
 var shared = {
 	font: {
@@ -2160,336 +2892,6 @@ function buildTagMap() {
 	return Object.fromEntries(entries);
 }
 var styled = Object.assign(styledCall, buildTagMap());
-var content_default = {
-	generatedAt: "2026-10-08T05:30:27.311Z",
-	projects: [
-		{
-			"slug": "langfuse-dashboard",
-			"title": "Langfuse Observability Dashboard",
-			"summary": "Air-gapped observability dashboard for Langfuse traces: a re-runnable fetch pipeline (traces, observations, sessions, scores) plus a single-file, dark-theme dashboard with KPIs, time-series, model breakdown and a trace drill-down. The ingestion broker's whitelist blocks data-plane reads (403), so the shipped build honestly renders a \"no data — read blocked at broker\" state with the 403 evidence recorded verbatim in the fetched JSON.",
-			"tags": [
-				"llm",
-				"observability",
-				"langfuse",
-				"python",
-				"dashboards"
-			],
-			"date": "2026-08-16",
-			"role": "Design and implementation (solo)",
-			"status": "active",
-			"period": "2026-08",
-			"highlights": [
-				"Idempotent fetch pipeline: atomic rewrites, page- and cursor-based pagination, ~5000-item caps per collection",
-				"Credentials from environment only; no secret ever printed or written to disk",
-				"Single-file dashboard, zero network requests, data embedded as a JS const so it opens over file://",
-				"Trace explorer drills into the observations parent/child tree with latency, usage and I/O previews",
-				"Verified broker behaviour endpoint by endpoint: health/projects OK, traces/observations/sessions/scores all 403 — failure recorded, nothing fabricated"
-			],
-			"stack": [
-				"Python",
-				"Langfuse SDK v4.14.3",
-				"Langfuse 3.200.0",
-				"vanilla JS/CSS"
-			],
-			"featured": false
-		},
-		{
-			"slug": "model-quality-harness",
-			"title": "Model Quality Harness",
-			"summary": "Deterministic tool-calling reliability benchmark for local LLMs behind an OpenAI-compatible LiteLLM broker: a fixed 8-scenario suite, simulated tool execution, rule-by-rule scoring with no LLM judge, and a standalone HTML dashboard rendered from the real results JSON.",
-			"tags": [
-				"evals",
-				"llm",
-				"testing",
-				"python",
-				"dashboards"
-			],
-			"date": "2026-08-16",
-			"role": "Design and implementation (solo)",
-			"status": "shipped",
-			"period": "2026-08",
-			"highlights": [
-				"8-scenario fixed suite: single-tool lookups, multi-constraint calls, two-step dependencies, and a retry scenario where the simulator rejects the first call",
-				"Deterministic judge only — schema-valid tool-call JSON, parameter accuracy under normalization, and success criteria like call_made / params_exact / param_absent / answer_contains",
-				"Tracks silent failures HTTP 200 hides: empty_content_turns, reasoning_burn_turns (finish_reason=length with content null), finish_reason per turn",
-				"Proved the broker response-cached identical request bodies (~0.01 s replays); cache-busting user stamps restored real latency distributions (min 0.83 s / med 1.31 s / max 3.72 s)",
-				"Broker outages are recorded as failures with the real HTTP error body, never papered over"
-			],
-			"stack": [
-				"Python 3.13",
-				"stdlib only",
-				"LiteLLM broker",
-				"OpenAI-compatible API",
-				"vanilla JS/CSS"
-			],
-			"metrics": [{
-				"label": "scenarios x models x reps",
-				"value": "8 x 3 x 2"
-			}, {
-				"label": "best model run (cache-bust re-run)",
-				"value": "16/16 completed, 100% valid calls"
-			}],
-			"featured": true
-		},
-		{
-			"slug": "duckdb-mcp",
-			"title": "DuckDB MCP Server",
-			"summary": "Model Context Protocol server exposing 15 DuckDB database tools — query, schema, import/export, profiling, cross-database operations — over stdio JSON-RPC. Drives the DuckDB CLI binary via subprocess (no Python duckdb binding), and encodes 9 benchmark-proven best practices as tested utilities and SQL recipes.",
-			"tags": [
-				"mcp",
-				"duckdb",
-				"analytics",
-				"python",
-				"agents"
-			],
-			"date": "2026-07-15",
-			"role": "Design and implementation (solo)",
-			"status": "shipped",
-			"period": "2026",
-			"highlights": [
-				"15 tools spanning query, DDL/DML, CSV/Parquet import-export, profiling, ATTACH-based cross-DB joins",
-				"CLI subprocess over the Python binding: no version drift, -json output parsed with recursive type coercion to int/float/bool/None",
-				"Multi-statement SQL via temp files and duckdb -f, dodging argument-length limits",
-				"9 benchmark-proven best practices as code (bulk insert via generate_series: 100K users in 27 ms; 3x100K cross-DB join in 8 ms; Parquet at ~27% of CSV size), each pinned by an integration test",
-				"Pitfall guard for the real DuckDB failure mode: IDENTITY/SERIAL fails, so auto-increment goes through CREATE SEQUENCE + nextval()"
-			],
-			"stack": [
-				"Python 3.11+",
-				"mcp SDK",
-				"DuckDB CLI 1.5.4+",
-				"stdio JSON-RPC",
-				"pytest"
-			],
-			"metrics": [
-				{
-					"label": "tools exposed",
-					"value": "15"
-				},
-				{
-					"label": "benchmark suite",
-					"value": "14 benchmarks"
-				},
-				{
-					"label": "100K bulk insert",
-					"value": "27 ms"
-				}
-			],
-			"featured": true
-		},
-		{
-			"slug": "orchestrator",
-			"title": "Multi-MCP Orchestrator",
-			"summary": "Unified CLI frontend over six in-process MCP servers (DuckDB analytics, metrics, site audit, system telemetry, task management, wiki search), composed by direct Python imports instead of JSON-RPC, with a chained pipeline mode and DuckDB-backed trend queries.",
-			"tags": [
-				"mcp",
-				"cli",
-				"python",
-				"orchestration",
-				"duckdb"
-			],
-			"date": "2026-06-20",
-			"role": "Design and implementation (solo)",
-			"status": "shipped",
-			"period": "2026",
-			"highlights": [
-				"Direct Python import of six MCP server modules bypasses stdio/JSON-RPC overhead for same-process composition",
-				"Single _call_tool dispatcher normalizes divergent handler return shapes (tuple-with-dict vs list-of-TextContent) behind asyncio.run wrapping",
-				"Chained pipeline actions: scan, find, tasks, wiki, db, trends run as one command",
-				"Documented integration pitfalls: import order after sys.path setup, _tool_manager._tools vs _tool_map, dispatcher registration order"
-			],
-			"stack": [
-				"Python",
-				"MCP servers",
-				"DuckDB",
-				"asyncio"
-			],
-			"featured": false
-		}
-	],
-	posts: [
-		{
-			"slug": "duckdb-for-agent-workflows",
-			"title": "DuckDB is the analytics database your agent workflows needed",
-			"summary": "What a 14-benchmark suite says about wiring agents to DuckDB: 100K inserts in 27 ms, cross-database joins in 8 ms, Parquet at a quarter of CSV's size — and the one DDL feature that fails loudly when you least expect it.",
-			"tags": [
-				"duckdb",
-				"analytics",
-				"agents",
-				"python",
-				"performance"
-			],
-			"date": "2026-09-15",
-			"readingMinutes": 3,
-			"series": "AI engineering notes",
-			"html": "<p>When you build tools that let an LLM agent query data, the database choice\nstops being an architecture-slide decision and becomes a <em>failure-mode</em>\ndecision: what happens when the model does something reasonable-sounding but\nslow, or generates DDL that quietly does not work. I benchmarked that question\nthe slow way — a 14-benchmark suite behind the duckdb-mcp server, measuring\neverything from DDL speed to MCP round-trip overhead. The numbers argued for\nDuckDB, and the gotchas were worth the exercise by themselves.</p>\n<h2 id=\"the-numbers-that-changed-my-defaults\">The numbers that changed my defaults</h2>\n<p>All figures below come from the project's benchmark suite (<code>test_benchmarks.py</code>\nand the integration tests that pin each practice), run against DuckDB CLI\n1.5.4+.</p>\n<p><strong>Bulk insert: <code>generate_series</code>, never <code>INSERT VALUES</code>.</strong> 100,000 users land\nin 27 ms via a select-from-generate_series. Hand the same task to a model's\nnatural instinct — long <code>INSERT INTO ... VALUES (...), (...)</code> lists — and you\nare paying parse costs per statement, and the practice guide's rule of thumb\nis to stop generating them past a thousand rows anyway.</p>\n<p><strong>Parquet as the ingest format, not CSV.</strong> Parquet files came in around 27%\nof the equivalent CSV size, and <code>read_parquet</code> queries the file zero-copy\nwithout loading it into a database first. For agent pipelines this matters\ntwice: files are what agents pass around, and smaller files mean fewer\ntokens spent on paths and less time on IO.</p>\n<p><strong>Cross-database joins are instant.</strong> Three attached databases of 100K rows\neach joined in 8 ms. One caveat that cost me an hour: <code>ATTACH</code> only works\nagainst file-backed databases, not <code>:memory:</code> — so anything doing cross-DB\nwork needs temp files, which the server does for you.</p>\n<p><strong>Window functions scale flat-ish.</strong> ROW_NUMBER, RANK, LAG/LEAD, running\nsums and NTILE at 100K rows all landed in a uniform 6.9–7.5 ms band. The\nkind of analysis an agent is most likely to be asked for is exactly what\ncolumnar engines are boringly good at.</p>\n<p><strong>JSON output is affordable.</strong> The CLI's <code>-json</code> mode adds 9–15% overhead\nversus plain text. For machine-readable tool responses, that is a tax worth\npaying — but see the coercion post, because the JSON types need re-hydration.</p>\n<h2 id=\"the-failure-you-will-only-find-at-runtime\">The failure you will only find at runtime</h2>\n<p>Here is the one the documentation under-sells: on DuckDB v1.5.4, <code>DEFAULT</code>,\n<code>UNIQUE</code>, <code>CHECK</code> and <code>FOREIGN KEY</code> constraints all work fine.\n<code>IDENTITY</code> and <code>SERIAL</code> fail with <code>Constraint not implemented!</code>. Any model\ntrained on Postgres-heavy corpora will generate <code>SERIAL PRIMARY KEY</code> on\ndemand, all day, and every one of those calls dies.</p>\n<p>The fix is not a prompt patch, it is a tool-level pattern:</p>\n<pre><code class=\"language-sql\">CREATE SEQUENCE user_id_seq;\nCREATE TABLE users (\n  id BIGINT DEFAULT nextval('user_id_seq') PRIMARY KEY,\n  email TEXT UNIQUE CHECK (email LIKE '%@%')\n);\n</code></pre>\n<p>Auto-increment through <code>CREATE SEQUENCE</code> + <code>nextval()</code> works and keeps the\nIDs in the database, where they belong — the practice notes are blunt about\nit: <em>never generate IDs in Python, use DuckDB-native bulk patterns</em>. Because\nthe MCP server exposes schema creation through recipes that already use the\nworking pattern, the model never gets the chance to discover the failure at\n3 a.m. on someone's pipeline.</p>\n<h2 id=\"why-this-matters-for-agents-specifically\">Why this matters for agents specifically</h2>\n<p>An agent workflow is an unpredictable query generator with a budget. Three\nproperties of DuckDB line up with that: it is a library-grade database that\nneeds no server to administer (an agent can be handed a file path and be\nproductive immediately), it is columnar and fast on exactly the analytical\nshapes models tend to write, and its failure modes are loud exceptions\nrather than silent plan degradations.</p>\n<p>The benchmark suite is not an argument that DuckDB beats a warehouse for\neverything — 500K rows is not big data. It is an argument that for the\nagent-tooling niche — single-node files, sub-second interactive queries,\nParquet in the middle, JSON out the other side — the boring choice is the\ndatabase that lets your tools encode the three patterns that work and make\nthe wrong ones impossible.</p>",
-			"excerpt": "When you build tools that let an LLM agent query data, the database choice stops being an architecture-slide decision and becomes a …"
-		},
-		{
-			"slug": "mcp-production-lessons",
-			"title": "MCP in production: what the spec doesn't tell you",
-			"summary": "Field notes from shipping a 15-tool DuckDB MCP server and a six-server orchestrator: stdio lifecycle quirks, argument-length walls, JSON type erosion, return-shape chaos, and why direct imports beat JSON-RPC in-process.",
-			"tags": [
-				"mcp",
-				"agents",
-				"python",
-				"duckdb",
-				"architecture"
-			],
-			"date": "2026-09-02",
-			"readingMinutes": 3,
-			"series": "AI engineering notes",
-			"html": "<p>The MCP spec is short enough to read in an afternoon and vague enough to hide\nabout a week of debugging in every one of its &quot;implementations MAY&quot; clauses.\nI shipped two projects that live on both sides of that vagueness: <code>duckdb-mcp</code>,\na stdio MCP server exposing 15 DuckDB tools, and <code>orchestrator</code>, a CLI that\ncomposes six MCP servers in one process. Here is what the spec did not warn\nme about.</p>\n<h2 id=\"1-fastmcp-is-a-toy-the-low-level-server-is-the-job\">1. FastMCP is a toy; the low-level server is the job</h2>\n<p><code>FastMCP</code> gets you a hello world in ten lines. The moment you need a tool\nrouter, structured error semantics, or control over the JSON-RPC lifecycle,\nyou want the lower-level <code>mcp.server.stdio</code> API with an explicit <code>Server</code>\ninstance. The DuckDB server ends up as three pieces: a <code>TOOLS</code> list of\ntool-definition objects with input schemas, a <code>HANDLERS</code> dict mapping tool\nnames to async functions, and a <code>call_tool</code> router that dispatches by name.\nThat separation costs you nothing and pays for itself the first time a tool\nneeds to return a structured error instead of crashing the connection.</p>\n<h2 id=\"2-you-will-hit-the-argument-length-wall\">2. You will hit the argument-length wall</h2>\n<p>My first instinct for running SQL through the DuckDB CLI was\n<code>duckdb -c &quot;SELECT ...&quot;</code>. Multi-statement scripts, or anything with bulk\ndata, eventually dies on the OS argument-length limit. The pattern that\nholds: write the SQL to a temp file and run <code>duckdb -f tmpfile.sql</code>. Same\nfor results: <code>-json</code> mode gives you structured output that you parse\nyourself. Which leads to the next one.</p>\n<h2 id=\"3-json-over-stdio-erodes-your-types\">3. JSON over stdio erodes your types</h2>\n<p>DuckDB's <code>-json</code> output stringifies a lot of what you thought were numbers\nand booleans. If you hand that straight to a model, the model will learn\nthat <code>count</code> looks like <code>&quot;42&quot;</code> and start emitting comparisons against\nstrings. The server has a recursive <code>_coerce_types()</code> pass that walks parsed\nJSON and converts strings back to <code>int</code>, <code>float</code>, <code>bool</code>, and <code>None</code>. Every\ntool boundary where you serialize through the weakest format in the pipe\nneeds a re-hydration step on the way back. Nobody tells you this in the\nprotocol docs because the protocol has no types to lose — your data does.</p>\n<h2 id=\"4-return-shapes-are-a-folklore-not-a-standard\">4. Return shapes are a folklore, not a standard</h2>\n<p>When the orchestrator imports six MCP server modules directly (more on that\nbelow), I found their <code>call_tool</code> implementations do not agree on anything:\none returns a <code>tuple</code> of <code>(list_of_TextContent, dict)</code> where the useful\npayload lives at index 1; the rest return a bare list of <code>TextContent</code> whose\n<code>.text</code> is a JSON string. The dispatcher is 15 lines of shape-sniffing. The\nspec describes what a wire response looks like, not what your in-process\nhandler function returns, so every server you import is a small archaeology\ndig. Two more discoveries, filed under &quot;why are these not in the README&quot;:\ntool listings live on <code>_tool_manager._tools</code>, not <code>_tool_map</code>, and server\nmodules with top-level imports must be imported <em>after</em> <code>sys.path</code> is set up.</p>\n<h2 id=\"5-in-process-skip-the-wire-entirely\">5. In-process, skip the wire entirely</h2>\n<p>JSON-RPC over stdio exists to cross a process boundary. When the consumer is\nyour own Python CLI, that boundary is pure overhead — serialization,\nsubprocess lifecycle, an event loop per server. The orchestrator imports the\nserver modules directly and calls <code>asyncio.run(server.call_tool(name, kwargs))</code>.\nThat collapses &quot;run a code-quality scan, log the findings as tasks, write a\nwiki report, query the trend in DuckDB&quot; from a distributed-systems problem\ninto one command. The stdio transport stays where it belongs: for external\nclients like Claude Desktop or IDE integrations.</p>\n<h2 id=\"6-the-server-is-where-the-lessons-belong\">6. The server is where the lessons belong</h2>\n<p>The most useful thing duckdb-mcp does is not query execution — it is that\nnine benchmark-proven practices are encoded in the tools themselves: bulk\ninsert via <code>generate_series</code> instead of <code>INSERT VALUES</code>, <code>CREATE SEQUENCE</code>\ninstead of broken <code>IDENTITY</code>/<code>SERIAL</code>, Parquet-first ingest. The server stops\nthe model from choosing the wrong pattern, which is worth more than any\nprompt that says &quot;please prefer bulk inserts&quot;. Treat your MCP server as the\nplace where operational knowledge becomes a tool constraint.</p>\n<p>The spec covers the handshake. Everything above is the part you learn by\nhaving the thing fail at 2 a.m., and all of it is now a unit test.</p>",
-			"excerpt": "The MCP spec is short enough to read in an afternoon and vague enough to hide about a week of debugging in every one of its …"
-		},
-		{
-			"slug": "eval-harness-silent-regressions",
-			"title": "Building an eval harness that catches silent model regressions",
-			"summary": "How a deterministic, no-LLM-judge harness for tool-calling reliability caught three classes of failure that HTTP 200 hides: empty content turns, reasoning burn, and a response cache that was lying about latency.",
-			"tags": [
-				"evals",
-				"llm",
-				"testing",
-				"python"
-			],
-			"date": "2026-08-20",
-			"readingMinutes": 3,
-			"series": "AI engineering notes",
-			"html": "<p>Every team that ships an LLM feature eventually builds an eval harness, and\nevery harness eventually answers the same question wrong: <em>did the model\nsucceed, or did the HTTP layer just return 200?</em> This post is the methodology\nbehind the harness I built for local models behind an OpenAI-compatible\nLiteLLM broker — eight scenarios, three models, two repetitions, and a\nscoring pass that never asks another model for its opinion.</p>\n<h2 id=\"the-scenario-suite-is-fixed-and-adversarial\">The scenario suite is fixed and adversarial</h2>\n<p>The suite ships as eight JSON files. Each scenario defines an OpenAI function\nschema, a user prompt, simulated tool implementations, and success criteria.\nThe scenarios escalate deliberately:</p>\n<ul>\n<li><p><code>weather_tokyo</code> — one tool call, final answer must cite the tool's value.</p></li>\n<li><p><code>table_booking</code> — argument extraction: &quot;eight people&quot; and &quot;7:30 PM&quot; must\narrive as <code>party_size: 8</code> and <code>19:30</code>.</p></li>\n<li><p><code>pizza_distractor</code> — an expired coupon in context that must <strong>not</strong> appear\nin the call (<code>param_absent</code>).</p></li>\n<li><p><code>inventory_then_reserve</code> — a two-step dependency: query the catalog, take\nthe SKU from the tool result, reserve with it.</p></li>\n<li><p><code>fx_conversion_retry</code> — the first call uses non-ISO currency names and the\nsimulator <em>rejects</em> it; the model must retry with <code>EUR</code>/<code>USD</code>.\nThe retry scenario is the one that separates models. A single-shot accuracy\nmetric says nothing about whether a model can consume a tool error and\nrecover, which is most of what agent loops actually do.</p></li>\n</ul>\n<h2 id=\"deterministic-judging-on-purpose\">Deterministic judging, on purpose</h2>\n<p>There is no LLM-as-judge anywhere in the pipeline. Each emitted tool call is\nvalidated against the scenario's function schema — no missing required keys,\nno extras, no mistyped params — and parameter accuracy is checked under\nnormalization (numbers compared as floats, strings trimmed and\ncase-insensitive). The final answer is graded with criteria kinds like:</p>\n<pre><code class=\"language-json\">{\n  &quot;kind&quot;: &quot;params_exact_any&quot;,\n  &quot;tool&quot;: &quot;convert_currency&quot;,\n  &quot;params&quot;: { &quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot; }\n}\n</code></pre>\n<p>A fluent-but-wrong answer passes only if it actually states the expected\nvalues (<code>answer_contains</code> matches case-insensitively and tolerates thousands\nseparators, so <code>1,301.04</code> matches <code>1301.04</code>). Yes, substring checks are\ndull. They are also reproducible, which is the property an eval needs when\nits whole job is telling you that Tuesday's deploy made Thursday worse.</p>\n<h2 id=\"what-http-200-hides\">What HTTP 200 hides</h2>\n<p>Three real findings, all from logging one field deeper than the status code.</p>\n<p><strong>Empty content turns.</strong> A turn can return 200 with <code>content: null</code>. The\nharness records <code>empty_content_turns</code> per scenario; a model that &quot;completed&quot;\nwithout ever producing usable content now fails loudly instead of silently.</p>\n<p><strong>Reasoning burn.</strong> One of the tested models is a reasoning model served by\nvLLM. With a small <code>max_tokens</code> the entire output budget disappears into\n<code>reasoning_content</code> while <code>content</code> stays null and <code>finish_reason</code> reads\n<code>length</code>. That combination — <code>finish_reason=length</code> plus empty content plus\nnon-zero reasoning — is scored as a distinct failure mode (<code>reasoning_burn_turns</code>),\nand scoring calls get <code>max_tokens=2048</code> precisely to avoid measuring it as\nmodel incompetence when it is really a sampling-budget artifact.</p>\n<p><strong>The cache that flattered everyone.</strong> The broker response-caches identical\nrequest bodies. Sending the same JSON body twice returned the cached\ncompletion in ~0.01 s with the same <code>id</code> — which made rep-to-rep variance\nlook near zero and latency look phenomenal. Proof: a repeated body came back\nin 0.01 s versus ~1.4 s for a distinct one. The fix is one field: every\nrequest gets a unique <code>user: mqh-&lt;uuid&gt;</code> stamp to bust the cache. After the\nfix the same model's per-turn latency showed a real distribution — min\n0.83 s, median 1.31 s, max 3.72 s — where before it showed a flat line that\nwas never real.</p>\n<h2 id=\"outages-are-data-not-footnotes\">Outages are data, not footnotes</h2>\n<p>During one re-run, two of the three models were down at the broker: one\nreturned a LiteLLM 404 (the upstream model does not exist), the other a 500\nconnection error. Both ran anyway and both were recorded as failures with\nthe real HTTP error bodies attached, and the dashboard shows that honestly\nrather than silently shrinking the comparison to the one live model. 4xx\nresponses fail fast; only timeout/429/5xx get the single retry. A harness\nthat quietly drops unavailable models is not an eval, it is marketing.</p>\n<p>The whole thing is Python 3.13 stdlib only — no pip, no framework, ~5–10\nminutes for a full run, and a standalone vanilla-JS dashboard rendered from\nthe results JSON. The point of an eval harness is not sophistication. It is\nthat the same input gives you the same number twice, so the day the number\nmoves, you can believe it.</p>",
-			"excerpt": "Every team that ships an LLM feature eventually builds an eval harness, and every harness eventually answers the same question wrong: did …"
-		}
-	],
-	videos: [],
-	talks: []
-};
-//#endregion
-//#region src/content/schema.ts
-/**
-* Content schema (CONTRACT.md §4) — the single validation contract between
-* content/*.md files, `scripts/build-content.mjs`, and the app.
-*
-* Every entry carries the shared fields (slug/title/summary/tags/date) plus
-* type-specific fields. All schemas are `.strict()`: an unknown frontmatter
-* key is a build error, not a silent no-op — that is how content rot gets
-* caught at build time instead of at read time.
-*/
-/** `YYYY-MM-DD`, enforced as a string (JSON has no date type). */
-var IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected a YYYY-MM-DD date");
-/** kebab-case, matching the content file name minus `.md`. */
-var Slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "expected a kebab-case slug");
-/**
-* R1-C #2: z.string().url() is scheme-agnostic — it accepts javascript:,
-* data:, file:. Frontmatter URLs render straight into <a href>, so the
-* schema must enforce the SAME scheme allowlist the markdown engine's
-* sanitizeUrl applies to prose links. One policy, both entry points.
-*/
-var SafeUrl = z.string().url("expected an absolute URL").refine((u) => /^(https?:|mailto:)/i.test(u), "only http(s)/mailto URLs are allowed");
-var baseShape = {
-	slug: Slug,
-	title: z.string().min(1),
-	summary: z.string().min(1),
-	tags: z.array(z.string().min(1)),
-	date: IsoDate
-};
-var ProjectLinksSchema = z.object({
-	source: SafeUrl.optional(),
-	demo: SafeUrl.optional(),
-	paper: SafeUrl.optional()
-}).strict();
-var ProjectMetricSchema = z.object({
-	label: z.string().min(1),
-	value: z.string().min(1)
-}).strict();
-var ProjectSchema = z.object({
-	...baseShape,
-	role: z.string().min(1),
-	status: z.enum([
-		"shipped",
-		"active",
-		"archived"
-	]),
-	period: z.string().min(1),
-	highlights: z.array(z.string().min(1)).min(1),
-	stack: z.array(z.string().min(1)).min(1),
-	/** R2-A A2: links are optional — a project with no *verified* URL shows
-	* no link button at all (fabricated source URLs 404 and read as fake). */
-	links: ProjectLinksSchema.optional(),
-	metrics: z.array(ProjectMetricSchema).optional(),
-	featured: z.boolean(),
-	accent: z.string().min(1).optional(),
-	/** Optional long-form body rendered from the markdown below frontmatter. */
-	html: z.string().optional()
-}).strict();
-var PostSchema = z.object({
-	...baseShape,
-	readingMinutes: z.number().int().positive(),
-	series: z.string().min(1).optional(),
-	heroImage: z.string().min(1).optional(),
-	/** Sanitized rendered markdown — the build pipeline's output. */
-	html: z.string().min(1),
-	excerpt: z.string().min(1)
-}).strict();
-var VideoSchema = z.object({
-	...baseShape,
-	url: SafeUrl,
-	embedId: z.string().min(1).optional(),
-	provider: z.enum([
-		"youtube",
-		"vimeo",
-		"other"
-	]),
-	duration: z.string().min(1),
-	speakers: z.array(z.string().min(1)).optional(),
-	event: z.string().min(1).optional()
-}).strict();
-var TalkSchema = z.object({
-	...baseShape,
-	event: z.string().min(1),
-	location: z.string().min(1),
-	slidesUrl: SafeUrl.optional(),
-	videoUrl: SafeUrl.optional(),
-	abstract: z.string().min(1)
-}).strict();
-/** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
-var SiteContentSchema = z.object({
-	generatedAt: z.string().min(1),
-	projects: z.array(ProjectSchema),
-	posts: z.array(PostSchema),
-	videos: z.array(VideoSchema),
-	talks: z.array(TalkSchema)
-}).strict();
-//#endregion
-//#region src/content/index.ts
-/**
-* Content access layer — the app's only door to `src/content/generated/content.json`
-* (produced by scripts/build-content.mjs from content/*.md; CONTRACT §4/§5).
-*
-* The bundle is re-validated with the zod schema at import time. The build
-* script already validates, so a failure here means the JSON was hand-edited
-* or generated by a stale/mismatched pipeline — throw loudly, do not degrade.
-*/
-function validate() {
-	const parsed = SiteContentSchema.safeParse(content_default);
-	if (!parsed.success) {
-		const first = parsed.error.issues.slice(0, 5).map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
-		throw new Error(`content: generated/content.json does not match SiteContentSchema — rebuild with \`node scripts/build-content.mjs\`.\n${first}`);
-	}
-	const { generatedAt: _generatedAt, ...site } = parsed.data;
-	return site;
-}
-var content = validate();
-function getProject(slug) {
-	return content.projects.find((p) => p.slug === slug);
-}
-function getPost(slug) {
-	return content.posts.find((p) => p.slug === slug);
-}
-/** Newest first; date-identical entries keep stable slug order. */
-function postsByDate() {
-	return [...content.posts].sort((a, b) => a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1);
-}
-function featuredProjects() {
-	return content.projects.filter((p) => p.featured);
-}
 //#endregion
 //#region src/components/layout/Nav.tsx
 /** ROUTES from CONTRACT §3. Detail templates (`/projects/:slug`,
@@ -2545,7 +2947,7 @@ function availableNavItems() {
 	});
 }
 /** Same normalisation the router applies (`vendor/router` `normalize`). */
-function normalizePath$1(path) {
+function normalizePath(path) {
 	if (!path) return "/";
 	const withoutQuery = path.split(/[?#]/)[0] ?? "/";
 	if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) return withoutQuery.slice(0, -1);
@@ -2557,8 +2959,8 @@ function normalizePath$1(path) {
 * agree. `exact` exists because `/` would otherwise prefix-match everything.
 */
 function isNavActive(item, currentPath) {
-	const current = normalizePath$1(currentPath);
-	const target = normalizePath$1(item.to);
+	const current = normalizePath(currentPath);
+	const target = normalizePath(item.to);
 	if (item.exact || target === "/") return current === target;
 	return current === target || current.startsWith(`${target}/`);
 }
@@ -3491,7 +3893,7 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 					"aria-labelledby": "footer-sites-heading",
 					"data-testid": "footer-sitemap",
 					children: availableNavItems().map((item) => /* @__PURE__ */ jsx(LinkLine, { children: /* @__PURE__ */ jsx(Link$1, {
-						to: normalizePath$1(item.to),
+						to: normalizePath(item.to),
 						className: classes,
 						"data-testid": `footer-link-${item.label.toLowerCase()}`,
 						children: item.label
@@ -3675,310 +4077,6 @@ function Layout({ children, currentPath, name = "Alex Rivera", role, menuOpen = 
 			}) : null
 		]
 	})] });
-}
-//#endregion
-//#region src/lib/format.ts
-/**
-* Deterministic formatting primitives.
-*
-* Everything here is pure and timezone-pinned to UTC: the site is prerendered
-* at build time and hydrated on client machines in arbitrary timezones, so a
-* date derived from the reader's local zone would differ between server HTML
-* and client render. Pinned month names + UTC epoch math guarantee the two
-* agree byte-for-byte without depending on the host ICU data.
-*/
-var MONTHS_SHORT = [
-	"Jan",
-	"Feb",
-	"Mar",
-	"Apr",
-	"May",
-	"Jun",
-	"Jul",
-	"Aug",
-	"Sep",
-	"Oct",
-	"Nov",
-	"Dec"
-];
-/** Matches a strict ISO date or ISO datetime; anything else is unparseable. */
-var ISO_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
-/**
-* Parse an `YYYY-MM-DD` (or ISO datetime) string as a UTC epoch.
-* A bare date is read as UTC midnight — NOT the local zone (that is the whole
-* point: prerender and client must agree). Returns null for anything that is
-* not an ISO string.
-*/
-function parseIsoUtc(iso) {
-	if (typeof iso !== "string") return null;
-	const m = ISO_RE.exec(iso.trim());
-	if (!m) return null;
-	const [, y, mo, d, hh, mm, ss, zone] = m;
-	const year = Number(y);
-	const month = Number(mo);
-	const day = Number(d);
-	const hour = Number(hh ?? "0");
-	const min = Number(mm ?? "0");
-	const sec = Number(ss ?? "0");
-	if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-	let epoch = Date.UTC(year, month - 1, day, hour, min, sec);
-	if (zone && zone !== "Z") {
-		const sign = zone.startsWith("-") ? -1 : 1;
-		const oh = Number(zone.slice(1, 3));
-		const om = Number(zone.slice(4).replace(":", "") || "0");
-		epoch -= sign * (oh * 36e5 + om * 6e4);
-	}
-	const date = new Date(epoch);
-	return Number.isNaN(date.getTime()) ? null : date;
-}
-var LONG_MONTHS = [
-	"January",
-	"February",
-	"March",
-	"April",
-	"May",
-	"June",
-	"July",
-	"August",
-	"September",
-	"October",
-	"November",
-	"December"
-];
-/**
-* `2026-03-14` → `Mar 14, 2026` (UTC-pinned). Returns '' for unparseable
-* input rather than "Invalid Date" — a blank is honest, a bogus date is not.
-*/
-function formatDate(iso, options = {}) {
-	const date = parseIsoUtc(iso);
-	if (!date) return "";
-	const month = (options.style === "long" ? LONG_MONTHS : MONTHS_SHORT)[date.getUTCMonth()];
-	if (month === void 0) return "";
-	let out = `${month} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
-	if (options.withTime) {
-		const hh = String(date.getUTCHours()).padStart(2, "0");
-		const mi = String(date.getUTCMinutes()).padStart(2, "0");
-		out += ` ${hh}:${mi} UTC`;
-	}
-	return out;
-}
-/** `5` → `5 min read`; clamps to a minimum of 1 minute. */
-function formatReadingTime(minutes) {
-	if (!Number.isFinite(minutes) || minutes <= 0) return "1 min read";
-	return `${Math.max(1, Math.round(minutes))} min read`;
-}
-/** `pluralize(2, 'post')` → `2 posts`; `pluralize(1, 'box', 'boxes')` → `1 box`. */
-function pluralize(count, singular, plural) {
-	return `${count} ${count === 1 ? singular : plural ?? `${singular}s`}`;
-}
-/**
-* Cut `text` at or before `max` characters, never mid-word, and append
-* `ellipsis` (default `…`) when anything was removed. If a single word is
-* longer than `max`, the word itself is cut (no empty result) — the cut still
-* gets the ellipsis. `max <= 0` → just the ellipsis for non-empty text.
-*/
-function truncateAtWordBoundary(text, max, ellipsis = "…") {
-	if (typeof text !== "string" || text.length === 0) return "";
-	if (max <= 0) return ellipsis;
-	if (text.length <= max) return text;
-	const slice = text.slice(0, max);
-	const boundary = Math.max(slice.lastIndexOf(" "), slice.lastIndexOf("\xA0"), slice.lastIndexOf("\n"));
-	return (boundary > 0 ? slice.slice(0, boundary) : slice).trimEnd() + ellipsis;
-}
-//#endregion
-//#region src/lib/seo.ts
-/**
-* SEO / document-head primitives — one source of truth for the prerenderer AND
-* the runtime (document.title + meta sync).
-*
-* Pinned CONTRACT §4 API:
-*   pageMeta(opts) → MetaResult
-*   buildHead(meta) → string[]        // ordered tag markup
-*
-* Honesty rules baked in:
-* - Titles are capped at 60 chars (Google's visual cut); we shorten the page
-*   part before dropping words, and the <title> text is HTML-escaped.
-* - Descriptions are capped at 160 chars and only get `…` when characters
-*   were actually removed (truncateAtWordBoundary never mid-cuts a word
-*   unless a single word overflows).
-* - Every URL goes through joinUrl(), so a SITE.url with a trailing slash or
-*   a path without a leading one can never produce `//`.
-* - JSON-LD is returned as a plain object; JSON.stringify happens in
-*   buildHead with `<` escaped so the output is safe inside <script> and
-*   still valid JSON after unescaping. Tests JSON.parse it back.
-*/
-var SITE = {
-	name: "Alex Rivera",
-	url: "https://alexrivera.dev",
-	title: "Alex Rivera — AI Engineering & Technical Consulting",
-	/** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
-	shortTitle: "Alex Rivera",
-	/** Tagline appended to the home <title> only. */
-	tagline: "Technical Consulting",
-	description: "Portfolio of Alex Rivera, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.",
-	author: "Alex Rivera",
-	/**
-	* R2-A A3: hire-me metadata a recruiter looks for in 20 seconds. UNSET =
-	* hidden (never fabricated). Owner: set these before launching the job push —
-	*   hiring: one line, e.g. "Seeking senior AI-platform / full-stack roles —
-	*           remote (UTC-5 ±3) — available from Nov 2026"
-	*   email:  the mailbox that receives engagements and recruiter mail
-	*   resume: path to a PDF in public/ (e.g. '/alex-rivera-resume.pdf')
-	*/
-	hiring: null,
-	email: null,
-	resume: null,
-	/** DRAFT: replace with the real X handle before launch (no @ prefix here). */
-	twitter: "alexriveradev",
-	lang: "en",
-	rssPath: "/rss.xml",
-	defaultImagePath: "/og-default.png"
-};
-/** Escape a string for interpolation into HTML text or a double-quoted attribute. */
-function escapeHtml(input) {
-	return String(input).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-/** Join a base URL and path segments without ever emitting `//` (scheme aside). */
-function joinUrl(base, ...segments) {
-	const baseTrim = base.replace(/\/+$/, "");
-	const tail = segments.filter((s) => s.length > 0).map((s) => s.replace(/^\/+|\/+$/g, "")).filter((s) => s.length > 0).join("/");
-	return tail.length === 0 ? `${baseTrim}/` : `${baseTrim}/${tail}`;
-}
-/** Absolute URL for a route path; paths that are already absolute pass through. */
-function absoluteUrl(path) {
-	if (/^https?:\/\//i.test(path)) return path;
-	return joinUrl(SITE.url, path);
-}
-function normalizePath(path) {
-	if (/^https?:\/\//i.test(path)) try {
-		path = new URL(path).pathname;
-	} catch {}
-	let p = path.replace(/\/{2,}/g, "/");
-	if (!p.startsWith("/")) p = `/${p}`;
-	if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
-	return p;
-}
-/** Cap a page title so `page — SITE.name` fits 60 chars total. */
-function capTitle(rawTitle, cap = 60) {
-	const suffix = ` — ${SITE.name}`;
-	const title = rawTitle.trim();
-	const full = title.length > 0 ? `${title}${suffix}` : SITE.title;
-	if (full.length <= cap) return full;
-	if (title.length === 0) return truncateAtWordBoundary(SITE.title, cap);
-	const budget = cap - suffix.length;
-	if (budget < 10) return `${truncateAtWordBoundary(title, cap)}…`;
-	return `${truncateAtWordBoundary(title, budget)}${suffix}`;
-}
-function buildJsonLd(opts, kind, canonical) {
-	if (kind === "person") return {
-		"@context": "https://schema.org",
-		"@type": "Person",
-		name: SITE.author,
-		url: SITE.url,
-		description: opts.description.trim() || SITE.description,
-		jobTitle: "AI Engineer & Technical Consultant",
-		knowsAbout: [
-			"LLM systems",
-			"data platforms",
-			"full-stack engineering"
-		]
-	};
-	if (kind === "article") return {
-		"@context": "https://schema.org",
-		"@type": "Article",
-		headline: opts.title.trim(),
-		description: opts.description.trim(),
-		inLanguage: SITE.lang,
-		author: {
-			"@type": "Person",
-			name: SITE.author
-		},
-		publisher: {
-			"@type": "Person",
-			name: SITE.author
-		},
-		mainEntityOfPage: {
-			"@type": "WebPage",
-			"@id": canonical
-		},
-		...opts.publishedTime ? { datePublished: opts.publishedTime } : {}
-	};
-	return {
-		"@context": "https://schema.org",
-		"@type": "CollectionPage",
-		name: opts.title.trim(),
-		description: opts.description.trim(),
-		url: canonical,
-		inLanguage: SITE.lang,
-		isPartOf: {
-			"@type": "WebSite",
-			name: SITE.name,
-			url: SITE.url
-		}
-	};
-}
-/** Build the complete meta bundle for one route. Pure — no window access. */
-function pageMeta(opts) {
-	const path = normalizePath(opts.path);
-	const canonical = absoluteUrl(path);
-	const isHome = path === "/";
-	const type = opts.type ?? (opts.publishedTime ? "article" : "website");
-	const ogType = opts.ogType ?? (type === "article" ? "article" : isHome ? "website" : "website");
-	const titlePlain = capTitle(opts.title);
-	const descriptionRaw = opts.description.trim() || SITE.description;
-	const description = descriptionRaw.length > 160 ? truncateAtWordBoundary(descriptionRaw, 159) : descriptionRaw;
-	const kind = opts.jsonLdKind ?? (isHome ? "person" : type === "article" ? "article" : "collection");
-	return {
-		title: escapeHtml(titlePlain),
-		titlePlain,
-		description,
-		canonical,
-		path,
-		image: absoluteUrl(opts.image ?? SITE.defaultImagePath),
-		type,
-		ogType,
-		...opts.publishedTime ? { publishedTime: opts.publishedTime } : {},
-		robots: (opts.robots ?? ["index", "follow"]).join(","),
-		lang: SITE.lang,
-		twitterCard: opts.image ? "summary_large_image" : "summary",
-		jsonLd: buildJsonLd({
-			...opts,
-			description
-		}, kind, canonical),
-		rssUrl: absoluteUrl(SITE.rssPath)
-	};
-}
-/**
-* Ordered markup tags for the document <head>. Order is pinned (tests assert
-* it): title → meta charset-free essentials → description → canonical → RSS →
-* robots → OG block → Twitter block → JSON-LD.
-*
-* The prerenderer joins these into index.html; the runtime uses `titlePlain`
-* (see applyDocumentMeta) so DOM and prerender never disagree.
-*/
-function buildHead(meta) {
-	const tags = [];
-	tags.push(`<title>${meta.title}</title>`);
-	tags.push(`<meta name="description" content="${escapeHtml(meta.description)}">`);
-	tags.push(`<link rel="canonical" href="${escapeHtml(meta.canonical)}">`);
-	tags.push(`<link rel="alternate" type="application/rss+xml" title="${escapeHtml(`${SITE.name} RSS`)}" href="${escapeHtml(meta.rssUrl)}">`);
-	tags.push(`<meta name="robots" content="${escapeHtml(meta.robots)}">`);
-	tags.push(`<meta property="og:site_name" content="${escapeHtml(SITE.name)}">`);
-	tags.push(`<meta property="og:type" content="${escapeHtml(meta.ogType)}">`);
-	tags.push(`<meta property="og:title" content="${escapeHtml(meta.titlePlain)}">`);
-	tags.push(`<meta property="og:description" content="${escapeHtml(meta.description)}">`);
-	tags.push(`<meta property="og:url" content="${escapeHtml(meta.canonical)}">`);
-	tags.push(`<meta property="og:image" content="${escapeHtml(meta.image)}">`);
-	tags.push(`<meta property="og:locale" content="${escapeHtml(meta.lang)}">`);
-	if (meta.publishedTime) tags.push(`<meta property="article:published_time" content="${escapeHtml(meta.publishedTime)}">`);
-	tags.push(`<meta name="twitter:card" content="${escapeHtml(meta.twitterCard)}">`);
-	tags.push(`<meta name="twitter:site" content="@${escapeHtml(SITE.twitter)}">`);
-	tags.push(`<meta name="twitter:title" content="${escapeHtml(meta.titlePlain)}">`);
-	tags.push(`<meta name="twitter:description" content="${escapeHtml(meta.description)}">`);
-	tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.image)}">`);
-	const ld = JSON.stringify(meta.jsonLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
-	tags.push(`<script type="application/ld+json">${ld}<\/script>`);
-	return tags;
 }
 //#endregion
 //#region src/components/ui/Icon.tsx
@@ -8111,6 +8209,10 @@ function Shell() {
 	useEffect(() => {
 		retirePrerenderedTag();
 	}, []);
+	const location = useLocation();
+	useEffect(() => {
+		applyDocumentMeta(metaFor(location.pathname));
+	}, [location.pathname]);
 	return createElement(Layout, { children: createElement(Outlet, { NotFound }) });
 }
 /**
@@ -8151,11 +8253,12 @@ function prerenderPaths() {
 		...content.posts.map((p) => `/writing/${p.slug}`)
 	];
 }
-var sitemapPaths = prerenderPaths();
+var sitemapPaths = prerenderPaths().filter((p) => p !== "/404");
 var siteMeta = {
 	title: SITE.title,
 	description: SITE.description,
-	shortTitle: SITE.shortTitle ?? "Portfolio"
+	shortTitle: SITE.shortTitle ?? "Portfolio",
+	url: SITE.url.replace(/\/$/, "")
 };
 var feedItems = content.posts.slice().sort((a, b) => a.date < b.date ? 1 : -1).map((post) => ({
 	slug: post.slug,
@@ -8174,30 +8277,42 @@ function renderRoute(path) {
 		const line = css.split("\n").find((l) => /undefined|NaN|\[object Object\]/.test(l)) ?? "";
 		cssErrors.push(line.slice(0, 160));
 	}
+	const head = buildHead(metaFor(path)).join("\n    ");
+	const scriptSrc = assetHref();
+	const preloads = chunkHrefs().filter((href) => href !== scriptSrc).map((href) => `    <link rel="modulepreload" href="${href}" />`).join("\n");
 	return {
 		html: `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-${buildHead(pageMeta({
-			title: titleFor(path),
-			description: descriptionFor(path),
-			path,
-			...path.startsWith("/writing/") && feedItems[0] ? publishedFor(path) : {}
-		})).join("\n    ")}
+${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/site.webmanifest" />
-    <script src="/theme-init.js"><\/script>
+${preloads ? preloads + "\n" : ""}    <script src="/theme-init.js"><\/script>
     <style id="emotion-prerender">${css}</style>
   </head>
   <body>
     <div id="root">${body}</div>
-    <script type="module" src="${assetHref()}"><\/script>
+    <script type="module" src="${scriptSrc}"><\/script>
   </body>
 </html>`,
 		cssErrors
 	};
+}
+function readManifest() {
+	try {
+		const manifestPath = new URL("../dist/.vite/manifest.json", import.meta.url);
+		return JSON.parse(readFileSync(manifestPath, "utf8"));
+	} catch {
+		return null;
+	}
+}
+/** Every JS asset in the manifest (entry + its imported chunks), as /hrefs. */
+function chunkHrefs() {
+	const manifest = readManifest();
+	if (!manifest) return [];
+	return Object.values(manifest).flatMap((e) => typeof e.file === "string" && e.file.endsWith(".js") ? [`/${e.file}`] : []);
 }
 function assetHref() {
 	try {
@@ -8208,50 +8323,6 @@ function assetHref() {
 		if (typeof file === "string" && file.startsWith("assets/")) return `/${file}`;
 	} catch {}
 	return "/assets/index.js";
-}
-function titleFor(path) {
-	if (path === "/") return SITE.title;
-	const seg = path.split("/")[1];
-	const pageNames = {
-		about: "About",
-		now: "Now",
-		projects: "Projects",
-		writing: "Writing",
-		videos: "Videos",
-		talks: "Talks",
-		contact: "Contact"
-	};
-	if (seg === "projects") {
-		const slug = path.split("/")[2];
-		if (slug) return `${content.projects.find((p) => p.slug === slug)?.title ?? "Project"} — Projects`;
-		return "Projects";
-	}
-	if (seg === "writing") {
-		const slug = path.split("/")[2];
-		if (slug) return `${content.posts.find((p) => p.slug === slug)?.title ?? "Post"} — Writing`;
-		return "Writing";
-	}
-	return pageNames[seg] ? `${pageNames[seg]} — ${SITE.title}` : SITE.title;
-}
-function descriptionFor(path) {
-	if (path.startsWith("/projects/")) {
-		const slug = path.split("/")[2];
-		return content.projects.find((p) => p.slug === slug)?.summary ?? SITE.description;
-	}
-	if (path.startsWith("/writing/")) {
-		const slug = path.split("/")[2];
-		const post = content.posts.find((p) => p.slug === slug);
-		return post?.excerpt || post?.summary || SITE.description;
-	}
-	return SITE.description;
-}
-function publishedFor(path) {
-	const slug = path.split("/")[2];
-	const post = content.posts.find((p) => p.slug === slug);
-	return post ? {
-		publishedTime: post.date,
-		type: "article"
-	} : {};
 }
 //#endregion
 export { feedItems, prerenderPaths, renderRoute, siteMeta, sitemapPaths };

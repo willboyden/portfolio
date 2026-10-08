@@ -85,7 +85,7 @@ describe('content', () => {
     const state = await page.evaluate(`
       return {
         empty: !!document.querySelector('[data-testid="empty-state"]'),
-        durations: [...document.querySelectorAll('main')].some(m => /\d{1,2}[:|m]\d{2}|min/i.test(m.innerText)),
+        durations: [...document.querySelectorAll('main')].some(m => /[0-9]{1,2}[:.][0-9]{2}|[0-9]+ ?min/i.test(m.innerText)),
         iframe: !!document.querySelector('iframe'),
       }
     `);

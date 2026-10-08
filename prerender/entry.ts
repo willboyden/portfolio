@@ -13,7 +13,8 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createApp } from '../src/app/App.tsx';
 import { __sheetCss, __resetSheet } from '@emotion-mini/core';
-import { buildHead, SITE, pageMeta } from '../src/lib/seo.ts';
+import { buildHead, SITE } from '../src/lib/seo.ts';
+import { metaFor } from '../src/lib/route-meta.ts';
 import { content } from '../src/content/index.ts';
 
 export function prerenderPaths(): string[] {
@@ -34,12 +35,18 @@ export function prerenderPaths(): string[] {
   ];
 }
 
-export const sitemapPaths = prerenderPaths();
+/* R2C-4: /404 renders (nginx needs the file) but is NOT discoverable — no
+ * sitemap entry, noindex via PageMeta below. */
+export const sitemapPaths = prerenderPaths().filter((p) => p !== '/404');
 
 export const siteMeta = {
   title: SITE.title,
   description: SITE.description,
   shortTitle: SITE.shortTitle ?? 'Portfolio',
+  /* R2C-1: single source of truth for the absolute origin — sitemap/robots/RSS
+   * must match the canonical host exactly (was a divergent example.com env
+   * default that pointed every discovery doc at a domain we don't own). */
+  url: SITE.url.replace(/\/$/, ''),
 };
 
 export const feedItems = content.posts
@@ -68,15 +75,20 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
     cssErrors.push(line.slice(0, 160));
   }
 
-  const meta = pageMeta({
-    title: titleFor(path),
-    description: descriptionFor(path),
-    path,
-    ...(path.startsWith('/writing/') && feedItems[0] ? publishedFor(path) : {}),
-  });
+  /* R2C-3: identical meta the client will apply on hydration/navigation. */
+  const meta = metaFor(path);
 
   const head = buildHead(meta).join('\n    ');
   const scriptSrc = import.meta.env?.PROD ? assetHref() : CLIENT_SCRIPT;
+  /* R2C-7: re-emit vite's modulepreload hints for the entry's imported
+   * chunks — without them the 3 JS chunks load as a serial discovery
+   * waterfall (entry -> react -> vendor). */
+  const preloads = import.meta.env?.PROD
+    ? chunkHrefs()
+        .filter((href) => href !== scriptSrc)
+        .map((href) => `    <link rel="modulepreload" href="${href}" />`)
+        .join('\n')
+    : '';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -86,7 +98,7 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
 ${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/site.webmanifest" />
-    <script src="/theme-init.js"></script>
+${preloads ? preloads + '\n' : ''}    <script src="/theme-init.js"></script>
     <style id="emotion-prerender">${css}</style>
   </head>
   <body>
@@ -99,6 +111,23 @@ ${head}
 
 /* The hashed entry filename is only knowable after the client build; vite
  * emits .vite/manifest.json (build.manifest) listing the entry chunk. */
+function readManifest(): Record<string, { file?: string; src?: string }> | null {
+  try {
+    const manifestPath = new URL('../dist/.vite/manifest.json', import.meta.url);
+    return JSON.parse(readFileSync(manifestPath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Every JS asset in the manifest (entry + its imported chunks), as /hrefs. */
+function chunkHrefs(): string[] {
+  const manifest = readManifest();
+  if (!manifest) return [];
+  return Object.values(manifest)
+    .flatMap((e) => (typeof e.file === 'string' && e.file.endsWith('.js') ? [`/${e.file}`] : []));
+}
+
 function assetHref(): string {
   /* vite emits dist/.vite/manifest.json; with rollup input 'index.html' the
    * entry key IS 'index.html'. Fall back only if the manifest is missing. */
@@ -114,49 +143,3 @@ function assetHref(): string {
   return '/assets/index.js';
 }
 
-function titleFor(path: string): string {
-  /* R2-A A10: SITE.title already ends with the positioning line; appending
-   * tagline produced "Alex Rivera — AI Engineering & Technical… — Alex Rivera"
-   * (duplicated name, mid-word ellipsis in tabs/search/social). */
-  if (path === '/') return SITE.title;
-  const seg = path.split('/')[1];
-  const pageNames: Record<string, string> = {
-    about: 'About',
-    now: 'Now',
-    projects: 'Projects',
-    writing: 'Writing',
-    videos: 'Videos',
-    talks: 'Talks',
-    contact: 'Contact',
-  };
-  if (seg === 'projects') {
-    const slug = path.split('/')[2];
-    if (slug) return `${content.projects.find((p) => p.slug === slug)?.title ?? 'Project'} — Projects`;
-    return 'Projects';
-  }
-  if (seg === 'writing') {
-    const slug = path.split('/')[2];
-    if (slug) return `${content.posts.find((p) => p.slug === slug)?.title ?? 'Post'} — Writing`;
-    return 'Writing';
-  }
-  return pageNames[seg] ? `${pageNames[seg]} — ${SITE.title}` : SITE.title;
-}
-
-function descriptionFor(path: string): string {
-  if (path.startsWith('/projects/')) {
-    const slug = path.split('/')[2];
-    return content.projects.find((p) => p.slug === slug)?.summary ?? SITE.description;
-  }
-  if (path.startsWith('/writing/')) {
-    const slug = path.split('/')[2];
-    const post = content.posts.find((p) => p.slug === slug);
-    return post?.excerpt || post?.summary || SITE.description;
-  }
-  return SITE.description;
-}
-
-function publishedFor(path: string): { publishedTime?: string; type: 'article' } | Record<string, never> {
-  const slug = path.split('/')[2];
-  const post = content.posts.find((p) => p.slug === slug);
-  return post ? { publishedTime: post.date, type: 'article' as const } : {};
-}
