@@ -40,10 +40,10 @@ const ROUTER_LINK = Link as unknown as 'a';
 const HeroShell = styled.section`
   position: relative;
   width: 100%;
-  margin: 0 auto;
-  max-width: ${(p) => p.theme.layout.maxWidth};
-  padding-inline: ${(p) => p.theme.layout.gutter};
-  padding-block: ${(p) => `${p.theme.space[9]} ${p.theme.space[8]}`};
+  /* R2-D V1/V8: no second max-width/padding-inline (Main owns the rail), and
+   * no extra top padding — Main's space[7] is the single top gutter. The old
+   * stack wasted ~144px above the eyebrow at 375 and ate the mobile fold. */
+  padding-block: 0 ${(p) => p.theme.space[6]};
 `;
 
 const Eyebrow = styled.p`
@@ -54,6 +54,14 @@ const Eyebrow = styled.p`
   letter-spacing: ${(p) => p.theme.font.tracking.wider};
   text-transform: uppercase;
   color: ${(p) => p.theme.color.accent};
+
+  /* R2-D V8: at 375 the mono eyebrow wrapped to 3 lines and split
+   * "FULL-STACK" mid-token. Tighter tracking + smaller size keep it to two
+   * lines; text uses non-breaking hyphens (see the JSX). */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    font-size: ${(p) => p.theme.font.sizes.xs};
+    letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  }
 `;
 
 /** Second line of the h1 lockup — the tagline reads as one heading, two voices. */
@@ -116,7 +124,10 @@ const Grid = styled.div`
   }
 
   @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* R2-D V2: auto-fit, not a fixed 3 — with 2 featured projects a fixed
+     * 3-col grid renders a dangling empty third column (reads as a missing
+     * card). auto-fit lets 2 cards span full width and 3+ fill naturally. */
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   }
 `;
 
@@ -310,7 +321,7 @@ export function Home(): React.ReactNode {
   return (
     <>
       <HeroShell aria-labelledby="home-title" data-testid="home-hero">
-        <Eyebrow>Technical consultant · Full-stack engineer · Data scientist</Eyebrow>
+        <Eyebrow>Technical consultant · Full‑stack engineer · Data scientist</Eyebrow>
         <Heading level={1} id="home-title" size="5xl" data-testid="home-title">
           Alex Rivera
           <Tagline>

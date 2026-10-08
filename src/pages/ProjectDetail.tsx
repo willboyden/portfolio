@@ -131,6 +131,15 @@ const BlockTitle = styled.h2`
   color: ${(p) => p.theme.color.text};
 `;
 
+/* R2-D V3: body-copy block for the "write-up in review" state. */
+const PanelBody = styled.p`
+  margin: 0;
+  max-width: 65ch;
+  font-size: ${(p) => p.theme.font.sizes.md};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
 const HighlightList = styled.ul`
   margin: 0;
   padding: 0;
@@ -307,7 +316,18 @@ export function ProjectDetail(): React.ReactNode {
             <div dangerouslySetInnerHTML={{ __html: project.html }} />
           </Prose>
         </Block>
-      ) : null}
+      ) : (
+        /* R2-D V3: an unfinished write-up renders a designed, honest state —
+         * never a silent null that leaves the flagship page looking broken. */
+        <Block aria-labelledby="case-study-title">
+          <BlockTitle id="case-study-title">Case study</BlockTitle>
+          <PanelBody data-testid="detail-body-pending">
+            The full write-up for this project is in review. The highlights
+            above are the short version; email me for the long one — I keep
+            the design docs.
+          </PanelBody>
+        </Block>
+      )}
 
 
       {related.length > 0 && (

@@ -197,7 +197,7 @@ const Chip = styled.button<{ $active: boolean }>`
   align-items: center;
   min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
   padding: ${(p) => p.theme.space['0']} ${(p) => p.theme.space[3]};
-  font-family: ${(p) => p.theme.font.mono};
+  font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.medium};
   line-height: ${(p) => p.theme.font.leading.none};

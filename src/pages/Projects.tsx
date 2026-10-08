@@ -256,7 +256,8 @@ const Chip = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  min-height: calc(${(p) => p.theme.space[5]} + ${(p) => p.theme.space[4]} + ${(p) => p.theme.space[1]});
+  /* R2-D V6: same control, same height as Writing chips + search input row. */
+  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
   padding: ${(p) => `${p.theme.space['1']} ${p.theme.space[3]}`};
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
@@ -273,8 +274,10 @@ const Chip = styled.button<{ $active: boolean }>`
   /* Whole declarations gated on $active — never a value-level ternary that
    * resolves to false (the vendored Emotion rejects empty declarations). */
   ${(p) =>
+    /* R2-D V5: one selected-chip recipe site-wide — solid accent + bg text
+     * (the Writing page's recipe; most legible, mirrors nav active). */
     p.$active &&
-    `background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; font-weight: ${p.theme.font.weights.semibold};`}
+    `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent}; font-weight: ${p.theme.font.weights.semibold};`}
   ${(p) =>
     !p.$active &&
     `background: ${p.theme.color.bgElevated}; color: ${p.theme.color.textMuted}; &:hover { color: ${p.theme.color.text}; border-color: ${p.theme.color.borderStrong}; }`}

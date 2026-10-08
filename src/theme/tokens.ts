@@ -154,12 +154,15 @@ export const darkTheme: Tokens = {
 export const lightTheme: Tokens = {
   ...shared,
   color: {
-    bg: '#f7f8fb',
+    /* R2-D V4: white cards melted into the old #f7f8fb page (surface step
+     * ~1.04:1, border near-invisible). Deepened the page canvas so elevation
+     * reads, and strengthened borders/shadows for light mode specifically. */
+    bg: '#eef1f6',
     bgElevated: '#ffffff',
-    bgSunken: '#eceef4',
+    bgSunken: '#e3e7f0',
     surface: '#ffffff',
     surfaceHover: '#f1f4fa',
-    border: '#d8deea',
+    border: '#ccd4e4',
     borderStrong: '#b6c0d4',
     text: '#101725',
     textMuted: '#4a5568',
@@ -172,16 +175,20 @@ export const lightTheme: Tokens = {
      * PostDetail share-status uses success as text). #0b7a53 = 5.04 on bg,
      * 5.35 on white — verified by the contrast matrix in tokens.test.ts. */
     success: '#0b7a53',
-    warning: '#9a6204',
+    /* R2-D V4: darkened for the deeper canvas (was 4.49:1 vs #f7f8fb, fails
+     * AA against #eef1f6). 5.06:1 against the new page bg. */
+    warning: '#8f5b04',
     danger: '#c2273f',
     focus: '#2f5fe0',
     scrim: 'rgba(16, 23, 37, 0.55)',
     skeleton: 'rgba(16, 23, 37, 0.06)',
   },
   shadow: {
-    sm: '0 1px 2px rgba(16, 23, 37, 0.08)',
-    md: '0 4px 16px rgba(16, 23, 37, 0.1)',
-    lg: '0 16px 48px rgba(16, 23, 37, 0.14)',
+    /* R2-D V4: light-mode elevation was near-zero alpha; cards sat flat on
+     * the canvas. Real (still tasteful) shadows now. */
+    sm: '0 1px 2px rgba(16, 23, 37, 0.06), 0 1px 3px rgba(16, 23, 37, 0.08)',
+    md: '0 2px 4px rgba(16, 23, 37, 0.06), 0 8px 24px rgba(16, 23, 37, 0.1)',
+    lg: '0 16px 48px rgba(16, 23, 37, 0.16)',
     glow: '0 0 0 1px rgba(47, 95, 224, 0.3), 0 8px 32px rgba(47, 95, 224, 0.14)',
   },
 };

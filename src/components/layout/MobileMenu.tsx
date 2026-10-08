@@ -208,6 +208,12 @@ const Hint = styled.p`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xs};
   color: ${(p) => p.theme.color.textSubtle};
+
+  /* R2-D V9: "Press Escape" is a keyboard-only affordance — hidden on
+   * touch-primary devices, where the tap-outside backdrop closes it. */
+  @media (hover: none) {
+    display: none;
+  }
 `;
 
 /* -------------------------------------------------------------------------- */

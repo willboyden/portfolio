@@ -604,10 +604,11 @@ describe('styling resolves from tokens in both themes', () => {
   it('light chrome uses the light palette', () => {
     render(<Layout currentPath="/" />, lightTheme);
     const sheet = __sheetCss();
-    expect(sheet).toContain('#f7f8fb');
+    /* R2-D V4 re-derived the light canvas: page bg is now #eef1f6. */
+    expect(sheet).toContain('#eef1f6');
     expect(sheet).toContain('#101725');
     expect(sheet).toContain('#2f5fe0');
-    expect(sheet).toContain('color-mix(in srgb, #f7f8fb 88%, transparent)');
+    expect(sheet).toContain('color-mix(in srgb, #eef1f6 88%, transparent)');
   });
 
   it('backdrop blur is @supports-gated with an opaque fallback first', () => {

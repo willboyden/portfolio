@@ -7,7 +7,8 @@ import styled from '@emotion/styled';
 const Box = styled.div<{ $size: 'default' | 'narrow' | 'prose' | 'wide' }>`
   width: 100%;
   margin: 0 auto;
-  padding-inline: ${(p) => p.theme.layout.gutter};
+  /* R2-D V1: gutter ownership lives in Layout Main — no inline padding here
+   * (was double-inset content vs the header/footer rail). */
   max-width: ${(p) =>
     p.$size === 'prose'
       ? p.theme.layout.maxWidthProse

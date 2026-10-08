@@ -42,7 +42,8 @@ const Shell = styled.footer`
   background: ${(p) => p.theme.color.bgSunken};
   color: ${(p) => p.theme.color.textMuted};
   font-family: ${(p) => p.theme.font.sans};
-  margin-top: ${(p) => p.theme.space[10]};
+  /* R2-D V3: no margin-top — Layout Main's padding-bottom is the single gap.
+   * Both stacked = a 224px dead band above the footer on short pages. */
 `;
 
 const Inner = styled.div`

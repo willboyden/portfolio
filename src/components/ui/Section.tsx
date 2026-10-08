@@ -14,7 +14,9 @@ const Root = styled.section<{ $size: 'compact' | 'default' | 'wide' }>`
   margin: 0 auto;
   padding-block: ${(p) =>
     p.$size === 'compact' ? p.theme.space[7] : p.$size === 'wide' ? p.theme.space[9] : p.theme.space[8]};
-  padding-inline: ${(p) => p.theme.layout.gutter};
+  /* R2-D V1: NO padding-inline — Layout Main owns the single content gutter.
+   * Sections used to add their own, doubling the inset (measured: header rail
+   * at x=144 vs section text at x=192). max-width still caps prose widths. */
   max-width: ${(p) => (p.$size === 'compact' ? p.theme.layout.maxWidthProse : p.theme.layout.maxWidth)};
 
   &:not(:last-of-type) {

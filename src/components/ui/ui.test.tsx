@@ -251,10 +251,10 @@ describe('Section', () => {
 });
 
 describe('Container', () => {
-  it('renders a div with token gutter padding', () => {
+  it('renders a div with NO inline padding (R2-D V1: Main owns the rail)', () => {
     const html = dark(h(Container, { children: 'x' }));
     expect(html).toContain('data-testid="container"');
-    expect(__sheetCss()).toContain(`padding-inline: ${darkTheme.layout.gutter}`);
+    expect(__sheetCss()).not.toContain(`padding-inline: ${darkTheme.layout.gutter}`);
   });
 
   it('prose size uses maxWidthProse', () => {

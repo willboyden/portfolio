@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T05:34:50.889Z",
+	generatedAt: "2026-10-08T05:37:48.038Z",
 	projects: [
 		{
 			"slug": "langfuse-dashboard",
@@ -1227,7 +1227,7 @@ var content_default = {
 		{
 			"slug": "orchestrator",
 			"title": "Multi-MCP Orchestrator",
-			"summary": "Unified CLI frontend over six in-process MCP servers (DuckDB analytics, metrics, site audit, system telemetry, task management, wiki search), composed by direct Python imports instead of JSON-RPC, with a chained pipeline mode and DuckDB-backed trend queries.",
+			"summary": "Unified CLI over six imported MCP servers — code-quality metrics, tasks, system telemetry, static-site, wiki search, DuckDB analytics — plus a sandbox-wide wiki engine, exposed as ten subcommands with a chained pipeline mode and DuckDB-backed trend queries.",
 			"tags": [
 				"mcp",
 				"cli",
@@ -1258,7 +1258,7 @@ var content_default = {
 		{
 			"slug": "duckdb-for-agent-workflows",
 			"title": "DuckDB is the analytics database your agent workflows needed",
-			"summary": "What a 14-benchmark suite says about wiring agents to DuckDB: 100K inserts in 27 ms, cross-database joins in 8 ms, Parquet at a quarter of CSV's size — and the one DDL feature that fails loudly when you least expect it.",
+			"summary": "What a 14-benchmark suite says about wiring agents to DuckDB: 100K inserts in 27 ms, cross-database joins in 8 ms, Parquet at a quarter of CSV's size — and the DDL shapes that fail loudly when you least expect it.",
 			"tags": [
 				"duckdb",
 				"analytics",
@@ -1269,7 +1269,7 @@ var content_default = {
 			"date": "2026-09-15",
 			"readingMinutes": 3,
 			"series": "AI engineering notes",
-			"html": "<p>When you build tools that let an LLM agent query data, the database choice\nstops being an architecture-slide decision and becomes a <em>failure-mode</em>\ndecision: what happens when the model does something reasonable-sounding but\nslow, or generates DDL that quietly does not work. I benchmarked that question\nthe slow way — a 14-benchmark suite behind the duckdb-mcp server, measuring\neverything from DDL speed to MCP round-trip overhead. The numbers argued for\nDuckDB, and the gotchas were worth the exercise by themselves.</p>\n<h2 id=\"the-numbers-that-changed-my-defaults\">The numbers that changed my defaults</h2>\n<p>All figures below come from the project's benchmark suite (<code>test_benchmarks.py</code>\nand the integration tests that pin each practice), run against DuckDB CLI\n1.5.4+.</p>\n<p><strong>Bulk insert: <code>generate_series</code>, never <code>INSERT VALUES</code>.</strong> 100,000 users land\nin 27 ms via a select-from-generate_series. Hand the same task to a model's\nnatural instinct — long <code>INSERT INTO ... VALUES (...), (...)</code> lists — and you\nare paying parse costs per statement, and the practice guide's rule of thumb\nis to stop generating them past a thousand rows anyway.</p>\n<p><strong>Parquet as the ingest format, not CSV.</strong> Parquet files came in around 27%\nof the equivalent CSV size, and <code>read_parquet</code> queries the file zero-copy\nwithout loading it into a database first. For agent pipelines this matters\ntwice: files are what agents pass around, and smaller files mean fewer\ntokens spent on paths and less time on IO.</p>\n<p><strong>Cross-database joins are instant.</strong> Three attached databases of 100K rows\neach joined in 8 ms. One caveat that cost me an hour: <code>ATTACH</code> only works\nagainst file-backed databases, not <code>:memory:</code> — so anything doing cross-DB\nwork needs temp files, which the server does for you.</p>\n<p><strong>Window functions scale flat-ish.</strong> ROW_NUMBER, RANK, LAG/LEAD, running\nsums and NTILE at 100K rows all landed in a uniform 6.9–7.5 ms band. The\nkind of analysis an agent is most likely to be asked for is exactly what\ncolumnar engines are boringly good at.</p>\n<p><strong>JSON output is affordable.</strong> The CLI's <code>-json</code> mode adds 9–15% overhead\nversus plain text. For machine-readable tool responses, that is a tax worth\npaying — but see the coercion post, because the JSON types need re-hydration.</p>\n<h2 id=\"the-failure-you-will-only-find-at-runtime\">The failure you will only find at runtime</h2>\n<p>Here is the one the documentation under-sells: on DuckDB v1.5.4, <code>DEFAULT</code>,\n<code>UNIQUE</code>, <code>CHECK</code> and <code>FOREIGN KEY</code> constraints all work fine.\n<code>IDENTITY</code> and <code>SERIAL</code> fail with <code>Constraint not implemented!</code>. Any model\ntrained on Postgres-heavy corpora will generate <code>SERIAL PRIMARY KEY</code> on\ndemand, all day, and every one of those calls dies.</p>\n<p>The fix is not a prompt patch, it is a tool-level pattern:</p>\n<pre><code class=\"language-sql\">CREATE SEQUENCE user_id_seq;\nCREATE TABLE users (\n  id BIGINT DEFAULT nextval('user_id_seq') PRIMARY KEY,\n  email TEXT UNIQUE CHECK (email LIKE '%@%')\n);\n</code></pre>\n<p>Auto-increment through <code>CREATE SEQUENCE</code> + <code>nextval()</code> works and keeps the\nIDs in the database, where they belong — the practice notes are blunt about\nit: <em>never generate IDs in Python, use DuckDB-native bulk patterns</em>. Because\nthe MCP server exposes schema creation through recipes that already use the\nworking pattern, the model never gets the chance to discover the failure at\n3 a.m. on someone's pipeline.</p>\n<h2 id=\"why-this-matters-for-agents-specifically\">Why this matters for agents specifically</h2>\n<p>An agent workflow is an unpredictable query generator with a budget. Three\nproperties of DuckDB line up with that: it is a library-grade database that\nneeds no server to administer (an agent can be handed a file path and be\nproductive immediately), it is columnar and fast on exactly the analytical\nshapes models tend to write, and its failure modes are loud exceptions\nrather than silent plan degradations.</p>\n<p>The benchmark suite is not an argument that DuckDB beats a warehouse for\neverything — 500K rows is not big data. It is an argument that for the\nagent-tooling niche — single-node files, sub-second interactive queries,\nParquet in the middle, JSON out the other side — the boring choice is the\ndatabase that lets your tools encode the three patterns that work and make\nthe wrong ones impossible.</p>",
+			"html": "<p>When you build tools that let an LLM agent query data, the database choice\nstops being an architecture-slide decision and becomes a <em>failure-mode</em>\ndecision: what happens when the model does something reasonable-sounding but\nslow, or generates DDL that quietly does not work. I benchmarked that question\nthe slow way — a 14-benchmark suite behind the duckdb-mcp server, measuring\neverything from DDL speed to MCP round-trip overhead. The numbers argued for\nDuckDB, and the gotchas were worth the exercise by themselves.</p>\n<h2 id=\"the-numbers-that-changed-my-defaults\">The numbers that changed my defaults</h2>\n<p>All figures below come from the project's benchmark suite (<code>test_benchmarks.py</code>\nand the integration tests that pin each practice), run against DuckDB CLI\nv1.5.4. One machine: 8-core laptop, NVMe, DuckDB 1.5.4 (Variegata) defaults,\nsingle run, warm cache. Treat the ratios as the finding and the absolutes as\nindicative.</p>\n<p><strong>Bulk insert: <code>generate_series</code>, never <code>INSERT VALUES</code>.</strong> 100,000 users land\nin 27 ms via a select-from-generate_series. Hand the same task to a model's\nnatural instinct — long <code>INSERT INTO ... VALUES (...), (...)</code> lists — and you\nare paying parse costs per statement, and the practice guide's rule of thumb\nis to stop generating them past a thousand rows anyway.</p>\n<p><strong>Parquet as the ingest format, not CSV.</strong> Parquet files came in around 27%\nof the equivalent CSV size, and <code>read_parquet</code> queries the file zero-copy\nwithout loading it into a database first. For agent pipelines this matters\ntwice: smaller files mean faster handoffs between pipeline stages and\ncheaper multi-copy retention — files are what agents pass around, after all.</p>\n<p><strong>Cross-database joins are instant.</strong> Three attached databases of 100K rows\neach joined in 8 ms. One caveat that cost me an hour: <code>ATTACH</code> needs a path\nwithin reach of the session doing the attaching (attached <code>:memory:</code>\ndatabases, for what it is worth, do join fine within a single v1.5.4\nsession), and every CLI invocation is a fresh session — so anything doing\ncross-process cross-DB work still means temp files, which the server does\nfor you.</p>\n<p><strong>Window functions scale flat-ish.</strong> ROW_NUMBER, RANK, LAG/LEAD, running\nsums and NTILE at 100K rows all landed in a uniform 6.9–7.5 ms band. The\nkind of analysis an agent is most likely to be asked for is exactly what\ncolumnar engines are boringly good at.</p>\n<p><strong>JSON output is affordable.</strong> The CLI's <code>-json</code> mode adds 9–15% overhead\nversus plain text. For machine-readable tool responses, that is a tax worth\npaying — but see the coercion post, because the JSON types need re-hydration.</p>\n<h2 id=\"the-failure-you-will-only-find-at-runtime\">The failure you will only find at runtime</h2>\n<p>Here is the one the documentation under-sells: on DuckDB v1.5.4, <code>DEFAULT</code>,\n<code>UNIQUE</code>, <code>CHECK</code> and <code>FOREIGN KEY</code> constraints all work fine.\n<code>IDENTITY</code> fails with <code>Constraint not implemented!</code>. <code>SERIAL</code> fails earlier,\nat parse time: v1.5.4 has no <code>SERIAL</code> type at all (<code>Catalog Error: Type with\nname SERIAL does not exist!</code>). Any model\ntrained on Postgres-heavy corpora will generate <code>SERIAL PRIMARY KEY</code> on\ndemand, all day, and every one of those calls dies.</p>\n<p>The fix belongs below the prompt, at the tool level:</p>\n<pre><code class=\"language-sql\">CREATE SEQUENCE user_id_seq;\nCREATE TABLE users (\n  id BIGINT DEFAULT nextval('user_id_seq') PRIMARY KEY,\n  email TEXT UNIQUE CHECK (email LIKE '%@%')\n);\n</code></pre>\n<p>Auto-increment through <code>CREATE SEQUENCE</code> + <code>nextval()</code> works and keeps the\nIDs in the database, where they belong — the practice notes are blunt about\nit: <em>never generate IDs in Python, use DuckDB-native bulk patterns</em>. Because\nthe MCP server exposes schema creation through recipes that already use the\nworking pattern, the model never gets the chance to discover the failure at\n3 a.m. on someone's pipeline.</p>\n<h2 id=\"why-this-matters-for-agents-specifically\">Why this matters for agents specifically</h2>\n<p>An agent workflow is an unpredictable query generator with a budget. Three\nproperties of DuckDB line up with that: it is a library-grade database that\nneeds no server to administer (an agent can be handed a file path and be\nproductive immediately), it is columnar and fast on exactly the analytical\nshapes models tend to write, and its failure modes are loud exceptions\nrather than silent plan degradations.</p>\n<p>The benchmark suite is not an argument that DuckDB beats a warehouse for\neverything — 500K rows is not big data. It is an argument that for the\nagent-tooling niche — single-node files, sub-second interactive queries,\nParquet in the middle, JSON out the other side — the boring choice is the\ndatabase that lets your tools encode the three patterns that work\n(<code>generate_series</code> bulk insert, <code>SEQUENCE</code> auto-increment, Parquet ingest)\nand make the wrong ones impossible.</p>",
 			"excerpt": "When you build tools that let an LLM agent query data, the database choice stops being an architecture-slide decision and becomes a …"
 		},
 		{
@@ -1284,15 +1284,15 @@ var content_default = {
 				"architecture"
 			],
 			"date": "2026-09-02",
-			"readingMinutes": 3,
+			"readingMinutes": 4,
 			"series": "AI engineering notes",
-			"html": "<p>The MCP spec is short enough to read in an afternoon and vague enough to hide\nabout a week of debugging in every one of its &quot;implementations MAY&quot; clauses.\nI shipped two projects that live on both sides of that vagueness: <code>duckdb-mcp</code>,\na stdio MCP server exposing 15 DuckDB tools, and <code>orchestrator</code>, a CLI that\ncomposes six MCP servers in one process. Here is what the spec did not warn\nme about.</p>\n<h2 id=\"1-fastmcp-is-a-toy-the-low-level-server-is-the-job\">1. FastMCP is a toy; the low-level server is the job</h2>\n<p><code>FastMCP</code> gets you a hello world in ten lines. The moment you need a tool\nrouter, structured error semantics, or control over the JSON-RPC lifecycle,\nyou want the lower-level <code>mcp.server.stdio</code> API with an explicit <code>Server</code>\ninstance. The DuckDB server ends up as three pieces: a <code>TOOLS</code> list of\ntool-definition objects with input schemas, a <code>HANDLERS</code> dict mapping tool\nnames to async functions, and a <code>call_tool</code> router that dispatches by name.\nThat separation costs you nothing and pays for itself the first time a tool\nneeds to return a structured error instead of crashing the connection.</p>\n<h2 id=\"2-you-will-hit-the-argument-length-wall\">2. You will hit the argument-length wall</h2>\n<p>My first instinct for running SQL through the DuckDB CLI was\n<code>duckdb -c &quot;SELECT ...&quot;</code>. Multi-statement scripts, or anything with bulk\ndata, eventually dies on the OS argument-length limit. The pattern that\nholds: write the SQL to a temp file and run <code>duckdb -f tmpfile.sql</code>. Same\nfor results: <code>-json</code> mode gives you structured output that you parse\nyourself. Which leads to the next one.</p>\n<h2 id=\"3-json-over-stdio-erodes-your-types\">3. JSON over stdio erodes your types</h2>\n<p>DuckDB's <code>-json</code> output stringifies a lot of what you thought were numbers\nand booleans. If you hand that straight to a model, the model will learn\nthat <code>count</code> looks like <code>&quot;42&quot;</code> and start emitting comparisons against\nstrings. The server has a recursive <code>_coerce_types()</code> pass that walks parsed\nJSON and converts strings back to <code>int</code>, <code>float</code>, <code>bool</code>, and <code>None</code>. Every\ntool boundary where you serialize through the weakest format in the pipe\nneeds a re-hydration step on the way back. Nobody tells you this in the\nprotocol docs because the protocol has no types to lose — your data does.</p>\n<h2 id=\"4-return-shapes-are-a-folklore-not-a-standard\">4. Return shapes are a folklore, not a standard</h2>\n<p>When the orchestrator imports six MCP server modules directly (more on that\nbelow), I found their <code>call_tool</code> implementations do not agree on anything:\none returns a <code>tuple</code> of <code>(list_of_TextContent, dict)</code> where the useful\npayload lives at index 1; the rest return a bare list of <code>TextContent</code> whose\n<code>.text</code> is a JSON string. The dispatcher is 15 lines of shape-sniffing. The\nspec describes what a wire response looks like, not what your in-process\nhandler function returns, so every server you import is a small archaeology\ndig. Two more discoveries, filed under &quot;why are these not in the README&quot;:\ntool listings live on <code>_tool_manager._tools</code>, not <code>_tool_map</code>, and server\nmodules with top-level imports must be imported <em>after</em> <code>sys.path</code> is set up.</p>\n<h2 id=\"5-in-process-skip-the-wire-entirely\">5. In-process, skip the wire entirely</h2>\n<p>JSON-RPC over stdio exists to cross a process boundary. When the consumer is\nyour own Python CLI, that boundary is pure overhead — serialization,\nsubprocess lifecycle, an event loop per server. The orchestrator imports the\nserver modules directly and calls <code>asyncio.run(server.call_tool(name, kwargs))</code>.\nThat collapses &quot;run a code-quality scan, log the findings as tasks, write a\nwiki report, query the trend in DuckDB&quot; from a distributed-systems problem\ninto one command. The stdio transport stays where it belongs: for external\nclients like Claude Desktop or IDE integrations.</p>\n<h2 id=\"6-the-server-is-where-the-lessons-belong\">6. The server is where the lessons belong</h2>\n<p>The most useful thing duckdb-mcp does is not query execution — it is that\nnine benchmark-proven practices are encoded in the tools themselves: bulk\ninsert via <code>generate_series</code> instead of <code>INSERT VALUES</code>, <code>CREATE SEQUENCE</code>\ninstead of broken <code>IDENTITY</code>/<code>SERIAL</code>, Parquet-first ingest. The server stops\nthe model from choosing the wrong pattern, which is worth more than any\nprompt that says &quot;please prefer bulk inserts&quot;. Treat your MCP server as the\nplace where operational knowledge becomes a tool constraint.</p>\n<p>The spec covers the handshake. Everything above is the part you learn by\nhaving the thing fail at 2 a.m., and all of it is now a unit test.</p>",
+			"html": "<p>The MCP spec is short enough to read in an afternoon and vague enough to hide\nabout a week of debugging in every one of its &quot;implementations MAY&quot; clauses.\nI shipped two projects that live on both sides of that vagueness: <code>duckdb-mcp</code>,\na stdio MCP server exposing 15 DuckDB tools, and <code>orchestrator</code>, a CLI that\ncomposes six MCP servers in one process. Here is what the spec did not warn\nme about.</p>\n<h2 id=\"1-fastmcp-gets-you-a-hello-world-the-low-level-server-is-the-job\">1. FastMCP gets you a hello world; the low-level server is the job</h2>\n<p><code>FastMCP</code> gets you a hello world in ten lines — then hides the three things\nyou need to control. The moment you need a tool\nrouter, structured error semantics, or control over the JSON-RPC lifecycle,\nyou want the lower-level <code>mcp.server.stdio</code> API with an explicit <code>Server</code>\ninstance. The DuckDB server ends up as three pieces: a <code>TOOLS</code> list of\ntool-definition objects with input schemas, a <code>HANDLERS</code> dict mapping tool\nnames to async functions, and a <code>call_tool</code> router that dispatches by name.\nThat separation costs you nothing and pays for itself the first time a tool\nneeds to return a structured error instead of crashing the connection.</p>\n<h2 id=\"2-you-will-hit-the-argument-length-wall\">2. You will hit the argument-length wall</h2>\n<p>My first instinct for running SQL through the DuckDB CLI was\n<code>duckdb -c &quot;SELECT ...&quot;</code>. Multi-statement scripts, or anything with bulk\ndata, eventually dies on the OS argument-length limit. The pattern that\nholds: write the SQL to a temp file and run <code>duckdb -f tmpfile.sql</code>. Same\nfor results: <code>-json</code> mode gives you structured output that you parse\nyourself. Which leads to the next one.</p>\n<h2 id=\"3-json-over-stdio-erodes-your-types\">3. JSON over stdio erodes your types</h2>\n<p>DuckDB's <code>-json</code> output stringifies more than you would guess, though not\nuniformly: ints and bools come back as real JSON types, while\nfloats/decimals/dates are strings — <code>SELECT 42 AS i, 1.23::DECIMAL(18,2) AS d</code>\nreturns <code>{&quot;i&quot;:42,&quot;d&quot;:&quot;1.23&quot;}</code>. Older CLI versions stringified numbers\nwholesale, so pin the version you test against. If you hand that straight to\na model, the model will learn\nthat <code>count</code> looks like <code>&quot;42&quot;</code> and start emitting comparisons against\nstrings. The server has a recursive <code>_coerce_types()</code> pass that walks parsed\nJSON and converts strings back to <code>int</code>, <code>float</code>, <code>bool</code>, and <code>None</code>. Every\ntool boundary where you serialize through the weakest format in the pipe\nneeds a re-hydration step on the way back. Nobody tells you this in the\nprotocol docs because the protocol has no types to lose — your data does.</p>\n<h2 id=\"4-return-shapes-are-folklore-not-a-standard\">4. Return shapes are folklore, not a standard</h2>\n<p>When the orchestrator imports six MCP server modules directly (more on that\nbelow), I found their <code>call_tool</code> implementations do not agree on anything:\none returns a <code>tuple</code> of <code>(list_of_TextContent, dict)</code> where the useful\npayload lives at index 1; the rest return a bare list of <code>TextContent</code> whose\n<code>.text</code> is a JSON string. The dispatcher is 15 lines of shape-sniffing. The\nspec describes what a wire response looks like, not what your in-process\nhandler function returns, so every server you import is a small archaeology\ndig. Two more discoveries, filed under &quot;why are these not in the README&quot;:\ntool listing lives on the private <code>_tool_manager</code>, not the name you will\nguess, so plan on reading the SDK source once; and server\nmodules with top-level imports must be imported <em>after</em> <code>sys.path</code> is set up.</p>\n<h2 id=\"5-in-process-skip-the-wire-entirely\">5. In-process, skip the wire entirely</h2>\n<p>JSON-RPC over stdio exists to cross a process boundary. When the consumer is\nyour own Python CLI, that boundary is pure overhead — serialization,\nsubprocess lifecycle, an event loop per server. The orchestrator imports the\nserver modules directly and calls <code>asyncio.run(server.call_tool(name, kwargs))</code>.\nThat collapses &quot;run a code-quality scan, log the findings as tasks, write a\nwiki report, query the trend in DuckDB&quot; from a distributed-systems problem\ninto one command. The stdio transport stays where it belongs: for external\nclients like Claude Desktop or IDE integrations.</p>\n<h2 id=\"6-the-server-is-where-the-lessons-belong\">6. The server is where the lessons belong</h2>\n<p>duckdb-mcp's most useful feature isn't query execution. It's that\nnine benchmark-proven practices are encoded in the tools themselves: bulk\ninsert via <code>generate_series</code> instead of <code>INSERT VALUES</code>, <code>CREATE SEQUENCE</code>\ninstead of broken <code>IDENTITY</code>/<code>SERIAL</code>, Parquet-first ingest. The server stops\nthe model from choosing the wrong pattern, which is worth more than any\nprompt that says &quot;please prefer bulk inserts&quot;. Treat your MCP server as the\nplace where operational knowledge becomes a tool constraint.</p>\n<p>The spec covers the handshake. Everything above is the part you learn by\nhaving the thing fail at 2 a.m., and all of it is now a unit test.</p>",
 			"excerpt": "The MCP spec is short enough to read in an afternoon and vague enough to hide about a week of debugging in every one of its …"
 		},
 		{
 			"slug": "eval-harness-silent-regressions",
 			"title": "Building an eval harness that catches silent model regressions",
-			"summary": "How a deterministic, no-LLM-judge harness for tool-calling reliability caught three classes of failure that HTTP 200 hides: empty content turns, reasoning burn, and a response cache that was lying about latency.",
+			"summary": "How a deterministic, no-LLM-judge harness for tool-calling reliability instruments three classes of failure HTTP 200 hides — and the first run caught two of them outright.",
 			"tags": [
 				"evals",
 				"llm",
@@ -1300,9 +1300,9 @@ var content_default = {
 				"python"
 			],
 			"date": "2026-08-20",
-			"readingMinutes": 3,
+			"readingMinutes": 4,
 			"series": "AI engineering notes",
-			"html": "<p>Every team that ships an LLM feature eventually builds an eval harness, and\nevery harness eventually answers the same question wrong: <em>did the model\nsucceed, or did the HTTP layer just return 200?</em> This post is the methodology\nbehind the harness I built for local models behind an OpenAI-compatible\nLiteLLM broker — eight scenarios, three models, two repetitions, and a\nscoring pass that never asks another model for its opinion.</p>\n<h2 id=\"the-scenario-suite-is-fixed-and-adversarial\">The scenario suite is fixed and adversarial</h2>\n<p>The suite ships as eight JSON files. Each scenario defines an OpenAI function\nschema, a user prompt, simulated tool implementations, and success criteria.\nThe scenarios escalate deliberately:</p>\n<ul>\n<li><p><code>weather_tokyo</code> — one tool call, final answer must cite the tool's value.</p></li>\n<li><p><code>table_booking</code> — argument extraction: &quot;eight people&quot; and &quot;7:30 PM&quot; must\narrive as <code>party_size: 8</code> and <code>19:30</code>.</p></li>\n<li><p><code>pizza_distractor</code> — an expired coupon in context that must <strong>not</strong> appear\nin the call (<code>param_absent</code>).</p></li>\n<li><p><code>inventory_then_reserve</code> — a two-step dependency: query the catalog, take\nthe SKU from the tool result, reserve with it.</p></li>\n<li><p><code>fx_conversion_retry</code> — the first call uses non-ISO currency names and the\nsimulator <em>rejects</em> it; the model must retry with <code>EUR</code>/<code>USD</code>.\nThe retry scenario is the one that separates models. A single-shot accuracy\nmetric says nothing about whether a model can consume a tool error and\nrecover, which is most of what agent loops actually do.</p></li>\n</ul>\n<h2 id=\"deterministic-judging-on-purpose\">Deterministic judging, on purpose</h2>\n<p>There is no LLM-as-judge anywhere in the pipeline. Each emitted tool call is\nvalidated against the scenario's function schema — no missing required keys,\nno extras, no mistyped params — and parameter accuracy is checked under\nnormalization (numbers compared as floats, strings trimmed and\ncase-insensitive). The final answer is graded with criteria kinds like:</p>\n<pre><code class=\"language-json\">{\n  &quot;kind&quot;: &quot;params_exact_any&quot;,\n  &quot;tool&quot;: &quot;convert_currency&quot;,\n  &quot;params&quot;: { &quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot; }\n}\n</code></pre>\n<p>A fluent-but-wrong answer passes only if it actually states the expected\nvalues (<code>answer_contains</code> matches case-insensitively and tolerates thousands\nseparators, so <code>1,301.04</code> matches <code>1301.04</code>). Yes, substring checks are\ndull. They are also reproducible, which is the property an eval needs when\nits whole job is telling you that Tuesday's deploy made Thursday worse.</p>\n<h2 id=\"what-http-200-hides\">What HTTP 200 hides</h2>\n<p>Three real findings, all from logging one field deeper than the status code.</p>\n<p><strong>Empty content turns.</strong> A turn can return 200 with <code>content: null</code>. The\nharness records <code>empty_content_turns</code> per scenario; a model that &quot;completed&quot;\nwithout ever producing usable content now fails loudly instead of silently.</p>\n<p><strong>Reasoning burn.</strong> One of the tested models is a reasoning model served by\nvLLM. With a small <code>max_tokens</code> the entire output budget disappears into\n<code>reasoning_content</code> while <code>content</code> stays null and <code>finish_reason</code> reads\n<code>length</code>. That combination — <code>finish_reason=length</code> plus empty content plus\nnon-zero reasoning — is scored as a distinct failure mode (<code>reasoning_burn_turns</code>),\nand scoring calls get <code>max_tokens=2048</code> precisely to avoid measuring it as\nmodel incompetence when it is really a sampling-budget artifact.</p>\n<p><strong>The cache that flattered everyone.</strong> The broker response-caches identical\nrequest bodies. Sending the same JSON body twice returned the cached\ncompletion in ~0.01 s with the same <code>id</code> — which made rep-to-rep variance\nlook near zero and latency look phenomenal. Proof: a repeated body came back\nin 0.01 s versus ~1.4 s for a distinct one. The fix is one field: every\nrequest gets a unique <code>user: mqh-&lt;uuid&gt;</code> stamp to bust the cache. After the\nfix the same model's per-turn latency showed a real distribution — min\n0.83 s, median 1.31 s, max 3.72 s — where before it showed a flat line that\nwas never real.</p>\n<h2 id=\"outages-are-data-not-footnotes\">Outages are data, not footnotes</h2>\n<p>During one re-run, two of the three models were down at the broker: one\nreturned a LiteLLM 404 (the upstream model does not exist), the other a 500\nconnection error. Both ran anyway and both were recorded as failures with\nthe real HTTP error bodies attached, and the dashboard shows that honestly\nrather than silently shrinking the comparison to the one live model. 4xx\nresponses fail fast; only timeout/429/5xx get the single retry. A harness\nthat quietly drops unavailable models is not an eval, it is marketing.</p>\n<p>The whole thing is Python 3.13 stdlib only — no pip, no framework, ~5–10\nminutes for a full run, and a standalone vanilla-JS dashboard rendered from\nthe results JSON. The point of an eval harness is not sophistication. It is\nthat the same input gives you the same number twice, so the day the number\nmoves, you can believe it.</p>",
+			"html": "<p>Every team that ships an LLM feature eventually builds an eval harness, and\nevery harness eventually answers the same question wrong: <em>did the model\nsucceed, or did the HTTP layer just return 200?</em> This post is the methodology\nbehind the harness I built for local models behind an OpenAI-compatible\nLiteLLM broker — eight scenarios, three models, two repetitions, and a\nscoring pass that never asks another model for its opinion.</p>\n<h2 id=\"the-scenario-suite-is-fixed-and-adversarial\">The scenario suite is fixed and adversarial</h2>\n<p>The suite ships as eight JSON files. Each scenario defines an OpenAI function\nschema, a user prompt, simulated tool implementations, and success criteria.\nThe scenarios escalate deliberately:</p>\n<ul>\n<li><p><code>weather_tokyo</code>: one tool call, final answer must cite the tool's value.</p></li>\n<li><p><code>table_booking</code>: argument extraction. &quot;Eight people&quot; and &quot;7:30 PM&quot; must\narrive as <code>party_size: 8</code> and <code>19:30</code>.</p></li>\n<li><p><code>pizza_distractor</code>: an expired coupon in context that must <strong>not</strong> appear\nin the call (<code>param_absent</code>).</p></li>\n<li><p><code>inventory_then_reserve</code>: a two-step dependency. Query the catalog, take\nthe SKU from the tool result, reserve with it.</p></li>\n<li><p><code>fx_conversion_retry</code>: the first call uses non-ISO currency names and the\nsimulator <em>rejects</em> it; the model must retry with <code>EUR</code>/<code>USD</code>.\nThe retry scenario is the one that separates models. A single-shot accuracy\nmetric says nothing about whether a model can consume a tool error and\nrecover, which is most of what agent loops actually do.</p></li>\n</ul>\n<h2 id=\"deterministic-judging-on-purpose\">Deterministic judging, on purpose</h2>\n<p>There is no LLM-as-judge anywhere in the pipeline. Each emitted tool call is\nvalidated against the scenario's function schema: no missing required keys,\nno extras, no mistyped params. Parameter accuracy is checked under\nnormalization (numbers compared as floats, strings trimmed and\ncase-insensitive). The final answer is graded with criteria like:</p>\n<pre><code class=\"language-json\">{\n  &quot;type&quot;: &quot;params_exact_any&quot;,\n  &quot;name&quot;: &quot;get_fx_rate&quot;,\n  &quot;params&quot;: { &quot;from_ccy&quot;: &quot;EUR&quot;, &quot;to_ccy&quot;: &quot;USD&quot;, &quot;amount&quot;: 1200 }\n}\n</code></pre>\n<p>(Judge output and results JSON use the key <code>kind</code> for the same concept;\nscenario files, shown above, use <code>type</code>.)</p>\n<p>A fluent-but-wrong answer passes only if it actually states the expected\nvalues (<code>answer_contains</code> matches case-insensitively and tolerates thousands\nseparators, so <code>1,301.04</code> matches <code>1301.04</code>). Yes, substring checks are\ndull. They are also reproducible, which is the property an eval needs when\nits whole job is telling you that Tuesday's deploy made Thursday worse.</p>\n<h2 id=\"what-http-200-hides\">What HTTP 200 hides</h2>\n<p>Three real findings, all from logging one field deeper than the status code.</p>\n<p><strong>Empty content turns.</strong> A turn can return 200 with <code>content: null</code>. The\nharness records <code>empty_content_turns</code> per scenario; a model that &quot;completed&quot;\nwithout ever producing usable content now fails loudly instead of silently.</p>\n<p><strong>Reasoning burn.</strong> One of the tested models is a reasoning model served by\nvLLM. With a small <code>max_tokens</code> the entire output budget disappears into\n<code>reasoning_content</code> while <code>content</code> stays null and <code>finish_reason</code> reads\n<code>length</code>. That combination (<code>finish_reason=length</code> plus empty content plus\nnon-zero reasoning) is scored as a distinct failure mode\n(<code>reasoning_burn_turns</code>). The shipped run recorded zero burn turns; the\nmetric exists because the failure is cheap to instrument and invisible\notherwise. It is also why the reasoning model under test gets\n<code>max_tokens=2048</code> on its generation calls while the others run 1024: at\n1024, its failure looks like model incompetence when it is really a sampling-budget artifact.</p>\n<p><strong>The cache that flattered everyone.</strong> The broker response-caches identical\nrequest bodies. Sending the same JSON body twice returned the cached\ncompletion in ~0.01 s with the same <code>id</code>, which made rep-to-rep variance\nlook near zero and latency look phenomenal. Proof: a repeated body came back\nin 0.01 s versus ~1.4 s for a distinct one. The fix is one field: every\nrequest gets a unique <code>user: mqh-&lt;uuid&gt;</code> stamp to bust the cache. After the\nfix the same model's per-turn latency showed a real distribution: min\n0.83 s, median 1.29 s, max 3.72 s; before the fix it showed a flat line that\nwas never real.</p>\n<h2 id=\"outages-are-data-not-footnotes\">Outages are data, not footnotes</h2>\n<p>During one re-run, two of the three models were down at the broker: one\nreturned a LiteLLM 404 (the upstream model does not exist), the other a 500\nconnection error. Both ran anyway and both were recorded as failures with\nthe real HTTP error bodies attached, and the dashboard shows that honestly\nrather than silently shrinking the comparison to the one live model. Only\ntimeouts and transient codes fail open: 408, 429, and 5xx get the single\nretry; everything else 4xx (a 404 &quot;model does not exist&quot;, a bad request)\nfails fast with the error body attached. A harness\nthat quietly drops unavailable models is not an eval, it is marketing.</p>\n<p>The whole thing is Python 3.13 stdlib only: no pip, no framework, ~5–10\nminutes for a full run, and a standalone vanilla-JS dashboard rendered from\nthe results JSON. An eval harness earns its keep on reproducibility, not\nsophistication: the same input gives you the same number twice, so the day\nthe number moves, you can believe it.</p>",
 			"excerpt": "Every team that ships an LLM feature eventually builds an eval harness, and every harness eventually answers the same question wrong: did …"
 		}
 	],
@@ -1632,12 +1632,12 @@ var themes = {
 	light: {
 		...shared,
 		color: {
-			bg: "#f7f8fb",
+			bg: "#eef1f6",
 			bgElevated: "#ffffff",
-			bgSunken: "#eceef4",
+			bgSunken: "#e3e7f0",
 			surface: "#ffffff",
 			surfaceHover: "#f1f4fa",
-			border: "#d8deea",
+			border: "#ccd4e4",
 			borderStrong: "#b6c0d4",
 			text: "#101725",
 			textMuted: "#4a5568",
@@ -1647,16 +1647,16 @@ var themes = {
 			accentSoft: "rgba(47, 95, 224, 0.1)",
 			accentBorder: "rgba(47, 95, 224, 0.35)",
 			success: "#0b7a53",
-			warning: "#9a6204",
+			warning: "#8f5b04",
 			danger: "#c2273f",
 			focus: "#2f5fe0",
 			scrim: "rgba(16, 23, 37, 0.55)",
 			skeleton: "rgba(16, 23, 37, 0.06)"
 		},
 		shadow: {
-			sm: "0 1px 2px rgba(16, 23, 37, 0.08)",
-			md: "0 4px 16px rgba(16, 23, 37, 0.1)",
-			lg: "0 16px 48px rgba(16, 23, 37, 0.14)",
+			sm: "0 1px 2px rgba(16, 23, 37, 0.06), 0 1px 3px rgba(16, 23, 37, 0.08)",
+			md: "0 2px 4px rgba(16, 23, 37, 0.06), 0 8px 24px rgba(16, 23, 37, 0.1)",
+			lg: "0 16px 48px rgba(16, 23, 37, 0.16)",
 			glow: "0 0 0 1px rgba(47, 95, 224, 0.3), 0 8px 32px rgba(47, 95, 224, 0.14)"
 		}
 	}
@@ -3328,6 +3328,12 @@ var Hint = styled.p`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xs};
   color: ${(p) => p.theme.color.textSubtle};
+
+  /* R2-D V9: "Press Escape" is a keyboard-only affordance — hidden on
+   * touch-primary devices, where the tap-outside backdrop closes it. */
+  @media (hover: none) {
+    display: none;
+  }
 `;
 function MobileMenu({ open, onClose, currentPath, returnFocusRef, staticRender = false }) {
 	const panelRef = useRef(null);
@@ -3731,7 +3737,8 @@ var Shell$3 = styled.footer`
   background: ${(p) => p.theme.color.bgSunken};
   color: ${(p) => p.theme.color.textMuted};
   font-family: ${(p) => p.theme.font.sans};
-  margin-top: ${(p) => p.theme.space[10]};
+  /* R2-D V3: no margin-top — Layout Main's padding-bottom is the single gap.
+   * Both stacked = a 224px dead band above the footer on short pages. */
 `;
 var Inner = styled.div`
   display: grid;
@@ -4523,7 +4530,9 @@ var Root = styled.section`
   width: 100%;
   margin: 0 auto;
   padding-block: ${(p) => p.$size === "compact" ? p.theme.space[7] : p.$size === "wide" ? p.theme.space[9] : p.theme.space[8]};
-  padding-inline: ${(p) => p.theme.layout.gutter};
+  /* R2-D V1: NO padding-inline — Layout Main owns the single content gutter.
+   * Sections used to add their own, doubling the inset (measured: header rail
+   * at x=144 vs section text at x=192). max-width still caps prose widths. */
   max-width: ${(p) => p.$size === "compact" ? p.theme.layout.maxWidthProse : p.theme.layout.maxWidth};
 
   &:not(:last-of-type) {
@@ -4581,7 +4590,8 @@ function Section({ id, size = "default", eyebrow, title, description, className,
 var Box = styled.div`
   width: 100%;
   margin: 0 auto;
-  padding-inline: ${(p) => p.theme.layout.gutter};
+  /* R2-D V1: gutter ownership lives in Layout Main — no inline padding here
+   * (was double-inset content vs the header/footer rail). */
   max-width: ${(p) => p.$size === "prose" ? p.theme.layout.maxWidthProse : p.$size === "narrow" ? `calc(${p.theme.layout.maxWidth} * 0.58)` : p.theme.layout.maxWidth};
 `;
 function Container({ size = "default", className, children, id, ...rest }) {
@@ -5056,10 +5066,10 @@ var ROUTER_LINK$4 = Link$1;
 var HeroShell = styled.section`
   position: relative;
   width: 100%;
-  margin: 0 auto;
-  max-width: ${(p) => p.theme.layout.maxWidth};
-  padding-inline: ${(p) => p.theme.layout.gutter};
-  padding-block: ${(p) => `${p.theme.space[9]} ${p.theme.space[8]}`};
+  /* R2-D V1/V8: no second max-width/padding-inline (Main owns the rail), and
+   * no extra top padding — Main's space[7] is the single top gutter. The old
+   * stack wasted ~144px above the eyebrow at 375 and ate the mobile fold. */
+  padding-block: 0 ${(p) => p.theme.space[6]};
 `;
 var Eyebrow = styled.p`
   margin: 0 0 ${(p) => p.theme.space[4]};
@@ -5069,6 +5079,14 @@ var Eyebrow = styled.p`
   letter-spacing: ${(p) => p.theme.font.tracking.wider};
   text-transform: uppercase;
   color: ${(p) => p.theme.color.accent};
+
+  /* R2-D V8: at 375 the mono eyebrow wrapped to 3 lines and split
+   * "FULL-STACK" mid-token. Tighter tracking + smaller size keep it to two
+   * lines; text uses non-breaking hyphens (see the JSX). */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    font-size: ${(p) => p.theme.font.sizes.xs};
+    letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  }
 `;
 /** Second line of the h1 lockup — the tagline reads as one heading, two voices. */
 var Tagline = styled.span`
@@ -5121,7 +5139,10 @@ var Grid$1 = styled.div`
   }
 
   @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* R2-D V2: auto-fit, not a fixed 3 — with 2 featured projects a fixed
+     * 3-col grid renders a dangling empty third column (reads as a missing
+     * card). auto-fit lets 2 cards span full width and 3+ fill naturally. */
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   }
 `;
 var MetaLine$5 = styled.p`
@@ -5301,7 +5322,7 @@ function Home() {
 			"aria-labelledby": "home-title",
 			"data-testid": "home-hero",
 			children: [
-				/* @__PURE__ */ jsx(Eyebrow, { children: "Technical consultant · Full-stack engineer · Data scientist" }),
+				/* @__PURE__ */ jsx(Eyebrow, { children: "Technical consultant · Full‑stack engineer · Data scientist" }),
 				/* @__PURE__ */ jsxs(Heading, {
 					level: 1,
 					id: "home-title",
@@ -6038,7 +6059,8 @@ var Chip$1 = styled.button`
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  min-height: calc(${(p) => p.theme.space[5]} + ${(p) => p.theme.space[4]} + ${(p) => p.theme.space[1]});
+  /* R2-D V6: same control, same height as Writing chips + search input row. */
+  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
   padding: ${(p) => `${p.theme.space["1"]} ${p.theme.space[3]}`};
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
@@ -6054,7 +6076,7 @@ var Chip$1 = styled.button`
 
   /* Whole declarations gated on $active — never a value-level ternary that
    * resolves to false (the vendored Emotion rejects empty declarations). */
-  ${(p) => p.$active && `background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; font-weight: ${p.theme.font.weights.semibold};`}
+  ${(p) => p.$active && `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent}; font-weight: ${p.theme.font.weights.semibold};`}
   ${(p) => !p.$active && `background: ${p.theme.color.bgElevated}; color: ${p.theme.color.textMuted}; &:hover { color: ${p.theme.color.text}; border-color: ${p.theme.color.borderStrong}; }`}
 
   &:focus-visible {
@@ -6383,6 +6405,13 @@ var BlockTitle = styled.h2`
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
   color: ${(p) => p.theme.color.text};
 `;
+var PanelBody$1 = styled.p`
+  margin: 0;
+  max-width: 65ch;
+  font-size: ${(p) => p.theme.font.sizes.md};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
 var HighlightList = styled.ul`
   margin: 0;
   padding: 0;
@@ -6564,7 +6593,16 @@ function ProjectDetail() {
 					"data-testid": "detail-body",
 					children: /* @__PURE__ */ jsx("div", { dangerouslySetInnerHTML: { __html: project.html } })
 				})]
-			}) : null,
+			}) : /* @__PURE__ */ jsxs(Block, {
+				"aria-labelledby": "case-study-title",
+				children: [/* @__PURE__ */ jsx(BlockTitle, {
+					id: "case-study-title",
+					children: "Case study"
+				}), /* @__PURE__ */ jsx(PanelBody$1, {
+					"data-testid": "detail-body-pending",
+					children: "The full write-up for this project is in review. The highlights above are the short version; email me for the long one — I keep the design docs."
+				})]
+			}),
 			related.length > 0 && /* @__PURE__ */ jsxs(Block, {
 				"aria-labelledby": "related-title",
 				children: [/* @__PURE__ */ jsx(BlockTitle, {
@@ -6852,7 +6890,7 @@ var Chip = styled.button`
   align-items: center;
   min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
   padding: ${(p) => p.theme.space["0"]} ${(p) => p.theme.space[3]};
-  font-family: ${(p) => p.theme.font.mono};
+  font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.medium};
   line-height: ${(p) => p.theme.font.leading.none};
