@@ -115,7 +115,10 @@ function assetHref(): string {
 }
 
 function titleFor(path: string): string {
-  if (path === '/') return `${SITE.title} — ${SITE.tagline}`;
+  /* R2-A A10: SITE.title already ends with the positioning line; appending
+   * tagline produced "Alex Rivera — AI Engineering & Technical… — Alex Rivera"
+   * (duplicated name, mid-word ellipsis in tabs/search/social). */
+  if (path === '/') return SITE.title;
   const seg = path.split('/')[1];
   const pageNames: Record<string, string> = {
     about: 'About',

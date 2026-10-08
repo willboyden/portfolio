@@ -27,6 +27,4 @@ metrics:
   - tools exposed = 15
   - benchmark suite = 14 benchmarks
   - 100K bulk insert = 27 ms
-links:
-  source: https://github.com/alexrivera/duckdb-mcp
 ---

@@ -57,7 +57,9 @@ export const ProjectSchema = z
     period: z.string().min(1),
     highlights: z.array(z.string().min(1)).min(1),
     stack: z.array(z.string().min(1)).min(1),
-    links: ProjectLinksSchema,
+    /** R2-A A2: links are optional — a project with no *verified* URL shows
+     * no link button at all (fabricated source URLs 404 and read as fake). */
+    links: ProjectLinksSchema.optional(),
     metrics: z.array(ProjectMetricSchema).optional(),
     featured: z.boolean(),
     accent: z.string().min(1).optional(),

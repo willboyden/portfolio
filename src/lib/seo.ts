@@ -36,6 +36,17 @@ export const SITE = {
   description:
     'Portfolio of Alex Rivera, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.',
   author: 'Alex Rivera',
+  /**
+   * R2-A A3: hire-me metadata a recruiter looks for in 20 seconds. UNSET =
+   * hidden (never fabricated). Owner: set these before launching the job push —
+   *   hiring: one line, e.g. "Seeking senior AI-platform / full-stack roles —
+   *           remote (UTC-5 ±3) — available from Nov 2026"
+   *   email:  the mailbox that receives engagements and recruiter mail
+   *   resume: path to a PDF in public/ (e.g. '/alex-rivera-resume.pdf')
+   */
+  hiring: null as string | null,
+  email: null as string | null,
+  resume: null as string | null,
   /** DRAFT: replace with the real X handle before launch (no @ prefix here). */
   twitter: 'alexriveradev' /* <!-- DRAFT --> placeholder handle, unverified */,
   lang: 'en',

@@ -26,6 +26,7 @@ import { Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
 import { Layout, skipLinkClass } from './Layout';
 import {
   NAV_ITEMS,
+  availableNavItems,
   decorateNavItems,
   isNavActive,
   normalizePath,
@@ -104,28 +105,39 @@ function testids(html: string): string[] {
 /* -------------------------------------------------------------------------- */
 
 describe('Nav', () => {
-  it('renders every CONTRACT §3 destination with the right href', () => {
+  it('renders every available destination with the right href', () => {
     const html = render(<Layout currentPath="/about" />);
     const anchors = tags(html, 'a').filter((t) => t.includes('nav-link-'));
-    expect(anchors.length).toBe(NAV_ITEMS.length);
-    const expected = ['/', '/projects', '/writing', '/talks', '/about', '/contact'];
-    expected.forEach((href) => {
-      expect(anchors.some((t) => t.includes(`href="${href}"`))).toBe(true);
+    const items = availableNavItems();
+    expect(anchors.length).toBe(items.length);
+    items.forEach((item) => {
+      expect(anchors.some((t) => t.includes(`href="${item.to}"`))).toBe(true);
     });
   });
 
-  it('nav item list is exactly Home, Projects, Writing, Videos, Talks, About, Contact', () => {
-    /* R1-B F8: /videos is a routed page; chrome must link it or nobody can
-     * reach it. If nav changes, update CONTRACT §3 routes AND this list. */
+  it('NAV_ITEMS is the full route list; chrome shows availableNavItems() (R2-A A7/A11)', () => {
+    /* Full list = every chrome-eligible route (CONTRACT §3). If nav changes,
+     * update CONTRACT §3 routes AND this list. */
     expect(NAV_ITEMS.map((i) => i.label)).toEqual([
       'Home',
       'Projects',
       'Writing',
       'Videos',
       'Talks',
+      'Now',
       'About',
       'Contact',
     ]);
+    /* With zero videos/talks published, chrome hides those tabs (empty tabs
+     * read as inexperience) but keeps Now (recruiters check it). */
+    const labels = availableNavItems().map((i) => i.label);
+    expect(labels).not.toContain('Videos');
+    expect(labels).not.toContain('Talks');
+    expect(labels).toContain('Now');
+    /* Rendered header chrome must match the filtered set. */
+    const h = render(<Layout currentPath="/" />);
+    expect(h).not.toContain('>Videos</a>');
+    expect(h).toContain('>Now</a>');
   });
 
   it('marks exactly one link with aria-current="page" for a section route', () => {
@@ -156,13 +168,13 @@ describe('Nav', () => {
   });
 
   it('data-active mirrors aria-current so CSS and ARIA cannot drift', () => {
-    const html = render(<Layout currentPath="/talks" />);
-    const talksTag = tags(html, 'a').find((t) => t.includes('nav-link-talks'));
-    expect(talksTag).toContain('aria-current="page"');
-    expect(talksTag).toContain('data-active="true"');
+    const html = render(<Layout currentPath="/about" />);
     const aboutTag = tags(html, 'a').find((t) => t.includes('nav-link-about'));
-    expect(aboutTag).toContain('data-active="false"');
-    expect(aboutTag).not.toContain('aria-current');
+    expect(aboutTag).toContain('aria-current="page"');
+    expect(aboutTag).toContain('data-active="true"');
+    const contactTag = tags(html, 'a').find((t) => t.includes('nav-link-contact'));
+    expect(contactTag).toContain('data-active="false"');
+    expect(contactTag).not.toContain('aria-current');
   });
 
   it('nav list is a labelled list landmark', () => {
@@ -272,11 +284,11 @@ describe('Header', () => {
   });
 
   it('the open dialog carries the same nav links and a theme toggle', () => {
-    const html = render(<Header menuOpen currentPath="/talks" />);
+    const html = render(<Header menuOpen currentPath="/about" />);
     const ids = testids(html);
-    expect(ids.filter((id) => id === 'nav-link-talks').length).toBe(2); /* desktop + dialog */
+    expect(ids.filter((id) => id === 'nav-link-about').length).toBe(2); /* desktop + dialog */
     expect(ids.filter((id) => id === 'theme-toggle').length).toBe(2);
-    expect(html).toContain('data-testid="nav-link-talks"');
+    expect(html).toContain('data-testid="nav-link-about"');
   });
 
   it('theme toggle is a labelled button describing the action', () => {
@@ -464,8 +476,8 @@ describe('Layout', () => {
 describe('Footer', () => {
   const html = render(<Footer now={new Date('2026-10-08T00:00:00Z')} />);
 
-  it('lists every nav destination plus RSS', () => {
-    for (const item of NAV_ITEMS) {
+  it('lists every available nav destination plus RSS', () => {
+    for (const item of availableNavItems()) {
       expect(html).toContain(`data-testid="footer-link-${item.label.toLowerCase()}"`);
     }
     expect(html).toContain('data-testid="footer-rss"');
@@ -485,9 +497,10 @@ describe('Footer', () => {
     expect(button).toContain('aria-label="Back to top"');
   });
 
-  it('unsupplied social handles are marked placeholders, never fake URLs', () => {
+  it('unsupplied social handles are HIDDEN (R2-A A12), never fake URLs or @your-handle', () => {
     expect(html).toContain('<!-- DRAFT: replace handle');
-    expect(html).toContain('data-placeholder="true"');
+    expect(html).not.toContain('data-placeholder');
+    expect(html).not.toContain('your-handle');
     for (const entry of SOCIAL_LINKS) {
       expect(entry.url).toBe('');
       expect(html).not.toContain('github.com/');

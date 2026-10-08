@@ -14,6 +14,7 @@ import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import { content, featuredProjects, postsByDate, type Project } from 'app/content';
+import { SITE } from 'app/lib/seo';
 import { formatDate } from 'app/lib/format';
 import type { Tokens } from 'app/theme/tokens';
 import {
@@ -89,6 +90,16 @@ const HeroRule = styled.hr`
   margin: ${(p) => `${p.theme.space[8]} 0 0`};
   border: none;
   border-top: 1px solid ${(p) => p.theme.color.border};
+`;
+
+const HiringLine = styled.p`
+  margin: ${(p) => `${p.theme.space[5]} 0 0`};
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${(p) => p.theme.space[3]};
+  font-size: ${(p) => p.theme.font.sizes.md};
+  color: ${(p) => p.theme.color.textMuted};
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -324,6 +335,19 @@ export function Home(): React.ReactNode {
           </Button>
         </CtaRow>
         <HeroRule />
+        {/* R2-A A3: hire-me status strip — renders only when the owner sets
+         * SITE.hiring / SITE.resume (never fabricated). One place to flip the
+         * site from "portfolio" to "available for hire". */}
+        {(SITE.hiring || SITE.resume) && (
+          <HiringLine data-testid="home-hiring">
+            {SITE.hiring && <span>{SITE.hiring}</span>}
+            {SITE.resume && (
+              <Button as="a" href={SITE.resume} variant="ghost" size="sm" iconRight="download">
+                Résumé (PDF)
+              </Button>
+            )}
+          </HiringLine>
+        )}
       </HeroShell>
 
       <Section

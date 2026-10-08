@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import { Link } from '@portfolio/router';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import { NAV_ITEMS, normalizePath } from './Nav';
+import { availableNavItems, normalizePath } from './Nav';
 import { useThemeTokens, scrollBehaviorFor, usePrefersReducedMotion } from './ThemePreference';
 
 export interface SocialLink {
@@ -36,11 +36,6 @@ export const SOCIAL_LINKS: readonly SocialLink[] = [
 ];
 
 export const RSS_HREF = '/rss.xml';
-
-/** Real HTML comment so `grep 'DRAFT: replace handle'` finds the slot. */
-function DraftNote({ text }: { text: string }): ReactNode {
-  return <span dangerouslySetInnerHTML={{ __html: `<!-- DRAFT: ${text} -->` }} />;
-}
 
 const Shell = styled.footer`
   border-top: 1px solid ${(p) => p.theme.color.border};
@@ -250,7 +245,7 @@ export function Footer({
           <div>
             <Heading id="footer-sites-heading">Sitemap</Heading>
             <ul role="list" aria-labelledby="footer-sites-heading" data-testid="footer-sitemap">
-              {NAV_ITEMS.map((item) => (
+              {availableNavItems().map((item) => (
                 <LinkLine key={item.to}>
                   <Link
                     to={normalizePath(item.to)}
@@ -293,16 +288,10 @@ export function Footer({
                     Email
                   </a>
                 ) : (
-                  <>
-                    <span
-                      className={placeholderClass(tokens)}
-                      data-placeholder="true"
-                      data-testid="footer-email"
-                    >
-                      Email — add address
-                    </span>
-                    <DraftNote text="replace email address" />
-                  </>
+                  /* R2-A A1: no visible "Email — add address" on a hiring
+                   * site. The DRAFT stays as an HTML comment — invisible to
+                   * visitors, still greppable in dist/ by the owner. */
+                  <span dangerouslySetInnerHTML={{ __html: '<!-- DRAFT: replace email address in src/lib/seo.ts -->' }} />
                 )}
               </LinkLine>
             </ul>
@@ -324,17 +313,10 @@ export function Footer({
                       {entry.label}
                     </a>
                   ) : (
-                    <>
-                      <span
-                        className={placeholderClass(tokens)}
-                        data-placeholder="true"
-                        data-testid={`footer-social-${entry.label.toLowerCase()}`}
-                      >
-                        {entry.label}
-                        {entry.handle ? ` ${entry.handle}` : ''}
-                      </span>
-                      <DraftNote text={`replace handle for ${entry.label}`} />
-                    </>
+                    /* R2-A A12: unconfigured profiles are hidden (HTML comment
+                     * DRAFT marker only) — "@your-handle" on 16 pages reads as
+                     * a broken template to a hiring manager. */
+                    <span dangerouslySetInnerHTML={{ __html: `<!-- DRAFT: replace handle for ${entry.label} in Footer SOCIAL_LINKS -->` }} />
                   )}
                 </LinkLine>
               ))}

@@ -224,24 +224,20 @@ describe('Now', () => {
 describe('Contact', () => {
   const html = render(<Contact />, '/contact');
 
-  it('email CTA is a real mailto: anchor', () => {
-    const cta = tags(html, 'a').find((t) => t.includes('data-testid="contact-cta-email"'));
-    const address = tags(html, 'a').find((t) => t.includes('data-testid="contact-email-link"'));
-    expect(cta).toBeDefined();
-    expect(cta).toContain('href="mailto:');
-    expect(address).toBeDefined();
-    expect(address).toContain('href="mailto:');
-    expect(html).toContain('hello@example.com');
+  it('renders an honest email state — never a fabricated mailbox (R2-A A1)', () => {
+    /* SITE.email unset -> honest unset note, no mailto chrome. When the owner
+     * sets SITE.email, the mailto anchor + CTA render (see personal.email.test). */
+    expect(html).not.toContain('mailto:');
+    expect(html).not.toContain('example.com');
+    expect(html).toContain('data-testid="contact-email-unset"');
   });
 
   it('lists the SOCIAL_LINKS platforms from the shared layout constant', () => {
-    for (const label of ['GitHub', 'LinkedIn', 'Bluesky']) {
-      expect(html).toContain(label);
-    }
-    /* Empty URLs render as DRAFT-marked inert notes, never dead anchors. */
-    expect(html).toContain('DRAFT');
+    /* R2-A A12: unconfigured profiles are hidden, not shown as @your-handle. */
+    expect(html).not.toContain('your-handle');
     const socialAnchors = tags(html, 'a').filter((t) => t.includes('href=""'));
     expect(socialAnchors).toHaveLength(0);
+    expect(html).toContain('data-testid="contact-social-list"');
   });
 
   it('does not ship a fake form: no <form> element anywhere', () => {

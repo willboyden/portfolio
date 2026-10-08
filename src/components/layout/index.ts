@@ -13,6 +13,7 @@ export { Layout, type LayoutProps } from './Layout';
 export {
   Nav,
   NAV_ITEMS,
+  availableNavItems,
   decorateNavItems,
   isNavActive,
   normalizePath,

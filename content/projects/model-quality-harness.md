@@ -25,6 +25,4 @@ highlights:
 metrics:
   - scenarios x models x reps = 8 x 3 x 2
   - best model run (cache-bust re-run) = 16/16 completed, 100% valid calls
-links:
-  source: https://github.com/alexrivera/model-quality-harness
 ---

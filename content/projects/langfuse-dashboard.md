@@ -24,6 +24,4 @@ highlights:
   - "Single-file dashboard, zero network requests, data embedded as a JS const so it opens over file://"
   - "Trace explorer drills into the observations parent/child tree with latency, usage and I/O previews"
   - "Verified broker behaviour endpoint by endpoint: health/projects OK, traces/observations/sessions/scores all 403 — failure recorded, nothing fabricated"
-links:
-  source: https://github.com/alexrivera/langfuse-dashboard
 ---

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T05:18:24.395Z",
+  "generatedAt": "2026-10-08T05:29:38.273Z",
   "projects": [
     {
       "slug": "langfuse-dashboard",
@@ -29,9 +29,6 @@
         "Langfuse 3.200.0",
         "vanilla JS/CSS"
       ],
-      "links": {
-        "source": "https://github.com/alexrivera/langfuse-dashboard"
-      },
       "featured": false
     },
     {
@@ -63,9 +60,6 @@
         "OpenAI-compatible API",
         "vanilla JS/CSS"
       ],
-      "links": {
-        "source": "https://github.com/alexrivera/model-quality-harness"
-      },
       "metrics": [
         {
           "label": "scenarios x models x reps",
@@ -107,9 +101,6 @@
         "stdio JSON-RPC",
         "pytest"
       ],
-      "links": {
-        "source": "https://github.com/alexrivera/duckdb-mcp"
-      },
       "metrics": [
         {
           "label": "tools exposed",
@@ -129,7 +120,7 @@
     {
       "slug": "orchestrator",
       "title": "Multi-MCP Orchestrator",
-      "summary": "Unified CLI frontend over six MCP servers — audit, site, wiki, sandbox-wiki, tasks, sys, dashboard, run, db — wired together by direct Python imports instead of JSON-RPC, with a chained pipeline mode and DuckDB-backed trend queries.",
+      "summary": "Unified CLI frontend over six in-process MCP servers (DuckDB analytics, metrics, site audit, system telemetry, task management, wiki search), composed by direct Python imports instead of JSON-RPC, with a chained pipeline mode and DuckDB-backed trend queries.",
       "tags": [
         "mcp",
         "cli",
@@ -153,9 +144,6 @@
         "DuckDB",
         "asyncio"
       ],
-      "links": {
-        "source": "https://github.com/alexrivera/orchestrator"
-      },
       "featured": false
     }
   ],

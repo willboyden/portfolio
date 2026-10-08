@@ -17,6 +17,7 @@ import type { ReactNode } from 'react';
 import { Link, useLocation } from '@portfolio/router';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
+import { content } from 'app/content';
 import { useThemeTokens } from './ThemePreference';
 
 export interface NavItem {
@@ -35,9 +36,25 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Writing', to: '/writing' },
   { label: 'Videos', to: '/videos' },
   { label: 'Talks', to: '/talks' },
+  { label: 'Now', to: '/now' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
 ];
+
+/**
+ * R2-A A7/A11: nav is content-driven. Sections with zero entries (Videos,
+ * Talks) stay OUT of chrome until seeded — empty-but-advertised tabs read as
+ * inexperience. The routes still prerender (deep links never 404). `Now` is
+ * always present: recruiters check it, and it renders honest static copy
+ * regardless of content counts.
+ */
+export function availableNavItems(): NavItem[] {
+  return NAV_ITEMS.filter((item) => {
+    if (item.to === '/videos') return content.videos.length > 0;
+    if (item.to === '/talks') return content.talks.length > 0;
+    return true;
+  });
+}
 
 /** Same normalisation the router applies (`vendor/router` `normalize`). */
 export function normalizePath(path: string): string {
@@ -152,7 +169,7 @@ export interface NavProps {
 
 export function Nav({
   currentPath,
-  items = NAV_ITEMS,
+  items = availableNavItems(),
   onNavigate,
   label = 'Primary',
   id,

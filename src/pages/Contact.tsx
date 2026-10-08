@@ -21,12 +21,11 @@ import { Button, Heading, Icon, Section, type IconName } from 'app/components/ui
 /* Cast per the ui.test.tsx polymorphic-`as` pattern — see Home.tsx. */
 const ROUTER_LINK = Link as unknown as 'a';
 
-/* DRAFT — launch blocker: SITE (src/lib/seo.ts, owned by platform-primitives)
- * carries no `email` field yet, so we fall back to a placeholder mailbox.
- * TODO for the site owner: add `email` to SITE in src/lib/seo.ts (or replace
- * the fallback here) before launch. Kept in one expression so the swap is a
- * one-liner; the DRAFT marker matches the Footer's placeholder convention. */
-const CONTACT_EMAIL: string = (SITE as { email?: string }).email ?? 'hello@example.com';
+/* DRAFT — launch blocker (R2-A A1): SITE carries no `email` field yet. Until
+ * the owner sets SITE.email, the page renders an honest "set up email" state —
+ * NEVER a fabricated hello@example.com, which on a hiring site reads as either
+ * broken or fake. Set `email` in src/lib/seo.ts SITE to enable the mailto UI. */
+const CONTACT_EMAIL: string | null = (SITE as { email?: string }).email ?? null;
 
 /* -------------------------------------------------------------------------- */
 /* Layout                                                                      */
@@ -150,12 +149,6 @@ const SocialAnchor = styled.a`
   }
 `;
 
-const SocialNote = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  color: ${(p) => p.theme.color.textSubtle};
-`;
-
 const ExpectList = styled.dl`
   margin: ${(p) => p.theme.space[2]} 0 0;
   display: grid;
@@ -203,6 +196,7 @@ function socialIcon(label: string): IconName {
 /* -------------------------------------------------------------------------- */
 
 export function Contact(): React.ReactNode {
+  const contactEmail = CONTACT_EMAIL;
   return (
     <>
       <Section id="contact-intro" eyebrow="Contact" size="wide">
@@ -227,22 +221,34 @@ export function Contact(): React.ReactNode {
               Include a link to context — a repo, a doc, an incident timeline
               — and I will come prepared instead of billable for warm-up.
             </PanelBody>
-            <AddressLine href={`mailto:${CONTACT_EMAIL}`} data-testid="contact-email-link">
-              <Icon name="mail" size={16} />
-              {CONTACT_EMAIL}
-            </AddressLine>
-            <CtaRow>
-              <Button
-                as="a"
-                href={`mailto:${CONTACT_EMAIL}`}
-                variant="primary"
-                size="lg"
-                iconRight="arrow-right"
-                data-testid="contact-cta-email"
-              >
-                Start the conversation
-              </Button>
-            </CtaRow>
+            {contactEmail ? (
+              <>
+                <AddressLine href={`mailto:${contactEmail}`} data-testid="contact-email-link">
+                  <Icon name="mail" size={16} />
+                  {contactEmail}
+                </AddressLine>
+                <CtaRow>
+                  <Button
+                    as="a"
+                    href={`mailto:${contactEmail}`}
+                    variant="primary"
+                    size="lg"
+                    iconRight="arrow-right"
+                    data-testid="contact-cta-email"
+                  >
+                    Start the conversation
+                  </Button>
+                </CtaRow>
+              </>
+            ) : (
+              /* R2-A A1: never a fabricated mailbox. Honest state until
+               * SITE.email is set (src/lib/seo.ts). */
+              <PanelBody data-testid="contact-email-unset">
+                Email contact is being set up. In the meantime, the work on
+                this site is real — start from the projects.
+                {/* DRAFT: set SITE.email in src/lib/seo.ts */}
+              </PanelBody>
+            )}
           </EmailPanel>
 
           <Panel aria-labelledby="contact-social-title">
@@ -252,28 +258,19 @@ export function Contact(): React.ReactNode {
               email, better for follow-ups than for first contact.
             </PanelBody>
             <SocialList data-testid="contact-social-list">
-              {SOCIAL_LINKS.map((link) => (
+              {SOCIAL_LINKS.filter((link) => link.url).map((link) => (
                 <SocialItem key={link.label}>
-                  {link.url ? (
-                    <SocialAnchor href={link.url} rel="me noopener noreferrer">
-                      <Icon name={socialIcon(link.label)} size={16} />
-                      {link.label}
-                      {link.handle ? ` — ${link.handle}` : ''}
-                    </SocialAnchor>
-                  ) : (
-                    /* Empty url = the owner has not supplied a handle yet.
-                     * Rendered as inert text with a DRAFT marker (same
-                     * convention as the Footer) — never a dead link. */
-                    <>
-                      <Icon name={socialIcon(link.label)} size={16} />
-                      <span dangerouslySetInnerHTML={{ __html: `<!-- DRAFT: ${link.label} URL not set -->` }} />
-                      <SocialNote>
-                        {link.label}: add URL in src/components/layout/Footer.tsx
-                      </SocialNote>
-                    </>
-                  )}
+                  <SocialAnchor href={link.url} rel="me noopener noreferrer">
+                    <Icon name={socialIcon(link.label)} size={16} />
+                    {link.label}
+                    {link.handle ? ` — ${link.handle}` : ''}
+                  </SocialAnchor>
                 </SocialItem>
               ))}
+              {/* R2-A A1/A12: unconfigured profiles are HIDDEN, never rendered
+                  as "@your-handle" or developer instructions — placeholder text
+                  on a hiring site reads as template/tampered. Add urls to
+                  SOCIAL_LINKS in Footer.tsx (exported) before launch. */}
             </SocialList>
           </Panel>
         </CardRow>
