@@ -100,6 +100,45 @@ export function __resetSheet(): void {
   if (sheet.tag) sheet.tag.textContent = '';
 }
 
+/**
+ * R1A-10 fix: on boot, adopt the prerendered <style id="emotion-prerender">
+ * as the client sheet's tag instead of minting a second one. Without this the
+ * shipped page carries the full critical CSS twice until/unless dedupe
+ * (identical bytes, but ~2x CSS bytes in DevTools and a second tag).
+ *
+ * Safe because names are content-hashes: the client regenerates byte-identical
+ * rules, so overwriting textContent on first registration converges to the
+ * same sheet. The id attribute is dropped on adoption so a later
+ * document.getElementById can't double-target the live tag.
+ */
+export function adoptPrerenderedTag(el: HTMLElement | null): void {
+  if (!el || typeof document === 'undefined') return;
+  const sheet = getSheet();
+  if (!sheet.tag) {
+    el.removeAttribute('id');
+    el.setAttribute('data-emotion', 'mini');
+    sheet.tag = el as HTMLStyleElement;
+    /* inserted stays empty; the first registerStyle overwrites textContent
+     * with the client-generated (identical) sheet. */
+    return;
+  }
+  /* The client sheet already exists (module-scope css()/keyframes() run during
+   * import evaluation, before main's body). The prerender copy is dead weight
+   * — the replace-render regenerates every rule into the live tag — but it
+   * must NOT be removed before React's first commit or the window between
+   * script-exec and first paint is unstyled. Tag it for removal by the app's
+   * root effect (runs after first commit, styles guaranteed in place). */
+  if (sheet.tag !== el) el.setAttribute('data-emotion-retire', '');
+}
+
+/** Remove the retired prerender <style> — call from a post-commit effect. */
+export function retirePrerenderedTag(): void {
+  if (typeof document === 'undefined') return;
+  for (const el of Array.from(document.querySelectorAll('style[data-emotion-retire]'))) {
+    el.remove();
+  }
+}
+
 /** Test/prerender helper: CSS generated so far, insertion ordered. */
 export function __sheetCss(): string {
   return sheetToCss(getSheet().inserted);

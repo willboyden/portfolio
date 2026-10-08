@@ -24,6 +24,8 @@ import {
   serializeArgs,
   serializeStyles,
   __sheetCss,
+  adoptPrerenderedTag,
+  retirePrerenderedTag,
   type StyleObject,
   type StyleValue,
   hash,
@@ -184,6 +186,18 @@ export function keyframes(...args: unknown[]): string {
 export function extractCriticalStyles(): string {
   return __sheetCss();
 }
+
+/**
+ * Adopt the prerendered critical-CSS <style> tag as the live sheet (R1A-10).
+ * Call once from src/main.tsx before rendering; see core implementation.
+ */
+export function adoptPrerenderedStyleSheet(): void {
+  if (typeof document === 'undefined') return;
+  adoptPrerenderedTag(document.getElementById('emotion-prerender'));
+}
+
+/** Re-export: remove the retired prerender tag after first client commit. */
+export { retirePrerenderedTag };
 
 /* Emotion also exports `withEmotionCache` / `CacheProvider`; the app never used
  * them, and a no-op shim here would only hide mistakes, so they are omitted. */

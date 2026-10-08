@@ -55,4 +55,23 @@ describe('performance', () => {
     const h1 = html.match(/<h1[^>]*>([\s\S]{5,200}?)<\/h1>/);
     if (!h1) throw new Error('no static <h1> in prerendered home — LCP would wait for JS');
   });
+
+  test('after boot the document carries exactly one emotion stylesheet (R1A-10)', async ({ goto, page }) => {
+    /* Prerendered <style id="emotion-prerender"> must be retired once the
+     * client sheet takes over — otherwise every page ships its CSS twice. */
+    await goto('/');
+    const styles = await page.evaluate(`
+      return [...document.querySelectorAll('style')].map(s => ({
+        id: s.id || null,
+        emotion: s.getAttribute('data-emotion'),
+        retire: s.getAttribute('data-emotion-retire'),
+        len: (s.textContent || '').length,
+      }))
+    `);
+    const live = styles.filter((s) => s.emotion === 'mini');
+    const stale = styles.filter((s) => s.id === 'emotion-prerender' || s.retire !== null);
+    if (live.length !== 1) throw new Error(`expected exactly 1 live sheet, got ${live.length}`);
+    if (stale.length !== 0) throw new Error(`prerendered stylesheet not retired: ${JSON.stringify(stale)}`);
+    if ((live[0]?.len ?? 0) < 5000) throw new Error(`live sheet suspiciously small (${live[0]?.len} bytes)`);
+  });
 });

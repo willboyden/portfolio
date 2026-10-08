@@ -3,8 +3,9 @@
  * pass (prerender/entry.mjs) mount. Keeping it one factory is what guarantees
  * prerendered HTML and hydrated client markup agree.
  */
-import { StrictMode, createElement, type ComponentType, type ReactNode } from 'react';
+import { StrictMode, createElement, useEffect, type ComponentType, type ReactNode } from 'react';
 import { RouterProvider, Outlet, type RouteDefinition } from '@portfolio/router';
+import { retirePrerenderedTag } from '@emotion/react';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 import { Layout, ThemePreferenceProvider } from 'app/components/layout';
 import { Home } from 'app/pages/Home';
@@ -33,6 +34,12 @@ export const routes: RouteDefinition[] = [
 ];
 
 function Shell(): ReactNode {
+  /* R1A-10: after the first client commit (styles live in the client sheet),
+   * retire the prerendered critical-CSS copy. No unstyled window: it happens
+   * after commit, and on prerender/server this effect never runs. */
+  useEffect(() => {
+    retirePrerenderedTag();
+  }, []);
   return createElement(Layout, {
     /* Outlet inside Layout resolves the matched route. */
     children: createElement(Outlet, { NotFound }),

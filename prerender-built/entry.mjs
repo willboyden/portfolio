@@ -622,6 +622,11 @@ function __resetSheet() {
 	sheet.inserted.clear();
 	if (sheet.tag) sheet.tag.textContent = "";
 }
+/** Remove the retired prerender <style> — call from a post-commit effect. */
+function retirePrerenderedTag() {
+	if (typeof document === "undefined") return;
+	for (const el of Array.from(document.querySelectorAll("style[data-emotion-retire]"))) el.remove();
+}
 /** Test/prerender helper: CSS generated so far, insertion ordered. */
 function __sheetCss() {
 	return sheetToCss(getSheet().inserted);
@@ -3342,7 +3347,7 @@ function Layout({ children, currentPath, name = "Alex Rivera", role, menuOpen = 
 	})] });
 }
 var content_default = {
-	generatedAt: "2026-10-08T05:14:33.741Z",
+	generatedAt: "2026-10-08T05:18:24.395Z",
 	projects: [
 		{
 			"slug": "langfuse-dashboard",
@@ -8078,6 +8083,9 @@ var routes = [
 	}
 ];
 function Shell() {
+	useEffect(() => {
+		retirePrerenderedTag();
+	}, []);
 	return createElement(Layout, { children: createElement(Outlet, { NotFound }) });
 }
 /**
