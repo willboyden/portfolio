@@ -85,7 +85,6 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 ${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="alternate" type="application/rss+xml" title="${escapeAttr(siteMeta.title)}" href="/rss.xml" />
     <link rel="manifest" href="/site.webmanifest" />
     <script src="/theme-init.js"></script>
     <style id="emotion-prerender">${css}</style>
@@ -150,12 +149,8 @@ function descriptionFor(path: string): string {
   return SITE.description;
 }
 
-function publishedFor(path: string): { publishedTime?: string } {
+function publishedFor(path: string): { publishedTime?: string; type: 'article' } | Record<string, never> {
   const slug = path.split('/')[2];
   const post = content.posts.find((p) => p.slug === slug);
   return post ? { publishedTime: post.date, type: 'article' as const } : {};
-}
-
-function escapeAttr(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }

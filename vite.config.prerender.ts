@@ -22,7 +22,7 @@ export default defineConfig({
     },
   },
   build: {
-    ssr: r('prerender/entry.mjs'),
+    ssr: r('prerender/entry.ts'),
     outDir: r('prerender-built'),
     emptyOutDir: true,
     target: 'node22',

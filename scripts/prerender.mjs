@@ -9,7 +9,7 @@
  * Usage: node scripts/prerender.mjs            (full run after vite build)
  *        PRERENDER_LIMIT=5 node scripts/prerender.mjs  (debug subset)
  */
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
