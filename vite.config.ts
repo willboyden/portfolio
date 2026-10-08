@@ -30,6 +30,8 @@ export default defineConfig({
     target: 'es2022',
     cssCodeSplit: true,
     modulePreload: { polyfill: false },
+    /* Emits dist/.vite/manifest.json so the prerender pass finds hashed names. */
+    manifest: true,
     rollupOptions: {
       output: {
         /* Two chunks: our app and shared react runtime, for cache friendliness. */

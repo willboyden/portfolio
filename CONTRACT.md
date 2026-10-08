@@ -149,6 +149,28 @@ export function deriveHeadingId(text: string): string
 export function readingMinutes(text: string): number
 ```
 
+## 4b. Pages (owner: Batch B page builders) — pinned by `src/app/App.tsx`
+
+`src/app/App.tsx` already imports these EXACT named exports; create
+`src/pages/<Name>.tsx` exporting each one, default-export nothing:
+
+| File                    | Export      | Route |
+|-------------------------|-------------|-------|
+| pages/Home.tsx          | `Home`      | /     |
+| pages/About.tsx         | `About`     | /about |
+| pages/Now.tsx           | `Now`       | /now |
+| pages/Projects.tsx      | `Projects`  | /projects |
+| pages/ProjectDetail.tsx | `ProjectDetail` | /projects/:slug |
+| pages/Writing.tsx       | `Writing`   | /writing |
+| pages/PostDetail.tsx    | `PostDetail`| /writing/:slug |
+| pages/Videos.tsx        | `Videos`    | /videos |
+| pages/Talks.tsx         | `Talks`     | /talks |
+| pages/Contact.tsx       | `Contact`   | /contact |
+| pages/NotFound.tsx      | `NotFound`  | (fallback) |
+
+Detail pages must call `useParams()` for the slug and render `NotFound` when
+`getProject(slug)`/`getPost(slug)` return undefined — never crash.
+
 ## 5. Content is pre-rendered, not fetched
 
 `scripts/build-content.mjs` reads `content/**\/*.md`, validates with zod, renders markdown to HTML, and writes

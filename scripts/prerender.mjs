@@ -9,7 +9,7 @@
  * Usage: node scripts/prerender.mjs            (full run after vite build)
  *        PRERENDER_LIMIT=5 node scripts/prerender.mjs  (debug subset)
  */
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -22,9 +22,9 @@ async function main() {
    * the same way vite does, via NODE_PATH-free import map isn't available, so
    * we import the *built* client bundle instead: it already contains the app,
    * the router and emotion compiled in. */
-  const appEntry = join(ROOT, 'prerender', 'entry.mjs');
+  const appEntry = join(ROOT, 'prerender-built', 'entry.mjs');
   if (!existsSync(appEntry)) {
-    console.error('prerender/entry.mjs missing — it must be built with `npm run build:prerender`.');
+    console.error('prerender-built/entry.mjs missing — run the vite SSR prerender build first (scripts/build.mjs does).');
     process.exit(1);
   }
 
