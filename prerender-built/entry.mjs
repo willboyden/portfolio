@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T06:00:37.737Z",
+	generatedAt: "2026-10-08T06:02:19.754Z",
 	projects: [
 		{
 			"slug": "system-monitor",
@@ -5450,7 +5450,7 @@ var CardTitle$1 = styled.h3`
   line-height: ${(p) => p.theme.font.leading.snug};
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
-function inlineLinkClass$1(theme) {
+function inlineLinkClass(theme) {
 	return css({
 		display: "inline-flex",
 		alignItems: "center",
@@ -5599,7 +5599,7 @@ var PostMeta = styled.span`
 function Home() {
 	const theme = useTheme();
 	const links = {
-		inline: inlineLinkClass$1(theme),
+		inline: inlineLinkClass(theme),
 		title: titleLinkClass$1(theme)
 	};
 	const projects = heroProjects();
@@ -6226,18 +6226,22 @@ function titleLinkClass(theme) {
 		}
 	});
 }
-function inlineLinkClass(theme) {
+function ctaLinkClass(theme) {
 	return css({
+		display: "inline-flex",
+		alignItems: "center",
+		minHeight: "28px",
 		color: theme.color.accent,
 		textDecoration: "none",
 		borderRadius: theme.radius.sm,
+		["@media (max-width: " + theme.breakpoint.md + ")"]: { minHeight: "44px" },
 		"&:hover": {
 			textDecoration: "underline",
 			textUnderlineOffset: "3px"
 		},
 		"&:focus-visible": {
 			outline: `2px solid ${theme.color.focus}`,
-			outlineOffset: "2px"
+			outlineOffset: "3px"
 		}
 	});
 }
@@ -6315,7 +6319,8 @@ function ProjectCard({ project }) {
 			}),
 			/* @__PURE__ */ jsx(CardFooter, { children: /* @__PURE__ */ jsxs(Link$1, {
 				to: href,
-				className: inlineLinkClass(theme),
+				className: ctaLinkClass(theme),
+				"data-testid": "project-card-cta",
 				children: ["View case study ", /* @__PURE__ */ jsx("span", {
 					"aria-hidden": "true",
 					children: "→"
@@ -6747,6 +6752,8 @@ function relatedLinkClass(theme) {
 		color: theme.color.text,
 		textDecoration: "none",
 		borderRadius: theme.radius.sm,
+		minHeight: "28px",
+		["@media (max-width: " + theme.breakpoint.md + ")"]: { minHeight: "44px" },
 		"&:hover": {
 			color: theme.color.accent,
 			textDecoration: "underline",

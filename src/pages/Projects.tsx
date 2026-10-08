@@ -135,7 +135,7 @@ function ctaLinkClass(theme: Tokens): string {
     color: theme.color.accent,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
-    '@media (max-width: ' + theme.breakpoint.md + ')': {
+    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
       minHeight: '44px',
     },
     '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
