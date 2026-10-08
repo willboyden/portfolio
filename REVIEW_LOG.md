@@ -235,3 +235,49 @@ is cross-checked and accepted.
   lint-pinned; line-% coverage not claimable offline — the enforced artifact
   is the structural import-graph inventory; e2e is the custom CDP harness
   because Playwright's npm runner can't install offline.
+
+### R3-A (clean-code, late-arriving) — disposition
+Report dispatched 05:45, delivered after closeout; its baseline is stale
+(491 tests, pre-FOUC lint-red). F1 (lint red) and the F4 key-single-source
+half were already fixed by R3-C/R4-C. Remainder dispositioned same-session:
+
+- **F2 reflected XSS in serve-dist 404 + missing CSP** — ALREADY FIXED
+  (incomplete-R1-C#5 state no longer exists): escapeHtml applies AT THE SINK
+  inside notFound(), and 404s carry SECURITY_HEADERS incl. CSP. Live re-proof
+  on fixed build: raw `<svg/onload>` probe returns escaped, CSP header
+  present on the asset-miss 404.
+- **F3 safeJoin sibling-prefix** — already fixed (`candidate !== rootDir &&
+  !startsWith(rootDir + sep)` at :63); the reviewer reproduced this class
+  before the R3-C pass shipped.
+- **F6 decodeURIComponent crash** — REAL, FIXED: matchRoute now try/catches
+  per segment (raw fallback), so `/projects/%` URIError-crashes render.
+  The `to : to` no-op it also flagged was already simplified in a prior round.
+- **F7 ?page=N deep links** — REAL, dispositioned HONESTLY: the file-header
+  claim was overstated. No initial-page read exists, and prerender is a
+  static shell (JS-off never paginates anyway), so the right fix is truth:
+  header comment now says SPA-only, hrefs for context-menu/copy semantics.
+  (Full param-sync would put URL state ahead of the 6-post dataset's
+  complexity budget; revisit if posts > per-page x2.)
+- **F9 dead exports** — `escapeRegExp` deleted (search is tokenizer-based,
+  zero regex-from-user-text; its test removed with it).
+  `hasLocalStorage`/`readStoredThemePref` retained — they are the PUBLIC SSR-
+  degradation surface of storage.ts, pinned by storage.test.ts SSR/private-
+  mode suites (deleting them would delete the only test hook proving the
+  degrade path). `useNavigate` stays (vendored router API parity).
+  `data-emotion-theme` attribute: DELETED — grep shows vendor/emotion stamps
+  only `data-emotion`/`data-emotion-retire` on <style> tags; the -theme
+  variant had zero consumers app or vendor, and global-styles + FOUC specs
+  consume only `data-theme`. (Self-catch: my first F9 patch tried to justify
+  the attr with a vendor-convention story grep disproved — fabricated
+  rationale rejected before commit, exactly the §1 rule.)
+- **F10 main-module detection** — REAL, FIXED: exact `import.meta.url ===
+  pathToFileURL(resolve(argv[1])).href` identity; server smoke-tested (200 +
+  escaped 404 probe) before killing.
+- **F12 tracked cruft** — `:memory` DB + probe test were already removed
+  pre-report; graphify-out/ cache now untracked + gitignored (`68690c2`).
+- **F5/F8/F11** — F5 probe file already gone; F8 (chip/recipe extraction)
+  and F11 (gzip-ext dotfile footgun, prerender-built tracking) accepted as
+  known-and-tolerated: F8 is the V5 appearance-contract with per-page
+  divergence documented; F11's COMPRESSIBLE set can't match dotfiles.
+
+Gates after this batch: see next commit; 499 unit + full battery re-run.

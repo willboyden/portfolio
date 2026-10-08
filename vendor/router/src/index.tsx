@@ -89,7 +89,16 @@ export function matchRoute(pattern: string, pathname: string): Record<string, st
   const params: Record<string, string> = {};
   keys.forEach((key, index) => {
     const raw = found[index + 1];
-    if (raw !== undefined) params[key] = decodeURIComponent(raw);
+    if (raw !== undefined) {
+      /* R3-A F6: '%'-broken encoding must not throw URIError inside render
+       * (no error boundary exists; a crash would white-screen the SPA).
+       * Fall back to the raw segment — same call serve-dist's safeJoin makes. */
+      try {
+        params[key] = decodeURIComponent(raw);
+      } catch {
+        params[key] = raw;
+      }
+    }
   });
   return params;
 }

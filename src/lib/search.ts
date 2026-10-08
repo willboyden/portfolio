@@ -52,10 +52,6 @@ export interface SearchOptions<T extends SearchableRecord> {
 const DEFAULT_WEIGHTS = { title: 8, summary: 3, tags: 5, extra: 2 } as const;
 
 /** Escape user text for literal use inside a RegExp. */
-export function escapeRegExp(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 /** Lowercase + strip diacritics + collapse whitespace. Idempotent. */
 export function normalizeText(input: string): string {
   return input

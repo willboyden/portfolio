@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { byDateDesc, escapeRegExp, normalizeText, search, tokenize } from 'app/lib/search';
+import { byDateDesc, normalizeText, search, tokenize } from 'app/lib/search';
 import type { SearchableRecord } from 'app/lib/search';
 
 const R = (over: Partial<SearchableRecord> & { slug: string }): SearchableRecord => ({
@@ -20,15 +20,6 @@ const RECORDS: SearchableRecord[] = [
   R({ slug: 'legacy', title: 'Old Rust Services', summary: 'Notes on retiring a monolith', tags: ['rust'], date: '2024-01-01' }),
 ];
 
-describe('escapeRegExp', () => {
-  it('escapes metacharacters but leaves plain words alone', () => {
-    expect(escapeRegExp('a.b*c')).toBe('a\\.b\\*c');
-    expect(escapeRegExp('[link](x)?$')).toBe('\\[link\\]\\(x\\)\\?\\$');
-    expect(escapeRegExp('plain')).toBe('plain');
-    /* The escaped output matches the literal text, not the pattern. */
-    expect('cost 10$'.match(new RegExp(escapeRegExp('10$')))).not.toBeNull();
-  });
-});
 
 describe('normalizeText / tokenize', () => {
   it('strips diacritics, lowercases, collapses whitespace', () => {

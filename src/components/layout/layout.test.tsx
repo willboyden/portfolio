@@ -578,7 +578,7 @@ describe('theme preference helpers', () => {
 
   it('document attributes carry data-theme and a color-scheme value', () => {
     expect(themeDocumentAttributes('light')).toEqual({
-      rootAttributes: { 'data-theme': 'light', 'data-emotion-theme': 'light' },
+      rootAttributes: { 'data-theme': 'light' },
       metaContent: 'light',
     });
     expect(themeDocumentAttributes('dark').metaContent).toBe('dark');

@@ -85,7 +85,9 @@ export function themeDocumentAttributes(name: ThemeName): {
   metaContent: string;
 } {
   return {
-    rootAttributes: { 'data-theme': name, 'data-emotion-theme': name },
+    /* R3-A F9: `data-emotion-theme` removed — zero consumers in app or
+     * vendor (grep-verified); `data-theme` is the only theme marker. */
+    rootAttributes: { 'data-theme': name },
     metaContent: name,
   };
 }

@@ -146,7 +146,8 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
   });
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
+import { pathToFileURL } from 'node:url';
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const { port: bound } = await startServer();
   console.log(`serving ${root} at http://127.0.0.1:${bound}`);
 }
