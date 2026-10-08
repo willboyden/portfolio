@@ -36,9 +36,6 @@ import {
   VisuallyHidden,
 } from 'app/components/ui';
 
-/* Cast per the ui.test.tsx polymorphic-`as` pattern (Home.tsx precedent). */
-const ROUTER_LINK = Link as unknown as 'a';
-
 /* -------------------------------------------------------------------------- */
 /* Pure, unit-tested helpers                                                   */
 /* -------------------------------------------------------------------------- */

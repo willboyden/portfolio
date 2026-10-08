@@ -1,22 +1,22 @@
 /**
  * Videos — the video library. Honest links, not fake players: every row is an
  * external anchor (target="_blank", rel="noopener noreferrer") to the host —
- * no embed placeholders that pretend to play (CONTRACT §6 honesty, and a
- * fake play button on a dead player is the classic portfolio lie).
+ * no embed placeholders that pretend to play (a dead play button is the
+ * classic portfolio lie; the brief bans fake embed players outright).
  *
  * Grouping: videos dated in the FUTURE are "Upcoming" (premiere/announced
  * slots), the rest are "Past videos", newest first. "Today" is pinned to UTC
- * because the site is prerendered and the reader's timezone must not flip an
- * item between groups server-side vs client-side — but the cutoff is passed
- * INTO the pure helper (`splitByDate`) so tests are deterministic.
+ * (src/lib/format.ts posture — the prerendered shell and the hydrated client
+ * must agree), and the cutoff is passed INTO the pure helper (`splitByDate`)
+ * so unit tests are deterministic.
  *
- * A11Y: one h1; groups are landmark sections with h2s; duration/date/event
- * metadata sits in a mono meta line; the provider badge is text (never a
- * colour-only signal); each row's title is a real anchor with the external
- * icon and a VisuallyHidden "opens in a new tab" suffix.
+ * A11Y: one h1; groups are landmark sections named by h2s; the provider badge
+ * is text (never colour-only); each row's title is a real anchor carrying the
+ * external affordance + a VisuallyHidden "opens in a new tab" suffix; focus
+ * rings come from the token palette.
  */
 import styled from '@emotion/styled';
-import { css } from '@emotion/react';
+import { css, useTheme } from '@emotion/react';
 import { content, type Video } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
 import { formatDate, pluralize } from 'app/lib/format';
@@ -54,13 +54,8 @@ export function providerLabel(provider: Video['provider']): string {
   return provider === 'youtube' ? 'YouTube' : provider === 'vimeo' ? 'Vimeo' : 'Other';
 }
 
-/**
- * TODAY under UTC — matches src/lib/format.ts's zone-pinned posture. Computed
- * once per render on purpose: the grouping must agree between the prerendered
- * shell and the hydrated client for any given day.
- */
-function todayUtcIso(): string {
-  const now = new Date();
+/** TODAY under UTC — zone-pinned so server and client group identically. */
+export function todayUtcIso(now: Date = new Date()): string {
   const y = now.getUTCFullYear();
   const m = String(now.getUTCMonth() + 1).padStart(2, '0');
   const d = String(now.getUTCDate()).padStart(2, '0');
@@ -96,7 +91,7 @@ const VideoList = styled.ul`
 
 const VideoRow = styled.li`
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: ${(p) => p.theme.space[4]};
   padding-block: ${(p) => p.theme.space[4]};
@@ -112,17 +107,13 @@ const RowMain = styled.div`
   flex-direction: column;
   gap: ${(p) => p.theme.space[2]};
   min-width: 0;
-  flex: 1 1 ${(p) => `calc(${p.theme.space[10]} + ${(p) => p.theme.space[12]} + ${p.theme.space[12]})`};
+  flex: 1 1 auto;
 `;
 
 const TitleRow = styled.h3`
   margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: ${(p) => p.theme.space[3]};
-  flex-wrap: wrap;
   font-size: ${(p) => p.theme.font.sizes.lg};
-  font-weight: ${(p) => p.theme.font.weights.semibold);
+  font-weight: ${(p) => p.theme.font.weights.semibold};
   line-height: ${(p) => p.theme.font.leading.snug};
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
@@ -148,6 +139,15 @@ const MetaLine = styled.p`
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
+const DurationBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
 const RowAside = styled.div`
   display: flex;
   align-items: center;
@@ -155,14 +155,14 @@ const RowAside = styled.div`
   flex: none;
 `;
 
+/* External anchors take css() classes (not styled() of the router Link — that
+ * pitfall is documented in Nav.tsx; plain <a> would also be fine here). */
 function videoTitleClass(theme: Tokens): string {
   return css({
     color: theme.color.text,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
-    display: 'inline-flex',
-    alignItems: 'baseline',
-    gap: theme.space[2],
+    display: 'inline',
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',
@@ -172,8 +172,15 @@ function videoTitleClass(theme: Tokens): string {
   });
 }
 
+const InlineIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -0.15em;
+  color: ${(p) => p.theme.color.accent};
+`;
+
 function VideoRowItem({ video }: { video: Video }): React.ReactNode {
-  const theme = useThemeLocal();
+  const theme = useTheme() as Tokens;
   return (
     <VideoRow data-testid="video-row">
       <RowMain>
@@ -185,7 +192,9 @@ function VideoRowItem({ video }: { video: Video }): React.ReactNode {
             className={videoTitleClass(theme)}
             data-testid="video-link"
           >
-            <Icon name="play" size={16} />
+            <InlineIcon>
+              <Icon name="play" size={16} />
+            </InlineIcon>{' '}
             {video.title}
             <VisuallyHidden>(opens in a new tab)</VisuallyHidden>
           </a>
@@ -211,22 +220,14 @@ function VideoRowItem({ video }: { video: Video }): React.ReactNode {
         <Tag size="sm" tone="outline" data-testid="video-provider">
           {providerLabel(video.provider)}
         </Tag>
-        <MetaLine as="span">
+        <DurationBadge data-testid="video-duration">
           <Icon name="clock" size={14} />
           {video.duration}
-        </MetaLine>
+        </DurationBadge>
       </RowAside>
     </VideoRow>
   );
 }
-
-/* Small local alias so the row reads without the tokens cast at every call. */
-import { useTheme } from '@emotion/react';
-function useThemeLocal(): Tokens {
-  return useTheme() as Tokens;
-}
-const useThemeLocalAlias = useThemeLocal;
-export { useThemeLocalAlias as useThemeLocal };
 
 /* -------------------------------------------------------------------------- */
 /* Page                                                                        */
@@ -258,9 +259,14 @@ export function Videos(): React.ReactNode {
           Videos
         </Heading>
         <Lede>
-          Conference talks, meet-up demos, and interviews — every entry links
-          out to the host where it actually plays. {total > 0 && pluralize(total, 'video') + '.'}
+          Conference talks, meet-up demos, and interviews — every entry links out to the host
+          where it actually plays.
         </Lede>
+        {total > 0 && (
+          <MetaLine role="status" data-testid="videos-count">
+            {pluralize(total, 'video')} in the library.
+          </MetaLine>
+        )}
       </PageHeader>
 
       {total === 0 ? (

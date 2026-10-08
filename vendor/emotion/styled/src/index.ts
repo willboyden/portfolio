@@ -69,7 +69,7 @@ const SAFE_DOM_PROPS = new Set([
    * silently drop fill/stroke/viewBox and every inline icon renders blank. */
   'focusable','viewBox','preserveAspectRatio','d','cx','cy','r','rx','ry','x','x1','x2','y','y1','y2','points',
   'fill','fillOpacity','fillRule','stroke','strokeOpacity','strokeWidth','strokeLinecap','strokeLinejoin',
-  'strokeDasharray','strokeDashoffset','strokeMiterlimit','strokeMiterlimit','clipPath','clipRule',
+  'strokeDasharray','strokeDashoffset','strokeMiterlimit','clipPath','clipRule',
   'stopColor','stopOpacity','offset','textAnchor','dominantBaseline','vectorEffect','shapeRendering',
   'transform','transformOrigin','markerEnd','markerStart','markerMid','targetX','targetY','aspectRatio','xmlns','xmlnsXLink',
 ]);
