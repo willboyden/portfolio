@@ -8,7 +8,7 @@ slug: testing-half-your-system-is-a-prompt
 summary: >-
   You cannot unit-test a prompt, so stop trying. Deterministic boundaries,
   a build that fails on a typo, golden output validated as an artifact, and
-  statistical assertions with reps — the four patterns behind 501 unit tests
+  statistical assertions with reps — the four patterns behind 500 unit tests
   and 53 browser checks on a site whose content pipeline eats markdown.
 tags: [testing, llm, evals, typescript, python]
 date: 2026-10-06
@@ -96,12 +96,12 @@ page and fails if any inline, execution-capable script survived.
 The container is air-gapped, so the harness is plain Node. Vitest runs in the
 `node` environment only — there is no jsdom package — so component tests
 render through `renderToStaticMarkup` and assert structure: heading order,
-hrefs, rendered content. That is 501 tests across 20 files in about 0.8
+hrefs, rendered content. That is 500 tests across 20 files in about 0.8
 seconds, and it is genuinely useful because SSR caught a class of bugs
 (client hydration) that jsdom fakes anyway.
 
 Real behavior then moves to the browser: a self-written ~700-line CDP harness
-drives real Chromium through 49 checks in 7 spec files. Security asserts CSP
+drives real Chromium through 53 checks in 8 spec files. Security asserts CSP
 `script-src 'self'` and `frame-ancestors 'none'`, nosniff and frame-deny
 headers, and greps shipped markup for secret shapes (`sk-…`, `AKIA…`, bearer
 tokens). Performance enforces budgets rather than aspirations: under 250 kB
