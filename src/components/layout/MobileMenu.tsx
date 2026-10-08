@@ -102,6 +102,18 @@ const Backdrop = styled.div`
   background: ${(p) => p.theme.color.scrim};
   animation: fade-in ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.easeOut};
 
+  /* R1A-06: these were referenced but never defined — the open animation was
+   * dead CSS. Nested @keyframes (the Spinner.tsx pattern) flatten verbatim,
+   * so the rule ships in the same sheet as the component that uses it. */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
@@ -120,6 +132,18 @@ const Panel = styled.div`
   box-shadow: ${(p) => p.theme.shadow.lg};
   font-family: ${(p) => p.theme.font.sans};
   animation: slide-down ${(p) => p.theme.motion.base} ${(p) => p.theme.motion.easeOut};
+
+  /* R1A-06: defined alongside the reference (see Backdrop note). */
+  @keyframes slide-down {
+    from {
+      transform: translateY(-8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
@@ -230,13 +254,41 @@ export function MobileMenu({
     if (staticRender) return;
     if (!open) {
       const target = restoreTarget.current;
-      if (target && typeof target.focus === 'function' && target.isConnected) target.focus();
+      restoreTarget.current = null; /* R1-B F4: one-shot; a later open recaptures */
+      /* offsetParent null = hidden (e.g. MenuSlot is display:none ≥769px and
+       * the device rotated while open) — .focus() on hidden nodes lands
+       * focus on <body>; skip instead. */
+      if (target && typeof target.focus === 'function' && target.isConnected && target.offsetParent !== null) {
+        target.focus();
+      }
       return;
     }
     const panel = panelRef.current;
     if (!panel) return;
     const first = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     (first ?? panel).focus({ preventScroll: true });
+  }, [open, staticRender]);
+
+  /* R1-B F4: aria-modal alone does not stop NVDA browse mode from reading and
+   * activating the page *behind* the dialog — background landmarks must be
+   * inert while open. We inert every top-level app landmark (everything
+   * outside the dialog's own ancestor chain) for the duration of `open`. */
+  useEffect(() => {
+    if (staticRender || !open || typeof document === 'undefined') return;
+    const dialog = panelRef.current;
+    if (!dialog) return;
+    const inerted: Element[] = [];
+    for (const el of Array.from(document.body.children)) {
+      if (el.contains(dialog) || el === dialog) continue;
+      if (!(el instanceof HTMLElement)) continue;
+      if (el.tagName === 'SCRIPT' || el.tagName === 'TEMPLATE') continue;
+      if (el.hasAttribute('inert')) continue; /* already inert: don't steal it */
+      el.setAttribute('inert', '');
+      inerted.push(el);
+    }
+    return () => {
+      for (const el of inerted) el.removeAttribute('inert');
+    };
   }, [open, staticRender]);
 
   /* Escape + focus trap, scoped to the dialog while it is open. */

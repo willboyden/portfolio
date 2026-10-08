@@ -26,6 +26,7 @@ import {
   __sheetCss,
   type StyleObject,
   type StyleValue,
+  hash,
 } from '@emotion-mini/core';
 
 /* -------------------------------------------------------------------------- */
@@ -149,7 +150,9 @@ export function Global({ styles }: GlobalProps): null {
   if (cssText.trim()) {
     /* Deterministic key so prerender + client agree. Cumulative sheet:
      * re-registering the same key is idempotent (see registry). */
-    const key = `global:${cssText.slice(0, 40)}`;
+    /* R1A-05: hash the FULL text — a 40-char prefix collides two Globals that
+       * share a selector prefix, silently overwriting the first one's rules. */
+    const key = `global:${hash(cssText)}`;
     registerRaw(key, cssText);
   }
 

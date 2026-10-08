@@ -33,6 +33,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Home', to: '/', exact: true },
   { label: 'Projects', to: '/projects' },
   { label: 'Writing', to: '/writing' },
+  { label: 'Videos', to: '/videos' },
   { label: 'Talks', to: '/talks' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },

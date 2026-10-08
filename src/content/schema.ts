@@ -15,6 +15,17 @@ const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected a YYYY-MM-DD d
 /** kebab-case, matching the content file name minus `.md`. */
 const Slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'expected a kebab-case slug');
 
+/**
+ * R1-C #2: z.string().url() is scheme-agnostic — it accepts javascript:,
+ * data:, file:. Frontmatter URLs render straight into <a href>, so the
+ * schema must enforce the SAME scheme allowlist the markdown engine's
+ * sanitizeUrl applies to prose links. One policy, both entry points.
+ */
+export const SafeUrl = z
+  .string()
+  .url('expected an absolute URL')
+  .refine((u) => /^(https?:|mailto:)/i.test(u), 'only http(s)/mailto URLs are allowed');
+
 const baseShape = {
   slug: Slug,
   title: z.string().min(1),
@@ -25,9 +36,9 @@ const baseShape = {
 
 export const ProjectLinksSchema = z
   .object({
-    source: z.string().url().optional(),
-    demo: z.string().url().optional(),
-    paper: z.string().url().optional(),
+    source: SafeUrl.optional(),
+    demo: SafeUrl.optional(),
+    paper: SafeUrl.optional(),
   })
   .strict();
 
@@ -70,7 +81,7 @@ export const PostSchema = z
 export const VideoSchema = z
   .object({
     ...baseShape,
-    url: z.string().url(),
+    url: SafeUrl,
     embedId: z.string().min(1).optional(),
     provider: z.enum(['youtube', 'vimeo', 'other']),
     duration: z.string().min(1),
@@ -84,8 +95,8 @@ export const TalkSchema = z
     ...baseShape,
     event: z.string().min(1),
     location: z.string().min(1),
-    slidesUrl: z.string().url().optional(),
-    videoUrl: z.string().url().optional(),
+    slidesUrl: SafeUrl.optional(),
+    videoUrl: SafeUrl.optional(),
     abstract: z.string().min(1),
   })
   .strict();

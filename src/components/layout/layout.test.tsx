@@ -114,11 +114,14 @@ describe('Nav', () => {
     });
   });
 
-  it('nav item list is exactly Home, Projects, Writing, Talks, About, Contact', () => {
+  it('nav item list is exactly Home, Projects, Writing, Videos, Talks, About, Contact', () => {
+    /* R1-B F8: /videos is a routed page; chrome must link it or nobody can
+     * reach it. If nav changes, update CONTRACT §3 routes AND this list. */
     expect(NAV_ITEMS.map((i) => i.label)).toEqual([
       'Home',
       'Projects',
       'Writing',
+      'Videos',
       'Talks',
       'About',
       'Contact',

@@ -766,7 +766,7 @@ function Global({ styles }) {
 	const theme = useContextSafe();
 	const list = Array.isArray(styles) ? styles : [styles];
 	const cssText = useMemo(() => serializeArgs(list, theme), [styles, theme]);
-	if (cssText.trim()) registerRaw(`global:${cssText.slice(0, 40)}`, cssText);
+	if (cssText.trim()) registerRaw(`global:${hash(cssText)}`, cssText);
 	useEffect(() => {}, [cssText]);
 	return null;
 }
@@ -866,7 +866,7 @@ var themes = {
 			borderStrong: "#33405a",
 			text: "#eef1f8",
 			textMuted: "#9aa5bd",
-			textSubtle: "#6b7791",
+			textSubtle: "#7c88a3",
 			accent: "#5b8cff",
 			accentText: "#ffffff",
 			accentSoft: "rgba(91, 140, 255, 0.14)",
@@ -897,12 +897,12 @@ var themes = {
 			borderStrong: "#b6c0d4",
 			text: "#101725",
 			textMuted: "#4a5568",
-			textSubtle: "#6b7791",
+			textSubtle: "#5d6880",
 			accent: "#2f5fe0",
 			accentText: "#ffffff",
 			accentSoft: "rgba(47, 95, 224, 0.1)",
 			accentBorder: "rgba(47, 95, 224, 0.35)",
-			success: "#0e8a5f",
+			success: "#0b7a53",
 			warning: "#9a6204",
 			danger: "#c2273f",
 			focus: "#2f5fe0",
@@ -1029,10 +1029,10 @@ function buildGlobalStyles(theme) {
 			color: theme.color.text
 		},
 		"@media (prefers-reduced-motion: reduce)": { "*, *::before, *::after": {
-			animationDuration: "0.01ms",
-			animationIterationCount: "1",
-			transitionDuration: "0.01ms",
-			scrollBehavior: "auto"
+			animationDuration: "0.01ms !important",
+			animationIterationCount: "1 !important",
+			transitionDuration: "0.01ms !important",
+			scrollBehavior: "auto !important"
 		} }
 	};
 }
@@ -1975,8 +1975,10 @@ function buildComponent(tag, displayName, parsers, forward, options) {
 		const domProps = {};
 		for (const [key, value] of Object.entries(rawProps)) {
 			if (key === "as" || key === "forwardedAs" || key === "css" || key === "theme" || key === "className") continue;
-			if (key.startsWith("$")) continue;
-			if (!(typeof asElement === "string" ? forward(key) : isPropValid(key))) continue;
+			if (typeof asElement === "string") {
+				if (key.startsWith("$")) continue;
+				if (!forward(key)) continue;
+			}
 			domProps[key] = value;
 		}
 		const classNames = [ownClass, rawProps.className].filter(Boolean).join(" ");
@@ -2164,6 +2166,10 @@ var NAV_ITEMS = [
 	{
 		label: "Writing",
 		to: "/writing"
+	},
+	{
+		label: "Videos",
+		to: "/videos"
 	},
 	{
 		label: "Talks",
@@ -2460,6 +2466,18 @@ var Backdrop = styled.div`
   background: ${(p) => p.theme.color.scrim};
   animation: fade-in ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.easeOut};
 
+  /* R1A-06: these were referenced but never defined — the open animation was
+   * dead CSS. Nested @keyframes (the Spinner.tsx pattern) flatten verbatim,
+   * so the rule ships in the same sheet as the component that uses it. */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
@@ -2477,6 +2495,18 @@ var Panel$3 = styled.div`
   box-shadow: ${(p) => p.theme.shadow.lg};
   font-family: ${(p) => p.theme.font.sans};
   animation: slide-down ${(p) => p.theme.motion.base} ${(p) => p.theme.motion.easeOut};
+
+  /* R1A-06: defined alongside the reference (see Backdrop note). */
+  @keyframes slide-down {
+    from {
+      transform: translateY(-8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
@@ -2550,12 +2580,30 @@ function MobileMenu({ open, onClose, currentPath, returnFocusRef, staticRender =
 		if (staticRender) return;
 		if (!open) {
 			const target = restoreTarget.current;
-			if (target && typeof target.focus === "function" && target.isConnected) target.focus();
+			restoreTarget.current = null;
+			if (target && typeof target.focus === "function" && target.isConnected && target.offsetParent !== null) target.focus();
 			return;
 		}
 		const panel = panelRef.current;
 		if (!panel) return;
 		(panel.querySelector(FOCUSABLE_SELECTOR) ?? panel).focus({ preventScroll: true });
+	}, [open, staticRender]);
+	useEffect(() => {
+		if (staticRender || !open || typeof document === "undefined") return;
+		const dialog = panelRef.current;
+		if (!dialog) return;
+		const inerted = [];
+		for (const el of Array.from(document.body.children)) {
+			if (el.contains(dialog) || el === dialog) continue;
+			if (!(el instanceof HTMLElement)) continue;
+			if (el.tagName === "SCRIPT" || el.tagName === "TEMPLATE") continue;
+			if (el.hasAttribute("inert")) continue;
+			el.setAttribute("inert", "");
+			inerted.push(el);
+		}
+		return () => {
+			for (const el of inerted) el.removeAttribute("inert");
+		};
 	}, [open, staticRender]);
 	useEffect(() => {
 		if (staticRender || !open || typeof document === "undefined") return;
@@ -2675,7 +2723,10 @@ var Bar = styled.header`
   @supports (backdrop-filter: blur(12px)) {
     backdrop-filter: blur(12px) saturate(140%);
     -webkit-backdrop-filter: blur(12px) saturate(140%);
-    background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 72%, transparent)`};
+    /* R1-B F7: at 72% opacity the header composites to ~rgb(79,81,86) over
+     * white content — nav text fell to 3.19:1 transiently. >=85% keeps every
+     * nav pair above AA regardless of what scrolls underneath. */
+    background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 88%, transparent)`};
   }
 `;
 var Inner$1 = styled.div`
@@ -2721,7 +2772,10 @@ var WordmarkMark = styled.span`
   height: 1.5em;
   border-radius: ${(p) => p.theme.radius.sm};
   background: ${(p) => p.theme.color.accent};
-  color: ${(p) => p.theme.color.accentText};
+  /* R1-B F5: accentText (#fff) on accent is only 3.16:1 in dark — exactly the
+   * combo Button.tsx documents as rejected. bg-on-accent is the verified
+   * primary pair (6.11 dark / 5.16 light). */
+  color: ${(p) => p.theme.color.bg};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.bold};
 `;
@@ -3288,7 +3342,7 @@ function Layout({ children, currentPath, name = "Alex Rivera", role, menuOpen = 
 	})] });
 }
 var content_default = {
-	generatedAt: "2026-10-08T05:08:43.025Z",
+	generatedAt: "2026-10-08T05:14:33.741Z",
 	projects: [
 		{
 			"slug": "langfuse-dashboard",
@@ -3505,17 +3559,26 @@ var content_default = {
 */
 /** `YYYY-MM-DD`, enforced as a string (JSON has no date type). */
 var IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected a YYYY-MM-DD date");
+/** kebab-case, matching the content file name minus `.md`. */
+var Slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "expected a kebab-case slug");
+/**
+* R1-C #2: z.string().url() is scheme-agnostic — it accepts javascript:,
+* data:, file:. Frontmatter URLs render straight into <a href>, so the
+* schema must enforce the SAME scheme allowlist the markdown engine's
+* sanitizeUrl applies to prose links. One policy, both entry points.
+*/
+var SafeUrl = z.string().url("expected an absolute URL").refine((u) => /^(https?:|mailto:)/i.test(u), "only http(s)/mailto URLs are allowed");
 var baseShape = {
-	slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "expected a kebab-case slug"),
+	slug: Slug,
 	title: z.string().min(1),
 	summary: z.string().min(1),
 	tags: z.array(z.string().min(1)),
 	date: IsoDate
 };
 var ProjectLinksSchema = z.object({
-	source: z.string().url().optional(),
-	demo: z.string().url().optional(),
-	paper: z.string().url().optional()
+	source: SafeUrl.optional(),
+	demo: SafeUrl.optional(),
+	paper: SafeUrl.optional()
 }).strict();
 var ProjectMetricSchema = z.object({
 	label: z.string().min(1),
@@ -3550,7 +3613,7 @@ var PostSchema = z.object({
 }).strict();
 var VideoSchema = z.object({
 	...baseShape,
-	url: z.string().url(),
+	url: SafeUrl,
 	embedId: z.string().min(1).optional(),
 	provider: z.enum([
 		"youtube",
@@ -3565,8 +3628,8 @@ var TalkSchema = z.object({
 	...baseShape,
 	event: z.string().min(1),
 	location: z.string().min(1),
-	slidesUrl: z.string().url().optional(),
-	videoUrl: z.string().url().optional(),
+	slidesUrl: SafeUrl.optional(),
+	videoUrl: SafeUrl.optional(),
 	abstract: z.string().min(1)
 }).strict();
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
@@ -4195,7 +4258,7 @@ function Section({ id, size = "default", eyebrow, title, description, className,
 		id,
 		$size: size,
 		className,
-		"aria-labelledby": headingId,
+		"aria-labelledby": title ? headingId : void 0,
 		"data-testid": rest["data-testid"] ?? "section",
 		children: [(eyebrow || title || description) && /* @__PURE__ */ jsxs("header", { children: [
 			eyebrow && /* @__PURE__ */ jsx(Eyebrow$1, {
@@ -7538,6 +7601,10 @@ var SITE = {
 	name: "Alex Rivera",
 	url: "https://alexrivera.dev",
 	title: "Alex Rivera — AI Engineering & Technical Consulting",
+	/** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
+	shortTitle: "Alex Rivera",
+	/** Tagline appended to the home <title> only. */
+	tagline: "Technical Consulting",
 	description: "Portfolio of Alex Rivera, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.",
 	author: "Alex Rivera",
 	/** DRAFT: replace with the real X handle before launch (no @ prefix here). */

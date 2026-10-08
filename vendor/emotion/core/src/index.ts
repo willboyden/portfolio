@@ -214,16 +214,18 @@ export function registerRaw(key: string, css: string): void {
   writeRule(getSheet(), key, css);
 }
 
-/** Allocate a unique keyframe name and register the rule once. */
+/** Allocate a unique keyframe name and register the rule once.
+ *  R1A-03 fix: the CACHE only stabilizes the name (hash-derived anyway);
+ *  registration is re-checked against the sheet every call, so a route/test
+ *  that resets the sheet re-registers the rule instead of shipping the name
+ *  with no matching @keyframes text. */
 const keyframeCache = new Map<string, string>();
 export function registerKeyframes(nested: string): string {
   const trimmed = nested.trim();
-  const cached = keyframeCache.get(trimmed);
-  if (cached) return cached;
-  const name = `animation-${hash(trimmed)}`;
+  const name = keyframeCache.get(trimmed) ?? `animation-${hash(trimmed)}`;
+  keyframeCache.set(trimmed, name);
   const rule = flatten(`@keyframes ${name}{${trimmed}}`, '');
   registerRaw(`@keyframes ${name}`, rule);
-  keyframeCache.set(trimmed, name);
   return name;
 }
 

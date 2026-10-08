@@ -72,7 +72,7 @@ export function Section({
       id={id}
       $size={size}
       className={className}
-      aria-labelledby={headingId}
+      aria-labelledby={title ? headingId : undefined}
       data-testid={rest['data-testid'] ?? 'section'}
     >
       {(eyebrow || title || description) && (

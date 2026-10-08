@@ -38,7 +38,10 @@ const Bar = styled.header`
   @supports (backdrop-filter: blur(12px)) {
     backdrop-filter: blur(12px) saturate(140%);
     -webkit-backdrop-filter: blur(12px) saturate(140%);
-    background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 72%, transparent)`};
+    /* R1-B F7: at 72% opacity the header composites to ~rgb(79,81,86) over
+     * white content — nav text fell to 3.19:1 transiently. >=85% keeps every
+     * nav pair above AA regardless of what scrolls underneath. */
+    background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 88%, transparent)`};
   }
 `;
 
@@ -89,7 +92,10 @@ const WordmarkMark = styled.span`
   height: 1.5em;
   border-radius: ${(p) => p.theme.radius.sm};
   background: ${(p) => p.theme.color.accent};
-  color: ${(p) => p.theme.color.accentText};
+  /* R1-B F5: accentText (#fff) on accent is only 3.16:1 in dark — exactly the
+   * combo Button.tsx documents as rejected. bg-on-accent is the verified
+   * primary pair (6.11 dark / 5.16 light). */
+  color: ${(p) => p.theme.color.bg};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.bold};
 `;

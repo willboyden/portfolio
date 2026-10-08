@@ -183,9 +183,15 @@ function buildComponent<P extends object>(
     const domProps: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(rawProps)) {
       if (key === 'as' || key === 'forwardedAs' || key === 'css' || key === 'theme' || key === 'className') continue;
-      if (key.startsWith('$')) continue; /* transient — styling only */
-      const keep = typeof asElement === 'string' ? forward(key) : isPropValid(key);
-      if (!keep) continue;
+      if (typeof asElement === 'string') {
+        if (key.startsWith('$')) continue; /* transient — styling only, DOM tags */
+        if (!forward(key)) continue;
+      } else {
+        /* R1A-04 (Emotion semantics): custom component targets are NOT DOM —
+         * they consume their own props (including $transients: a
+         * styled(styled.div) chain needs the inner $props). Forward
+         * everything except the internals we already stripped above. */
+      }
       domProps[key] = value;
     }
 

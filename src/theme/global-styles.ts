@@ -99,13 +99,17 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
     },
 
     /* Reduced motion: global guard (contract §5). Components should still
-     * honour useReducedMotion() for behaviour; this backstops CSS animation. */
+     * honour useReducedMotion() for behaviour; this backstops CSS animation.
+     * !important is load-bearing (R1-B L1, live-Chromium probe): component
+     * @keyframes/scroll-behavior declarations (Spinner.ui-pulse, html smooth
+     * scroll) otherwise win on specificity and keep animating. This mirrors
+     * the standard reduced-motion kill-switch reset for the same reason. */
     '@media (prefers-reduced-motion: reduce)': {
       '*, *::before, *::after': {
-        animationDuration: '0.01ms',
-        animationIterationCount: '1',
-        transitionDuration: '0.01ms',
-        scrollBehavior: 'auto',
+        animationDuration: '0.01ms !important',
+        animationIterationCount: '1 !important',
+        transitionDuration: '0.01ms !important',
+        scrollBehavior: 'auto !important',
       },
     },
   };

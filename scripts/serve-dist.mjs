@@ -68,7 +68,7 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
         'referrer-policy': 'strict-origin-when-cross-origin',
         'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()',
         'content-security-policy':
-          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
       };
       if (acceptsGzip && existsSync(`${file}.gz`)) {
         servedFile = `${file}.gz`;
@@ -118,7 +118,9 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
       createReadStream(spaFallback).pipe(res);
       return;
     }
-    notFound(`No file for ${req.url} (prerendered 404 page missing? build 404 route)`);
+    /* R1-C #5: req.url is attacker-controlled — never interpolate raw into HTML. */
+    const safeUrl = String(req.url ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? '');
+    notFound(`No file for ${safeUrl} (prerendered 404 page missing? build 404 route)`);
   });
 
   return new Promise((resolveListen) => {

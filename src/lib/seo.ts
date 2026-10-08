@@ -29,6 +29,10 @@ export const SITE = {
   name: 'Alex Rivera',
   url: 'https://alexrivera.dev',
   title: 'Alex Rivera — AI Engineering & Technical Consulting',
+  /** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
+  shortTitle: 'Alex Rivera',
+  /** Tagline appended to the home <title> only. */
+  tagline: 'Technical Consulting',
   description:
     'Portfolio of Alex Rivera, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.',
   author: 'Alex Rivera',

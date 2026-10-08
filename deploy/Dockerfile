@@ -20,6 +20,7 @@ RUN npm run build            # emits dist/ (prerendered static site)
 FROM nginx:1.27-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/snippets /etc/nginx/snippets
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s \
