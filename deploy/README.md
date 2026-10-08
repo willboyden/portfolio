@@ -5,11 +5,29 @@ just serves it. No Node runtime in production.
 
 ## Option A — Docker (recommended)
 
-```bash
-npm run build                 # or skip: the Dockerfile builds in Stage 1
-docker build -f deploy/Dockerfile -t portfolio .
-docker run -d -p 80:80 --name portfolio portfolio
-```
+Two Dockerfiles, one honest split:
+
+- **`deploy/Dockerfile.prebuilt`** — what THIS repo ships today. The build is
+  done by the baked toolchain (`npm run deps` links the offline node_modules;
+  there is intentionally **no package-lock.json** for a networked `npm ci`
+  here), so the image just serves `dist/`:
+
+  ```bash
+  node scripts/build.mjs
+  docker build -f deploy/Dockerfile.prebuilt -t portfolio .
+  docker run -d -p 8080:80 --name portfolio portfolio
+  curl -sI http://localhost:8080/about/ | grep -i cache-control   # no-store
+  ```
+
+- **`deploy/Dockerfile`** — CI variant: builds inside the image via `npm ci`.
+  Use it from a networked pipeline **after committing a package-lock.json**
+  (`npm install --package-lock-only`). Without the lockfile, `npm ci` fails by
+  design — that stage is not exercised in the offline sandbox.
+
+Both variants copy the same `deploy/nginx.conf` + `deploy/snippets`, and a
+config-lint unit test (`src/config-lint.test.ts`) pins that parity, the
+healthcheck probe (`nc` — nginx:alpine has no wget), and the caching contract
+the e2e suite asserts.
 
 ## Option B — existing nginx
 

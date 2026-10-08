@@ -1,0 +1,21 @@
+# Build context hygiene for deploy/Dockerfile.prebuilt — only deploy/ and dist/
+# are needed by the image; everything else just bloats the context.
+.git
+.github
+node_modules
+e2e
+graphify-out
+coverage
+*.log
+.hermes
+content
+prerender-built
+src
+scripts
+vendor
+index.html
+package.json
+tsconfig*.json
+vite.config*.ts
+vitest.config.ts
+eslint.config.*

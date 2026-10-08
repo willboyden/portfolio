@@ -1,0 +1,23 @@
+# Prebuilt variant: serve an already-built dist/ with nginx. This is the
+# variant that matches how THIS repo actually builds — the offline container
+# has no network for `npm ci` (and there is no committed lockfile), so the
+# authoritative pipeline is:
+#
+#   node scripts/build.mjs                                  # -> dist/
+#   docker build -f deploy/Dockerfile.prebuilt -t portfolio .
+#
+# The CI variant (deploy/Dockerfile) builds inside the image and is the right
+# choice for a networked pipeline that first runs `npm ci` and commits a
+# package-lock.json.
+
+FROM nginx:1.27-alpine
+RUN rm /etc/nginx/conf.d/default.conf
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/snippets /etc/nginx/snippets
+COPY dist /usr/share/nginx/html
+EXPOSE 80
+
+# nginx:alpine ships without wget (busybox `nc` is present); use a
+# busybox-compatible probe so the healthcheck actually runs.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD nc -z 127.0.0.1 80 || exit 1

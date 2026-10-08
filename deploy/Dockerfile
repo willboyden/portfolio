@@ -23,5 +23,7 @@ COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/snippets /etc/nginx/snippets
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -qO/dev/null http://127.0.0.1/ || exit 1
+# nginx:alpine ships without wget (busybox `nc` is present); use a
+# busybox-compatible probe so the healthcheck actually runs.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD nc -z 127.0.0.1 80 || exit 1

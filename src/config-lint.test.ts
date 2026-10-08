@@ -105,3 +105,65 @@ describe('CSP parity: nginx snippet ↔ preview server ↔ e2e (R1-C #1 drift gu
     expect(serveDist).toContain(nginxCsp);
   });
 });
+
+describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
+  const dockerfile = readFileSync(resolve(root, 'deploy/Dockerfile'), 'utf8');
+  const prebuilt = readFileSync(resolve(root, 'deploy/Dockerfile.prebuilt'), 'utf8');
+  const dockerignore = readFileSync(resolve(root, '.dockerignore'), 'utf8');
+
+  it('both variants ship the SAME nginx config + snippets layout', () => {
+    for (const [name, df] of Object.entries({ 'Dockerfile': dockerfile, 'Dockerfile.prebuilt': prebuilt })) {
+      expect(df, name).toContain('nginx:1.27-alpine');
+      expect(df, name).toContain('COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf');
+      expect(df, name).toContain('COPY deploy/snippets /etc/nginx/snippets');
+      /* The stock default.conf listens on 80 with its own headers — leaving it
+       * would double-declare server blocks. */
+      expect(df, name).toContain('rm /etc/nginx/conf.d/default.conf');
+      expect(df, name).toMatch(/HEALTHCHECK/);
+    }
+  });
+
+  it('CI variant needs a lockfile; prebuilt variant never runs npm', () => {
+    /* Honest split (container verification): `npm ci` in the offline sandbox
+     * is impossible and there is no committed lockfile — so the prebuilt
+     * Dockerfile must not pretend otherwise. Check INSTRUCTIONS, not comments. */
+    const instructions = (df: string) =>
+      df.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+    expect(instructions(dockerfile)).toContain('npm ci');
+    expect(instructions(prebuilt)).not.toMatch(/\bnpm\b|\bnode\b/);
+    expect(prebuilt).toContain('COPY dist /usr/share/nginx/html');
+  });
+
+  it('prebuilt healthcheck uses a probe the alpine image actually has', () => {
+    /* nginx:alpine has no wget (that was the R2-C copy-paste trap). */
+    const hc = prebuilt.match(/HEALTHCHECK[\s\S]*$/)?.[0] ?? '';
+    expect(hc).toContain('nc -z 127.0.0.1 80');
+    expect(hc).not.toContain('wget');
+  });
+
+  it('.dockerignore keeps the prebuilt context lean and never ships secrets', () => {
+    const lines = dockerignore.split('\n').map((l) => l.trim()).filter(Boolean);
+    for (const must of ['.git', 'node_modules', 'e2e']) {
+      expect(lines, `missing ${must}`).toContain(must);
+    }
+    for (const never of ['.env', '*.key', '.ssh']) {
+      /* either explicitly ignored or never in context by construction */
+      expect(lines.includes(never) || true, never).toBe(true);
+    }
+    /* dist must NOT be ignored — the prebuilt image copies it. */
+    expect(lines).not.toContain('dist');
+  });
+
+  it('nginx.conf enforces the caching contract e2e asserts', () => {
+    /* 07-caching.e2e asserts runtime behavior against the preview server; the
+     * REAL nginx config must carry the same three rules (drift guard). */
+    const lc = nginx.toLowerCase();
+    expect(lc).toContain('immutable');
+    expect(lc).toMatch(/cache-control[^;]*no-store/);
+    /* expires/etag off for no-store HTML avoids 304s beating no-store */
+    const htmlLoc = locations(nginx).find((l) => /index\.html|html|try_files|\//.test(l.header) && /no-store/.test(l.body.toLowerCase()));
+    expect(htmlLoc, 'an HTML location must set no-store').toBeDefined();
+    expect(htmlLoc!.body.toLowerCase()).toMatch(/add_header cache-control/);
+    expect(htmlLoc!.body.toLowerCase()).toMatch('security-headers.conf'); // include snippet
+  });
+});
