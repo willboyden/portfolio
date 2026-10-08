@@ -1,0 +1,18 @@
+{
+  "name": "@emotion-mini/styled",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@emotion-mini/core": "1.0.0",
+    "@emotion-mini/react": "1.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

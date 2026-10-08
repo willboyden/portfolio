@@ -1,0 +1,212 @@
+/**
+ * emotion-mini core — hashing, nesting, sheet management, style registration.
+ *
+ * See vendor/emotion/README.md for the parity contract and known divergences.
+ */
+
+import { hash } from './hash';
+import { flatten } from './serialize';
+import { objectToCss } from './object-styles';
+
+export { hash, flatten, objectToCss };
+
+export type StyleObject = {
+  [key: string]:
+    | string
+    | number
+    | null
+    | undefined
+    | false
+    | StyleObject
+    | StyleObject[]
+    | Array<string | number | StyleObject>;
+};
+
+export type StyleValue =
+  | string
+  | number
+  | null
+  | undefined
+  | false
+  | StyleObject
+  | StyleValue[]
+  | ((props: any) => StyleValue);
+
+export interface SerializedStyle {
+  name: string;
+  styles: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Style sheet                                                                */
+/* -------------------------------------------------------------------------- */
+
+export interface Sheet {
+  /** class name -> flattened rule text, insertion ordered (dedupe + prerender). */
+  inserted: Map<string, string>;
+  container: HTMLElement | null;
+  tag: HTMLStyleElement | null;
+}
+
+const SHEET_KEY = '__emotionMiniSheet__';
+
+export function getSheet(): Sheet {
+  const g = globalThis as Record<string, unknown>;
+  const existing = g[SHEET_KEY] as Sheet | undefined;
+  if (existing) return existing;
+  const created: Sheet = { inserted: new Map(), container: null, tag: null };
+  Object.defineProperty(g, SHEET_KEY, { value: created, writable: true, configurable: true });
+  return created;
+}
+
+/** Render the inserted map into plain CSS text, in insertion order. */
+export function sheetToCss(inserted: Map<string, string>): string {
+  /* Values carry their own full rule text (selectors included). */
+  return [...inserted.values()].join('\n');
+}
+
+function writeRule(sheet: Sheet, key: string, styles: string): void {
+  /* Always record: during prerender the sheet is the CSS extraction source. */
+  if (sheet.inserted.get(key) === styles) return;
+  sheet.inserted.set(key, styles);
+  if (typeof document === 'undefined') return;
+
+  const container = sheet.container ?? document.head;
+  if (!sheet.tag || !container.contains(sheet.tag)) {
+    sheet.tag = document.createElement('style');
+    sheet.tag.setAttribute('data-emotion', 'mini');
+    container.appendChild(sheet.tag);
+  }
+  sheet.tag.textContent = sheetToCss(sheet.inserted);
+}
+
+/** Test/prerender helper: forget all generated CSS. */
+export function __resetSheet(): void {
+  const sheet = getSheet();
+  sheet.inserted.clear();
+  if (sheet.tag) sheet.tag.textContent = '';
+}
+
+/** Test/prerender helper: CSS generated so far, insertion ordered. */
+export function __sheetCss(): string {
+  return sheetToCss(getSheet().inserted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Serialization                                                              */
+/* -------------------------------------------------------------------------- */
+
+function isTemplateStrings(value: unknown): value is TemplateStringsArray {
+  return Array.isArray(value) && 'raw' in (value as object);
+}
+
+/**
+ * Normalize tagged-template call arguments into a flat, correctly interleaved
+ * argument list: [strings[0],interp[0],strings[1],interp[1],...,strings[n]].
+ *
+ * Without this, flattening the TemplateStringsArray first would emit
+ * `color: ;red` instead of `color: red` — the pairing of static text with its
+ * interpolations would be lost.
+ */
+export function interpolate(args: unknown[]): StyleValue[] {
+  if (!isTemplateStrings(args[0])) return args as StyleValue[];
+  const strings = args[0];
+  const interpolations = args.slice(1);
+  const out: StyleValue[] = [];
+  strings.forEach((part, index) => {
+    out.push(part);
+    if (index < interpolations.length) out.push(interpolations[index] as StyleValue);
+  });
+  return out;
+}
+
+/**
+ * Turn Emotion-style arguments (template literals, objects, arrays, theme
+ * functions) into one nested CSS string.
+ */
+export function serializeArgs(args: StyleValue[], theme: unknown): string {
+  let out = '';
+
+  const consume = (value: StyleValue): void => {
+    if (value === null || value === undefined || value === false) return;
+    if (typeof value === 'number') {
+      out += String(value);
+      return;
+    }
+    if (typeof value === 'string') {
+      out += value;
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value as StyleValue[]) consume(item);
+      return;
+    }
+    if (typeof value === 'function') {
+      consume((value as (p: unknown) => StyleValue)(theme));
+      return;
+    }
+    if (typeof value === 'object') {
+      out += objectToCss(value as Record<string, never>);
+      return;
+    }
+    throw new Error(`[emotion-mini] unsupported style argument of type ${typeof value}`);
+  };
+
+  for (const arg of args) consume(arg);
+  return out;
+}
+
+/**
+ * Serialize a styled component's styles for a concrete props object.
+ *
+ * The class name is a hash of the resolved rule text, exactly like Emotion: two
+ * instances of one component with different dynamic props get two class names,
+ * and identical rules dedupe to one class regardless of which component produced
+ * them. Prerender and client therefore agree without sharing any counter state.
+ */
+export function serializeStyles(
+  displayName: string,
+  args: StyleValue[],
+  props: Record<string, unknown>,
+): SerializedStyle {
+  const nested = serializeArgs(args, props);
+  if (!nested.trim()) return { name: '', styles: '' };
+
+  const name = hash(`${displayName}{${nested}}`);
+  const styles = flatten(nested, `.css-${name}`);
+  return { name, styles };
+}
+
+/**
+ * Register a flattened rule under `.css-<name>` and return the class name.
+ * Idempotent: re-registering identical text is free, and because the name is
+ * derived from the text, a changed rule always yields a fresh class.
+ */
+export function registerStyle(name: string, styles: string): string {
+  if (!name || !styles) return '';
+  writeRule(getSheet(), `.css-${name}`, styles);
+  return `css-${name}`;
+}
+
+/** Register a raw rule (Global styles, `@keyframes`, `@font-face`) verbatim. */
+export function registerRaw(key: string, css: string): void {
+  writeRule(getSheet(), key, css);
+}
+
+/** Allocate a unique keyframe name and register the rule once. */
+const keyframeCache = new Map<string, string>();
+export function registerKeyframes(nested: string): string {
+  const trimmed = nested.trim();
+  const cached = keyframeCache.get(trimmed);
+  if (cached) return cached;
+  const name = `animation-${hash(trimmed)}`;
+  const rule = flatten(`@keyframes ${name}{${trimmed}}`, '');
+  registerRaw(`@keyframes ${name}`, rule);
+  keyframeCache.set(trimmed, name);
+  return name;
+}
+
+/** Reset for tests: also clears the class-name cache. */
+export function __clearAll(): void {
+  __resetSheet();
+}

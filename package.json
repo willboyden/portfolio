@@ -1,0 +1,45 @@
+{
+  "name": "professional-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Professional portfolio, project index, engineering blog and talk/video library for an AI-focused technical consultant.",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "deps": "bash scripts/link-offline-deps.sh .",
+    "dev": "vite",
+    "build": "node scripts/build-content.mjs && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "node scripts/build-content.mjs && node e2e/run.mjs",
+    "content:build": "node scripts/build-content.mjs",
+    "media:gen": "python3 scripts/gen_media.py",
+    "lint": "eslint . --max-warnings 0",
+    "audit:site": "node scripts/audit-dist.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:e2e && npm run audit:site"
+  },
+  "dependencies": {
+    "@emotion/react": "file:vendor/emotion/react",
+    "@emotion/styled": "file:vendor/emotion/styled",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@testing-library/dom": "^10.4.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}

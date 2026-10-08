@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@emotion/react": ["./vendor/emotion/react/src/index.ts"],
+      "@emotion/styled": ["./vendor/emotion/styled/src/index.ts"],
+      "@emotion-mini/core": ["./vendor/emotion/core/src/index.ts"],
+      "@emotion-mini/react": ["./vendor/emotion/react/src/index.ts"],
+      "@emotion-mini/styled": ["./vendor/emotion/styled/src/index.ts"],
+      "@portfolio/router": ["./vendor/router/src/index.tsx"],
+      "app": ["./src/index.ts"],
+      "app/*": ["./src/*"]
+    },
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["vitest/globals", "node"]
+  },
+  "include": ["src", "vendor", "e2e", "scripts", "vitest.setup.ts", "vite.config.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist", "site"]
+}
