@@ -2161,7 +2161,7 @@ function buildTagMap() {
 }
 var styled = Object.assign(styledCall, buildTagMap());
 var content_default = {
-	generatedAt: "2026-10-08T05:29:38.273Z",
+	generatedAt: "2026-10-08T05:30:27.311Z",
 	projects: [
 		{
 			"slug": "langfuse-dashboard",
@@ -6220,9 +6220,11 @@ function relatedProjects(all, current, limit = 3) {
 		overlap: p.tags.filter((t) => current.tags.includes(t)).length
 	})).filter((entry) => entry.overlap > 0).sort((a, b) => b.overlap - a.overlap || (a.project.date < b.project.date ? 1 : a.project.date > b.project.date ? -1 : a.project.title.localeCompare(b.project.title))).slice(0, limit).map((entry) => entry.project);
 }
-/** Which of source/demo/paper links are present, in render order. */
+/** Which of source/demo/paper links are present, in render order.
+*  R2-A A2: `links` is optional (a project with no verified URL has none). */
 function projectLinkEntries(links) {
 	const entries = [];
+	if (!links) return entries;
 	if (links.source) entries.push({
 		kind: "source",
 		url: links.source

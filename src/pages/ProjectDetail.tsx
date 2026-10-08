@@ -58,11 +58,13 @@ export function relatedProjects(all: readonly Project[], current: Project, limit
     .map((entry) => entry.project);
 }
 
-/** Which of source/demo/paper links are present, in render order. */
+/** Which of source/demo/paper links are present, in render order.
+ *  R2-A A2: `links` is optional (a project with no verified URL has none). */
 export function projectLinkEntries(
-  links: Project['links'],
+  links: Project['links'] | undefined,
 ): { kind: 'source' | 'demo' | 'paper'; url: string }[] {
   const entries: { kind: 'source' | 'demo' | 'paper'; url: string }[] = [];
+  if (!links) return entries;
   if (links.source) entries.push({ kind: 'source', url: links.source });
   if (links.demo) entries.push({ kind: 'demo', url: links.demo });
   if (links.paper) entries.push({ kind: 'paper', url: links.paper });
