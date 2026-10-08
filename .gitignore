@@ -2,6 +2,7 @@ node_modules/
 dist/
 site/
 .cdp-prof-*/
+graphify-out/
 cdp_smoke*.png
 *.log
 .DS_Store
