@@ -145,8 +145,11 @@ const Grid = styled.div`
   @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
     /* R2-D V2: auto-fit, not a fixed 3 — with 2 featured projects a fixed
      * 3-col grid renders a dangling empty third column (reads as a missing
-     * card). auto-fit lets 2 cards span full width and 3+ fill naturally. */
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+     * card). auto-fit lets 2 cards span full width and 3+ fill naturally.
+     * R3D-02: the 20rem minimum only resolved 2 tracks until ~1150px, so in
+     * the 1024–1199 band a 3rd card dangled half-width (V2 all over again);
+     * 17rem resolves 3 tracks from container ≈921px. */
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   }
 `;
 

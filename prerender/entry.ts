@@ -95,6 +95,10 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- R3D-04: browser-chrome color must track the palette the page will
+         actually paint; media-matched pairs cover both palettes without JS. -->
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6" />
 ${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

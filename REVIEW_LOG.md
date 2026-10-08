@@ -281,3 +281,31 @@ half were already fixed by R3-C/R4-C. Remainder dispositioned same-session:
   divergence documented; F11's COMPRESSIBLE set can't match dotfiles.
 
 Gates after this batch: see next commit; 499 unit + full battery re-run.
+
+### R3-D (mobile-first design) — late-report disposition (reaper delivery)
+
+Report arrived after closeout (dispatched 05:54, delivered ~06:05 mail lag). Unlike
+the other late notices, its findings were RE-PROBED against HEAD 31c6be9 and were
+LIVE — wave-2 content had regressed a fixed area. All real findings fixed now:
+- R3D-01 HIGH overflow @320: 5 detail routes overflowed (worst 236px) — long
+  unbreakable tokens in h1s/inline code/highlights. Fixed: overflow-wrap:anywhere
+  on headings + Prose inline code, word-break on highlight items; the spec blind
+  spot is closed — overflow sweep now iterates EVERY generated content slug
+  (readdir-only spec was why 49 green tests shipped a sideways page). Live-probe:
+  0px overflow on all 12 detail routes.
+- R3D-02 featured grid dangling 3rd card @1024–1199 (V2 regression by the newer
+  3-card content): minmax 20rem→17rem; measured 3 tracks at 1024.
+- R3D-03 back/crumb links 18–23px: 44px phone hit areas (related links were
+  already fixed at bf0bd18); live-measured 44. Touch spec now sweeps one detail
+  route of each kind.
+- R3D-04 PWA incoherence: media-matched theme-color pairs in prerender head
+  (NOT index.html — the head intentionally does not inherit; first attempt
+  patched the dead file and was reverted), manifest light-first (matches
+  theme-init's resolved palette), PNG icon entry added (apple-touch 180px).
+- R3D-05 safe-area insets on sticky Bar + footer bottom (standalone notch/home-
+  indicator); MobileMenu pattern mirrored.
+- R3D-06 ACCEPTED with documented caveat (offline container, no @font-face).
+- R3D-07 watch item: hero fold 97% at 320x568 — fold spec guards it.
+Flake note: first full e2e after this fix batch showed one fouc pre-paint timing
+flake (legacy-bare-string case); isolated rerun 4/4 and second full run 53/53.
+Watch for recurrence in fouc specs under parallel load.

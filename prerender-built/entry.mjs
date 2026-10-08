@@ -3771,7 +3771,8 @@ function headingCss(theme, size) {
 		letterSpacing: theme.font.tracking.tight,
 		color: theme.color.text,
 		fontSize: theme.font.sizes[size],
-		"scroll-margin-top": theme.layout.navHeight
+		"scroll-margin-top": theme.layout.navHeight,
+		"overflow-wrap": "anywhere"
 	});
 }
 function Heading$1({ level, size, className, id, children, ...rest }) {
@@ -3992,7 +3993,8 @@ function proseCss(theme) {
 			color: t.color.text,
 			border: `1px solid ${t.color.border}`,
 			borderRadius: t.radius.sm,
-			padding: `0 ${t.space[1]}`
+			padding: `0 ${t.space[1]}`,
+			"overflow-wrap": "anywhere"
 		},
 		"pre": {
 			margin: `${t.space[5]} 0`,
@@ -4715,6 +4717,10 @@ var Bar = styled.header`
   position: sticky;
   top: 0;
   z-index: ${(p) => p.theme.z.nav};
+  /* R3D-05: viewport sets viewport-fit=cover; in standalone display mode a
+   * notch would sit on the sticky header. env() is 0 outside notched
+   * standalone, so the navHeight token still matches everywhere else. */
+  padding-top: env(safe-area-inset-top);
   /* Opaque first, translucent on top where supported — never transparent. */
   background: ${(p) => p.theme.color.bg};
   background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 88%, transparent)`};
@@ -5036,8 +5042,9 @@ var BottomRow = styled.div`
   gap: ${(p) => p.theme.space[3]};
   max-width: ${(p) => p.theme.layout.maxWidth};
   margin: 0 auto;
+  /* R3D-05: home-indicator clearance on standalone mobile (viewport-fit=cover). */
   padding: ${(p) => p.theme.space[4]} ${(p) => p.theme.layout.gutter}
-    ${(p) => p.theme.space[6]};
+    calc(${(p) => p.theme.space[6]} + env(safe-area-inset-bottom));
   border-top: 1px solid ${(p) => p.theme.color.border};
 `;
 var Copy = styled.p`
@@ -5430,8 +5437,11 @@ var Grid$1 = styled.div`
   @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
     /* R2-D V2: auto-fit, not a fixed 3 — with 2 featured projects a fixed
      * 3-col grid renders a dangling empty third column (reads as a missing
-     * card). auto-fit lets 2 cards span full width and 3+ fill naturally. */
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+     * card). auto-fit lets 2 cards span full width and 3+ fill naturally.
+     * R3D-02: the 20rem minimum only resolved 2 tracks until ~1150px, so in
+     * the 1024–1199 band a 3rd card dangled half-width (V2 all over again);
+     * 17rem resolves 3 tracks from container ≈921px. */
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   }
 `;
 var MetaLine$5 = styled.p`
@@ -6734,6 +6744,10 @@ var HighlightItem = styled.li`
   gap: ${(p) => p.theme.space[3]};
   color: ${(p) => p.theme.color.text};
   line-height: ${(p) => p.theme.font.leading.normal};
+  /* R3D-01: highlights quote slash-stacked resource paths like
+   * traces/observations/sessions/scores that read as one 288px word —
+   * break-word only inside these items, never body prose. */
+  word-break: break-word;
 
   & svg {
     margin-top: ${(p) => p.theme.space[1]};
@@ -6785,6 +6799,8 @@ function crumbClass(theme) {
 		color: theme.color.textSubtle,
 		textDecoration: "none",
 		borderRadius: theme.radius.sm,
+		minHeight: "28px",
+		["@media (max-width: " + theme.breakpoint.md + ")"]: { minHeight: "44px" },
 		"&:hover": {
 			color: theme.color.accent,
 			textDecoration: "underline",
@@ -7632,6 +7648,8 @@ function linkSkin(theme, opts) {
 		display: opts.size === "back" ? "inline-flex" : "block",
 		alignItems: "center",
 		gap: t.space[1],
+		minHeight: "28px",
+		["@media (max-width: " + t.breakpoint.md + ")"]: { minHeight: "44px" },
 		"&:hover": { color: t.color.accent },
 		"&:focus-visible": {
 			outline: `2px solid ${t.color.focus}`,
@@ -8642,6 +8660,10 @@ function renderRoute(path) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- R3D-04: browser-chrome color must track the palette the page will
+         actually paint; media-matched pairs cover both palettes without JS. -->
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6" />
 ${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

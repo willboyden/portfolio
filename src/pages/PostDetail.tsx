@@ -187,6 +187,12 @@ function linkSkin(theme: Tokens, opts: { size: 'back' | 'pager' }) {
     display: opts.size === 'back' ? 'inline-flex' : 'block',
     alignItems: 'center',
     gap: t.space[1],
+    /* R3D-03: standalone back/pager nav links measured 18px tall — below the
+     * WCAG 2.5.8 floor. 44px phone hit area, same recipe as the chips. */
+    minHeight: '28px',
+    ['@media (max-width: ' + t.breakpoint.md + ')']: {
+      minHeight: '44px',
+    },
     '&:hover': { color: t.color.accent },
     '&:focus-visible': {
       outline: `2px solid ${t.color.focus}`,

@@ -87,6 +87,11 @@ function proseCss(theme: Tokens): string {
       border: `1px solid ${t.color.border}`,
       borderRadius: t.radius.sm,
       padding: `0 ${t.space[1]}`,
+      /* R3D-01: inline code in this corpus is long identifiers
+       * (`_tool_manager._tools`, `traces/observations/sessions/scores`) —
+       * at 492px wide with whiteSpace:pre it overflowed 320px viewports.
+       * Block `pre code` below keeps pre semantics. */
+      'overflow-wrap': 'anywhere',
     },
     'pre': {
       margin: `${t.space[5]} 0`,

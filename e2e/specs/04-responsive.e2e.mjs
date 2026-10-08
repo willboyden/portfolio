@@ -2,6 +2,7 @@
  * Responsive + motion: the mobile menu actually works at phone width, nothing
  * overflows horizontally, and reduced-motion visitors get no animation.
  */
+import { readFileSync } from 'node:fs';
 import { describe, test } from '../harness/framework.mjs';
 
 describe('responsive', () => {
@@ -110,12 +111,29 @@ describe('responsive', () => {
     await check('/projects/');
     await check('/writing/');
     await check('/');
+    /* R3D-03: crumb/back/related nav links only exist on detail routes —
+     * one of each so the blind spot stays closed without sweeping 23 pages. */
+    const generated = JSON.parse(
+      readFileSync(new URL('../../src/content/generated/content.json', import.meta.url), 'utf8')
+    );
+    if (generated.projects[0]) await check(`/projects/${generated.projects[0].slug}`);
+    if (generated.posts[0]) await check(`/writing/${generated.posts[0].slug}`);
   });
 
   /* ---- Extreme mobile: 320x568 (narrowest phone in the wild) ------------- */
 
   test('no horizontal overflow at 320px, even on content-heavy pages', async ({ page, goto320 }) => {
-    for (const path of ['/', '/projects', '/writing', '/about', '/contact', '/now']) {
+    /* R3D-01 blind spot: this spec used to sweep only static pages, and a
+     * 236px overflow shipped on a detail route nobody swept. Content slugs
+     * are long unbreakable tokens by nature — sweep EVERY generated route. */
+    const generated = JSON.parse(
+      readFileSync(new URL('../../src/content/generated/content.json', import.meta.url), 'utf8')
+    );
+    const contentPaths = [
+      ...generated.projects.map((p) => `/projects/${p.slug}`),
+      ...generated.posts.map((p) => `/writing/${p.slug}`),
+    ];
+    for (const path of ['/', '/projects', '/writing', '/about', '/contact', '/now', ...contentPaths]) {
       await goto320(path);
       const overflow = await page.evaluate(`
         return (() => {

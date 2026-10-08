@@ -62,6 +62,10 @@ export interface Tokens {
   z: Record<'nav' | 'dropdown' | 'overlay' | 'toast', number>;
 }
 
+/* R3D-06 (documented caveat, accepted): the container is offline — no
+ * @font-face assets can ship, so the "var" faces below intentionally fall
+ * back to system-ui/ui-monospace and metrics drift per-OS. These stacks ARE
+ * the design contract; revisit only if webfont assets ever ship. */
 export const fontFamilySans =
   "'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 export const fontFamilyMono =

@@ -30,6 +30,11 @@ function headingCss(theme: Tokens, size: HeadingSize): string {
     color: theme.color.text,
     fontSize: theme.font.sizes[size],
     'scroll-margin-top': theme.layout.navHeight,
+    /* R3D-01: content slugs/titles carry long unbreakable tokens
+     * (`langfuse-observability-pragmatic`, `ILLEGAL_AGGREGATION`); at 320px a
+     * fixed 48px h1 measured 341px and pushed the whole page sideways.
+     * Headings may break anywhere; body prose keeps its rhythm. */
+    'overflow-wrap': 'anywhere',
   });
 }
 

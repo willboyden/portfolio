@@ -155,6 +155,10 @@ const HighlightItem = styled.li`
   gap: ${(p) => p.theme.space[3]};
   color: ${(p) => p.theme.color.text};
   line-height: ${(p) => p.theme.font.leading.normal};
+  /* R3D-01: highlights quote slash-stacked resource paths like
+   * traces/observations/sessions/scores that read as one 288px word —
+   * break-word only inside these items, never body prose. */
+  word-break: break-word;
 
   & svg {
     margin-top: ${(p) => p.theme.space[1]};
@@ -212,6 +216,12 @@ function crumbClass(theme: Tokens): string {
     color: theme.color.textSubtle,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
+    /* R3D-03: standalone block-level nav link (22px measured) — WCAG 2.5.8
+     * floor at 44px phone hit area, same recipe as the chips. */
+    minHeight: '28px',
+    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
+      minHeight: '44px',
+    },
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',

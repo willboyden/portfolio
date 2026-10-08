@@ -29,6 +29,10 @@ const Bar = styled.header`
   position: sticky;
   top: 0;
   z-index: ${(p) => p.theme.z.nav};
+  /* R3D-05: viewport sets viewport-fit=cover; in standalone display mode a
+   * notch would sit on the sticky header. env() is 0 outside notched
+   * standalone, so the navHeight token still matches everywhere else. */
+  padding-top: env(safe-area-inset-top);
   /* Opaque first, translucent on top where supported — never transparent. */
   background: ${(p) => p.theme.color.bg};
   background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 88%, transparent)`};

@@ -117,8 +117,9 @@ const BottomRow = styled.div`
   gap: ${(p) => p.theme.space[3]};
   max-width: ${(p) => p.theme.layout.maxWidth};
   margin: 0 auto;
+  /* R3D-05: home-indicator clearance on standalone mobile (viewport-fit=cover). */
   padding: ${(p) => p.theme.space[4]} ${(p) => p.theme.layout.gutter}
-    ${(p) => p.theme.space[6]};
+    calc(${(p) => p.theme.space[6]} + env(safe-area-inset-bottom));
   border-top: 1px solid ${(p) => p.theme.color.border};
 `;
 

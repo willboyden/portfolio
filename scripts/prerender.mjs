@@ -138,9 +138,16 @@ ${items.join('\n')}
         short_name: siteMeta.shortTitle ?? 'Portfolio',
         start_url: '/',
         display: 'standalone',
-        background_color: '#0b0e14',
-        theme_color: '#0b0e14',
-        icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        /* R3D-04: manifest colors are static, so match the case theme-init
+         * actually resolves for most first-time mobile users (system light)
+         * — dark hard-coded here meant a dark splash flashing to light.
+         * PNG icon included: some Android launchers reject SVG-only icons. */
+        background_color: '#eef1f6',
+        theme_color: '#eef1f6',
+        icons: [
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+        ],
       },
       null,
       2,
