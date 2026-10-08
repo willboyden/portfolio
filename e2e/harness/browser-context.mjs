@@ -24,6 +24,10 @@ export async function startBrowser(baseUrl) {
     return value.trim();
   };
 
+  const attribute = async (selector, name) => page.attribute(selector, name);
+
+  const url = async () => page.url();
+
   const goto = async (path) => {
     await page.goto(`${baseUrl}${path}`, { waitUntil: 'load' });
     await page.waitForAppReady();
@@ -41,8 +45,11 @@ export async function startBrowser(baseUrl) {
     browser,
     page,
 
-    /** Fresh document + cleared error listeners, without paying browser boot. */
+    /** Fresh document + cleared error listeners, without paying browser boot.
+     *  ALSO restores the desktop viewport — specs mutate it via goto375 and a
+     *  leaked 375px window made later specs 'zero-size element' on desktop UI. */
     async reset() {
+      await page.setViewport({ width: 1280, height: 800 });
       await goto('/');
       page.consoleMessages.length = 0;
       page.pageErrors.length = 0;
@@ -50,6 +57,16 @@ export async function startBrowser(baseUrl) {
     },
 
     goto,
+    text,
+    attribute,
+    url,
+    click: (selector) => page.click(selector),
+    press: (key) => page.press(key),
+    locatorCount: (selector) => page.locatorCount(selector),
+    isVisible: (selector) => page.isVisible(selector),
+    evaluate: (expression) => page.evaluate(expression),
+    lastResponseHeaders: () => page.lastResponseHeaders(),
+    focusInfo: () => page.activeElementInfo(),
 
     async goto375(path) {
       await gotoSized(375, 720, path);

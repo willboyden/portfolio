@@ -15,7 +15,6 @@
 
 import { renderBody, plainText } from './blocks.ts';
 import { renderInline } from './inline.ts';
-import { parseFrontmatter } from './frontmatter.ts';
 
 export { parseFrontmatter } from './frontmatter.ts';
 export { plainText };

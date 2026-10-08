@@ -6,7 +6,7 @@
 import { StrictMode, createElement, type ComponentType, type ReactNode } from 'react';
 import { RouterProvider, Outlet, type RouteDefinition } from '@portfolio/router';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
-import { Layout } from 'app/components/layout';
+import { Layout, ThemePreferenceProvider } from 'app/components/layout';
 import { Home } from 'app/pages/Home';
 import { About } from 'app/pages/About';
 import { Now } from 'app/pages/Now';
@@ -48,12 +48,16 @@ export function createApp(path?: string): ReactNode {
     StrictMode,
     null,
     createElement(
-      AppThemeProvider,
+      ThemePreferenceProvider,
       null,
       createElement(
-        RouterProvider,
-        { routes, ...(path !== undefined ? { initialPath: path } : {}) },
-        createElement(Shell, { children: null }),
+        AppThemeProvider,
+        null,
+        createElement(
+          RouterProvider,
+          { routes, ...(path !== undefined ? { initialPath: path } : {}) },
+          createElement(Shell, { children: null }),
+        ),
       ),
     ),
   );

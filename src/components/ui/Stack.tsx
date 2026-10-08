@@ -4,22 +4,8 @@ import styled from '@emotion/styled';
  * Stack — one-dimensional flex layout with consistent gaps.
  * Gap keys map to the space scale (0..12), never raw px.
  */
-type GapKey = keyof typeof gapKeys;
-const gapKeys = {
-  '0': '0',
-  '1': '1',
-  '2': '2',
-  '3': '3',
-  '4': '4',
-  '5': '5',
-  '6': '6',
-  '7': '7',
-  '8': '8',
-  '10': '10',
-  '12': '12',
-} as const;
-
-export type StackGap = GapKey;
+export type StackGap =
+  | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '10' | '12';
 
 const Flex = styled.div<{
   $gap: StackGap;

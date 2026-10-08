@@ -145,12 +145,11 @@ export function Global({ styles }: GlobalProps): null {
   const theme = useContextSafe();
   const list: StyleValue[] = Array.isArray(styles) ? (styles as StyleValue[]) : [styles as StyleValue];
   const cssText = useMemo(() => serializeArgs(list, theme), [styles, theme]);
-  const keyRef = useRef<string | null>(null);
 
   if (cssText.trim()) {
-    /* Deterministic key so prerender + client agree. */
+    /* Deterministic key so prerender + client agree. Cumulative sheet:
+     * re-registering the same key is idempotent (see registry). */
     const key = `global:${cssText.slice(0, 40)}`;
-    keyRef.current = key;
     registerRaw(key, cssText);
   }
 

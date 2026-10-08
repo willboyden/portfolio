@@ -11,6 +11,7 @@
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 const DIST = resolve(import.meta.dirname, '..', 'dist');
 const problems = [];
@@ -76,7 +77,8 @@ for (const page of pages) {
   if (kb > budgets.perHtmlKbWarn) notes.push(`${rel}: ${kb.toFixed(0)} kB HTML (large?)`);
 }
 
-/* Bundle budget against precompressed sizes when present. */
+/* Bundle budget: gzip each JS asset directly (accurate whether or not .gz
+ * siblings were precompressed yet). .gz siblings are verified separately. */
 function walkAssets(dir) {
   for (const e of readdirSync(dir)) {
     const full = join(dir, e);
@@ -84,8 +86,11 @@ function walkAssets(dir) {
       walkAssets(full);
       continue;
     }
-    if (e.endsWith('.js.gz')) totalJsGzip += statSync(full).size / 1024;
-    else if (e.endsWith('.js') && !existsSync(`${full}.gz`)) totalJsGzip += statSync(full).size / 1024;
+    if (e.endsWith('.js.gz')) continue; /* sibling of a .js counted below */
+    if (!e.endsWith('.js')) continue;
+    const gzSize = gzipSync(readFileSync(full), { level: 6 }).length;
+    totalJsGzip += gzSize / 1024;
+    if (!existsSync(`${full}.gz`)) notes.push(`${e}: no .gz sibling (build did not precompress it)`);
   }
 }
 walkAssets(join(DIST, 'assets'));

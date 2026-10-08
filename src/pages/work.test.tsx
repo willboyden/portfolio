@@ -51,7 +51,7 @@ import {
 } from './Projects';
 import { ProjectDetail, projectLinkEntries, relatedProjects } from './ProjectDetail';
 import { Videos, VideoRowItem, providerLabel, splitByDate, todayUtcIso } from './Videos';
-import { Talks, TalkCard, talkResourceEntries, talksByDate } from './Talks';
+import { Talks, talkResourceEntries, talksByDate } from './Talks';
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                     */

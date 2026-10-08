@@ -129,6 +129,12 @@ export function useReducedMotion(): boolean {
 export function useMounted(): boolean {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    /* Mount commit happened — re-render so browser-only UI can appear.
+     * eslint-disable-next-line react-hooks/set-state-in-effect -- this is the
+     * canonical mounted-flag pattern; the alternative (useSyncExternalStore)
+     * is what useThemeNameState uses, but a boolean mount flag does not
+     * warrant a store. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
   return mounted;

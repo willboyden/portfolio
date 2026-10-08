@@ -95,7 +95,13 @@ export function themeDocumentAttributes(name: ThemeName): {
 function readStoredTheme(): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    return window.localStorage.getItem(THEME_STORAGE_KEY);
+    const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === null) return null;
+    /* Same key and shape as lib/storage themeStore ({theme: 'dark'|'light'});
+     * tolerate a bare string written by older builds or other tabs. */
+    if (raw === 'dark' || raw === 'light') return raw;
+    const parsed = JSON.parse(raw) as { theme?: unknown };
+    return parsed && (parsed.theme === 'dark' || parsed.theme === 'light') ? parsed.theme : null;
   } catch {
     /* Private mode / disabled storage: treat as "no preference". */
     return null;
@@ -105,7 +111,9 @@ function readStoredTheme(): string | null {
 function writeStoredTheme(name: ThemeName): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(THEME_STORAGE_KEY, name);
+    /* JSON shape shared with themeStore + public/theme-init.js — all three
+     * readers must agree or the pre-paint script silently ignores choices. */
+    window.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ theme: name }));
   } catch {
     /* Quota / private mode: the session still works, it just will not persist. */
   }
@@ -296,6 +304,16 @@ export function useThemePreference(): ThemePreferenceValue {
     );
   }
   return value;
+}
+
+/**
+ * Non-throwing probe used by AppThemeProvider (platform) when ThemePreference
+ * (chrome) may or may not be mounted above it. Present → chrome owns the
+ * preference and the Emotion theme delegates to it. Absent (unit tests, or a
+ * future embed) → the platform provider falls back to its own storage logic.
+ */
+export function useThemePreferenceIfPresent(): ThemePreferenceValue | null {
+  return useContext(ThemePreferenceContext);
 }
 
 /**

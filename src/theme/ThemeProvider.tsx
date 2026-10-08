@@ -27,6 +27,7 @@ import { Global, ThemeProvider as EmotionThemeProvider, useTheme } from '@emotio
 import { darkTheme, lightTheme, themes, type ThemeName, type Tokens } from 'app/theme/tokens';
 import { buildGlobalStyles } from './global-styles';
 import { useReducedMotion as useReducedMotionImpl, useThemeNameState } from 'app/lib/hooks';
+import { useThemePreferenceIfPresent } from 'app/components/layout/ThemePreference';
 import type { ThemePreference } from 'app/lib/storage';
 
 /* -------------------------------------------------------------------------- */
@@ -87,15 +88,30 @@ export interface AppThemeProviderProps {
  * controller. Renders DARK tokens on the server so the static shell is stable.
  */
 export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProps): ReactNode {
-  const controller = useThemeNameState();
+  /* Single source of truth when mounted: chrome's ThemePreferenceProvider (if
+   * rendered above us by App) owns the preference — storage, system, DOM
+   * effects. Standalone (unit tests, embeds) we fall back to the platform's
+   * own store logic. Only ONE controller is ever active per tree. */
+  const chrome = useThemePreferenceIfPresent();
+  const platform = useThemeNameState();
+  const controller = useMemo<ThemeControllerValue>(() => {
+    if (!chrome) return platform;
+    return {
+      themeName: chrome.themeName,
+      preference: chrome.resolvedFrom === 'user' ? chrome.themeName : 'system',
+      setThemeName: chrome.setThemeName,
+      cycle: () => chrome.setThemeName(chrome.themeName === 'dark' ? 'light' : 'dark'),
+    };
+  }, [chrome, platform]);
   const themeName: ThemeName = forcedTheme ?? controller.themeName;
   const theme: Tokens = themes[themeName];
   const globalStyles = useMemo(() => buildGlobalStyles(theme), [theme]);
 
   useEffect(() => {
     /* Keep the document shell in sync with React's view (init script did the
-     * pre-paint pass; this covers runtime changes and any drift). */
-    if (typeof document === 'undefined') return;
+     * pre-paint pass; this covers runtime changes and any drift). When chrome
+     * owns the preference it already mirrors to the document itself. */
+    if (typeof document === 'undefined' || chrome) return;
     try {
       document.documentElement.setAttribute('data-theme', themeName);
       document.documentElement.style.colorScheme =
@@ -103,7 +119,7 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
     } catch {
       /* document detached mid-unmount */
     }
-  }, [themeName, controller.preference]);
+  }, [themeName, controller.preference, chrome]);
 
   return createElement(
     ThemeControllerContext.Provider,

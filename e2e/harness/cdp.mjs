@@ -158,10 +158,36 @@ export class Page {
     });
   }
 
-  /** Evaluate in page context. Serializes the return value. */
+  /** Evaluate in page context. Serializes the return value.
+   *  Accepts either top-level statements containing a `return`, or a bare
+   *  expression/IIFE. A bracket-depth scan decides: `return` at depth 0 means
+   *  statement form; otherwise the whole input is an expression and gets
+   *  wrapped in `return (...)` (so `(async () => {...})()` yields its value). */
   async evaluate(expression) {
+    const hasTopLevelReturn = (() => {
+      let depth = 0;
+      let inString = null;
+      for (let i = 0; i < expression.length; i++) {
+        const c = expression[i];
+        if (inString) {
+          if (c === '\\') i += 1;
+          else if (c === inString) inString = null;
+          continue;
+        }
+        if (c === '"' || c === "'" || c === '`') { inString = c; continue; }
+        if (c === '(' || c === '[' || c === '{') depth += 1;
+        else if (c === ')' || c === ']' || c === '}') depth -= 1;
+        else if (depth === 0 && expression.startsWith('return', i)) {
+          const prev = expression[i - 1] ?? ' ';
+          const next = expression[i + 6] ?? '';
+          if (!/[\w$]/.test(prev) && !/[\w$]/.test(next)) return true;
+        }
+      }
+      return false;
+    })();
+    const body = hasTopLevelReturn ? expression : `return (${expression});`;
     const result = await this.send('Runtime.evaluate', {
-      expression: `(() => { ${expression} })()`,
+      expression: `(() => { ${body} })()`,
       returnByValue: true,
       awaitPromise: true,
     });
@@ -322,8 +348,16 @@ export class Page {
   async pressKey(key, { shiftKey = false } = {}) {
     const keyCodeMap = { Tab: 9, Enter: 13, Escape: 27, ArrowLeft: 37, ArrowRight: 39, ArrowUp: 38, ArrowDown: 40 };
     const keyCode = keyCodeMap[key] ?? 0;
-    await this.send('Input.dispatchKeyEvent', { type: 'keyDown', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
-    await this.send('Input.dispatchKeyEvent', { type: 'keyUp', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+    if (key === 'Tab') {
+      /* Focus traversal is a browser DEFAULT ACTION on the keypress event.
+       * CDP only synthesizes keypress when the keydown carries text, so send
+       * the rawKeyDown + char pair (Playwright's own Tab recipe). */
+      await this.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+      await this.send('Input.dispatchKeyEvent', { type: 'char', key, text: '\t', unmodifiedText: '\t', windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+    } else {
+      await this.send('Input.dispatchKeyEvent', { type: 'keyDown', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+      await this.send('Input.dispatchKeyEvent', { type: 'keyUp', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+    }
     await sleep(40);
   }
 

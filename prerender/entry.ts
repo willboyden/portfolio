@@ -100,13 +100,16 @@ ${head}
 /* The hashed entry filename is only knowable after the client build; vite
  * emits .vite/manifest.json (build.manifest) listing the entry chunk. */
 function assetHref(): string {
+  /* vite emits dist/.vite/manifest.json; with rollup input 'index.html' the
+   * entry key IS 'index.html'. Fall back only if the manifest is missing. */
   try {
     const manifestPath = new URL('../dist/.vite/manifest.json', import.meta.url);
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    const entry = manifest['src/main.tsx'];
-    if (entry?.file) return `/${entry.file}`;
+    const entry = manifest['index.html'] ?? manifest['src/main.tsx'];
+    const file = entry?.file ?? entry?.src;
+    if (typeof file === 'string' && file.startsWith('assets/')) return `/${file}`;
   } catch {
-    /* fall through to the stable fallback the client build also emits */
+    /* fall through to the stable fallback */
   }
   return '/assets/index.js';
 }

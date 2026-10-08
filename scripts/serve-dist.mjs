@@ -54,9 +54,12 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
     }
 
     const serve = (file, cacheControl) => {
-      const type = MIME[extname(file).toLowerCase()] ?? 'application/octet-stream';
-      res.writeHead(200, {
-        'content-type': type,
+      /* gzip_static parity with nginx: prefer the precompressed sibling when
+       * the client accepts gzip — real transfer size then matches production. */
+      const acceptsGzip = /\bgzip\b/.test(req.headers['accept-encoding'] ?? '');
+      let servedFile = file;
+      const headers = {
+        'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
         'cache-control': cacheControl,
         /* Mirrors deploy/nginx.conf — the preview server must behave like
          * production so the e2e security spec tests real responses. */
@@ -66,8 +69,14 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
         'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()',
         'content-security-policy':
           "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
-      });
-      createReadStream(file).pipe(res);
+      };
+      if (acceptsGzip && existsSync(`${file}.gz`)) {
+        servedFile = `${file}.gz`;
+        headers['content-encoding'] = 'gzip';
+        headers.vary = 'Accept-Encoding';
+      }
+      res.writeHead(200, headers);
+      createReadStream(servedFile).pipe(res);
     };
 
     const notFound = (message) => {
@@ -94,18 +103,29 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
       }
     }
 
-    if (spaMode) {
-      const fallback = join(dir, 'index.html');
-      if (existsSync(fallback)) {
-        serve(fallback, 'no-store');
-        return;
-      }
+    /* 404 semantics mirror nginx: error_page 404 /404/index.html (status 404),
+     * and hashed-asset misses are hard 404s (no SPA fallback poisoning a
+     * <script> tag with HTML). */
+    const spaFallback = spaMode ? join(dir, '404', 'index.html') : null;
+
+    if (path.startsWith(join(dir, 'assets')) && !candidates.some((c) => existsSync(c) && statSync(c).isFile())) {
+      notFound(`Missing asset ${req.url}`);
+      return;
     }
-    notFound(`No file for ${req.url}`);
+
+    if (spaFallback && existsSync(spaFallback)) {
+      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      createReadStream(spaFallback).pipe(res);
+      return;
+    }
+    notFound(`No file for ${req.url} (prerendered 404 page missing? build 404 route)`);
   });
 
   return new Promise((resolveListen) => {
-    server.listen(bindPort, '127.0.0.1', () => resolveListen({ server, port: bindPort }));
+    server.listen(bindPort, '127.0.0.1', () => {
+      /* With port: 0 the OS picks — report the ACTUAL bound port. */
+      resolveListen({ server, port: server.address().port });
+    });
   });
 }
 

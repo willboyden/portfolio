@@ -27,6 +27,7 @@ const { startBrowser } = await import('./harness/browser-context.mjs');
 
 const specs = readdirSync(specDir)
   .filter((f) => f.endsWith('.e2e.mjs'))
+  .filter((f) => (process.env.E2E_FILTER ? f.includes(process.env.E2E_FILTER) : true))
   .sort();
 
 const served = await startServer({ dir: distDir, port: 4321 });

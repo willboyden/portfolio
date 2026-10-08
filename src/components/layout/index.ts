@@ -24,6 +24,7 @@ export { ThemeToggle, type ThemeToggleProps } from './ThemeToggle';
 export {
   ThemePreferenceProvider,
   useThemePreference,
+  useThemePreferenceIfPresent,
   useThemeName,
   useActiveTheme,
   useThemeTokens,

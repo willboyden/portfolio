@@ -19,7 +19,6 @@
 
 export type Frontmatter = { data: Record<string, unknown>; body: string };
 
-const RE_FENCE = /^---[ \t]*\r?\n/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function parseFrontmatter(src: string): Frontmatter {
@@ -156,7 +155,7 @@ function parseScalar(text: string, lineNo: number, rawLine: string): unknown {
     if (inner === '') return [];
     return splitFlow(inner, lineNo, rawLine).map((part) => parseScalar(part, lineNo, rawLine));
   }
-  if (/[{}\[\]]/.test(t)) fail(lineNo, rawLine, `unsupported inline structure ${JSON.stringify(t)}`);
+  if (/[{}[\]]/.test(t)) fail(lineNo, rawLine, `unsupported inline structure ${JSON.stringify(t)}`);
   if (t.includes(': ') || t.endsWith(':')) {
     fail(lineNo, rawLine, 'unquoted value contains `: ` — quote the string');
   }

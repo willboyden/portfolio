@@ -151,6 +151,11 @@ function titleLinkClass(theme: Tokens): string {
     color: theme.color.text,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
+    /* WCAG 2.5.8 touch target: inline links size to their text; the card
+     * title is a primary affordance, so it gets a block box with a 28px
+     * minimum hit area (>= the spec's e2e threshold and the 24px AA floor). */
+    display: 'inline-block',
+    minHeight: '28px',
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',

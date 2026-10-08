@@ -70,7 +70,7 @@ describe('a11y', () => {
     for (let i = 0; i < 12; i++) {
       await page.pressKey('Tab');
       const info = await page.activeElementInfo();
-      if (info) seen.add(info.tag);
+      if (info) seen.add(info.tag.toLowerCase());
       if (seen.has('button') && [...seen].length >= 3 && seen.has('a')) break;
     }
     if (!seen.has('a')) throw new Error('no links reachable by Tab in the first 12 stops');

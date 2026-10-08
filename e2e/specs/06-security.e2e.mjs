@@ -14,16 +14,16 @@ describe('security', () => {
     if (!/frame-ancestors 'none'/.test(csp)) throw new Error(`frame-ancestors not set: ${csp}`);
   });
 
-  test('nosniff + frame-deny + referrer headers present', async ({ page, goto }) => {
-    await goto('/');
-    const h = await page.lastResponseHeaders();
+  test('nosniff + frame-deny + referrer headers present', async ({ lastResponseHeaders }) => {
+    /* Headers come off the CDP-recorded document response (lowercased). */
+    const h = await lastResponseHeaders();
     for (const [name, want] of [
       ['x-content-type-options', 'nosniff'],
-      ['x-frame-options', 'DENY'],
+      ['x-frame-options', 'deny'],
       ['referrer-policy', 'strict-origin-when-cross-origin'],
     ]) {
-      const got = h[name];
-      if (!got || !got.toLowerCase().includes(want)) throw new Error(`${name}: "${got}" (expected ${want})`);
+      const got = (h[name] ?? '').toLowerCase();
+      if (!got.includes(want)) throw new Error(`${name}: "${h[name]}" (expected ${want})`);
     }
   });
 
@@ -40,7 +40,7 @@ describe('security', () => {
     const html = await (await fetch(`${baseUrl}/writing/`)).text();
     const postMatch = html.match(/href="(\/writing\/[a-z0-9-]+)"/);
     if (!postMatch) return; /* empty writing state — nothing to attack */
-    const postHtml = await (await fetch(postMatch[1] + '/')).text();
+    const postHtml = await (await fetch(baseUrl + postMatch[1] + '/')).text();
     const scripts = [...postHtml.matchAll(/<script([^>]*)>/g)].map((m) => m[1]);
     for (const attrs of scripts) {
       if (!/src="(\/[^"]+|\/assets\/[^"]+)"/.test(attrs) && !/application\/ld\+json/.test(attrs)) {

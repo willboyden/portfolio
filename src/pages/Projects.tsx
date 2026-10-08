@@ -82,7 +82,9 @@ const MetaLine = styled.p`
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
-const CardTitle = styled.h3`
+/* h2 not h3: this page goes h1 -> card titles directly; jumping to h3 skips
+ * a level and the a11y e2e (02-a11y) treats that as a violation. */
+const CardTitle = styled.h2`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xl};
   font-weight: ${(p) => p.theme.font.weights.bold};
@@ -113,6 +115,9 @@ function titleLinkClass(theme: Tokens): string {
     color: theme.color.text,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
+    /* WCAG 2.5.8 touch target (mirrors Home.tsx title link). */
+    display: 'inline-block',
+    minHeight: '28px',
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',
