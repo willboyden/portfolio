@@ -5,8 +5,8 @@ title: Building an eval harness that catches silent model regressions
 slug: eval-harness-silent-regressions
 summary: >-
   How a deterministic, no-LLM-judge harness for tool-calling reliability
-  caught three classes of failure that HTTP 200 hides: empty content turns,
-  reasoning burn, and a response cache that was lying about latency.
+  instruments three classes of failure HTTP 200 hides — and the first run
+  caught two of them outright.
 tags: [evals, llm, testing, python]
 date: 2026-08-20
 series: AI engineering notes
@@ -25,14 +25,14 @@ The suite ships as eight JSON files. Each scenario defines an OpenAI function
 schema, a user prompt, simulated tool implementations, and success criteria.
 The scenarios escalate deliberately:
 
-- `weather_tokyo` — one tool call, final answer must cite the tool's value.
-- `table_booking` — argument extraction: "eight people" and "7:30 PM" must
+- `weather_tokyo`: one tool call, final answer must cite the tool's value.
+- `table_booking`: argument extraction. "Eight people" and "7:30 PM" must
   arrive as `party_size: 8` and `19:30`.
-- `pizza_distractor` — an expired coupon in context that must **not** appear
+- `pizza_distractor`: an expired coupon in context that must **not** appear
   in the call (`param_absent`).
-- `inventory_then_reserve` — a two-step dependency: query the catalog, take
+- `inventory_then_reserve`: a two-step dependency. Query the catalog, take
   the SKU from the tool result, reserve with it.
-- `fx_conversion_retry` — the first call uses non-ISO currency names and the
+- `fx_conversion_retry`: the first call uses non-ISO currency names and the
   simulator *rejects* it; the model must retry with `EUR`/`USD`.
 
 The retry scenario is the one that separates models. A single-shot accuracy
@@ -42,18 +42,21 @@ recover, which is most of what agent loops actually do.
 ## Deterministic judging, on purpose
 
 There is no LLM-as-judge anywhere in the pipeline. Each emitted tool call is
-validated against the scenario's function schema — no missing required keys,
-no extras, no mistyped params — and parameter accuracy is checked under
+validated against the scenario's function schema: no missing required keys,
+no extras, no mistyped params. Parameter accuracy is checked under
 normalization (numbers compared as floats, strings trimmed and
-case-insensitive). The final answer is graded with criteria kinds like:
+case-insensitive). The final answer is graded with criteria like:
 
 ```json
 {
-  "kind": "params_exact_any",
-  "tool": "convert_currency",
-  "params": { "from": "EUR", "to": "USD" }
+  "type": "params_exact_any",
+  "name": "get_fx_rate",
+  "params": { "from_ccy": "EUR", "to_ccy": "USD", "amount": 1200 }
 }
 ```
+
+(Judge output and results JSON use the key `kind` for the same concept;
+scenario files, shown above, use `type`.)
 
 A fluent-but-wrong answer passes only if it actually states the expected
 values (`answer_contains` matches case-insensitively and tolerates thousands
@@ -72,19 +75,22 @@ without ever producing usable content now fails loudly instead of silently.
 **Reasoning burn.** One of the tested models is a reasoning model served by
 vLLM. With a small `max_tokens` the entire output budget disappears into
 `reasoning_content` while `content` stays null and `finish_reason` reads
-`length`. That combination — `finish_reason=length` plus empty content plus
-non-zero reasoning — is scored as a distinct failure mode (`reasoning_burn_turns`),
-and scoring calls get `max_tokens=2048` precisely to avoid measuring it as
-model incompetence when it is really a sampling-budget artifact.
+`length`. That combination (`finish_reason=length` plus empty content plus
+non-zero reasoning) is scored as a distinct failure mode
+(`reasoning_burn_turns`). The shipped run recorded zero burn turns; the
+metric exists because the failure is cheap to instrument and invisible
+otherwise. It is also why the reasoning model under test gets
+`max_tokens=2048` on its generation calls while the others run 1024: at
+1024, its failure looks like model incompetence when it is really a sampling-budget artifact.
 
 **The cache that flattered everyone.** The broker response-caches identical
 request bodies. Sending the same JSON body twice returned the cached
-completion in ~0.01 s with the same `id` — which made rep-to-rep variance
+completion in ~0.01 s with the same `id`, which made rep-to-rep variance
 look near zero and latency look phenomenal. Proof: a repeated body came back
 in 0.01 s versus ~1.4 s for a distinct one. The fix is one field: every
 request gets a unique `user: mqh-<uuid>` stamp to bust the cache. After the
-fix the same model's per-turn latency showed a real distribution — min
-0.83 s, median 1.31 s, max 3.72 s — where before it showed a flat line that
+fix the same model's per-turn latency showed a real distribution: min
+0.83 s, median 1.29 s, max 3.72 s; before the fix it showed a flat line that
 was never real.
 
 ## Outages are data, not footnotes
@@ -93,12 +99,14 @@ During one re-run, two of the three models were down at the broker: one
 returned a LiteLLM 404 (the upstream model does not exist), the other a 500
 connection error. Both ran anyway and both were recorded as failures with
 the real HTTP error bodies attached, and the dashboard shows that honestly
-rather than silently shrinking the comparison to the one live model. 4xx
-responses fail fast; only timeout/429/5xx get the single retry. A harness
+rather than silently shrinking the comparison to the one live model. Only
+timeouts and transient codes fail open: 408, 429, and 5xx get the single
+retry; everything else 4xx (a 404 "model does not exist", a bad request)
+fails fast with the error body attached. A harness
 that quietly drops unavailable models is not an eval, it is marketing.
 
-The whole thing is Python 3.13 stdlib only — no pip, no framework, ~5–10
+The whole thing is Python 3.13 stdlib only: no pip, no framework, ~5–10
 minutes for a full run, and a standalone vanilla-JS dashboard rendered from
-the results JSON. The point of an eval harness is not sophistication. It is
-that the same input gives you the same number twice, so the day the number
-moves, you can believe it.
+the results JSON. An eval harness earns its keep on reproducibility, not
+sophistication: the same input gives you the same number twice, so the day
+the number moves, you can believe it.
