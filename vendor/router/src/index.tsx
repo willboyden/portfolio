@@ -134,7 +134,18 @@ export function RouterProvider({ routes, children, initialPath }: RouterProvider
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    const sync = () => setLocation(readBrowserLocation());
+    /* R1A-09(a): hash-URL back/forward fires BOTH popstate and hashchange —
+     * without dedupe each trip re-creates the Location object and re-renders
+     * every consumer for an identical route. Bail out when the URL string is
+     * unchanged (same semantics as react-router's key-less compare). */
+    let lastHref: string | null = null;
+    const sync = () => {
+      const next = readBrowserLocation();
+      const key = `${next.pathname}|${next.search}|${next.hash}`;
+      if (key === lastHref) return;
+      lastHref = key;
+      setLocation(next);
+    };
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => {
@@ -152,8 +163,10 @@ export function RouterProvider({ routes, children, initialPath }: RouterProvider
       window.history.pushState(null, '', next);
     }
     setLocation(parseLocation(next));
-    /* Scroll to top on navigation, honour #anchors and reduced-motion. */
-    const anchor = next.split('#')[1];
+    /* Scroll to top on navigation, honour #anchors and reduced-motion.
+     * R1A-09(b): everything after the FIRST # is the id (split('#')[1]
+     * truncated '/x#a#b' to 'a', missing the element entirely). */
+    const anchor = next.includes('#') ? next.slice(next.indexOf('#') + 1) : null;
     if (anchor) {
       document.getElementById(anchor)?.scrollIntoView({ behavior: 'auto', block: 'start' });
     } else {
