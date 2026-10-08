@@ -131,6 +131,12 @@ export function Pagination({
       ? { href: undefined, 'aria-disabled': true as const, 'aria-label': current ? `Page ${target}, current page` : `Page ${target}` }
       : { href: hrefFor(target), 'aria-disabled': undefined, 'aria-label': `Go to page ${target}` };
 
+  /* R1-B L2: an <a> without href is NOT focusable, so on page 1 the disabled
+   * "‹ Prev" dropped out of the tab order and keyboard users could not reach
+   * "Next ›" past it. Disabled edges get tabIndex=0 to stay in the tab
+   * sequence; aria-disabled conveys the state and they navigate nowhere. */
+  const edgeTabIndex = (enabled: boolean) => (enabled ? undefined : 0);
+
   return (
     <Nav aria-label={label} className={className} data-testid={rest['data-testid'] ?? 'pagination'}>
       <List>
@@ -139,6 +145,7 @@ export function Pagination({
             {...linkProps(clamped - 1, false)}
             href={clamped > 1 ? hrefFor(clamped - 1) : undefined}
             aria-disabled={clamped > 1 ? undefined : true}
+            tabIndex={edgeTabIndex(clamped > 1)}
             aria-label="Previous page"
             $current={false}
             data-edge="prev"
@@ -169,6 +176,7 @@ export function Pagination({
             {...linkProps(clamped + 1, false)}
             href={clamped < total ? hrefFor(clamped + 1) : undefined}
             aria-disabled={clamped < total ? undefined : true}
+            tabIndex={edgeTabIndex(clamped < total)}
             aria-label="Next page"
             $current={false}
             data-edge="next"

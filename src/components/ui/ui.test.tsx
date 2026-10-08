@@ -457,6 +457,24 @@ describe('Pagination', () => {
     expect(last).toMatch(/data-edge="next"[^>]*aria-disabled="true"|aria-disabled="true"[^>]*data-edge="next"/);
   });
 
+  it('disabled edges stay tabbable (R1-B L2: no href => not focusable without tabIndex)', () => {
+    const edgeTag = (html: string, edge: string) =>
+      (html.match(new RegExp(`<a [^>]*data-edge="${edge}"[^>]*>`)) ??
+        html.match(new RegExp(`<a data-edge="${edge}"[^>]*>`)) ?? [''])[0];
+    const first = dark(h(Pagination, { page: 1, total: 3 }));
+    const prevTag = edgeTag(first, 'prev');
+    expect(prevTag).toContain('aria-disabled="true"');
+    expect(prevTag).toContain('tabindex="0"');
+    const last = dark(h(Pagination, { page: 3, total: 3 }));
+    const nextTag = edgeTag(last, 'next');
+    expect(nextTag).toContain('aria-disabled="true"');
+    expect(nextTag).toContain('tabindex="0"');
+    /* Enabled edges must NOT carry a forced tabIndex (no focus-order noise). */
+    const enabledNext = edgeTag(first, 'next');
+    expect(enabledNext).toContain('href=');
+    expect(enabledNext).not.toMatch(/tabindex/);
+  });
+
   it('hrefFor controls the generated links', () => {
     const html = dark(h(Pagination, { page: 1, total: 2, hrefFor: (n: number) => `/p/${n}` }));
     expect(html).toContain('href="/p/2"');
