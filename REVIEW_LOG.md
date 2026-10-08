@@ -112,3 +112,18 @@ CSP.
 
 **Running:** R3-C (clean code, fresh lens), R3-D (mobile-first design, built
 site), content builders (4 project entries + 3 launch posts, fact-checked).
+
+### R3-C (clean-code) disposition — commit batch `R3-C fixes`
+- R3C-01 lint-red-at-HEAD: FIXED earlier (eslint `public/` block + `npm run lint` scope widened to `.`).
+- R3C-02 camelCase var refs (`--c-accentBorder/Soft`) never resolved: FIXED (kebab) + new guard test: every `var(--x` ref in the shipped sheet ⊆ emitted custom props, both palettes.
+- R3C-03 non-reproducible content.json (`generatedAt` wall-clock): FIXED — deterministic `contentHash` (sha256-16 of the items); two rebuilds now byte-identical. DRAFT-REVIEW frontmatter comments stay: they are the owner's pre-launch review gate by design (site is pre-deployment; nothing ships to a real domain until the owner strips them).
+- R3C-04 untested shipped theme-init: FIXED — public/theme-init.js now runs through the same fake-DOM suite (5 parity tests incl. legacy-pref + private-mode), inline copy gains identical legacy tolerance.
+- R3C-05 cross-tab drift + legacy-pref divergence: FIXED — active preference system attaches a `storage` listener (module-load, no write-back → no tab ping-pong); 4 new tests incl. adopt-same-value short-circuit. theme-init parses legacy bare strings exactly like hydration now does.
+- R3C-07 dead ternary in vendor/router: FIXED (plain `const next = to;`).
+- R3C-08 tautological dockerignore assertion: FIXED — asserts secret patterns ARE listed; .dockerignore gains .env/*.key/.ssh.
+- R3C-09 apple-touch-icon: FIXED — 180x180 rendered from favicon.svg via Pillow (no rsvg in box), link added to the prerender template (was dev-index-only).
+- R3C-10 safeJoin prefix confusion (/dist vs /distevil): FIXED — separator-aware compare.
+- R3C-11 silent '/assets/index.js' fallback: FIXED — throws with actionable message (white-page entry can no longer slip past the href-only audit).
+- R3C-12 duplicate :root palette bytes: FIXED — only the DIFFERING palette ships a data-theme block (~1.4 kB/page saved, 20 pages); theme tests re-pinned to the one-block contract.
+- R3C-06 unused-API-surface trim: PARTIAL — srClass duplication removed (VisuallyHidden gains role/aria-live props); remaining candidates (useActiveTheme, useTokens, readStoredThemePref, useMounted, writeClipboardText, hasLocalStorage, ClassNames, jsx, __clearAll) left with reachability-gate justification: they are the vendored platform's public API parity surface; a separate sweep will decide keep/remove.
+- Working-tree notes: stray `:memory` (274 kB DuckDB artifact) and src/__probe untracked via git rm; screenshots already untracked earlier.

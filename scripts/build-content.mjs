@@ -127,7 +127,7 @@ async function loadCollection(dir, schema) {
 }
 
 async function main() {
-  const out = { generatedAt: new Date().toISOString(), projects: [], posts: [], videos: [], talks: [] };
+  const out = { contentHash: '', projects: [], posts: [], videos: [], talks: [] };
   const failures = [];
   for (const { dir, schema } of COLLECTIONS) {
     const { items, failures: f } = await loadCollection(dir, schema);
@@ -151,6 +151,15 @@ async function main() {
     }
   }
   await mkdir(dirname(OUT_FILE), { recursive: true });
+  /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
+   * generatedAt made every rebuild dirty git and made "byte-stable output"
+   * claims false). Same inputs -> same file, byte for byte. */
+  const { createHash } = await import('node:crypto');
+  const { contentHash: _omit, ...body } = out;
+  out.contentHash = createHash('sha256')
+    .update(JSON.stringify(body, null, 2))
+    .digest('hex')
+    .slice(0, 16);
   await writeFile(OUT_FILE, JSON.stringify(out, null, 2) + '\n', 'utf8');
   const counts = ['projects', 'posts', 'videos', 'talks']
     .map((k) => `${out[k].length} ${k}`)

@@ -97,6 +97,7 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 ${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 ${preloads ? preloads + '\n' : ''}    <script src="/theme-init.js"></script>
     <style id="emotion-prerender">${css}</style>
@@ -138,8 +139,12 @@ function assetHref(): string {
     const file = entry?.file ?? entry?.src;
     if (typeof file === 'string' && file.startsWith('assets/')) return `/${file}`;
   } catch {
-    /* fall through to the stable fallback */
+    /* R3C-11: no silent fallback — a wrong entry href means a white page on
+     * every route, which the href-only audit regex would never see. */
+    throw new Error(
+      'prerender: dist/.vite/manifest.json missing or has no index.html entry ' +
+        '— run `vite build` before prerender (build.mjs chains these in order)',
+    );
   }
-  return '/assets/index.js';
 }
 

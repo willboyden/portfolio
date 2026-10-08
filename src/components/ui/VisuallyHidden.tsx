@@ -24,11 +24,23 @@ export interface VisuallyHiddenProps {
   className?: string;
   children?: React.ReactNode;
   'data-testid'?: string;
+  /* Live regions are a first-class use (theme announcements): role + aria-*
+   * pass through to the span. Any other DOM attr is deliberately NOT accepted
+   * — this component owns the sr-only recipe, not arbitrary markup. */
+  role?: 'status' | 'alert' | 'log' | 'aria-status';
+  'aria-live'?: 'polite' | 'assertive' | 'off';
+  'aria-atomic'?: boolean;
 }
 
 export function VisuallyHidden({ className, children, ...rest }: VisuallyHiddenProps): React.ReactNode {
   return (
-    <Hidden className={className} data-testid={rest['data-testid'] ?? 'visually-hidden'}>
+    <Hidden
+      className={className}
+      data-testid={rest['data-testid'] ?? 'visually-hidden'}
+      role={rest.role}
+      aria-live={rest['aria-live']}
+      aria-atomic={rest['aria-atomic']}
+    >
       {children}
     </Hidden>
   );

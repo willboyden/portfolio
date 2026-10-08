@@ -12,8 +12,8 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useTheme } from '@emotion/react';
-import { __sheetCss } from '@emotion-mini/core';
-import { darkTheme, lightTheme, type ThemeName } from 'app/theme/tokens';
+import { __resetSheet, __sheetCss } from '@emotion-mini/core';
+import { darkTheme, lightTheme, themeToCssVars, type ThemeName } from 'app/theme/tokens';
 import {
   AppThemeProvider,
   THEME_INIT_SCRIPT_STORAGE_KEY,
@@ -23,6 +23,7 @@ import {
   useThemeName,
 } from 'app/theme/ThemeProvider';
 import { buildGlobalStyles } from 'app/theme/global-styles';
+import { readFileSync } from 'node:fs';
 
 const h = (component: React.ComponentType<never>, props: Record<string, unknown>): React.ReactNode =>
   createElement(component as React.ComponentType, props);
@@ -61,9 +62,11 @@ describe('AppThemeProvider (SSR)', () => {
      * (and the data-theme blocks both ship). */
     expect(sheet).toContain('--c-bg:' + lightTheme.color.bg);
     /* R3-A #1: selectors are UNQUOTED (quoted forms get quote-escaped by the
-     * serializer into a spec-broken selector). Pin the unquoted contract. */
-    expect(sheet).toContain('[data-theme=light]');
+     * serializer into a spec-broken selector). Pin the unquoted contract.
+     * R3C-12: :root already carries light concrete values, so only the
+     * DIFFERING palette ships a data-theme block (dark here). */
     expect(sheet).toContain('[data-theme=dark]');
+    expect(sheet).not.toContain('[data-theme=light]');
   });
 
   it('useThemeName returns [name, setter] pinned by CONTRACT §4', () => {
@@ -121,16 +124,40 @@ describe('buildGlobalStyles via <Global> in the provider', () => {
     expect(sheet).toMatch(/font-smoothing|text-rendering/);
   });
 
-  it('every render ships BOTH palettes as data-theme blocks (R2C-5)', () => {
+  it('every render ships the OTHER palette as a data-theme block (R2C-5+R3C-12)', () => {
+    /* :root = rendered palette (concrete); exactly one data-theme block = the
+     * palette that DIFFERS (no byte-identical 38-prop re-declaration). */
     renderToStaticMarkup(h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: null }));
     const sheet = __sheetCss();
-    expect(sheet).toContain('--c-bg:' + lightTheme.color.bg);
-    /* dark block present too, and it is the DARK palette inside it */
+    expect(sheet).toContain('--c-bg:' + lightTheme.color.bg);       /* :root */
     const darkBlock = sheet.match(/\[data-theme=dark\]\s*\{([^}]*)\}/);
     expect(darkBlock, 'dark data-theme block').toBeTruthy();
     expect(darkBlock![1]).toContain('--c-bg:' + darkTheme.color.bg);
-    const lightBlock = sheet.match(/\[data-theme=light\]\s*\{([^}]*)\}/);
-    expect(lightBlock![1]).toContain('--c-bg:' + lightTheme.color.bg);
+    expect(sheet).not.toContain('[data-theme=light]');               /* same as :root */
+
+    /* default render (dark): :root dark, light block ships */
+    __resetSheet();
+    renderToStaticMarkup(h(AppThemeProvider, { children: null }));
+    const s2 = __sheetCss();
+    expect(s2).toContain('--c-bg:' + darkTheme.color.bg);
+    expect(s2).toContain('[data-theme=light]');
+    expect(s2).not.toContain('[data-theme=dark]');
+  });
+
+  it('every var(--*) reference resolves to an emitted custom property (R3C-02 guard)', () => {
+    /* R3C-02 shipped because `var(--c-accentBorder)` never matched the
+     * kebab-cased emit (`--c-accent-border`). This gate catches any future
+     * camelCase/typo'd token reference at test time, both palettes. */
+    for (const theme of [darkTheme, lightTheme]) {
+      renderToStaticMarkup(h(AppThemeProvider, { forcedTheme: theme === darkTheme ? 'dark' : 'light', children: null }));
+      const emitted = new Set(Object.keys(themeToCssVars(theme)));
+      const refs = [...__sheetCss().matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
+      expect(refs.length, 'sheet exercises var() refs').toBeGreaterThan(5);
+      for (const ref of refs) {
+        expect(emitted, `unresolved var reference ${ref}`).toContain(ref);
+      }
+      __resetSheet();
+    }
   });
 
   it('buildGlobalStyles is pure and theme-pinned (one source of truth)', () => {
@@ -181,6 +208,78 @@ function runInitScript(opts: {
     return { doc, threw: e };
   }
 }
+
+/* Shipped-file parity (R3C-04): public/theme-init.js is what actually runs in
+ * the browser. The inline `themeInitScript` above is unit-tested; this block
+ * runs the SHIPPED bytes through the same fake-DOM harness so the two copies
+ * cannot drift in behavior (the FOUC-critical path must be tested where it
+ * ships, not only where it's imported). */
+describe('public/theme-init.js (shipped file) — same behavior, same contract', () => {
+  const shipped = readFileSync(
+    new URL('../../public/theme-init.js', import.meta.url),
+    'utf8',
+  );
+
+  function runShipped(opts: { stored: string | null; systemDark?: boolean }): {
+    doc: FakeDocument;
+    threw: unknown;
+  } {
+    const doc = fakeDocument();
+    const storage = { getItem: (_k: string) => opts.stored ?? null };
+    const windowStub = {
+      matchMedia: (q: string) => ({ matches: q.includes('dark') ? !!opts.systemDark : false }),
+    };
+    try {
+      /* the file is an IIFE over globals — provide them via Function params */
+      const fn = new Function('document', 'window', 'localStorage', shipped);
+      fn(doc, windowStub, storage);
+      return { doc, threw: null };
+    } catch (e) {
+      return { doc, threw: e };
+    }
+  }
+
+  it('references the same storage key as the app', () => {
+    expect(shipped).toContain('portfolio.theme');
+  });
+
+  it('stored JSON pref → data-theme + colorScheme flip (both palettes)', () => {
+    for (const t of ['dark', 'light'] as const) {
+      const { doc, threw } = runShipped({ stored: JSON.stringify({ theme: t }) });
+      expect(threw).toBeNull();
+      expect(doc.documentElement.attrs['data-theme']).toBe(t);
+      expect(doc.documentElement.style.colorScheme).toBe(t);
+    }
+  });
+
+  it('legacy bare-string pref is tolerated identically (R3C-05)', () => {
+    for (const t of ['dark', 'light'] as const) {
+      const shippedRun = runShipped({ stored: JSON.stringify(t).slice(1, -1) });
+      expect(shippedRun.threw).toBeNull();
+      expect(shippedRun.doc.documentElement.attrs['data-theme']).toBe(t);
+      const inlineRun = runInitScript({ stored: JSON.stringify(t).slice(1, -1) });
+      expect(inlineRun.threw).toBeNull();
+      expect(inlineRun.doc.documentElement.attrs['data-theme']).toBe(t);
+    }
+  });
+
+  it('no stored pref follows prefers-color-scheme, colorScheme dark light', () => {
+    const dark = runShipped({ stored: null, systemDark: true });
+    expect(dark.doc.documentElement.attrs['data-theme']).toBe('dark');
+    expect(dark.doc.documentElement.style.colorScheme).toBe('dark light');
+  });
+
+  it('private-mode storage (getItem throws) degrades to system pref', () => {
+    const doc = fakeDocument();
+    const boom = { getItem: () => { throw new Error('SecurityError'); } };
+    const windowStub = { matchMedia: (q: string) => ({ matches: q.includes('dark') }) };
+    expect(() =>
+      new Function('document', 'window', 'localStorage', shipped)(doc, windowStub, boom),
+    ).not.toThrow();
+    /* inner catch swallows, resolution falls through to prefers-color-scheme */
+    expect(doc.documentElement.attrs['data-theme']).toBe('dark');
+  });
+});
 
 describe('themeInitScript', () => {
   it('is a single-line IIFE referencing the shared storage key, valid JS', () => {

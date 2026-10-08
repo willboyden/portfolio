@@ -7,7 +7,7 @@
  */
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve , sep} from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist');
 const port = Number(process.argv[3] ?? process.env.PORT ?? 4321);
@@ -58,7 +58,9 @@ function safeJoin(rootDir, urlPath) {
     return null;
   }
   const candidate = normalize(join(rootDir, decoded));
-  if (!candidate.startsWith(rootDir)) return null;
+  /* prefix-compare WITH separator: plain startsWith admits siblings like
+   * `/a/distevil/` for root `/a/dist` (R3C-10). */
+  if (candidate !== rootDir && !candidate.startsWith(rootDir + sep)) return null;
   return candidate;
 }
 

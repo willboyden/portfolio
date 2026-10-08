@@ -58,7 +58,7 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
     p: { marginTop: 0, marginBottom: '1em' },
     a: {
       color: 'var(--c-accent, ' + theme.color.accent + ')',
-      textDecorationColor: 'var(--c-accentBorder, ' + theme.color.accentBorder + ')',
+      textDecorationColor: 'var(--c-accent-border, ' + theme.color.accentBorder + ')',
       textDecorationThickness: 'from-font',
     },
     'a:hover': {
@@ -93,9 +93,16 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
      * identifiers, so no quoting is needed and the vendored serializer's
      * quote-escaping can't corrupt the selector (quoted forms serialize to
      * `[data-theme=\'dark\']`, which per CSS Syntax matches the literal
-     * string "'dark'" — broken in spec-strict engines). */
-    ':root[data-theme=dark]': themeToCssVars(darkTheme) as Record<string, string>,
-    ':root[data-theme=light]': themeToCssVars(lightTheme) as Record<string, string>,
+     * string "'dark'" — broken in spec-strict engines).
+     *
+     * R3C-12: emit ONLY the block for the palette that DIFFERS from the
+     * rendered one. `:root` already carries the rendered palette's concrete
+     * values, so the same-palette data-theme block would re-declare all 38
+     * props byte-identically (~1 kB per page wasted). An attribute that
+     * matches no block simply falls through to `:root` — same values. */
+    ...(theme === lightTheme
+      ? { ':root[data-theme=dark]': themeToCssVars(darkTheme) as Record<string, string> }
+      : { ':root[data-theme=light]': themeToCssVars(lightTheme) as Record<string, string> }),
 
     /* Focus: visible by DEFAULT (contract §5). We style :focus-visible and
      * deliberately do NOT remove :focus outlines for pointer users on
@@ -108,7 +115,7 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
 
     /* Selection ------------------------------------------------------------ */
     '::selection': {
-      background: 'var(--c-accentSoft, ' + theme.color.accentSoft + ')',
+      background: 'var(--c-accent-soft, ' + theme.color.accentSoft + ')',
       color: 'var(--c-text, ' + theme.color.text + ')',
     },
 

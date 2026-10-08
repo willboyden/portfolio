@@ -146,9 +146,11 @@ describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
     for (const must of ['.git', 'node_modules', 'e2e']) {
       expect(lines, `missing ${must}`).toContain(must);
     }
-    for (const never of ['.env', '*.key', '.ssh']) {
-      /* either explicitly ignored or never in context by construction */
-      expect(lines.includes(never) || true, never).toBe(true);
+    /* Secrets must never reach the build context. The patterns are Pinned as
+     * present in .dockerignore — not "either way" (R3C-08: the old assertion
+     * was `X || true` and could never fail). */
+    for (const secret of ['.env', '*.key', '.ssh']) {
+      expect(lines, `dockerignore lists ${secret}`).toContain(secret);
     }
     /* dist must NOT be ignored — the prebuilt image copies it. */
     expect(lines).not.toContain('dist');

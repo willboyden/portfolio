@@ -8,7 +8,7 @@ slug: testing-half-your-system-is-a-prompt
 summary: >-
   You cannot unit-test a prompt, so stop trying. Deterministic boundaries,
   a build that fails on a typo, golden output validated as an artifact, and
-  statistical assertions with reps — the four patterns behind 491 unit tests
+  statistical assertions with reps — the four patterns behind 493 unit tests
   and 49 browser checks on a site whose content pipeline eats markdown.
 tags: [testing, llm, evals, typescript, python]
 date: 2026-10-06
@@ -47,11 +47,13 @@ not the same incident.
 The shipped run shows why honesty at the boundary matters. One model
 completed 16/16 runs at 100% valid calls, and recorded 20 empty-content
 turns anyway: it kept hitting turns that returned nothing usable, and the
-metric says so. The other two models were down at the broker (a 404 "model
-does not exist" and a 500 connection error); both recorded as failures with
-the real HTTP error bodies attached rather than dropped from the comparison.
-Latency after the cache-bust fix reported an honest distribution: min 0.83
-s, median 1.31 s, max 3.72 s. A harness that hides any of this is marketing.
+metric says so. The other two models were down at the broker, in
+different ways: one threw a 404 "model does not exist" on eight attempts and
+a 429 on the other eight (the cooldown flipping between calls), the other a
+flat 500 on all sixteen. Both recorded as failures with the real HTTP error
+bodies attached rather than dropped from the comparison. Latency after the
+cache-bust fix reported an honest distribution: min 0.83 s, median 1.29 s,
+max 3.72 s. A harness that hides any of this is marketing.
 
 ## Boundary two: a content pipeline that refuses to be fuzzy
 
@@ -66,9 +68,9 @@ mappings, tabs, anchors: rejected. Guessing silently is how content
 pipelines rot, so the subset guesses nothing.
 
 **Schemas that are `.strict()` by contract.** Unknown frontmatter keys are a
-build error, not a silent no-op: `scripts/build-content.mjs` runs every file
-through zod and exits 1 on any failure, with messages like `file: posts/x.md
-› title: <msg>`. A typo'd field name cannot become a feature that quietly
+a loud build error: `scripts/build-content.mjs` runs every file
+through zod and exits 1 on any failure, printing one block per issue —
+`file: <path>`, then `field: <collection>/<field>`, then `error: <message>`. A typo'd field name cannot become a feature that quietly
 never renders.
 
 **Output invariants as tests.** `src/content/content.test.ts` validates the
@@ -94,7 +96,7 @@ page and fails if any inline, execution-capable script survived.
 The container is air-gapped, so the harness is plain Node. Vitest runs in the
 `node` environment only — there is no jsdom package — so component tests
 render through `renderToStaticMarkup` and assert structure: heading order,
-hrefs, rendered content. That is 491 tests across 20 files in about 0.8
+hrefs, rendered content. That is 493 tests across 20 files in about 0.8
 seconds, and it is genuinely useful because SSR caught a class of bugs
 (client hydration) that jsdom fakes anyway.
 

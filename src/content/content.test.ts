@@ -27,7 +27,7 @@ import {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 describe('generated bundle shape', () => {
-  it('satisfies SiteContentSchema (generatedAt + 4 typed collections)', () => {
+  it('satisfies SiteContentSchema (contentHash + 4 typed collections)', () => {
     const parsed = SiteContentSchema.safeParse(raw);
     if (!parsed.success) {
       throw new Error(

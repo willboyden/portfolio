@@ -225,8 +225,6 @@ const CrumbNav = styled.nav`
   margin-bottom: ${(p) => p.theme.space[5]};
 `;
 
-const buttonLink = css({ textDecoration: 'none' });
-
 const LINK_LABEL: Record<'source' | 'demo' | 'paper', string> = {
   source: 'Source',
   demo: 'Live demo',
@@ -241,6 +239,10 @@ export function ProjectDetail(): React.ReactNode {
   const { slug } = useParams<{ slug: string }>();
   const project = slug !== undefined ? getProject(slug) : undefined;
   const theme = useTheme() as Tokens;
+  /* computed per-render (hook context exists here): a module-scope css()
+   * call would read context outside React and log "Invalid hook call"
+   * during prerender (R3-C follow-up). */
+  const buttonLink = css({ textDecoration: 'none' });
 
   if (!project) return <NotFound />;
 

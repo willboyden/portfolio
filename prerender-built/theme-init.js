@@ -11,7 +11,15 @@
     try {
       var r = localStorage.getItem(k);
       if (r) {
-        p = JSON.parse(r).theme;
+        /* Current format: {"theme":"light"}. Tolerate the legacy bare string
+         * ("light") exactly like ThemePreference does at hydration — if this
+         * script fell to system while the app then read the stored value, the
+         * pre-paint palette would flash wrong on legacy prefs. */
+        if (r === 'dark' || r === 'light') {
+          p = r;
+        } else {
+          p = JSON.parse(r).theme;
+        }
       }
     } catch (e) {}
     var t;

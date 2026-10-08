@@ -26,7 +26,7 @@ function validate(): SiteContent {
         `rebuild with \`node scripts/build-content.mjs\`.\n${first}`,
     );
   }
-  const { generatedAt: _generatedAt, ...site } = parsed.data;
+  const { contentHash: _contentHash, ...site } = parsed.data;
   return site;
 }
 

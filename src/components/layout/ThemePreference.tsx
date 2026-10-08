@@ -206,6 +206,11 @@ function getSnapshot(): ThemeSnapshot {
   return snapshot;
 }
 
+/** Read the current preference without React (cross-tab assertions, telemetry). */
+export function getThemePreferenceSnapshot(): ThemeSnapshot {
+  return snapshot;
+}
+
 /**
  * Change the preference. Persist + document side effects happen here rather than
  * in an effect because callers are event handlers (client-only by definition)
@@ -220,6 +225,57 @@ export function setThemePreference(name: ThemeName, source: ThemeSource = 'user'
   applyThemeToDocument(name);
   emit();
 }
+
+/**
+ * Adopt a preference written by ANOTHER tab (storage event). Deliberately does
+ * not re-write storage: writing back fires the event in the origin tab, which
+ * (same-value or not, browsers differ) risks a tab ping-pong. (R3C-05)
+ */
+function adoptExternalTheme(name: ThemeName): void {
+  if (snapshot.themeName === name) return;
+  snapshot = { themeName: name, resolvedFrom: 'user' };
+  applyThemeToDocument(name);
+  emit();
+}
+
+/** Parse a storage value in either accepted shape ({theme} JSON or bare string). */
+function parseThemeStorage(raw: string | null): ThemeName | null {
+  if (raw === null) return null;
+  if (isThemeName(raw)) return raw;
+  try {
+    const v = (JSON.parse(raw) as { theme?: unknown }).theme;
+    return isThemeName(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+let crossTabAttached = false;
+
+/* Cross-tab sync (R3C-05): localStorage fires `storage` only in OTHER
+ * tabs/windows; replay it into this tab's snapshot so open tabs cannot
+ * visibly diverge after a toggle anywhere. Attached at module load (once)
+ * rather than per-provider-mount: the store is a singleton anyway, and the
+ * listener must exist even in tabs where the provider re-renders eagerly.
+ * SSR-safe by the typeof guard; testable via a re-import with a stubbed
+ * window (see layout.test.tsx). */
+function attachCrossTabSync(): void {
+  /* needs BOTH globals: the handler's consequence (applyThemeToDocument)
+   * requires document; attaching to a window-less env would drift. */
+  if (
+    crossTabAttached ||
+    typeof window === 'undefined' ||
+    typeof document === 'undefined'
+  )
+    return;
+  crossTabAttached = true;
+  window.addEventListener('storage', (event: StorageEvent) => {
+    if (event.key !== THEME_STORAGE_KEY) return;
+    const name = parseThemeStorage(event.newValue);
+    if (name) adoptExternalTheme(name);
+  });
+}
+attachCrossTabSync();
 
 /** Test-only: forget any state a previous test wrote. */
 export function __resetThemePreference(): void {

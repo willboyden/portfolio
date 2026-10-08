@@ -106,7 +106,7 @@ export const TalkSchema = z
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
 export const SiteContentSchema = z
   .object({
-    generatedAt: z.string().min(1),
+    contentHash: z.string().min(1),
     projects: z.array(ProjectSchema),
     posts: z.array(PostSchema),
     videos: z.array(VideoSchema),

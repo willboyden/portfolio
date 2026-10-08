@@ -45,7 +45,7 @@ export const THEME_INIT_SCRIPT_STORAGE_KEY = 'portfolio.theme';
  * Embed as: `<script>${themeInitScript}</script>` placed after <meta> tags
  * and before any <link rel=stylesheet> / module script.
  */
-export const themeInitScript = `(function(){try{var d=document.documentElement;var k='${THEME_INIT_SCRIPT_STORAGE_KEY}';var p=null;try{var r=localStorage.getItem(k);if(r){p=JSON.parse(r).theme}}catch(e){}var t;if(p==='dark'||p==='light'){t=p;d.style.colorScheme=p}else{t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.style.colorScheme='dark light'}d.setAttribute('data-theme',t)}catch(e){}})();`;
+export const themeInitScript = `(function(){try{var d=document.documentElement;var k='${THEME_INIT_SCRIPT_STORAGE_KEY}';var p=null;try{var r=localStorage.getItem(k);if(r){if(r==='dark'||r==='light'){p=r}else{p=JSON.parse(r).theme}}}catch(e){}var t;if(p==='dark'||p==='light'){t=p;d.style.colorScheme=p}else{t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.style.colorScheme='dark light'}d.setAttribute('data-theme',t)}catch(e){}})();`;
 
 /* -------------------------------------------------------------------------- */
 /* Context                                                                     */

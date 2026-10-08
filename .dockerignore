@@ -19,3 +19,8 @@ tsconfig*.json
 vite.config*.ts
 vitest.config.ts
 eslint.config.*
+
+# secret hygiene (config-lint pins these patterns present)
+.env
+*.key
+.ssh

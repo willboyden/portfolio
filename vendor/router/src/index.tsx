@@ -156,7 +156,7 @@ export function RouterProvider({ routes, children, initialPath }: RouterProvider
 
   const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
     if (typeof window === 'undefined') return;
-    const next = to.startsWith('#') ? to : to;
+    const next = to;
     if (options?.replace) {
       window.history.replaceState(null, '', next);
     } else {

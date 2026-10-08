@@ -111,7 +111,7 @@ function RouterProvider({ routes, children, initialPath }) {
 	}, []);
 	const navigate = useCallback((to, options) => {
 		if (typeof window === "undefined") return;
-		const next = to.startsWith("#") ? to : to;
+		const next = to;
 		if (options?.replace) window.history.replaceState(null, "", next);
 		else window.history.pushState(null, "", next);
 		setLocation(parseLocation(next));
@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T06:05:24.734Z",
+	contentHash: "eb75e24470cd4bd9",
 	projects: [
 		{
 			"slug": "system-monitor",
@@ -1435,7 +1435,7 @@ var content_default = {
 		{
 			"slug": "testing-half-your-system-is-a-prompt",
 			"title": "Testing when half your system is a prompt",
-			"summary": "You cannot unit-test a prompt, so stop trying. Deterministic boundaries, a build that fails on a typo, golden output validated as an artifact, and statistical assertions with reps — the four patterns behind 491 unit tests and 49 browser checks on a site whose content pipeline eats markdown.",
+			"summary": "You cannot unit-test a prompt, so stop trying. Deterministic boundaries, a build that fails on a typo, golden output validated as an artifact, and statistical assertions with reps — the four patterns behind 493 unit tests and 49 browser checks on a site whose content pipeline eats markdown.",
 			"tags": [
 				"testing",
 				"llm",
@@ -1444,9 +1444,9 @@ var content_default = {
 				"python"
 			],
 			"date": "2026-10-06",
-			"readingMinutes": 4,
+			"readingMinutes": 5,
 			"series": "AI engineering notes",
-			"html": "<p>The honest architecture of most AI systems is: a deterministic shell, a\nstochastic core, and a prompt holding them together. Testing advice usually\nfails at the boundary: teams either unit-test the shell and pretend that\ncovers the system, or give up on automation and QA by vibes. The pattern that\nsurvived contact with two real projects (an LLM eval harness, and this\nportfolio site, which is a markdown-to-browser pipeline the content plan\nhopes counts as a credible prop) is boring and general: <strong>move work across\nthe boundary into the deterministic side, then test the deterministic side\nruthlessly.</strong></p>\n<h2 id=\"boundary-one-the-eval-harness-judges-with-rules-not-opinions\">Boundary one: the eval harness judges with rules, not opinions</h2>\n<p>The harness runs eight tool-calling scenarios against three models with two\nrepetitions each: 48 recorded runs. There is no LLM-as-judge anywhere in the\nscoring path. Every emitted tool call is validated against the scenario's\nJSON function schema, and every final answer is graded by rules like\n<code>answer_contains</code>, which match case-insensitively and tolerate thousands\nseparators (<code>1301.04</code> matches <code>1,301.04</code>). Substring checks are dull. They\nare also reproducible, and reproducibility is the entire job.</p>\n<p>Because the core is stochastic, the assertions get two tools the shell never\nneeds. First, repetitions: two reps per (model, scenario) pair turn &quot;it\nfailed&quot; into &quot;it failed 1 of 2 times,&quot; which is a different bug and a\ndifferent fix. Second, failure modes get named instead of bucketed: the\nharness records <code>empty_content_turns</code> (HTTP 200, <code>content: null</code>) and\n<code>reasoning_burn_turns</code> (<code>finish_reason=length</code> with empty content while\nreasoning tokens burn), because a 200-with-nothing and a budget artifact are\nnot the same incident.</p>\n<p>The shipped run shows why honesty at the boundary matters. One model\ncompleted 16/16 runs at 100% valid calls, and recorded 20 empty-content\nturns anyway: it kept hitting turns that returned nothing usable, and the\nmetric says so. The other two models were down at the broker (a 404 &quot;model\ndoes not exist&quot; and a 500 connection error); both recorded as failures with\nthe real HTTP error bodies attached rather than dropped from the comparison.\nLatency after the cache-bust fix reported an honest distribution: min 0.83\ns, median 1.31 s, max 3.72 s. A harness that hides any of this is marketing.</p>\n<h2 id=\"boundary-two-a-content-pipeline-that-refuses-to-be-fuzzy\">Boundary two: a content pipeline that refuses to be fuzzy</h2>\n<p>This site renders markdown written by the same author who is trying to test\nit, which is exactly the trust problem a prompt layer creates. The answer was\nto make every step deterministic and loud.</p>\n<p><strong>A parser with opinions.</strong> The frontmatter format is a deliberately small\nYAML subset — scalars, inline arrays, one-level nesting, folded blocks — and\nanything outside the grammar throws with the offending line number. Flow\nmappings, tabs, anchors: rejected. Guessing silently is how content\npipelines rot, so the subset guesses nothing.</p>\n<p><strong>Schemas that are <code>.strict()</code> by contract.</strong> Unknown frontmatter keys are a\nbuild error, not a silent no-op: <code>scripts/build-content.mjs</code> runs every file\nthrough zod and exits 1 on any failure, with messages like <code>file: posts/x.md\n› title: &lt;msg&gt;</code>. A typo'd field name cannot become a feature that quietly\nnever renders.</p>\n<p><strong>Output invariants as tests.</strong> <code>src/content/content.test.ts</code> validates the\ngenerated bundle against the whole-bundle schema, asserts unique slugs per\ncollection, date format everywhere, date-descending order, non-empty rendered\nHTML per post, excerpts capped at 140 characters plus an ellipsis, and\ninteger reading minutes. The build sorts with slug tie-breaks so identical\ninputs produce byte-stable output — which makes <code>generated/content.json</code> a\ngolden file: a build artifact the test suite re-validates rather than a\nmystery blob.</p>\n<p><strong>One security policy, both entry points.</strong> The markdown engine's\n<code>sanitizeUrl</code> allows only http/https/mailto and relative URLs (including\nrejecting obfuscation like <code>java\\nscript:</code>), and the frontmatter URL field is\na zod <code>SafeUrl</code> enforcing the same scheme allowlist, because <code>z.string().url()</code>\nalone happily accepts <code>javascript:</code> and <code>data:</code>. One policy, two entry points,\nasserted from both sides: unit tests check the generated HTML never contains\nraw script tags or <code>javascript:</code> hrefs; the browser suite refetches a post\npage and fails if any inline, execution-capable script survived.</p>\n<h2 id=\"the-pyramid-you-can-actually-run-offline\">The pyramid you can actually run offline</h2>\n<p>The container is air-gapped, so the harness is plain Node. Vitest runs in the\n<code>node</code> environment only — there is no jsdom package — so component tests\nrender through <code>renderToStaticMarkup</code> and assert structure: heading order,\nhrefs, rendered content. That is 491 tests across 20 files in about 0.8\nseconds, and it is genuinely useful because SSR caught a class of bugs\n(client hydration) that jsdom fakes anyway.</p>\n<p>Real behavior then moves to the browser: a self-written ~700-line CDP harness\ndrives real Chromium through 49 checks in 7 spec files. Security asserts CSP\n<code>script-src 'self'</code> and <code>frame-ancestors 'none'</code>, nosniff and frame-deny\nheaders, and greps shipped markup for secret shapes (<code>sk-…</code>, <code>AKIA…</code>, bearer\ntokens). Performance enforces budgets rather than aspirations: under 250 kB\nof JS+CSS transferred on the home page, client-side navigation under 1500\nms, and an <code>&lt;h1&gt;</code> present in prerendered HTML so LCP never paints from zero.\nEven nginx gets tested without nginx: <code>config-lint</code> parses the deploy config\nand enforces the add_header inheritance invariant, since one location\ndeclaring a header silently loses every server-level one.</p>\n<p>The prompt half still needs humans, of course — that is what the two\nrepetitions and the named failure modes are for. Everything around it does\nnot, and that is the point. Push the boundary out, name what crosses it, and\ntest the rest like it's a compiler, because from the user's side it is.</p>",
+			"html": "<p>The honest architecture of most AI systems is: a deterministic shell, a\nstochastic core, and a prompt holding them together. Testing advice usually\nfails at the boundary: teams either unit-test the shell and pretend that\ncovers the system, or give up on automation and QA by vibes. The pattern that\nsurvived contact with two real projects (an LLM eval harness, and this\nportfolio site, which is a markdown-to-browser pipeline the content plan\nhopes counts as a credible prop) is boring and general: <strong>move work across\nthe boundary into the deterministic side, then test the deterministic side\nruthlessly.</strong></p>\n<h2 id=\"boundary-one-the-eval-harness-judges-with-rules-not-opinions\">Boundary one: the eval harness judges with rules, not opinions</h2>\n<p>The harness runs eight tool-calling scenarios against three models with two\nrepetitions each: 48 recorded runs. There is no LLM-as-judge anywhere in the\nscoring path. Every emitted tool call is validated against the scenario's\nJSON function schema, and every final answer is graded by rules like\n<code>answer_contains</code>, which match case-insensitively and tolerate thousands\nseparators (<code>1301.04</code> matches <code>1,301.04</code>). Substring checks are dull. They\nare also reproducible, and reproducibility is the entire job.</p>\n<p>Because the core is stochastic, the assertions get two tools the shell never\nneeds. First, repetitions: two reps per (model, scenario) pair turn &quot;it\nfailed&quot; into &quot;it failed 1 of 2 times,&quot; which is a different bug and a\ndifferent fix. Second, failure modes get named instead of bucketed: the\nharness records <code>empty_content_turns</code> (HTTP 200, <code>content: null</code>) and\n<code>reasoning_burn_turns</code> (<code>finish_reason=length</code> with empty content while\nreasoning tokens burn), because a 200-with-nothing and a budget artifact are\nnot the same incident.</p>\n<p>The shipped run shows why honesty at the boundary matters. One model\ncompleted 16/16 runs at 100% valid calls, and recorded 20 empty-content\nturns anyway: it kept hitting turns that returned nothing usable, and the\nmetric says so. The other two models were down at the broker, in\ndifferent ways: one threw a 404 &quot;model does not exist&quot; on eight attempts and\na 429 on the other eight (the cooldown flipping between calls), the other a\nflat 500 on all sixteen. Both recorded as failures with the real HTTP error\nbodies attached rather than dropped from the comparison. Latency after the\ncache-bust fix reported an honest distribution: min 0.83 s, median 1.29 s,\nmax 3.72 s. A harness that hides any of this is marketing.</p>\n<h2 id=\"boundary-two-a-content-pipeline-that-refuses-to-be-fuzzy\">Boundary two: a content pipeline that refuses to be fuzzy</h2>\n<p>This site renders markdown written by the same author who is trying to test\nit, which is exactly the trust problem a prompt layer creates. The answer was\nto make every step deterministic and loud.</p>\n<p><strong>A parser with opinions.</strong> The frontmatter format is a deliberately small\nYAML subset — scalars, inline arrays, one-level nesting, folded blocks — and\nanything outside the grammar throws with the offending line number. Flow\nmappings, tabs, anchors: rejected. Guessing silently is how content\npipelines rot, so the subset guesses nothing.</p>\n<p><strong>Schemas that are <code>.strict()</code> by contract.</strong> Unknown frontmatter keys are a\na loud build error: <code>scripts/build-content.mjs</code> runs every file\nthrough zod and exits 1 on any failure, printing one block per issue —\n<code>file: &lt;path&gt;</code>, then <code>field: &lt;collection&gt;/&lt;field&gt;</code>, then <code>error: &lt;message&gt;</code>. A typo'd field name cannot become a feature that quietly\nnever renders.</p>\n<p><strong>Output invariants as tests.</strong> <code>src/content/content.test.ts</code> validates the\ngenerated bundle against the whole-bundle schema, asserts unique slugs per\ncollection, date format everywhere, date-descending order, non-empty rendered\nHTML per post, excerpts capped at 140 characters plus an ellipsis, and\ninteger reading minutes. The build sorts with slug tie-breaks so identical\ninputs produce byte-stable output — which makes <code>generated/content.json</code> a\ngolden file: a build artifact the test suite re-validates rather than a\nmystery blob.</p>\n<p><strong>One security policy, both entry points.</strong> The markdown engine's\n<code>sanitizeUrl</code> allows only http/https/mailto and relative URLs (including\nrejecting obfuscation like <code>java\\nscript:</code>), and the frontmatter URL field is\na zod <code>SafeUrl</code> enforcing the same scheme allowlist, because <code>z.string().url()</code>\nalone happily accepts <code>javascript:</code> and <code>data:</code>. One policy, two entry points,\nasserted from both sides: unit tests check the generated HTML never contains\nraw script tags or <code>javascript:</code> hrefs; the browser suite refetches a post\npage and fails if any inline, execution-capable script survived.</p>\n<h2 id=\"the-pyramid-you-can-actually-run-offline\">The pyramid you can actually run offline</h2>\n<p>The container is air-gapped, so the harness is plain Node. Vitest runs in the\n<code>node</code> environment only — there is no jsdom package — so component tests\nrender through <code>renderToStaticMarkup</code> and assert structure: heading order,\nhrefs, rendered content. That is 493 tests across 20 files in about 0.8\nseconds, and it is genuinely useful because SSR caught a class of bugs\n(client hydration) that jsdom fakes anyway.</p>\n<p>Real behavior then moves to the browser: a self-written ~700-line CDP harness\ndrives real Chromium through 49 checks in 7 spec files. Security asserts CSP\n<code>script-src 'self'</code> and <code>frame-ancestors 'none'</code>, nosniff and frame-deny\nheaders, and greps shipped markup for secret shapes (<code>sk-…</code>, <code>AKIA…</code>, bearer\ntokens). Performance enforces budgets rather than aspirations: under 250 kB\nof JS+CSS transferred on the home page, client-side navigation under 1500\nms, and an <code>&lt;h1&gt;</code> present in prerendered HTML so LCP never paints from zero.\nEven nginx gets tested without nginx: <code>config-lint</code> parses the deploy config\nand enforces the add_header inheritance invariant, since one location\ndeclaring a header silently loses every server-level one.</p>\n<p>The prompt half still needs humans, of course — that is what the two\nrepetitions and the named failure modes are for. Everything around it does\nnot, and that is the point. Push the boundary out, name what crosses it, and\ntest the rest like it's a compiler, because from the user's side it is.</p>",
 			"excerpt": "The honest architecture of most AI systems is: a deterministic shell, a stochastic core, and a prompt holding them together. Testing advice …"
 		},
 		{
@@ -1461,9 +1461,9 @@ var content_default = {
 				"python"
 			],
 			"date": "2026-10-04",
-			"readingMinutes": 5,
+			"readingMinutes": 4,
 			"series": "AI engineering notes",
-			"html": "<p>A human analyst learns the hard way that a table's grain is not what its name\nsuggests. An agent never learns it — it queries whatever you give it,\nconfidently, every time. I built an analytics pipeline over the <code>gov_payroll</code>\nClickHouse database (23 tables, ~279M rows) in the local-ai-lab sandbox, and\nthe process of making it safe to point an agent at it taught me more about\ndata hygiene than any governance framework deck.</p>\n<p>The pipeline is three stages: a query layer, a probe script that materializes\n14 datasets as JSON, and a build step that compiles them into a single\nself-contained dashboard. Python 3.13 stdlib only, no pip, no CDN, and a\nread-only ClickHouse MCP server as the only data path. The read-only part is\nload-bearing: DDL and DML are refused at the server, so the probe script is\naggregate-only by construction, not by discipline.</p>\n<h2 id=\"the-traps-are-in-the-grain-not-the-syntax\">The traps are in the grain, not the syntax</h2>\n<p>Three ClickHouse quirks broke naive queries first (all verified against\n24.3.18): <code>arbitrary()</code> does not exist (error 46, even on literals — use\n<code>any()</code>); aliasing <code>sum(x) AS x</code> then writing <code>avg(x)</code> triggers error 184\nbecause the parser resolves the second <code>x</code> to the alias; and column names\ndrift per table — <code>irs_soi_zip.tax_year</code> instead of <code>year</code>, and\n<code>federal_spending_awards.fiscal_year</code> is the string <code>'FY2026'</code>, so <code>int()</code>\nthrows and a regex parse is mandatory. These fail loudly, which is the good\ncategory of failure.</p>\n<p>The dangerous ones distort silently. <code>bls_qcew_ma</code> stores nine <code>agglvl_code</code>\naggregation levels per county; summing all levels overstates employment\nroughly 9x. The fix is a one-token predicate, <code>agglvl_code = '70'</code>, on every\nQCEW query. <code>federal_spending_awards</code> stores cumulative modifications per\n<code>award_id</code>, so a raw <code>SUM(total_obligated_amount)</code> overstates spending about\n12x; the two federal datasets dedupe to <code>max(total_obligated_amount)</code> per\naward before summing. And <code>municipal_payroll</code> only ever covers one to four\ncities per fiscal year (FY2027: one city, FY2026: two): a &quot;top cities&quot;\nchart built on a partial year ranks a rounding error. The city ranking\ntherefore runs on 2025, the best-coverage year, and the trend view carries a\n<code>cities</code> column so the reader cannot forget the grain.</p>\n<p>None of these raise an exception. A capable agent will write the\nreasonable-looking query, get a number, and cite it. That is the definition\nof an unagent-proofed data layer: correctness depends on tribal knowledge\nthat lives outside the schema.</p>\n<h2 id=\"lineage-is-a-metadata-field-not-a-wiki-page\">Lineage is a metadata field, not a wiki page</h2>\n<p>Every dataset file embeds its own provenance in <code>meta</code>: the exact SQL used,\nper-attempt timings, row count, notes, and a <code>failed</code> flag. The dashboard\ncarries a provenance section rendering the SQL behind every dataset. When a\nnumber looks wrong, the audit path is: open the JSON, read the SQL, re-run\nit. No archaeology.</p>\n<p>This costs nothing if you generate the files programmatically, and it turns\nthe dataset itself into the documentation. When an agent (or a new human)\nwants to know why the federal totals look small, the dedupe CTE is right\nthere in <code>meta.sql</code> — the tribal knowledge moved inside the artifact.</p>\n<h2 id=\"checkpoints-where-the-fan-out-starts\">Checkpoints where the fan-out starts</h2>\n<p><code>00_ranges</code> is the first query: min/max year per core table, one row. It is\ncached, and every subsequent query derives its year filters from it rather\nthan hardcoding 2024 or guessing. That makes the whole 14-query fan-out\ndate-correct without anyone editing files when new years land, and it gives\nthe probe one natural checkpoint: if ranges look wrong, nothing downstream is\ntrusted.</p>\n<p>The rest is boring in the right way. <code>probe.py</code> is idempotent — rewrites\n<code>data/*.json</code> on every run, server-side aggregation keeps every query under\n0.3 s (the shipped run's slowest query: 0.21 s), and re-running is cheap\nenough that refresh is a habit, not an event. The FEC tables, 216M rows of\nthem, were deliberately excluded under the performance rules; a dataset that\ndoes not fit the budget is cut, not apologized for. KPIs on the dashboard are\nrecomputed from the embedded rows at build time, never hardcoded, so the\nheadline numbers and the drill-downs cannot drift apart.</p>\n<h2 id=\"the-transport-is-part-of-the-data-layer\">The transport is part of the data layer</h2>\n<p>The ClickHouse HTTP endpoint is not reachable directly from the sandbox; the\nonly working path is the clickhouse-mcp JSON-RPC server over HTTP plus\nServer-Sent-Events. Four handshakes, one per-session token: send\n<code>Accept: application/json, text/event-stream</code> with <em>both</em> media types or the\nserver rejects you with 406; capture <code>Mcp-Session-Id</code> from the <em>response\nheaders</em> and replay it on every later request; post\n<code>notifications/initialized</code> and expect 202; then <code>tools/call run_query</code> and\nparse the SSE <code>data:</code> line. The query wrapper hides timeout handling, one\nretry, and a stale-session re-handshake, plus normalization of the\n<code>{columns, rows}</code> result shape into dicts.</p>\n<p>That is an unglamorous 279-line module (<code>ch_client.py</code>), and it is why the\nagent-facing interface is one function — <code>query(sql) -&gt; list[dict]</code> —\ninstead of a protocol the model would have to get right at generation time.\nWrap the transport; do not prompt for it.</p>\n<h2 id=\"why-agents-raise-the-stakes\">Why agents raise the stakes</h2>\n<p>A junior analyst who sums nine aggregation levels gets corrected in code\nreview. An agent doing the same thing produces a dashboard, a summary of the\ndashboard, and three confident sentences about it before anyone asks. The\nmitigations are old data-engineering virtues with new urgency: filters that\nencode grain go <em>in</em> the query templates; provenance travels with the data;\nrefresh is idempotent so stale numbers never accumulate; and the server says\nread-only even when the prompt says otherwise. None of it is glamorous. All\nof it is what &quot;the agent can be trusted with this data&quot; actually means.</p>",
+			"html": "<p>A human analyst learns the hard way that a table's grain is not what its name\nsuggests. An agent never learns it — it queries whatever you give it,\nconfidently, every time. I built an analytics pipeline over the <code>gov_payroll</code>\nClickHouse database (23 tables, ~279M rows) in the local-ai-lab sandbox, and\nthe process of making it safe to point an agent at it taught me more about\ndata hygiene than any governance framework deck.</p>\n<p>The pipeline is three stages: a query layer, a probe script that materializes\n14 datasets as JSON, and a build step that compiles them into a single\nself-contained dashboard. Python 3.13 stdlib only, no pip, no CDN, and a\nread-only ClickHouse MCP server as the only data path. The read-only part is\nload-bearing: DDL and DML are refused at the server, so the probe script is\naggregate-only by construction, not by discipline.</p>\n<h2 id=\"the-traps-hide-in-the-grain\">The traps hide in the grain</h2>\n<p>Three ClickHouse quirks broke naive queries first (all verified against\n24.3.18): <code>arbitrary()</code> does not exist (error 46, even on literals — use\n<code>any()</code>); aliasing <code>sum(x) AS x</code> then writing <code>avg(x)</code> triggers error 184\nbecause the parser resolves the second <code>x</code> to the alias; and column names\ndrift per table — <code>irs_soi_zip.tax_year</code> instead of <code>year</code>, and\n<code>federal_spending_awards.fiscal_year</code> is the string <code>'FY2026'</code>, so <code>int()</code>\nthrows and a regex parse is mandatory. These fail loudly, which is the good\ncategory of failure.</p>\n<p>The dangerous ones distort silently. <code>bls_qcew_ma</code> stores nine <code>agglvl_code</code>\naggregation levels per county; summing all levels overstates employment\nroughly 9x. The fix is a one-token predicate, <code>agglvl_code = '70'</code>, on every\nQCEW query. <code>federal_spending_awards</code> stores cumulative modifications per\n<code>award_id</code>, so a raw <code>SUM(total_obligated_amount)</code> overstates spending about\n12x; the two federal datasets dedupe to <code>max(total_obligated_amount)</code> per\naward before summing. And <code>municipal_payroll</code> only ever covers one to four\ncities per fiscal year (FY2027: one city, FY2026: two): a &quot;top cities&quot;\nchart built on a partial year ranks a rounding error. The city ranking\ntherefore runs on 2025, the best-coverage year, and the trend view carries a\n<code>cities</code> column so the reader cannot forget the grain.</p>\n<p>None of these raise an exception. A capable agent will write the\nreasonable-looking query, get a number, and cite it. That is the definition\nof an unagent-proofed data layer: correctness depends on tribal knowledge\nthat lives outside the schema.</p>\n<h2 id=\"lineage-lives-in-the-schema\">Lineage lives in the schema</h2>\n<p>Every dataset file embeds its own provenance in <code>meta</code>: the exact SQL used,\nper-attempt timings, row count, notes, and a <code>failed</code> flag. The dashboard\ncarries a provenance section rendering the SQL behind every dataset. When a\nnumber looks wrong, the audit path is: open the JSON, read the SQL, re-run\nit. No archaeology.</p>\n<p>This costs nothing if you generate the files programmatically, and it turns\nthe dataset itself into the documentation. When an agent (or a new human)\nwants to know why the federal totals look small, the dedupe CTE is right\nthere in <code>meta.sql</code> — the tribal knowledge moved inside the artifact.</p>\n<h2 id=\"checkpoints-where-the-fan-out-starts\">Checkpoints where the fan-out starts</h2>\n<p><code>00_ranges</code> is the first query: min/max year per core table, one row. It is\ncached, and every subsequent query derives its year filters from it rather\nthan hardcoding 2024 or guessing. That makes the whole 14-query fan-out\ndate-correct without anyone editing files when new years land, and it gives\nthe probe one natural checkpoint: if ranges look wrong, nothing downstream is\ntrusted.</p>\n<p>The rest is boring in the right way. <code>probe.py</code> is idempotent — rewrites\n<code>data/*.json</code> on every run, server-side aggregation keeps every query under\n0.3 s (the shipped run's slowest query: 0.21 s), and re-running is cheap\nenough that refresh becomes a habit. The FEC tables, 216M rows of\nthem, were deliberately excluded under the performance rules; a dataset that\ndoes not fit the budget gets cut. KPIs on the dashboard are\nrecomputed from the embedded rows at build time, never hardcoded, so the\nheadline numbers and the drill-downs cannot drift apart.</p>\n<h2 id=\"the-transport-is-part-of-the-data-layer\">The transport is part of the data layer</h2>\n<p>The ClickHouse HTTP endpoint is not reachable directly from the sandbox; the\nonly working path is the clickhouse-mcp JSON-RPC server over HTTP plus\nServer-Sent-Events. Four handshakes, one per-session token: send\n<code>Accept: application/json, text/event-stream</code> with <em>both</em> media types or the\nserver rejects you with 406; capture <code>Mcp-Session-Id</code> from the <em>response\nheaders</em> and replay it on every later request; post\n<code>notifications/initialized</code> and expect 202; then <code>tools/call run_query</code> and\nparse the SSE <code>data:</code> line. The query wrapper hides timeout handling, one\nretry, and a stale-session re-handshake, plus normalization of the\n<code>{columns, rows}</code> result shape into dicts.</p>\n<p>That is an unglamorous 279-line module (<code>ch_client.py</code>), and it is why the\nagent-facing interface is one function — <code>query(sql) -&gt; list[dict]</code> —\ninstead of a protocol the model would have to get right at generation time.\nWrap the transport; do not prompt for it.</p>\n<h2 id=\"why-agents-raise-the-stakes\">Why agents raise the stakes</h2>\n<p>A junior analyst who sums nine aggregation levels gets corrected in code\nreview. An agent doing the same thing produces a dashboard, a summary of the\ndashboard, and three confident sentences about it before anyone asks. The\nmitigations are old data-engineering virtues with new urgency: filters that\nencode grain go <em>in</em> the query templates; provenance travels with the data;\nrefresh is idempotent so stale numbers never accumulate; and the server says\nread-only even when the prompt says otherwise. None of it is glamorous. All\nof it is what &quot;the agent can be trusted with this data&quot; actually means.</p>",
 			"excerpt": "A human analyst learns the hard way that a table's grain is not what its name suggests. An agent never learns it — it queries whatever you …"
 		},
 		{
@@ -1627,7 +1627,7 @@ var TalkSchema = z.object({
 }).strict();
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
 var SiteContentSchema = z.object({
-	generatedAt: z.string().min(1),
+	contentHash: z.string().min(1),
 	projects: z.array(ProjectSchema),
 	posts: z.array(PostSchema),
 	videos: z.array(VideoSchema),
@@ -1649,7 +1649,7 @@ function validate() {
 		const first = parsed.error.issues.slice(0, 5).map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
 		throw new Error(`content: generated/content.json does not match SiteContentSchema — rebuild with \`node scripts/build-content.mjs\`.\n${first}`);
 	}
-	const { generatedAt: _generatedAt, ...site } = parsed.data;
+	const { contentHash: _contentHash, ...site } = parsed.data;
 	return site;
 }
 var content = validate();
@@ -1975,7 +1975,7 @@ function buildGlobalStyles(theme) {
 		},
 		a: {
 			color: "var(--c-accent, " + theme.color.accent + ")",
-			textDecorationColor: "var(--c-accentBorder, " + theme.color.accentBorder + ")",
+			textDecorationColor: "var(--c-accent-border, " + theme.color.accentBorder + ")",
 			textDecorationThickness: "from-font"
 		},
 		"a:hover": { textDecoration: "underline" },
@@ -2005,15 +2005,14 @@ function buildGlobalStyles(theme) {
 			margin: `${theme.space[6]} 0`
 		},
 		":root": cssVars,
-		":root[data-theme=dark]": themeToCssVars(darkTheme),
-		":root[data-theme=light]": themeToCssVars(lightTheme),
+		...theme === lightTheme ? { ":root[data-theme=dark]": themeToCssVars(darkTheme) } : { ":root[data-theme=light]": themeToCssVars(lightTheme) },
 		":focus-visible": {
 			outline: "2px solid var(--c-focus, " + theme.color.focus + ")",
 			outlineOffset: "2px",
 			borderRadius: theme.radius.sm
 		},
 		"::selection": {
-			background: "var(--c-accentSoft, " + theme.color.accentSoft + ")",
+			background: "var(--c-accent-soft, " + theme.color.accentSoft + ")",
 			color: "var(--c-text, " + theme.color.text + ")"
 		},
 		"@media (prefers-reduced-motion: reduce)": { "*, *::before, *::after": {
@@ -2524,6 +2523,42 @@ function setThemePreference(name, source = "user") {
 	applyThemeToDocument(name);
 	emit();
 }
+/**
+* Adopt a preference written by ANOTHER tab (storage event). Deliberately does
+* not re-write storage: writing back fires the event in the origin tab, which
+* (same-value or not, browsers differ) risks a tab ping-pong. (R3C-05)
+*/
+function adoptExternalTheme(name) {
+	if (snapshot.themeName === name) return;
+	snapshot = {
+		themeName: name,
+		resolvedFrom: "user"
+	};
+	applyThemeToDocument(name);
+	emit();
+}
+/** Parse a storage value in either accepted shape ({theme} JSON or bare string). */
+function parseThemeStorage(raw) {
+	if (raw === null) return null;
+	if (isThemeName(raw)) return raw;
+	try {
+		const v = JSON.parse(raw).theme;
+		return isThemeName(v) ? v : null;
+	} catch {
+		return null;
+	}
+}
+var crossTabAttached = false;
+function attachCrossTabSync() {
+	if (crossTabAttached || typeof window === "undefined" || typeof document === "undefined") return;
+	crossTabAttached = true;
+	window.addEventListener("storage", (event) => {
+		if (event.key !== "portfolio.theme") return;
+		const name = parseThemeStorage(event.newValue);
+		if (name) adoptExternalTheme(name);
+	});
+}
+attachCrossTabSync();
 var ThemePreferenceContext = createContext(null);
 function ThemePreferenceProvider({ children, defaultTheme = DEFAULT_THEME, followSystem = true }) {
 	const serverSnapshot = useMemo(() => ({
@@ -3308,8 +3343,974 @@ function Nav$1({ currentPath, items = availableNavItems(), onNavigate, label = "
 	});
 }
 //#endregion
+//#region src/components/ui/Icon.tsx
+/** 24x24 grid. Strokes use currentColor via the svg's `stroke` attr. */
+var PATHS = {
+	"arrow-right": /* @__PURE__ */ jsx("path", { d: "M4 12h15m0 0-6-6m6 6-6 6" }),
+	"arrow-up": /* @__PURE__ */ jsx("path", { d: "M12 20V5m0 0-6 6m6-6 6 6" }),
+	"chevron-left": /* @__PURE__ */ jsx("path", { d: "m15 5-7 7 7 7" }),
+	"chevron-right": /* @__PURE__ */ jsx("path", { d: "m9 5 7 7-7 7" }),
+	github: /* @__PURE__ */ jsx("path", { d: "M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" }),
+	linkedin: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("path", { d: "M5 9v10M5 4.5v.01M10 19v-5.5a3 3 0 0 1 6 0V19" }), /* @__PURE__ */ jsx("path", { d: "M10 9v10" })] }),
+	mail: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("rect", {
+		x: "3",
+		y: "5",
+		width: "18",
+		height: "14",
+		rx: "2"
+	}), /* @__PURE__ */ jsx("path", { d: "m3.5 7 8.5 6 8.5-6" })] }),
+	rss: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("path", { d: "M5 19a1 1 0 1 0 0-.01M5 12a7 7 0 0 1 7 7M5 5a14 14 0 0 1 14 14" }), /* @__PURE__ */ jsx("circle", {
+		cx: "5",
+		cy: "19",
+		r: "1"
+	})] }),
+	"external-link": /* @__PURE__ */ jsxs(Fragment, { children: [
+		/* @__PURE__ */ jsx("path", { d: "M14 4h6v6" }),
+		/* @__PURE__ */ jsx("path", { d: "M20 4 11 13" }),
+		/* @__PURE__ */ jsx("path", { d: "M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" })
+	] }),
+	play: /* @__PURE__ */ jsx("path", { d: "M8 5.5v13l11-6.5-11-6.5Z" }),
+	clock: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("circle", {
+		cx: "12",
+		cy: "12",
+		r: "9"
+	}), /* @__PURE__ */ jsx("path", { d: "M12 7v5l3.5 2" })] }),
+	search: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("circle", {
+		cx: "11",
+		cy: "11",
+		r: "6.5"
+	}), /* @__PURE__ */ jsx("path", { d: "m20 20-4.4-4.4" })] }),
+	sun: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("circle", {
+		cx: "12",
+		cy: "12",
+		r: "4"
+	}), /* @__PURE__ */ jsx("path", { d: "M12 2.5v2.5m0 14v2.5M2.5 12H5m14 0h2.5M4.9 4.9 6.7 6.7m10.6 10.6 1.8 1.8m0-14.2-1.8 1.8M6.7 17.3l-1.8 1.8" })] }),
+	moon: /* @__PURE__ */ jsx("path", { d: "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" }),
+	menu: /* @__PURE__ */ jsx("path", { d: "M4 7h16M4 12h16M4 17h16" }),
+	close: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }),
+	download: /* @__PURE__ */ jsx("path", { d: "M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19.5h16" }),
+	calendar: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("rect", {
+		x: "3.5",
+		y: "5",
+		width: "17",
+		height: "15.5",
+		rx: "2"
+	}), /* @__PURE__ */ jsx("path", { d: "M3.5 10h17M8 3.5V6m8-2.5V6" })] }),
+	check: /* @__PURE__ */ jsx("path", { d: "m4.5 12.5 5 5L19.5 7" })
+};
+function Icon$1({ name, size = 20, label, className, ...rest }) {
+	const cls = css({
+		display: "inline-block",
+		flex: "none",
+		verticalAlign: "middle",
+		color: "inherit",
+		width: `${size}px`,
+		height: `${size}px`,
+		fill: name === "github" || name === "play" || name === "moon" ? "currentColor" : "none",
+		stroke: name === "github" || name === "play" || name === "moon" ? "none" : "currentColor",
+		"stroke-width": 2,
+		"stroke-linecap": "round",
+		"stroke-linejoin": "round"
+	});
+	return /* @__PURE__ */ jsx("svg", {
+		viewBox: "0 0 24 24",
+		className: `${cls}${className ? ` ${className}` : ""}`,
+		role: label ? "img" : void 0,
+		"aria-label": label,
+		"aria-hidden": label ? void 0 : true,
+		focusable: "false",
+		"data-icon": name,
+		"data-testid": rest["data-testid"] ?? `icon-${name}`,
+		children: PATHS[name]
+	});
+}
+//#endregion
+//#region src/components/ui/Spinner.tsx
+/**
+* Spinner — determinate-looking loading indicator.
+*
+* The @keyframes rule is nested INSIDE the styled component (verified to
+* flatten correctly) so it emits without a module-scope registration order
+* dependency, and `prefers-reduced-motion` swaps the rotation for a gentle
+* opacity pulse (still communicates "busy" without spinning).
+*/
+var Ring = styled.span`
+  display: inline-block;
+  flex: none;
+  width: ${(p) => p.$size}px;
+  height: ${(p) => p.$size}px;
+  border-radius: ${(p) => p.theme.radius.full};
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-right-color: transparent;
+  animation: ui-spin 720ms ${(p) => p.theme.motion.ease} infinite;
+
+  @keyframes ui-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: ui-pulse 1200ms ${(p) => p.theme.motion.ease} infinite;
+    border-top-color: currentColor;
+    border-right-color: currentColor;
+    opacity: 0.55;
+  }
+
+  @keyframes ui-pulse {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
+`;
+function Spinner({ size = 16, label = "Loading", className, ...rest }) {
+	return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx(Ring, {
+		$size: size,
+		className,
+		role: "status",
+		"aria-live": "polite",
+		"aria-label": label,
+		"data-testid": rest["data-testid"] ?? "spinner"
+	}) });
+}
+//#endregion
+//#region src/components/ui/Button.tsx
+var heights = (t) => ({
+	sm: `calc(${t.space[5]} + ${t.space[4]} + ${t.space[1]})`,
+	md: `calc(${t.space[6]} + ${t.space[4]})`,
+	lg: `calc(${t.space[6]} + ${t.space[5]})`
+});
+var iconSize = {
+	sm: 16,
+	md: 18,
+	lg: 20
+};
+function buttonStyles(theme, variant, size) {
+	const t = theme;
+	const tone = variant === "primary" ? {
+		background: t.color.accent,
+		color: t.color.bg,
+		borderColor: t.color.accent,
+		hover: {
+			background: t.color.bgElevated,
+			color: t.color.accent,
+			borderColor: t.color.accent
+		}
+	} : variant === "secondary" ? {
+		background: t.color.bgElevated,
+		color: t.color.text,
+		borderColor: t.color.borderStrong,
+		hover: {
+			background: t.color.accentSoft,
+			color: t.color.accent,
+			borderColor: t.color.accentBorder
+		}
+	} : variant === "danger" ? {
+		background: t.color.danger,
+		color: t.color.bgElevated,
+		borderColor: t.color.danger,
+		hover: {
+			background: t.color.bgElevated,
+			color: t.color.danger,
+			borderColor: t.color.danger
+		}
+	} : {
+		background: "transparent",
+		color: t.color.accent,
+		borderColor: "transparent",
+		hover: {
+			background: t.color.accentSoft,
+			color: t.color.accent,
+			borderColor: t.color.accentBorder
+		}
+	};
+	return {
+		display: "inline-flex",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: t.space[2],
+		boxSizing: "border-box",
+		minHeight: heights(t)[size],
+		paddingInline: size === "sm" ? t.space[3] : size === "lg" ? t.space[6] : t.space[5],
+		fontFamily: t.font.sans,
+		fontSize: size === "sm" ? t.font.sizes.sm : t.font.sizes.md,
+		fontWeight: t.font.weights.semibold,
+		lineHeight: t.font.leading.none,
+		letterSpacing: t.font.tracking.normal,
+		textDecoration: "none",
+		cursor: "pointer",
+		userSelect: "none",
+		borderRadius: t.radius.md,
+		border: `1px solid ${tone.borderColor}`,
+		background: tone.background,
+		color: tone.color,
+		transition: `background ${t.motion.fast} ${t.motion.ease}, color ${t.motion.fast} ${t.motion.ease}, border-color ${t.motion.fast} ${t.motion.ease}, box-shadow ${t.motion.base} ${t.motion.ease}`,
+		"&:hover": tone.hover,
+		"&:active": { transform: "translateY(1px)" },
+		"&:focus-visible": {
+			outline: `2px solid ${t.color.focus}`,
+			outlineOffset: "2px"
+		},
+		"&[disabled], &[aria-disabled=\"true\"]": {
+			cursor: "not-allowed",
+			background: t.color.bgSunken,
+			color: t.color.textSubtle,
+			borderColor: t.color.border,
+			boxShadow: "none",
+			transform: "none"
+		},
+		"@media (prefers-reduced-motion: reduce)": {
+			transition: "none",
+			"&:active": { transform: "none" }
+		}
+	};
+}
+var Base = styled.button((p) => buttonStyles(p.theme, p.$variant, p.$size));
+function renderSlot(slot, n) {
+	if (slot === void 0 || slot === null) return null;
+	if (typeof slot === "string") return /* @__PURE__ */ jsx(Icon$1, {
+		name: slot,
+		size: n
+	});
+	return slot;
+}
+function Button$1({ variant = "primary", size = "md", as, href, iconLeft, iconRight, loading = false, disabled = false, type = "button", className, children, ...rest }) {
+	const theme = useTheme();
+	const inactive = disabled || loading;
+	const target = as ?? (href ? "a" : "button");
+	const isNative = target === "button" || typeof target === "string" && target !== "";
+	const label = /* @__PURE__ */ jsxs(Fragment, { children: [
+		loading ? /* @__PURE__ */ jsx(Spinner, {
+			size: iconSize[size],
+			label: "Loading"
+		}) : renderSlot(iconLeft, iconSize[size]),
+		children !== void 0 && children !== null && /* @__PURE__ */ jsx("span", {
+			"data-slot": "label",
+			children
+		}),
+		loading ? null : renderSlot(iconRight, iconSize[size])
+	] });
+	const common = {
+		"data-testid": rest["data-testid"] ?? "button",
+		"data-variant": variant,
+		"data-size": size,
+		"data-loading": loading ? "true" : "false",
+		"aria-busy": loading ? true : void 0,
+		"aria-disabled": !isNative && inactive ? true : void 0,
+		"aria-label": rest["aria-label"],
+		onClick: inactive ? (event) => event.preventDefault() : rest.onClick
+	};
+	if (!isNative && typeof target !== "string") {
+		const Cmp = target;
+		const cls = css(buttonStyles(theme, variant, size));
+		const passThrough = { ...rest };
+		delete passThrough["data-testid"];
+		delete passThrough["aria-label"];
+		delete passThrough.onClick;
+		return /* @__PURE__ */ jsx(Cmp, {
+			...passThrough,
+			className: className ? `${cls} ${className}` : cls,
+			"aria-label": common["aria-label"],
+			"aria-busy": common["aria-busy"],
+			"aria-disabled": common["aria-disabled"],
+			"data-testid": common["data-testid"],
+			"data-variant": common["data-variant"],
+			"data-size": common["data-size"],
+			"data-loading": common["data-loading"],
+			onClick: common.onClick,
+			children: label
+		});
+	}
+	const element = target === "submit" ? "button" : target;
+	return /* @__PURE__ */ jsx(Base, {
+		...Object.fromEntries(Object.entries(rest).filter(([key]) => key !== "data-testid" && key !== "aria-label")),
+		as: element,
+		href,
+		$variant: variant,
+		$size: size,
+		type: element === "button" ? target === "submit" ? "submit" : type : void 0,
+		disabled: element === "button" && inactive ? true : void 0,
+		className,
+		"aria-busy": common["aria-busy"],
+		"aria-disabled": common["aria-disabled"],
+		"aria-label": common["aria-label"],
+		"data-testid": common["data-testid"],
+		"data-variant": common["data-variant"],
+		"data-size": common["data-size"],
+		"data-loading": common["data-loading"],
+		onClick: common.onClick,
+		children: label
+	});
+}
+//#endregion
+//#region src/components/ui/Tag.tsx
+var Pill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: ${(p) => p.theme.font.sans};
+  font-weight: ${(p) => p.theme.font.weights.medium};
+  line-height: ${(p) => p.theme.font.leading.none};
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
+  border-radius: ${(p) => p.theme.radius.full};
+  border: 1px solid transparent;
+  font-size: ${(p) => p.$size === "sm" ? p.theme.font.sizes.xs : p.theme.font.sizes.sm};
+  padding: ${(p) => p.$size === "sm" ? `${p.theme.space["0"]} ${p.theme.space[2]}` : `${p.theme.space["1"]} ${p.theme.space[3]}`};
+
+  /* default */
+  ${(p) => p.$tone === "default" && `background: ${p.theme.color.bgSunken}; color: ${p.theme.color.textMuted}; border-color: ${p.theme.color.border};`}
+
+  /* accent — text sits on the translucent soft fill; checked >= 4.5:1 */
+  ${(p) => p.$tone === "accent" && `background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder};`}
+
+  /* outline — transparent background, works on bg and surface alike */
+  ${(p) => p.$tone === "outline" && `background: transparent; color: ${p.theme.color.textMuted}; border-color: ${p.theme.color.borderStrong};`}
+`;
+function Tag({ tone = "default", size = "md", className, children, ...rest }) {
+	return /* @__PURE__ */ jsx(Pill, {
+		$tone: tone,
+		$size: size,
+		className,
+		"data-testid": rest["data-testid"] ?? "tag",
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/Card.tsx
+/**
+* Card — the surface every list item and panel sits on.
+*
+* Renders <article> by default, <a> when `href` is given, and any element via
+* `as` (a router Link works: it lands as the styled `as` target and keeps the
+* card styles — verified in ui.test.tsx).
+*
+* `interactive` adds hover/focus affordances. The whole card must NOT be the
+* only link when the title also links — page builders keep a real link inside
+* and pass interactive here; that's the non-duplicate-link pattern.
+*/
+var Surface = styled.article`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[3]};
+  padding: ${(p) => p.$pad === "sm" ? p.theme.space[4] : p.$pad === "lg" ? p.theme.space[6] : p.theme.space[5]};
+  background: ${(p) => p.theme.color.surface};
+  color: ${(p) => p.theme.color.text};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.lg};
+  box-shadow: ${(p) => p.theme.shadow.sm};
+  text-decoration: none;
+  transition:
+    border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
+    box-shadow ${(p) => p.theme.motion.base} ${(p) => p.theme.motion.ease},
+    transform ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
+
+  ${(p) => p.$interactive && `
+    cursor: pointer;
+    &:hover {
+      border-color: ${p.theme.color.borderStrong};
+      box-shadow: ${p.theme.shadow.md};
+      transform: translateY(-2px);
+    }
+    &:focus-visible {
+      outline: 2px solid ${p.theme.color.focus};
+      outline-offset: 3px;
+    }
+  `}
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover {
+      transform: none;
+    }
+  }
+`;
+function Card({ interactive = false, href, as, pad = "md", className, children, ...rest }) {
+	return /* @__PURE__ */ jsx(Surface, {
+		as: as ?? (href ? "a" : "article"),
+		href,
+		$interactive: interactive || Boolean(href),
+		$pad: pad,
+		className,
+		"aria-label": rest["aria-label"],
+		"data-testid": rest["data-testid"] ?? "card",
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/Heading.tsx
+var defaultSize = {
+	1: "4xl",
+	2: "2xl",
+	3: "xl",
+	4: "lg"
+};
+function headingCss(theme, size) {
+	return css({
+		margin: "0",
+		fontFamily: theme.font.sans,
+		fontWeight: theme.font.weights.bold,
+		lineHeight: theme.font.leading.tight,
+		letterSpacing: theme.font.tracking.tight,
+		color: theme.color.text,
+		fontSize: theme.font.sizes[size],
+		"scroll-margin-top": theme.layout.navHeight
+	});
+}
+function Heading$1({ level, size, className, id, children, ...rest }) {
+	const cls = `${headingCss(useTheme(), size ?? defaultSize[level])}${className ? ` ${className}` : ""}`;
+	const Tag = `h${level}`;
+	return /* @__PURE__ */ jsx(Tag, {
+		id,
+		className: cls,
+		"data-testid": rest["data-testid"] ?? `heading-${level}`,
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/Section.tsx
+/**
+* Section — a landmark region with optional eyebrow/title/description header.
+* When `title` is given it renders an h2 (id-linked via aria-labelledby) so
+* screen readers announce the region name and heading order stays h1 > h2.
+*/
+var Root = styled.section`
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  padding-block: ${(p) => p.$size === "compact" ? p.theme.space[7] : p.$size === "wide" ? p.theme.space[9] : p.theme.space[8]};
+  /* R2-D V1: NO padding-inline — Layout Main owns the single content gutter.
+   * Sections used to add their own, doubling the inset (measured: header rail
+   * at x=144 vs section text at x=192). max-width still caps prose widths. */
+  max-width: ${(p) => p.$size === "compact" ? p.theme.layout.maxWidthProse : p.theme.layout.maxWidth};
+
+  &:not(:last-of-type) {
+    border-bottom: 1px solid ${(p) => p.theme.color.border};
+  }
+`;
+var Eyebrow$1 = styled.p`
+  margin: 0 0 ${(p) => p.theme.space[2]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.wider};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.accent};
+`;
+var Description$1 = styled.p`
+  margin: 0 0 ${(p) => p.theme.space[5]};
+  max-width: 68ch;
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  line-height: ${(p) => p.theme.font.leading.normal};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+function Section({ id, size = "default", eyebrow, title, description, className, children, ...rest }) {
+	const theme = useTheme();
+	const headingId = id ? `${id}-title` : void 0;
+	const titleClass = css({ margin: `0 0 ${theme.space[3]}` });
+	return /* @__PURE__ */ jsxs(Root, {
+		id,
+		$size: size,
+		className,
+		"aria-labelledby": title ? headingId : void 0,
+		"data-testid": rest["data-testid"] ?? "section",
+		children: [(eyebrow || title || description) && /* @__PURE__ */ jsxs("header", { children: [
+			eyebrow && /* @__PURE__ */ jsx(Eyebrow$1, {
+				"data-testid": "section-eyebrow",
+				children: eyebrow
+			}),
+			title && /* @__PURE__ */ jsx(Heading$1, {
+				level: 2,
+				id: headingId,
+				className: titleClass,
+				"data-testid": "section-title",
+				children: title
+			}),
+			description && /* @__PURE__ */ jsx(Description$1, { children: description })
+		] }), children]
+	});
+}
+//#endregion
+//#region src/components/ui/Container.tsx
+/**
+* Container — the page-width wrapper. Everything on a page lives in one.
+* `size="prose"` narrows to the reading measure; "narrow" is for forms/404s.
+*/
+var Box = styled.div`
+  width: 100%;
+  margin: 0 auto;
+  /* R2-D V1: gutter ownership lives in Layout Main — no inline padding here
+   * (was double-inset content vs the header/footer rail). */
+  max-width: ${(p) => p.$size === "prose" ? p.theme.layout.maxWidthProse : p.$size === "narrow" ? `calc(${p.theme.layout.maxWidth} * 0.58)` : p.theme.layout.maxWidth};
+`;
+function Container({ size = "default", className, children, id, ...rest }) {
+	return /* @__PURE__ */ jsx(Box, {
+		$size: size,
+		id,
+		className,
+		"data-testid": rest["data-testid"] ?? "container",
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/Stack.tsx
+var Flex = styled.div`
+  display: flex;
+  flex-direction: ${(p) => p.$direction};
+  flex-wrap: ${(p) => p.$wrap ? "wrap" : "nowrap"};
+  gap: ${(p) => p.theme.space[p.$gap]};
+  align-items: ${(p) => p.$align === "start" ? "flex-start" : p.$align === "end" ? "flex-end" : p.$align};
+  justify-content: ${(p) => p.$justify === "between" ? "space-between" : p.$justify === "center" ? "center" : p.$justify === "end" ? "flex-end" : "flex-start"};
+`;
+function Stack({ gap = "4", direction = "column", wrap = false, align = "stretch", justify = "start", className, children, as = "div", ...rest }) {
+	return /* @__PURE__ */ jsx(Flex, {
+		as,
+		$gap: gap,
+		$direction: direction,
+		$wrap: wrap,
+		$align: align,
+		$justify: justify,
+		className,
+		"data-testid": rest["data-testid"] ?? "stack",
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/Prose.tsx
+/**
+* Prose — styles *generated markdown HTML* (h2/h3 anchors, lists, blockquote,
+* code, pre>code, tables, images, hr) at a ~68ch reading measure.
+*
+* All descendant selectors are scoped under the wrapper's own class
+* (`.css-x h2 { … }`), which is what keeps Prose from restyling the site
+* chrome — verified in ui.test.tsx by asserting every rule starts with the
+* wrapper class.
+*
+* Heading anchors: the markdown engine emits `<h2 id="…">`; the `a` is added
+* client-side nowhere — instead CSS shows a "#" ::before on hover/focus of an
+* `a.anchor` child if the renderer produced one, and ids get scroll-margin so
+* the sticky header never covers the target.
+*/
+function proseCss(theme) {
+	const t = theme;
+	return css({
+		"--measure": "68ch",
+		maxWidth: "var(--measure)",
+		fontFamily: t.font.sans,
+		fontSize: t.font.sizes.md,
+		lineHeight: t.font.leading.normal,
+		color: t.color.text,
+		"> *:first-of-type": { marginTop: "0" },
+		"> *:last-child": { marginBottom: "0" },
+		"h2, h3, h4": {
+			fontFamily: t.font.sans,
+			fontWeight: t.font.weights.bold,
+			lineHeight: t.font.leading.snug,
+			letterSpacing: t.font.tracking.tight,
+			color: t.color.text,
+			scrollMarginTop: t.layout.navHeight
+		},
+		h2: {
+			fontSize: t.font.sizes["2xl"],
+			margin: `${t.space[8]} 0 ${t.space[4]}`
+		},
+		h3: {
+			fontSize: t.font.sizes.xl,
+			margin: `${t.space[7]} 0 ${t.space[3]}`
+		},
+		h4: {
+			fontSize: t.font.sizes.lg,
+			margin: `${t.space[6]} 0 ${t.space[2]}`
+		},
+		"h2 .anchor, h3 .anchor, h4 .anchor": {
+			marginLeft: t.space[2],
+			color: t.color.accent,
+			textDecoration: "none",
+			opacity: "0",
+			fontWeight: t.font.weights.medium
+		},
+		"h2:hover .anchor, h3:hover .anchor, h4:hover .anchor, .anchor:focus-visible": { opacity: "1" },
+		".anchor:focus-visible": {
+			outline: `2px solid ${t.color.focus}`,
+			outlineOffset: "2px",
+			borderRadius: t.radius.sm
+		},
+		p: { margin: `0 0 ${t.space[4]}` },
+		"p, li": { maxWidth: "var(--measure)" },
+		strong: {
+			fontWeight: t.font.weights.semibold,
+			color: t.color.text
+		},
+		em: { fontStyle: "italic" },
+		a: {
+			color: t.color.accent,
+			textDecoration: "underline",
+			textDecorationColor: t.color.accentBorder,
+			textUnderlineOffset: "3px",
+			"&:hover": { textDecorationColor: t.color.accent },
+			"&:focus-visible": {
+				outline: `2px solid ${t.color.focus}`,
+				outlineOffset: "2px",
+				borderRadius: t.radius.sm
+			}
+		},
+		"ul, ol": {
+			margin: `0 0 ${t.space[4]}`,
+			paddingLeft: t.space[6]
+		},
+		li: { marginBottom: t.space[2] },
+		"li::marker": { color: t.color.textMuted },
+		blockquote: {
+			margin: `${t.space[5]} 0`,
+			padding: `${t.space[1]} ${t.space[5]}`,
+			borderLeft: `3px solid ${t.color.accentBorder}`,
+			color: t.color.textMuted,
+			fontStyle: "italic",
+			"p:last-child": { marginBottom: "0" }
+		},
+		code: {
+			fontFamily: t.font.mono,
+			fontSize: `calc(${t.font.sizes.sm} * 0.94)`,
+			background: t.color.bgSunken,
+			color: t.color.text,
+			border: `1px solid ${t.color.border}`,
+			borderRadius: t.radius.sm,
+			padding: `0 ${t.space[1]}`
+		},
+		"pre": {
+			margin: `${t.space[5]} 0`,
+			padding: t.space[4],
+			background: t.color.bgSunken,
+			border: `1px solid ${t.color.border}`,
+			borderRadius: t.radius.md,
+			overflowX: "auto",
+			overflowY: "auto",
+			maxHeight: "80vh"
+		},
+		"pre code": {
+			display: "block",
+			background: "transparent",
+			border: "none",
+			padding: "0",
+			fontSize: t.font.sizes.sm,
+			lineHeight: t.font.leading.snug,
+			whiteSpace: "pre"
+		},
+		"table": {
+			width: "100%",
+			margin: `${t.space[5]} 0`,
+			borderCollapse: "collapse",
+			display: "block",
+			overflowX: "auto",
+			fontSize: t.font.sizes.sm
+		},
+		"th, td": {
+			border: `1px solid ${t.color.border}`,
+			padding: `${t.space[2]} ${t.space[3]}`,
+			textAlign: "left"
+		},
+		th: {
+			background: t.color.bgSunken,
+			fontWeight: t.font.weights.semibold,
+			color: t.color.text
+		},
+		"tbody tr:nth-child(even)": { background: t.color.bgSunken },
+		img: {
+			maxWidth: "100%",
+			height: "auto",
+			borderRadius: t.radius.md,
+			border: `1px solid ${t.color.border}`,
+			display: "block",
+			margin: `${t.space[5]} auto`
+		},
+		hr: {
+			border: "none",
+			borderTop: `1px solid ${t.color.border}`,
+			margin: `${t.space[7]} 0`
+		}
+	});
+}
+function Prose({ className, children, ...rest }) {
+	const cls = proseCss(useTheme());
+	return /* @__PURE__ */ jsx("div", {
+		className: className ? `${cls} ${className}` : cls,
+		"data-prose": "true",
+		"data-testid": rest["data-testid"] ?? "prose",
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/EmptyState.tsx
+/**
+* EmptyState — the "nothing here yet / no results" panel every list page
+* needs. Optional CTA is a real focusable child passed in by the caller
+* (never a fake onClick on the panel).
+*/
+var Panel$3 = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: ${(p) => p.theme.space[3]};
+  padding: ${(p) => p.theme.space[8]} ${(p) => p.theme.space[5]};
+  border: 1px dashed ${(p) => p.theme.color.borderStrong};
+  border-radius: ${(p) => p.theme.radius.lg};
+  background: ${(p) => p.theme.color.bgElevated};
+`;
+var Glyph$1 = styled.span`
+  color: ${(p) => p.theme.color.textSubtle};
+  display: inline-flex;
+`;
+var Title$1 = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+`;
+var Description = styled.p`
+  margin: 0;
+  max-width: 46ch;
+  font-size: ${(p) => p.theme.font.sizes.md};
+  line-height: ${(p) => p.theme.font.leading.normal};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+function EmptyState({ icon = "search", title, description, action, className, ...rest }) {
+	return /* @__PURE__ */ jsxs(Panel$3, {
+		role: "status",
+		className,
+		"data-testid": rest["data-testid"] ?? "empty-state",
+		children: [
+			/* @__PURE__ */ jsx(Glyph$1, { children: /* @__PURE__ */ jsx(Icon$1, {
+				name: icon,
+				size: 28
+			}) }),
+			/* @__PURE__ */ jsx(Title$1, { children: title }),
+			description && /* @__PURE__ */ jsx(Description, { children: description }),
+			action
+		]
+	});
+}
+styled.a`
+  position: absolute;
+  top: ${(p) => p.theme.space["2"]};
+  left: ${(p) => p.theme.space["2"]};
+  z-index: ${(p) => p.theme.z.nav + 10};
+  transform: translateY(-1000px);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: ${(p) => p.theme.space[3]} ${(p) => p.theme.space[5]};
+  background: ${(p) => p.theme.color.bgElevated};
+  color: ${(p) => p.theme.color.text};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
+  border-radius: ${(p) => p.theme.radius.md};
+  box-shadow: ${(p) => p.theme.shadow.md};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  text-decoration: none;
+  transition: transform ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
+
+  &:focus,
+  &:focus-visible {
+    position: fixed;
+    transform: translateY(0);
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+//#endregion
+//#region src/components/ui/VisuallyHidden.tsx
+/**
+* VisuallyHidden — content for screen readers only.
+*
+* Uses the canonical clip technique (not display:none / visibility:hidden,
+* which remove the content from the accessibility tree entirely). The element
+* keeps 1px of box so focus can still land inside it if a control lives there.
+*/
+var Hidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+`;
+function VisuallyHidden({ className, children, ...rest }) {
+	return /* @__PURE__ */ jsx(Hidden, {
+		className,
+		"data-testid": rest["data-testid"] ?? "visually-hidden",
+		role: rest.role,
+		"aria-live": rest["aria-live"],
+		"aria-atomic": rest["aria-atomic"],
+		children
+	});
+}
+//#endregion
+//#region src/components/ui/Pagination.tsx
+/**
+* Pagination — accessible paging for the project/post indexes.
+*
+* Semantics: <nav aria-label="Pagination"> > <ul> of links. The active page is
+* NOT a link (aria-disabled, no href) and carries aria-current="page". Previous
+* / next become aria-disabled with their href removed on the boundary pages so
+* they are not tabbable — the CDP suite can assert both states.
+*
+* Pages are windowed (first, last, +/-1 around current) with "…" gaps.
+*/
+var Nav = styled.nav`
+  display: flex;
+  justify-content: center;
+`;
+var List = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+var Item$1 = styled.li`
+  display: flex;
+`;
+var Page = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: ${(p) => p.theme.space[2]};
+  box-sizing: border-box;
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  font-weight: ${(p) => p.theme.font.weights.medium};
+  line-height: ${(p) => p.theme.font.leading.none};
+  border-radius: ${(p) => p.theme.radius.md};
+  border: 1px solid ${(p) => p.theme.color.border};
+  text-decoration: none;
+  transition:
+    background ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
+    border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
+
+  /* current page: solid accent with bg-colored text (>= 5.16:1 both themes) */
+  ${(p) => p.$current && `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent};`}
+  ${(p) => !p.$current && `background: ${p.theme.color.surface}; color: ${p.theme.color.text}; &:hover { background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; }`}
+
+  &[aria-disabled='true'] {
+    background: ${(p) => p.theme.color.bgSunken};
+    color: ${(p) => p.theme.color.textSubtle};
+    border-color: ${(p) => p.theme.color.border};
+    cursor: default;
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+var Edge = styled(Page)`
+  gap: ${(p) => p.theme.space[1]};
+  padding-inline: ${(p) => p.theme.space[3]};
+`;
+var Gap = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 44px;
+  color: ${(p) => p.theme.color.textSubtle};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+`;
+/** 1 … 4 5 [6] 7 8 … 20 */
+function pageWindow(page, total, around = 1) {
+	const keep = /* @__PURE__ */ new Set([1, total]);
+	for (let i = page - around; i <= page + around; i += 1) if (i >= 1 && i <= total) keep.add(i);
+	const sorted = [...keep].sort((a, b) => a - b);
+	const out = [];
+	for (const n of sorted) {
+		const prev = out[out.length - 1];
+		if (prev !== void 0 && n - prev > 1) out.push(-1);
+		out.push(n);
+	}
+	return out;
+}
+function Pagination({ page, total, hrefFor = (n) => n === 1 ? "?" : `?page=${n}`, label = "Pagination", className, ...rest }) {
+	const clamped = Math.max(1, Math.min(page, total));
+	const items = pageWindow(clamped, total);
+	const linkProps = (target, current) => current || target < 1 || target > total ? {
+		href: void 0,
+		"aria-disabled": true,
+		"aria-label": current ? `Page ${target}, current page` : `Page ${target}`
+	} : {
+		href: hrefFor(target),
+		"aria-disabled": void 0,
+		"aria-label": `Go to page ${target}`
+	};
+	const edgeTabIndex = (enabled) => enabled ? void 0 : 0;
+	return /* @__PURE__ */ jsx(Nav, {
+		"aria-label": label,
+		className,
+		"data-testid": rest["data-testid"] ?? "pagination",
+		children: /* @__PURE__ */ jsxs(List, { children: [
+			/* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Edge, {
+				...linkProps(clamped - 1, false),
+				href: clamped > 1 ? hrefFor(clamped - 1) : void 0,
+				"aria-disabled": clamped > 1 ? void 0 : true,
+				tabIndex: edgeTabIndex(clamped > 1),
+				"aria-label": "Previous page",
+				$current: false,
+				"data-edge": "prev",
+				children: "‹ Prev"
+			}) }),
+			items.map((n, index) => n === -1 ? /* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Gap, {
+				"aria-hidden": "true",
+				children: "…"
+			}) }, `gap-${index}`) : /* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Page, {
+				...linkProps(n, n === clamped),
+				"aria-current": n === clamped ? "page" : void 0,
+				$current: n === clamped,
+				"data-page": n,
+				children: n
+			}) }, n)),
+			/* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Edge, {
+				...linkProps(clamped + 1, false),
+				href: clamped < total ? hrefFor(clamped + 1) : void 0,
+				"aria-disabled": clamped < total ? void 0 : true,
+				tabIndex: edgeTabIndex(clamped < total),
+				"aria-label": "Next page",
+				$current: false,
+				"data-edge": "next",
+				children: "Next ›"
+			}) })
+		] })
+	});
+}
+//#endregion
 //#region src/components/layout/ThemeToggle.tsx
-var Button$1 = styled.button`
+var Button = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3342,7 +4343,7 @@ var Button$1 = styled.button`
     transition: none;
   }
 `;
-var Icon$1 = styled.svg`
+var Icon = styled.svg`
   width: 18px;
   height: 18px;
   flex: none;
@@ -3350,7 +4351,7 @@ var Icon$1 = styled.svg`
 `;
 /** Hand-drawn inline SVG — no icon package is installed (CONTRACT §0). */
 function SunIcon() {
-	return /* @__PURE__ */ jsxs(Icon$1, {
+	return /* @__PURE__ */ jsxs(Icon, {
 		viewBox: "0 0 24 24",
 		fill: "none",
 		stroke: "currentColor",
@@ -3367,7 +4368,7 @@ function SunIcon() {
 	});
 }
 function MoonIcon() {
-	return /* @__PURE__ */ jsx(Icon$1, {
+	return /* @__PURE__ */ jsx(Icon, {
 		viewBox: "0 0 24 24",
 		fill: "none",
 		stroke: "currentColor",
@@ -3397,7 +4398,7 @@ function ThemeToggle({ showLabel = false, className }) {
     font-weight: ${tokens.font.weights.medium};
     color: ${tokens.color.textMuted};
   `;
-	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(Button$1, {
+	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(Button, {
 		type: "button",
 		onClick: toggleTheme,
 		"aria-label": label,
@@ -3409,25 +4410,13 @@ function ThemeToggle({ showLabel = false, className }) {
 			className: labelClass,
 			children: label
 		}) : null]
-	}), /* @__PURE__ */ jsx("span", {
+	}), /* @__PURE__ */ jsx(VisuallyHidden, {
 		"data-testid": "theme-announcement",
 		role: "status",
 		"aria-live": "polite",
-		className: srClass,
 		children: themeAnnouncement(themeName)
 	})] });
 }
-var srClass = css`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-`;
 //#endregion
 //#region src/components/layout/MobileMenu.tsx
 /**
@@ -3509,7 +4498,7 @@ var Backdrop = styled.div`
     animation: none;
   }
 `;
-var Panel$3 = styled.div`
+var Panel$2 = styled.div`
   position: fixed;
   inset: 0 0 auto 0;
   z-index: ${(p) => p.theme.z.overlay + 1};
@@ -3549,7 +4538,7 @@ var HeaderRow$1 = styled.div`
   gap: ${(p) => p.theme.space[3]};
   margin-bottom: ${(p) => p.theme.space[4]};
 `;
-var Title$1 = styled.h2`
+var Title = styled.h2`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.semibold};
@@ -3684,7 +4673,7 @@ function MobileMenu({ open, onClose, currentPath, returnFocusRef, staticRender =
 		"data-testid": "menu-backdrop",
 		onClick: onClose,
 		"aria-hidden": "true"
-	}), /* @__PURE__ */ jsxs(Panel$3, {
+	}), /* @__PURE__ */ jsxs(Panel$2, {
 		ref: panelRef,
 		id: MOBILE_MENU_ID,
 		role: "dialog",
@@ -3696,7 +4685,7 @@ function MobileMenu({ open, onClose, currentPath, returnFocusRef, staticRender =
           outline: none;
         `,
 		children: [
-			/* @__PURE__ */ jsxs(HeaderRow$1, { children: [/* @__PURE__ */ jsx(Title$1, {
+			/* @__PURE__ */ jsxs(HeaderRow$1, { children: [/* @__PURE__ */ jsx(Title, {
 				id: labelId,
 				children: "Navigation"
 			}), /* @__PURE__ */ jsxs(CloseButton, {
@@ -4047,7 +5036,7 @@ var Column = styled.nav`
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: ${(p) => p.theme.space[5]};
 `;
-var Heading$1 = styled.h2`
+var Heading = styled.h2`
   margin: 0 0 ${(p) => p.theme.space[3]};
   font-size: ${(p) => p.theme.font.sizes.xs};
   font-weight: ${(p) => p.theme.font.weights.semibold};
@@ -4160,7 +5149,7 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 			"aria-label": "Footer",
 			"data-testid": "footer-nav",
 			children: [
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading$1, {
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading, {
 					id: "footer-sites-heading",
 					children: "Sitemap"
 				}), /* @__PURE__ */ jsx("ul", {
@@ -4174,7 +5163,7 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 						children: item.label
 					}) }, item.to))
 				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading$1, {
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading, {
 					id: "footer-more-heading",
 					children: "More"
 				}), /* @__PURE__ */ jsxs("ul", {
@@ -4206,7 +5195,7 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 						}) : /* @__PURE__ */ jsx("span", { dangerouslySetInnerHTML: { __html: "<!-- DRAFT: replace email address in src/lib/seo.ts -->" } }) })
 					]
 				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading$1, {
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading, {
 					id: "footer-social-heading",
 					children: "Elsewhere"
 				}), /* @__PURE__ */ jsx("ul", {
@@ -4352,969 +5341,6 @@ function Layout({ children, currentPath, name = "Alex Rivera", role, menuOpen = 
 			}) : null
 		]
 	})] });
-}
-//#endregion
-//#region src/components/ui/Icon.tsx
-/** 24x24 grid. Strokes use currentColor via the svg's `stroke` attr. */
-var PATHS = {
-	"arrow-right": /* @__PURE__ */ jsx("path", { d: "M4 12h15m0 0-6-6m6 6-6 6" }),
-	"arrow-up": /* @__PURE__ */ jsx("path", { d: "M12 20V5m0 0-6 6m6-6 6 6" }),
-	"chevron-left": /* @__PURE__ */ jsx("path", { d: "m15 5-7 7 7 7" }),
-	"chevron-right": /* @__PURE__ */ jsx("path", { d: "m9 5 7 7-7 7" }),
-	github: /* @__PURE__ */ jsx("path", { d: "M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" }),
-	linkedin: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("path", { d: "M5 9v10M5 4.5v.01M10 19v-5.5a3 3 0 0 1 6 0V19" }), /* @__PURE__ */ jsx("path", { d: "M10 9v10" })] }),
-	mail: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("rect", {
-		x: "3",
-		y: "5",
-		width: "18",
-		height: "14",
-		rx: "2"
-	}), /* @__PURE__ */ jsx("path", { d: "m3.5 7 8.5 6 8.5-6" })] }),
-	rss: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("path", { d: "M5 19a1 1 0 1 0 0-.01M5 12a7 7 0 0 1 7 7M5 5a14 14 0 0 1 14 14" }), /* @__PURE__ */ jsx("circle", {
-		cx: "5",
-		cy: "19",
-		r: "1"
-	})] }),
-	"external-link": /* @__PURE__ */ jsxs(Fragment, { children: [
-		/* @__PURE__ */ jsx("path", { d: "M14 4h6v6" }),
-		/* @__PURE__ */ jsx("path", { d: "M20 4 11 13" }),
-		/* @__PURE__ */ jsx("path", { d: "M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" })
-	] }),
-	play: /* @__PURE__ */ jsx("path", { d: "M8 5.5v13l11-6.5-11-6.5Z" }),
-	clock: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("circle", {
-		cx: "12",
-		cy: "12",
-		r: "9"
-	}), /* @__PURE__ */ jsx("path", { d: "M12 7v5l3.5 2" })] }),
-	search: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("circle", {
-		cx: "11",
-		cy: "11",
-		r: "6.5"
-	}), /* @__PURE__ */ jsx("path", { d: "m20 20-4.4-4.4" })] }),
-	sun: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("circle", {
-		cx: "12",
-		cy: "12",
-		r: "4"
-	}), /* @__PURE__ */ jsx("path", { d: "M12 2.5v2.5m0 14v2.5M2.5 12H5m14 0h2.5M4.9 4.9 6.7 6.7m10.6 10.6 1.8 1.8m0-14.2-1.8 1.8M6.7 17.3l-1.8 1.8" })] }),
-	moon: /* @__PURE__ */ jsx("path", { d: "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" }),
-	menu: /* @__PURE__ */ jsx("path", { d: "M4 7h16M4 12h16M4 17h16" }),
-	close: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }),
-	download: /* @__PURE__ */ jsx("path", { d: "M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19.5h16" }),
-	calendar: /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("rect", {
-		x: "3.5",
-		y: "5",
-		width: "17",
-		height: "15.5",
-		rx: "2"
-	}), /* @__PURE__ */ jsx("path", { d: "M3.5 10h17M8 3.5V6m8-2.5V6" })] }),
-	check: /* @__PURE__ */ jsx("path", { d: "m4.5 12.5 5 5L19.5 7" })
-};
-function Icon({ name, size = 20, label, className, ...rest }) {
-	const cls = css({
-		display: "inline-block",
-		flex: "none",
-		verticalAlign: "middle",
-		color: "inherit",
-		width: `${size}px`,
-		height: `${size}px`,
-		fill: name === "github" || name === "play" || name === "moon" ? "currentColor" : "none",
-		stroke: name === "github" || name === "play" || name === "moon" ? "none" : "currentColor",
-		"stroke-width": 2,
-		"stroke-linecap": "round",
-		"stroke-linejoin": "round"
-	});
-	return /* @__PURE__ */ jsx("svg", {
-		viewBox: "0 0 24 24",
-		className: `${cls}${className ? ` ${className}` : ""}`,
-		role: label ? "img" : void 0,
-		"aria-label": label,
-		"aria-hidden": label ? void 0 : true,
-		focusable: "false",
-		"data-icon": name,
-		"data-testid": rest["data-testid"] ?? `icon-${name}`,
-		children: PATHS[name]
-	});
-}
-//#endregion
-//#region src/components/ui/Spinner.tsx
-/**
-* Spinner — determinate-looking loading indicator.
-*
-* The @keyframes rule is nested INSIDE the styled component (verified to
-* flatten correctly) so it emits without a module-scope registration order
-* dependency, and `prefers-reduced-motion` swaps the rotation for a gentle
-* opacity pulse (still communicates "busy" without spinning).
-*/
-var Ring = styled.span`
-  display: inline-block;
-  flex: none;
-  width: ${(p) => p.$size}px;
-  height: ${(p) => p.$size}px;
-  border-radius: ${(p) => p.theme.radius.full};
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  border-right-color: transparent;
-  animation: ui-spin 720ms ${(p) => p.theme.motion.ease} infinite;
-
-  @keyframes ui-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: ui-pulse 1200ms ${(p) => p.theme.motion.ease} infinite;
-    border-top-color: currentColor;
-    border-right-color: currentColor;
-    opacity: 0.55;
-  }
-
-  @keyframes ui-pulse {
-    0%,
-    100% {
-      opacity: 0.35;
-    }
-    50% {
-      opacity: 0.9;
-    }
-  }
-`;
-function Spinner({ size = 16, label = "Loading", className, ...rest }) {
-	return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx(Ring, {
-		$size: size,
-		className,
-		role: "status",
-		"aria-live": "polite",
-		"aria-label": label,
-		"data-testid": rest["data-testid"] ?? "spinner"
-	}) });
-}
-//#endregion
-//#region src/components/ui/Button.tsx
-var heights = (t) => ({
-	sm: `calc(${t.space[5]} + ${t.space[4]} + ${t.space[1]})`,
-	md: `calc(${t.space[6]} + ${t.space[4]})`,
-	lg: `calc(${t.space[6]} + ${t.space[5]})`
-});
-var iconSize = {
-	sm: 16,
-	md: 18,
-	lg: 20
-};
-function buttonStyles(theme, variant, size) {
-	const t = theme;
-	const tone = variant === "primary" ? {
-		background: t.color.accent,
-		color: t.color.bg,
-		borderColor: t.color.accent,
-		hover: {
-			background: t.color.bgElevated,
-			color: t.color.accent,
-			borderColor: t.color.accent
-		}
-	} : variant === "secondary" ? {
-		background: t.color.bgElevated,
-		color: t.color.text,
-		borderColor: t.color.borderStrong,
-		hover: {
-			background: t.color.accentSoft,
-			color: t.color.accent,
-			borderColor: t.color.accentBorder
-		}
-	} : variant === "danger" ? {
-		background: t.color.danger,
-		color: t.color.bgElevated,
-		borderColor: t.color.danger,
-		hover: {
-			background: t.color.bgElevated,
-			color: t.color.danger,
-			borderColor: t.color.danger
-		}
-	} : {
-		background: "transparent",
-		color: t.color.accent,
-		borderColor: "transparent",
-		hover: {
-			background: t.color.accentSoft,
-			color: t.color.accent,
-			borderColor: t.color.accentBorder
-		}
-	};
-	return {
-		display: "inline-flex",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: t.space[2],
-		boxSizing: "border-box",
-		minHeight: heights(t)[size],
-		paddingInline: size === "sm" ? t.space[3] : size === "lg" ? t.space[6] : t.space[5],
-		fontFamily: t.font.sans,
-		fontSize: size === "sm" ? t.font.sizes.sm : t.font.sizes.md,
-		fontWeight: t.font.weights.semibold,
-		lineHeight: t.font.leading.none,
-		letterSpacing: t.font.tracking.normal,
-		textDecoration: "none",
-		cursor: "pointer",
-		userSelect: "none",
-		borderRadius: t.radius.md,
-		border: `1px solid ${tone.borderColor}`,
-		background: tone.background,
-		color: tone.color,
-		transition: `background ${t.motion.fast} ${t.motion.ease}, color ${t.motion.fast} ${t.motion.ease}, border-color ${t.motion.fast} ${t.motion.ease}, box-shadow ${t.motion.base} ${t.motion.ease}`,
-		"&:hover": tone.hover,
-		"&:active": { transform: "translateY(1px)" },
-		"&:focus-visible": {
-			outline: `2px solid ${t.color.focus}`,
-			outlineOffset: "2px"
-		},
-		"&[disabled], &[aria-disabled=\"true\"]": {
-			cursor: "not-allowed",
-			background: t.color.bgSunken,
-			color: t.color.textSubtle,
-			borderColor: t.color.border,
-			boxShadow: "none",
-			transform: "none"
-		},
-		"@media (prefers-reduced-motion: reduce)": {
-			transition: "none",
-			"&:active": { transform: "none" }
-		}
-	};
-}
-var Base = styled.button((p) => buttonStyles(p.theme, p.$variant, p.$size));
-function renderSlot(slot, n) {
-	if (slot === void 0 || slot === null) return null;
-	if (typeof slot === "string") return /* @__PURE__ */ jsx(Icon, {
-		name: slot,
-		size: n
-	});
-	return slot;
-}
-function Button({ variant = "primary", size = "md", as, href, iconLeft, iconRight, loading = false, disabled = false, type = "button", className, children, ...rest }) {
-	const theme = useTheme();
-	const inactive = disabled || loading;
-	const target = as ?? (href ? "a" : "button");
-	const isNative = target === "button" || typeof target === "string" && target !== "";
-	const label = /* @__PURE__ */ jsxs(Fragment, { children: [
-		loading ? /* @__PURE__ */ jsx(Spinner, {
-			size: iconSize[size],
-			label: "Loading"
-		}) : renderSlot(iconLeft, iconSize[size]),
-		children !== void 0 && children !== null && /* @__PURE__ */ jsx("span", {
-			"data-slot": "label",
-			children
-		}),
-		loading ? null : renderSlot(iconRight, iconSize[size])
-	] });
-	const common = {
-		"data-testid": rest["data-testid"] ?? "button",
-		"data-variant": variant,
-		"data-size": size,
-		"data-loading": loading ? "true" : "false",
-		"aria-busy": loading ? true : void 0,
-		"aria-disabled": !isNative && inactive ? true : void 0,
-		"aria-label": rest["aria-label"],
-		onClick: inactive ? (event) => event.preventDefault() : rest.onClick
-	};
-	if (!isNative && typeof target !== "string") {
-		const Cmp = target;
-		const cls = css(buttonStyles(theme, variant, size));
-		const passThrough = { ...rest };
-		delete passThrough["data-testid"];
-		delete passThrough["aria-label"];
-		delete passThrough.onClick;
-		return /* @__PURE__ */ jsx(Cmp, {
-			...passThrough,
-			className: className ? `${cls} ${className}` : cls,
-			"aria-label": common["aria-label"],
-			"aria-busy": common["aria-busy"],
-			"aria-disabled": common["aria-disabled"],
-			"data-testid": common["data-testid"],
-			"data-variant": common["data-variant"],
-			"data-size": common["data-size"],
-			"data-loading": common["data-loading"],
-			onClick: common.onClick,
-			children: label
-		});
-	}
-	const element = target === "submit" ? "button" : target;
-	return /* @__PURE__ */ jsx(Base, {
-		...Object.fromEntries(Object.entries(rest).filter(([key]) => key !== "data-testid" && key !== "aria-label")),
-		as: element,
-		href,
-		$variant: variant,
-		$size: size,
-		type: element === "button" ? target === "submit" ? "submit" : type : void 0,
-		disabled: element === "button" && inactive ? true : void 0,
-		className,
-		"aria-busy": common["aria-busy"],
-		"aria-disabled": common["aria-disabled"],
-		"aria-label": common["aria-label"],
-		"data-testid": common["data-testid"],
-		"data-variant": common["data-variant"],
-		"data-size": common["data-size"],
-		"data-loading": common["data-loading"],
-		onClick: common.onClick,
-		children: label
-	});
-}
-//#endregion
-//#region src/components/ui/Tag.tsx
-var Pill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  font-family: ${(p) => p.theme.font.sans};
-  font-weight: ${(p) => p.theme.font.weights.medium};
-  line-height: ${(p) => p.theme.font.leading.none};
-  letter-spacing: ${(p) => p.theme.font.tracking.normal};
-  border-radius: ${(p) => p.theme.radius.full};
-  border: 1px solid transparent;
-  font-size: ${(p) => p.$size === "sm" ? p.theme.font.sizes.xs : p.theme.font.sizes.sm};
-  padding: ${(p) => p.$size === "sm" ? `${p.theme.space["0"]} ${p.theme.space[2]}` : `${p.theme.space["1"]} ${p.theme.space[3]}`};
-
-  /* default */
-  ${(p) => p.$tone === "default" && `background: ${p.theme.color.bgSunken}; color: ${p.theme.color.textMuted}; border-color: ${p.theme.color.border};`}
-
-  /* accent — text sits on the translucent soft fill; checked >= 4.5:1 */
-  ${(p) => p.$tone === "accent" && `background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder};`}
-
-  /* outline — transparent background, works on bg and surface alike */
-  ${(p) => p.$tone === "outline" && `background: transparent; color: ${p.theme.color.textMuted}; border-color: ${p.theme.color.borderStrong};`}
-`;
-function Tag({ tone = "default", size = "md", className, children, ...rest }) {
-	return /* @__PURE__ */ jsx(Pill, {
-		$tone: tone,
-		$size: size,
-		className,
-		"data-testid": rest["data-testid"] ?? "tag",
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/Card.tsx
-/**
-* Card — the surface every list item and panel sits on.
-*
-* Renders <article> by default, <a> when `href` is given, and any element via
-* `as` (a router Link works: it lands as the styled `as` target and keeps the
-* card styles — verified in ui.test.tsx).
-*
-* `interactive` adds hover/focus affordances. The whole card must NOT be the
-* only link when the title also links — page builders keep a real link inside
-* and pass interactive here; that's the non-duplicate-link pattern.
-*/
-var Surface = styled.article`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[3]};
-  padding: ${(p) => p.$pad === "sm" ? p.theme.space[4] : p.$pad === "lg" ? p.theme.space[6] : p.theme.space[5]};
-  background: ${(p) => p.theme.color.surface};
-  color: ${(p) => p.theme.color.text};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
-  box-shadow: ${(p) => p.theme.shadow.sm};
-  text-decoration: none;
-  transition:
-    border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
-    box-shadow ${(p) => p.theme.motion.base} ${(p) => p.theme.motion.ease},
-    transform ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  ${(p) => p.$interactive && `
-    cursor: pointer;
-    &:hover {
-      border-color: ${p.theme.color.borderStrong};
-      box-shadow: ${p.theme.shadow.md};
-      transform: translateY(-2px);
-    }
-    &:focus-visible {
-      outline: 2px solid ${p.theme.color.focus};
-      outline-offset: 3px;
-    }
-  `}
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-    &:hover {
-      transform: none;
-    }
-  }
-`;
-function Card({ interactive = false, href, as, pad = "md", className, children, ...rest }) {
-	return /* @__PURE__ */ jsx(Surface, {
-		as: as ?? (href ? "a" : "article"),
-		href,
-		$interactive: interactive || Boolean(href),
-		$pad: pad,
-		className,
-		"aria-label": rest["aria-label"],
-		"data-testid": rest["data-testid"] ?? "card",
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/Heading.tsx
-var defaultSize = {
-	1: "4xl",
-	2: "2xl",
-	3: "xl",
-	4: "lg"
-};
-function headingCss(theme, size) {
-	return css({
-		margin: "0",
-		fontFamily: theme.font.sans,
-		fontWeight: theme.font.weights.bold,
-		lineHeight: theme.font.leading.tight,
-		letterSpacing: theme.font.tracking.tight,
-		color: theme.color.text,
-		fontSize: theme.font.sizes[size],
-		"scroll-margin-top": theme.layout.navHeight
-	});
-}
-function Heading({ level, size, className, id, children, ...rest }) {
-	const cls = `${headingCss(useTheme(), size ?? defaultSize[level])}${className ? ` ${className}` : ""}`;
-	const Tag = `h${level}`;
-	return /* @__PURE__ */ jsx(Tag, {
-		id,
-		className: cls,
-		"data-testid": rest["data-testid"] ?? `heading-${level}`,
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/Section.tsx
-/**
-* Section — a landmark region with optional eyebrow/title/description header.
-* When `title` is given it renders an h2 (id-linked via aria-labelledby) so
-* screen readers announce the region name and heading order stays h1 > h2.
-*/
-var Root = styled.section`
-  position: relative;
-  width: 100%;
-  margin: 0 auto;
-  padding-block: ${(p) => p.$size === "compact" ? p.theme.space[7] : p.$size === "wide" ? p.theme.space[9] : p.theme.space[8]};
-  /* R2-D V1: NO padding-inline — Layout Main owns the single content gutter.
-   * Sections used to add their own, doubling the inset (measured: header rail
-   * at x=144 vs section text at x=192). max-width still caps prose widths. */
-  max-width: ${(p) => p.$size === "compact" ? p.theme.layout.maxWidthProse : p.theme.layout.maxWidth};
-
-  &:not(:last-of-type) {
-    border-bottom: 1px solid ${(p) => p.theme.color.border};
-  }
-`;
-var Eyebrow$1 = styled.p`
-  margin: 0 0 ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
-  letter-spacing: ${(p) => p.theme.font.tracking.wider};
-  text-transform: uppercase;
-  color: ${(p) => p.theme.color.accent};
-`;
-var Description$1 = styled.p`
-  margin: 0 0 ${(p) => p.theme.space[5]};
-  max-width: 68ch;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.normal};
-  color: ${(p) => p.theme.color.textMuted};
-`;
-function Section({ id, size = "default", eyebrow, title, description, className, children, ...rest }) {
-	const theme = useTheme();
-	const headingId = id ? `${id}-title` : void 0;
-	const titleClass = css({ margin: `0 0 ${theme.space[3]}` });
-	return /* @__PURE__ */ jsxs(Root, {
-		id,
-		$size: size,
-		className,
-		"aria-labelledby": title ? headingId : void 0,
-		"data-testid": rest["data-testid"] ?? "section",
-		children: [(eyebrow || title || description) && /* @__PURE__ */ jsxs("header", { children: [
-			eyebrow && /* @__PURE__ */ jsx(Eyebrow$1, {
-				"data-testid": "section-eyebrow",
-				children: eyebrow
-			}),
-			title && /* @__PURE__ */ jsx(Heading, {
-				level: 2,
-				id: headingId,
-				className: titleClass,
-				"data-testid": "section-title",
-				children: title
-			}),
-			description && /* @__PURE__ */ jsx(Description$1, { children: description })
-		] }), children]
-	});
-}
-//#endregion
-//#region src/components/ui/Container.tsx
-/**
-* Container — the page-width wrapper. Everything on a page lives in one.
-* `size="prose"` narrows to the reading measure; "narrow" is for forms/404s.
-*/
-var Box = styled.div`
-  width: 100%;
-  margin: 0 auto;
-  /* R2-D V1: gutter ownership lives in Layout Main — no inline padding here
-   * (was double-inset content vs the header/footer rail). */
-  max-width: ${(p) => p.$size === "prose" ? p.theme.layout.maxWidthProse : p.$size === "narrow" ? `calc(${p.theme.layout.maxWidth} * 0.58)` : p.theme.layout.maxWidth};
-`;
-function Container({ size = "default", className, children, id, ...rest }) {
-	return /* @__PURE__ */ jsx(Box, {
-		$size: size,
-		id,
-		className,
-		"data-testid": rest["data-testid"] ?? "container",
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/Stack.tsx
-var Flex = styled.div`
-  display: flex;
-  flex-direction: ${(p) => p.$direction};
-  flex-wrap: ${(p) => p.$wrap ? "wrap" : "nowrap"};
-  gap: ${(p) => p.theme.space[p.$gap]};
-  align-items: ${(p) => p.$align === "start" ? "flex-start" : p.$align === "end" ? "flex-end" : p.$align};
-  justify-content: ${(p) => p.$justify === "between" ? "space-between" : p.$justify === "center" ? "center" : p.$justify === "end" ? "flex-end" : "flex-start"};
-`;
-function Stack({ gap = "4", direction = "column", wrap = false, align = "stretch", justify = "start", className, children, as = "div", ...rest }) {
-	return /* @__PURE__ */ jsx(Flex, {
-		as,
-		$gap: gap,
-		$direction: direction,
-		$wrap: wrap,
-		$align: align,
-		$justify: justify,
-		className,
-		"data-testid": rest["data-testid"] ?? "stack",
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/Prose.tsx
-/**
-* Prose — styles *generated markdown HTML* (h2/h3 anchors, lists, blockquote,
-* code, pre>code, tables, images, hr) at a ~68ch reading measure.
-*
-* All descendant selectors are scoped under the wrapper's own class
-* (`.css-x h2 { … }`), which is what keeps Prose from restyling the site
-* chrome — verified in ui.test.tsx by asserting every rule starts with the
-* wrapper class.
-*
-* Heading anchors: the markdown engine emits `<h2 id="…">`; the `a` is added
-* client-side nowhere — instead CSS shows a "#" ::before on hover/focus of an
-* `a.anchor` child if the renderer produced one, and ids get scroll-margin so
-* the sticky header never covers the target.
-*/
-function proseCss(theme) {
-	const t = theme;
-	return css({
-		"--measure": "68ch",
-		maxWidth: "var(--measure)",
-		fontFamily: t.font.sans,
-		fontSize: t.font.sizes.md,
-		lineHeight: t.font.leading.normal,
-		color: t.color.text,
-		"> *:first-of-type": { marginTop: "0" },
-		"> *:last-child": { marginBottom: "0" },
-		"h2, h3, h4": {
-			fontFamily: t.font.sans,
-			fontWeight: t.font.weights.bold,
-			lineHeight: t.font.leading.snug,
-			letterSpacing: t.font.tracking.tight,
-			color: t.color.text,
-			scrollMarginTop: t.layout.navHeight
-		},
-		h2: {
-			fontSize: t.font.sizes["2xl"],
-			margin: `${t.space[8]} 0 ${t.space[4]}`
-		},
-		h3: {
-			fontSize: t.font.sizes.xl,
-			margin: `${t.space[7]} 0 ${t.space[3]}`
-		},
-		h4: {
-			fontSize: t.font.sizes.lg,
-			margin: `${t.space[6]} 0 ${t.space[2]}`
-		},
-		"h2 .anchor, h3 .anchor, h4 .anchor": {
-			marginLeft: t.space[2],
-			color: t.color.accent,
-			textDecoration: "none",
-			opacity: "0",
-			fontWeight: t.font.weights.medium
-		},
-		"h2:hover .anchor, h3:hover .anchor, h4:hover .anchor, .anchor:focus-visible": { opacity: "1" },
-		".anchor:focus-visible": {
-			outline: `2px solid ${t.color.focus}`,
-			outlineOffset: "2px",
-			borderRadius: t.radius.sm
-		},
-		p: { margin: `0 0 ${t.space[4]}` },
-		"p, li": { maxWidth: "var(--measure)" },
-		strong: {
-			fontWeight: t.font.weights.semibold,
-			color: t.color.text
-		},
-		em: { fontStyle: "italic" },
-		a: {
-			color: t.color.accent,
-			textDecoration: "underline",
-			textDecorationColor: t.color.accentBorder,
-			textUnderlineOffset: "3px",
-			"&:hover": { textDecorationColor: t.color.accent },
-			"&:focus-visible": {
-				outline: `2px solid ${t.color.focus}`,
-				outlineOffset: "2px",
-				borderRadius: t.radius.sm
-			}
-		},
-		"ul, ol": {
-			margin: `0 0 ${t.space[4]}`,
-			paddingLeft: t.space[6]
-		},
-		li: { marginBottom: t.space[2] },
-		"li::marker": { color: t.color.textMuted },
-		blockquote: {
-			margin: `${t.space[5]} 0`,
-			padding: `${t.space[1]} ${t.space[5]}`,
-			borderLeft: `3px solid ${t.color.accentBorder}`,
-			color: t.color.textMuted,
-			fontStyle: "italic",
-			"p:last-child": { marginBottom: "0" }
-		},
-		code: {
-			fontFamily: t.font.mono,
-			fontSize: `calc(${t.font.sizes.sm} * 0.94)`,
-			background: t.color.bgSunken,
-			color: t.color.text,
-			border: `1px solid ${t.color.border}`,
-			borderRadius: t.radius.sm,
-			padding: `0 ${t.space[1]}`
-		},
-		"pre": {
-			margin: `${t.space[5]} 0`,
-			padding: t.space[4],
-			background: t.color.bgSunken,
-			border: `1px solid ${t.color.border}`,
-			borderRadius: t.radius.md,
-			overflowX: "auto",
-			overflowY: "auto",
-			maxHeight: "80vh"
-		},
-		"pre code": {
-			display: "block",
-			background: "transparent",
-			border: "none",
-			padding: "0",
-			fontSize: t.font.sizes.sm,
-			lineHeight: t.font.leading.snug,
-			whiteSpace: "pre"
-		},
-		"table": {
-			width: "100%",
-			margin: `${t.space[5]} 0`,
-			borderCollapse: "collapse",
-			display: "block",
-			overflowX: "auto",
-			fontSize: t.font.sizes.sm
-		},
-		"th, td": {
-			border: `1px solid ${t.color.border}`,
-			padding: `${t.space[2]} ${t.space[3]}`,
-			textAlign: "left"
-		},
-		th: {
-			background: t.color.bgSunken,
-			fontWeight: t.font.weights.semibold,
-			color: t.color.text
-		},
-		"tbody tr:nth-child(even)": { background: t.color.bgSunken },
-		img: {
-			maxWidth: "100%",
-			height: "auto",
-			borderRadius: t.radius.md,
-			border: `1px solid ${t.color.border}`,
-			display: "block",
-			margin: `${t.space[5]} auto`
-		},
-		hr: {
-			border: "none",
-			borderTop: `1px solid ${t.color.border}`,
-			margin: `${t.space[7]} 0`
-		}
-	});
-}
-function Prose({ className, children, ...rest }) {
-	const cls = proseCss(useTheme());
-	return /* @__PURE__ */ jsx("div", {
-		className: className ? `${cls} ${className}` : cls,
-		"data-prose": "true",
-		"data-testid": rest["data-testid"] ?? "prose",
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/EmptyState.tsx
-/**
-* EmptyState — the "nothing here yet / no results" panel every list page
-* needs. Optional CTA is a real focusable child passed in by the caller
-* (never a fake onClick on the panel).
-*/
-var Panel$2 = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: ${(p) => p.theme.space[3]};
-  padding: ${(p) => p.theme.space[8]} ${(p) => p.theme.space[5]};
-  border: 1px dashed ${(p) => p.theme.color.borderStrong};
-  border-radius: ${(p) => p.theme.radius.lg};
-  background: ${(p) => p.theme.color.bgElevated};
-`;
-var Glyph$1 = styled.span`
-  color: ${(p) => p.theme.color.textSubtle};
-  display: inline-flex;
-`;
-var Title = styled.p`
-  margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
-  color: ${(p) => p.theme.color.text};
-`;
-var Description = styled.p`
-  margin: 0;
-  max-width: 46ch;
-  font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.normal};
-  color: ${(p) => p.theme.color.textMuted};
-`;
-function EmptyState({ icon = "search", title, description, action, className, ...rest }) {
-	return /* @__PURE__ */ jsxs(Panel$2, {
-		role: "status",
-		className,
-		"data-testid": rest["data-testid"] ?? "empty-state",
-		children: [
-			/* @__PURE__ */ jsx(Glyph$1, { children: /* @__PURE__ */ jsx(Icon, {
-				name: icon,
-				size: 28
-			}) }),
-			/* @__PURE__ */ jsx(Title, { children: title }),
-			description && /* @__PURE__ */ jsx(Description, { children: description }),
-			action
-		]
-	});
-}
-styled.a`
-  position: absolute;
-  top: ${(p) => p.theme.space["2"]};
-  left: ${(p) => p.theme.space["2"]};
-  z-index: ${(p) => p.theme.z.nav + 10};
-  transform: translateY(-1000px);
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: ${(p) => p.theme.space[3]} ${(p) => p.theme.space[5]};
-  background: ${(p) => p.theme.color.bgElevated};
-  color: ${(p) => p.theme.color.text};
-  border: 1px solid ${(p) => p.theme.color.borderStrong};
-  border-radius: ${(p) => p.theme.radius.md};
-  box-shadow: ${(p) => p.theme.shadow.md};
-  font-family: ${(p) => p.theme.font.sans};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
-  text-decoration: none;
-  transition: transform ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  &:focus,
-  &:focus-visible {
-    position: fixed;
-    transform: translateY(0);
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-`;
-//#endregion
-//#region src/components/ui/VisuallyHidden.tsx
-/**
-* VisuallyHidden — content for screen readers only.
-*
-* Uses the canonical clip technique (not display:none / visibility:hidden,
-* which remove the content from the accessibility tree entirely). The element
-* keeps 1px of box so focus can still land inside it if a control lives there.
-*/
-var Hidden = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-`;
-function VisuallyHidden({ className, children, ...rest }) {
-	return /* @__PURE__ */ jsx(Hidden, {
-		className,
-		"data-testid": rest["data-testid"] ?? "visually-hidden",
-		children
-	});
-}
-//#endregion
-//#region src/components/ui/Pagination.tsx
-/**
-* Pagination — accessible paging for the project/post indexes.
-*
-* Semantics: <nav aria-label="Pagination"> > <ul> of links. The active page is
-* NOT a link (aria-disabled, no href) and carries aria-current="page". Previous
-* / next become aria-disabled with their href removed on the boundary pages so
-* they are not tabbable — the CDP suite can assert both states.
-*
-* Pages are windowed (first, last, +/-1 around current) with "…" gaps.
-*/
-var Nav = styled.nav`
-  display: flex;
-  justify-content: center;
-`;
-var List = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${(p) => p.theme.space[1]};
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-var Item$1 = styled.li`
-  display: flex;
-`;
-var Page = styled.a`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding: ${(p) => p.theme.space[2]};
-  box-sizing: border-box;
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.medium};
-  line-height: ${(p) => p.theme.font.leading.none};
-  border-radius: ${(p) => p.theme.radius.md};
-  border: 1px solid ${(p) => p.theme.color.border};
-  text-decoration: none;
-  transition:
-    background ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
-    border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  /* current page: solid accent with bg-colored text (>= 5.16:1 both themes) */
-  ${(p) => p.$current && `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent};`}
-  ${(p) => !p.$current && `background: ${p.theme.color.surface}; color: ${p.theme.color.text}; &:hover { background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; }`}
-
-  &[aria-disabled='true'] {
-    background: ${(p) => p.theme.color.bgSunken};
-    color: ${(p) => p.theme.color.textSubtle};
-    border-color: ${(p) => p.theme.color.border};
-    cursor: default;
-    text-decoration: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-`;
-var Edge = styled(Page)`
-  gap: ${(p) => p.theme.space[1]};
-  padding-inline: ${(p) => p.theme.space[3]};
-`;
-var Gap = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  min-height: 44px;
-  color: ${(p) => p.theme.color.textSubtle};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-`;
-/** 1 … 4 5 [6] 7 8 … 20 */
-function pageWindow(page, total, around = 1) {
-	const keep = /* @__PURE__ */ new Set([1, total]);
-	for (let i = page - around; i <= page + around; i += 1) if (i >= 1 && i <= total) keep.add(i);
-	const sorted = [...keep].sort((a, b) => a - b);
-	const out = [];
-	for (const n of sorted) {
-		const prev = out[out.length - 1];
-		if (prev !== void 0 && n - prev > 1) out.push(-1);
-		out.push(n);
-	}
-	return out;
-}
-function Pagination({ page, total, hrefFor = (n) => n === 1 ? "?" : `?page=${n}`, label = "Pagination", className, ...rest }) {
-	const clamped = Math.max(1, Math.min(page, total));
-	const items = pageWindow(clamped, total);
-	const linkProps = (target, current) => current || target < 1 || target > total ? {
-		href: void 0,
-		"aria-disabled": true,
-		"aria-label": current ? `Page ${target}, current page` : `Page ${target}`
-	} : {
-		href: hrefFor(target),
-		"aria-disabled": void 0,
-		"aria-label": `Go to page ${target}`
-	};
-	const edgeTabIndex = (enabled) => enabled ? void 0 : 0;
-	return /* @__PURE__ */ jsx(Nav, {
-		"aria-label": label,
-		className,
-		"data-testid": rest["data-testid"] ?? "pagination",
-		children: /* @__PURE__ */ jsxs(List, { children: [
-			/* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Edge, {
-				...linkProps(clamped - 1, false),
-				href: clamped > 1 ? hrefFor(clamped - 1) : void 0,
-				"aria-disabled": clamped > 1 ? void 0 : true,
-				tabIndex: edgeTabIndex(clamped > 1),
-				"aria-label": "Previous page",
-				$current: false,
-				"data-edge": "prev",
-				children: "‹ Prev"
-			}) }),
-			items.map((n, index) => n === -1 ? /* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Gap, {
-				"aria-hidden": "true",
-				children: "…"
-			}) }, `gap-${index}`) : /* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Page, {
-				...linkProps(n, n === clamped),
-				"aria-current": n === clamped ? "page" : void 0,
-				$current: n === clamped,
-				"data-page": n,
-				children: n
-			}) }, n)),
-			/* @__PURE__ */ jsx(Item$1, { children: /* @__PURE__ */ jsx(Edge, {
-				...linkProps(clamped + 1, false),
-				href: clamped < total ? hrefFor(clamped + 1) : void 0,
-				"aria-disabled": clamped < total ? void 0 : true,
-				tabIndex: edgeTabIndex(clamped < total),
-				"aria-label": "Next page",
-				$current: false,
-				"data-edge": "next",
-				children: "Next ›"
-			}) })
-		] })
-	});
 }
 //#endregion
 //#region src/pages/Home.tsx
@@ -5611,7 +5637,7 @@ function Home() {
 			"data-testid": "home-hero",
 			children: [
 				/* @__PURE__ */ jsx(Eyebrow, { children: "Technical consultant · Full‑stack engineer · Data scientist" }),
-				/* @__PURE__ */ jsxs(Heading, {
+				/* @__PURE__ */ jsxs(Heading$1, {
 					level: 1,
 					id: "home-title",
 					size: "5xl",
@@ -5619,14 +5645,14 @@ function Home() {
 					children: ["Alex Rivera", /* @__PURE__ */ jsx(Tagline, { children: "I turn analytical work into software that survives production — and production realities back into the analysis." })]
 				}),
 				/* @__PURE__ */ jsx(Lede$6, { children: "I advise teams on the hard middle of technical work: where a data-science result has to become a maintained service, and “it runs on my machine” has to become “it runs, and we know why.”" }),
-				/* @__PURE__ */ jsxs(CtaRow$2, { children: [/* @__PURE__ */ jsx(Button, {
+				/* @__PURE__ */ jsxs(CtaRow$2, { children: [/* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$4,
 					to: "/projects",
 					variant: "primary",
 					size: "lg",
 					"data-testid": "home-cta-projects",
 					children: "View projects"
-				}), /* @__PURE__ */ jsx(Button, {
+				}), /* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$4,
 					to: "/contact",
 					variant: "secondary",
@@ -5637,7 +5663,7 @@ function Home() {
 				/* @__PURE__ */ jsx(HeroRule, {}),
 				(SITE.hiring || SITE.resume) && /* @__PURE__ */ jsxs(HiringLine, {
 					"data-testid": "home-hiring",
-					children: [SITE.hiring && /* @__PURE__ */ jsx("span", { children: SITE.hiring }), SITE.resume && /* @__PURE__ */ jsx(Button, {
+					children: [SITE.hiring && /* @__PURE__ */ jsx("span", { children: SITE.hiring }), SITE.resume && /* @__PURE__ */ jsx(Button$1, {
 						as: "a",
 						href: SITE.resume,
 						variant: "ghost",
@@ -5663,7 +5689,7 @@ function Home() {
 				icon: "search",
 				title: "Case studies are being written up",
 				description: "Each engagement gets a public write-up once it is shipped and\n            sanitized. In the meantime, the projects index is where they will\n            land — and email is the fastest way to ask about work in progress.",
-				action: /* @__PURE__ */ jsx(Button, {
+				action: /* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$4,
 					to: "/projects",
 					variant: "secondary",
@@ -5692,7 +5718,7 @@ function Home() {
 				icon: "calendar",
 				title: "Writing starts soon",
 				description: "The first posts are drafted and in review. Subscribe via the RSS\n            link in the footer to hear about them the day they publish.",
-				action: /* @__PURE__ */ jsx(Button, {
+				action: /* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$4,
 					to: "/writing",
 					variant: "secondary",
@@ -5875,7 +5901,7 @@ function About() {
 			id: "intro",
 			eyebrow: "About",
 			size: "wide",
-			children: [/* @__PURE__ */ jsx(Heading, {
+			children: [/* @__PURE__ */ jsx(Heading$1, {
 				level: 1,
 				"data-testid": "about-title",
 				size: "4xl",
@@ -5919,13 +5945,13 @@ function About() {
 			children: [/* @__PURE__ */ jsx(PrincipleList, {
 				"data-testid": "about-principles",
 				children: PRINCIPLES.map((principle) => /* @__PURE__ */ jsxs(Principle, { children: [/* @__PURE__ */ jsx(PrincipleTitle, { children: principle.title }), /* @__PURE__ */ jsx(PrincipleBody, { children: principle.body })] }, principle.title))
-			}), /* @__PURE__ */ jsxs(ClosingRow$1, { children: [/* @__PURE__ */ jsx(Button, {
+			}), /* @__PURE__ */ jsxs(ClosingRow$1, { children: [/* @__PURE__ */ jsx(Button$1, {
 				as: ROUTER_LINK$3,
 				to: "/contact",
 				variant: "primary",
 				"data-testid": "about-cta-contact",
 				children: "Start a conversation"
-			}), /* @__PURE__ */ jsx(Button, {
+			}), /* @__PURE__ */ jsx(Button$1, {
 				as: ROUTER_LINK$3,
 				to: "/now",
 				variant: "ghost",
@@ -6067,7 +6093,7 @@ function Now() {
 		eyebrow: "Now",
 		size: "wide",
 		children: [
-			/* @__PURE__ */ jsx(Heading, {
+			/* @__PURE__ */ jsx(Heading$1, {
 				level: 1,
 				"data-testid": "now-title",
 				size: "4xl",
@@ -6118,13 +6144,13 @@ function Now() {
 						"data-testid": "now-available",
 						children: AVAILABLE_FOR.map((line) => /* @__PURE__ */ jsx(Item, { children: line }, line))
 					}),
-					/* @__PURE__ */ jsxs(ClosingRow, { children: [/* @__PURE__ */ jsx(Button, {
+					/* @__PURE__ */ jsxs(ClosingRow, { children: [/* @__PURE__ */ jsx(Button$1, {
 						as: ROUTER_LINK$2,
 						to: "/contact",
 						variant: "primary",
 						"data-testid": "now-cta-contact",
 						children: "Check availability"
-					}), /* @__PURE__ */ jsx(Button, {
+					}), /* @__PURE__ */ jsx(Button$1, {
 						as: ROUTER_LINK$2,
 						to: "/about",
 						variant: "ghost",
@@ -6419,7 +6445,7 @@ function Projects() {
 	const tagCounts = projectTagCounts(all);
 	const visible = visibleProjects(all, tag);
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(PageHeader$3, { children: [
-		/* @__PURE__ */ jsx(Heading, {
+		/* @__PURE__ */ jsx(Heading$1, {
 			level: 1,
 			"data-testid": "projects-title",
 			children: "Selected work"
@@ -6464,7 +6490,7 @@ function Projects() {
 		icon: "search",
 		title: tag === null ? "No projects published yet" : `Nothing tagged “${tag}”`,
 		description: tag === null ? "The case studies are still being written. Check back soon — or read the writing while you wait." : "That tag has no projects yet. Clear the filter to see the full list.",
-		action: tag !== null ? /* @__PURE__ */ jsx(Button, {
+		action: tag !== null ? /* @__PURE__ */ jsx(Button$1, {
 			variant: "secondary",
 			size: "sm",
 			onClick: () => setTag(null),
@@ -6556,7 +6582,7 @@ function NotFound() {
 				"aria-hidden": "true",
 				children: "404"
 			}),
-			/* @__PURE__ */ jsx(Heading, {
+			/* @__PURE__ */ jsx(Heading$1, {
 				level: 1,
 				"data-testid": "notfound-title",
 				size: "3xl",
@@ -6564,21 +6590,21 @@ function NotFound() {
 			}),
 			/* @__PURE__ */ jsx(Body$2, { children: "A 404 here usually means one of three things: a project write-up is still in review, a link outlived a refactor, or you typed something creative. None of those are your problem to solve — the three links below cover almost every path through this site." }),
 			/* @__PURE__ */ jsxs(CtaRow$1, { children: [
-				/* @__PURE__ */ jsx(Button, {
+				/* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$1,
 					to: "/",
 					variant: "primary",
 					"data-testid": "notfound-cta-home",
 					children: "Back to home"
 				}),
-				/* @__PURE__ */ jsx(Button, {
+				/* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$1,
 					to: "/projects",
 					variant: "secondary",
 					"data-testid": "notfound-cta-projects",
 					children: "Browse projects"
 				}),
-				/* @__PURE__ */ jsx(Button, {
+				/* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$1,
 					to: "/writing",
 					variant: "ghost",
@@ -6791,7 +6817,6 @@ function crumbClass(theme) {
 var CrumbNav = styled.nav`
   margin-bottom: ${(p) => p.theme.space[5]};
 `;
-var buttonLink = css({ textDecoration: "none" });
 var LINK_LABEL = {
 	source: "Source",
 	demo: "Live demo",
@@ -6801,6 +6826,7 @@ function ProjectDetail() {
 	const { slug } = useParams();
 	const project = slug !== void 0 ? getProject(slug) : void 0;
 	const theme = useTheme();
+	const buttonLink = css({ textDecoration: "none" });
 	if (!project) return /* @__PURE__ */ jsx(NotFound, {});
 	const links = projectLinkEntries(project.links);
 	const related = relatedProjects(content.projects, project);
@@ -6833,7 +6859,7 @@ function ProjectDetail() {
 					}),
 					/* @__PURE__ */ jsx("span", { children: formatDate(project.date) })
 				] }),
-				/* @__PURE__ */ jsx(Heading, {
+				/* @__PURE__ */ jsx(Heading$1, {
 					level: 1,
 					size: "4xl",
 					"data-testid": "detail-title",
@@ -6857,7 +6883,7 @@ function ProjectDetail() {
 				links.length > 0 && /* @__PURE__ */ jsx(LinkRow, {
 					"aria-label": "Project links",
 					"data-testid": "detail-links",
-					children: links.map((entry) => /* @__PURE__ */ jsxs(Button, {
+					children: links.map((entry) => /* @__PURE__ */ jsxs(Button$1, {
 						as: "a",
 						href: entry.url,
 						target: "_blank",
@@ -6880,7 +6906,7 @@ function ProjectDetail() {
 					children: "Highlights"
 				}), /* @__PURE__ */ jsx(HighlightList, {
 					"data-testid": "detail-highlights",
-					children: project.highlights.map((highlight) => /* @__PURE__ */ jsxs(HighlightItem, { children: [/* @__PURE__ */ jsx(Icon, {
+					children: project.highlights.map((highlight) => /* @__PURE__ */ jsxs(HighlightItem, { children: [/* @__PURE__ */ jsx(Icon$1, {
 						name: "check",
 						size: 18
 					}), /* @__PURE__ */ jsx("span", { children: highlight })] }, highlight))
@@ -7344,7 +7370,7 @@ function Writing() {
 	return /* @__PURE__ */ jsxs(Container, {
 		"data-testid": "writing-page",
 		children: [
-			/* @__PURE__ */ jsxs(PageHeader$2, { children: [/* @__PURE__ */ jsx(Heading, {
+			/* @__PURE__ */ jsxs(PageHeader$2, { children: [/* @__PURE__ */ jsx(Heading$1, {
 				level: 1,
 				"data-testid": "writing-title",
 				children: "Writing"
@@ -7358,7 +7384,7 @@ function Writing() {
 						htmlFor: "post-search",
 						children: "Search posts by title, tag, or summary"
 					}) }),
-					/* @__PURE__ */ jsx(SearchGlyph, { children: /* @__PURE__ */ jsx(Icon, {
+					/* @__PURE__ */ jsx(SearchGlyph, { children: /* @__PURE__ */ jsx(Icon$1, {
 						name: "search",
 						size: 16
 					}) }),
@@ -7417,7 +7443,7 @@ function Writing() {
 				icon: "search",
 				title: "No posts match",
 				description: filtering ? "Try a different phrase, or clear the tag filter to see everything." : "Nothing to show here yet.",
-				action: /* @__PURE__ */ jsx(Button, {
+				action: /* @__PURE__ */ jsx(Button$1, {
 					variant: "secondary",
 					size: "sm",
 					onClick: clearFilters,
@@ -7658,12 +7684,12 @@ function PostDetail() {
 					to: "/writing",
 					className: backCls,
 					"data-testid": "back-to-writing",
-					children: [/* @__PURE__ */ jsx(Icon, {
+					children: [/* @__PURE__ */ jsx(Icon$1, {
 						name: "chevron-left",
 						size: 14
 					}), "All writing"]
 				}) }),
-				/* @__PURE__ */ jsxs(HeaderRow, { children: [/* @__PURE__ */ jsxs(TitleBlock, { children: [/* @__PURE__ */ jsx(Heading, {
+				/* @__PURE__ */ jsxs(HeaderRow, { children: [/* @__PURE__ */ jsxs(TitleBlock, { children: [/* @__PURE__ */ jsx(Heading$1, {
 					level: 1,
 					"data-testid": "post-title",
 					children: post.title
@@ -7689,7 +7715,7 @@ function PostDetail() {
 							children: post.series
 						})] })
 					]
-				})] }), /* @__PURE__ */ jsxs(ShareWrap, { children: [/* @__PURE__ */ jsx(Button, {
+				})] }), /* @__PURE__ */ jsxs(ShareWrap, { children: [/* @__PURE__ */ jsx(Button$1, {
 					variant: "secondary",
 					size: "sm",
 					iconLeft: copied ? "check" : "external-link",
@@ -7712,7 +7738,7 @@ function PostDetail() {
 					"data-testid": "post-nav",
 					children: [neighbours.previous !== void 0 ? /* @__PURE__ */ jsxs(PagerItem, {
 						$align: "start",
-						children: [/* @__PURE__ */ jsxs(PagerHint, { children: [/* @__PURE__ */ jsx(Icon, {
+						children: [/* @__PURE__ */ jsxs(PagerHint, { children: [/* @__PURE__ */ jsx(Icon$1, {
 							name: "chevron-left",
 							size: 12
 						}), "Previous (newer)"] }), /* @__PURE__ */ jsx(Link$1, {
@@ -7723,7 +7749,7 @@ function PostDetail() {
 						})]
 					}) : /* @__PURE__ */ jsx(PagerSpacer, { "aria-hidden": "true" }), neighbours.next !== void 0 ? /* @__PURE__ */ jsxs(PagerItem, {
 						$align: "end",
-						children: [/* @__PURE__ */ jsxs(PagerHint, { children: ["Next (older)", /* @__PURE__ */ jsx(Icon, {
+						children: [/* @__PURE__ */ jsxs(PagerHint, { children: ["Next (older)", /* @__PURE__ */ jsx(Icon$1, {
 							name: "chevron-right",
 							size: 12
 						})] }), /* @__PURE__ */ jsx(Link$1, {
@@ -7895,7 +7921,7 @@ function VideoRowItem({ video }) {
 				className: videoTitleClass(theme),
 				"data-testid": "video-link",
 				children: [
-					/* @__PURE__ */ jsx(InlineIcon, { children: /* @__PURE__ */ jsx(Icon, {
+					/* @__PURE__ */ jsx(InlineIcon, { children: /* @__PURE__ */ jsx(Icon$1, {
 						name: "play",
 						size: 16
 					}) }),
@@ -7923,7 +7949,7 @@ function VideoRowItem({ video }) {
 			children: providerLabel(video.provider)
 		}), /* @__PURE__ */ jsxs(DurationBadge, {
 			"data-testid": "video-duration",
-			children: [/* @__PURE__ */ jsx(Icon, {
+			children: [/* @__PURE__ */ jsx(Icon$1, {
 				name: "clock",
 				size: 14
 			}), video.duration]
@@ -7947,7 +7973,7 @@ function Videos() {
 	const { upcoming, past } = splitByDate(content.videos, todayUtcIso());
 	const total = content.videos.length;
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(PageHeader$1, { children: [
-		/* @__PURE__ */ jsx(Heading, {
+		/* @__PURE__ */ jsx(Heading$1, {
 			level: 1,
 			"data-testid": "videos-title",
 			children: "Videos"
@@ -8170,7 +8196,7 @@ function TalkCard({ talk }) {
 				/* @__PURE__ */ jsx("span", { children: talk.location }),
 				/* @__PURE__ */ jsx(Chevron, {
 					"aria-hidden": "true",
-					children: /* @__PURE__ */ jsx(Icon, {
+					children: /* @__PURE__ */ jsx(Icon$1, {
 						name: "chevron-right",
 						size: 16
 					})
@@ -8189,7 +8215,7 @@ function TalkCard({ talk }) {
 				className: resourceLinkClass(theme),
 				"data-testid": `talk-${entry.kind}-link`,
 				children: [
-					/* @__PURE__ */ jsx(Icon, {
+					/* @__PURE__ */ jsx(Icon$1, {
 						name: entry.kind === "slides" ? "download" : "play",
 						size: 16
 					}),
@@ -8224,7 +8250,7 @@ var MetaLine = styled.p`
 function Talks() {
 	const talks = talksByDate(content.talks);
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(PageHeader, { children: [
-		/* @__PURE__ */ jsx(Heading, {
+		/* @__PURE__ */ jsx(Heading$1, {
 			level: 1,
 			"data-testid": "talks-title",
 			children: "Talks"
@@ -8409,7 +8435,7 @@ function Contact() {
 			id: "contact-intro",
 			eyebrow: "Contact",
 			size: "wide",
-			children: [/* @__PURE__ */ jsx(Heading, {
+			children: [/* @__PURE__ */ jsx(Heading$1, {
 				level: 1,
 				"data-testid": "contact-title",
 				size: "4xl",
@@ -8430,11 +8456,11 @@ function Contact() {
 					contactEmail ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(AddressLine, {
 						href: `mailto:${contactEmail}`,
 						"data-testid": "contact-email-link",
-						children: [/* @__PURE__ */ jsx(Icon, {
+						children: [/* @__PURE__ */ jsx(Icon$1, {
 							name: "mail",
 							size: 16
 						}), contactEmail]
-					}), /* @__PURE__ */ jsx(CtaRow, { children: /* @__PURE__ */ jsx(Button, {
+					}), /* @__PURE__ */ jsx(CtaRow, { children: /* @__PURE__ */ jsx(Button$1, {
 						as: "a",
 						href: `mailto:${contactEmail}`,
 						variant: "primary",
@@ -8461,7 +8487,7 @@ function Contact() {
 							href: link.url,
 							rel: "me noopener noreferrer",
 							children: [
-								/* @__PURE__ */ jsx(Icon, {
+								/* @__PURE__ */ jsx(Icon$1, {
 									name: socialIcon(link.label),
 									size: 16
 								}),
@@ -8485,13 +8511,13 @@ function Contact() {
 					/* @__PURE__ */ jsxs(ExpectGroup, { children: [/* @__PURE__ */ jsx(ExpectTerm, { children: "Fixed scope, written down" }), /* @__PURE__ */ jsx(ExpectBody, { children: "Before work starts: the question, the deliverable, and what “done” means, in one page. If scope changes, the page changes — visibly." })] }),
 					/* @__PURE__ */ jsxs(ExpectGroup, { children: [/* @__PURE__ */ jsx(ExpectTerm, { children: "Handover included" }), /* @__PURE__ */ jsx(ExpectBody, { children: "Every engagement ends with the team able to run and extend the result without me. Dependency is a defect, not a business model." })] })
 				]
-			}), /* @__PURE__ */ jsxs(CtaRow, { children: [/* @__PURE__ */ jsx(Button, {
+			}), /* @__PURE__ */ jsxs(CtaRow, { children: [/* @__PURE__ */ jsx(Button$1, {
 				as: ROUTER_LINK,
 				to: "/projects",
 				variant: "ghost",
 				"data-testid": "contact-cta-projects",
 				children: "See the work first"
-			}), /* @__PURE__ */ jsx(Button, {
+			}), /* @__PURE__ */ jsx(Button$1, {
 				as: ROUTER_LINK,
 				to: "/now",
 				variant: "ghost",
@@ -8633,6 +8659,7 @@ function renderRoute(path) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 ${head}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 ${preloads ? preloads + "\n" : ""}    <script src="/theme-init.js"><\/script>
     <style id="emotion-prerender">${css}</style>
@@ -8666,8 +8693,9 @@ function assetHref() {
 		const entry = manifest["index.html"] ?? manifest["src/main.tsx"];
 		const file = entry?.file ?? entry?.src;
 		if (typeof file === "string" && file.startsWith("assets/")) return `/${file}`;
-	} catch {}
-	return "/assets/index.js";
+	} catch {
+		throw new Error("prerender: dist/.vite/manifest.json missing or has no index.html entry — run `vite build` before prerender (build.mjs chains these in order)");
+	}
 }
 //#endregion
 export { feedItems, prerenderPaths, renderRoute, siteMeta, sitemapPaths };

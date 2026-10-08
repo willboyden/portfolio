@@ -26,7 +26,7 @@ read-only ClickHouse MCP server as the only data path. The read-only part is
 load-bearing: DDL and DML are refused at the server, so the probe script is
 aggregate-only by construction, not by discipline.
 
-## The traps are in the grain, not the syntax
+## The traps hide in the grain
 
 Three ClickHouse quirks broke naive queries first (all verified against
 24.3.18): `arbitrary()` does not exist (error 46, even on literals — use
@@ -54,7 +54,7 @@ reasonable-looking query, get a number, and cite it. That is the definition
 of an unagent-proofed data layer: correctness depends on tribal knowledge
 that lives outside the schema.
 
-## Lineage is a metadata field, not a wiki page
+## Lineage lives in the schema
 
 Every dataset file embeds its own provenance in `meta`: the exact SQL used,
 per-attempt timings, row count, notes, and a `failed` flag. The dashboard
@@ -79,9 +79,9 @@ trusted.
 The rest is boring in the right way. `probe.py` is idempotent — rewrites
 `data/*.json` on every run, server-side aggregation keeps every query under
 0.3 s (the shipped run's slowest query: 0.21 s), and re-running is cheap
-enough that refresh is a habit, not an event. The FEC tables, 216M rows of
+enough that refresh becomes a habit. The FEC tables, 216M rows of
 them, were deliberately excluded under the performance rules; a dataset that
-does not fit the budget is cut, not apologized for. KPIs on the dashboard are
+does not fit the budget gets cut. KPIs on the dashboard are
 recomputed from the embedded rows at build time, never hardcoded, so the
 headline numbers and the drill-downs cannot drift apart.
 
