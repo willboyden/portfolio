@@ -1,7 +1,7 @@
 /**
  * Content build pipeline (CONTRACT.md §5).
  *
- * Reads content/**/*.md -> parseFrontmatter -> zod validation (file + field
+ * Reads content/*.md collections -> parseFrontmatter -> zod validation (file + field
  * error messages, exit 1 on ANY failure) -> renderMarkdown for bodies ->
  * src/content/generated/content.json sorted date-desc, then date ASCENDING is
  * never used: newest first everywhere, with slug tie-breaks so the output is
@@ -14,7 +14,6 @@ import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { z } from 'zod';
 import {
   renderMarkdown,
   parseFrontmatter,
@@ -47,9 +46,17 @@ function formatIssues(err, file, kind) {
   });
 }
 
-/** First ~140 chars of the body's plain text, cut at a word boundary. */
+/** First ~140 chars of the body's plain text, cut at a word boundary.
+ *  Fenced code and block markers (#, >, list bullets) are stripped first so
+ *  excerpts are pure prose. */
 export function makeExcerpt(body, limit = 140) {
-  const flat = plainText(body).replace(/\s+/g, ' ').trim();
+  const prose = body
+    .replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm, '')
+    .split('\n')
+    .filter((l) => !/^(```|~~~)/.test(l))
+    .map((l) => l.replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+[.)]\s+)/, ''))
+    .join('\n');
+  const flat = plainText(prose).replace(/\s+/g, ' ').trim();
   if (flat.length <= limit) return flat;
   const cut = flat.slice(0, limit);
   const space = cut.lastIndexOf(' ');
@@ -80,6 +87,18 @@ async function loadCollection(dir, schema) {
     try {
       const { data, body } = parseFrontmatter(await readFile(file, 'utf8'));
       entry = { ...data, slug };
+      // The frontmatter YAML subset cannot express arrays-of-objects, so
+      // `metrics` entries are written as `- label = value` strings and
+      // expanded here before zod validation.
+      if (Array.isArray(entry.metrics)) {
+        entry.metrics = entry.metrics.map((m) => {
+          if (typeof m === 'string' && m.includes('=')) {
+            const i = m.indexOf('=');
+            return { label: m.slice(0, i).trim(), value: m.slice(i + 1).trim() };
+          }
+          return m;
+        });
+      }
       if (dir === 'posts') {
         entry.html = renderMarkdown(body);
         entry.readingMinutes = readingMinutes(body);

@@ -265,7 +265,8 @@ const Chip = styled.button<{ $active: boolean }>`
     color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
     border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
 
-  /* Whole declarations gated on $active (never `x: cond ? a : false`). */
+  /* Whole declarations gated on $active — never a value-level ternary that
+   * resolves to false (the vendored Emotion rejects empty declarations). */
   ${(p) =>
     p.$active &&
     `background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; font-weight: ${p.theme.font.weights.semibold};`}

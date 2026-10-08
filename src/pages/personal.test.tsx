@@ -131,17 +131,20 @@ describe('Home', () => {
     expect(afterContact).toContain('Get in touch');
   });
 
-  it('survives the currently-empty content.json: hero-only state, zero cards, friendly empty states', () => {
-    /* content.json ships with empty arrays during this build phase — this IS
-     * the empty-content fixture. The hero must render, no cards may appear,
-     * and both list sections must fall back to designed EmptyStates. */
-    expect(html).not.toContain('data-testid="featured-grid"');
-    expect(html).not.toContain('data-testid="latest-writing"');
-    const emptyStates = tags(html, 'div').filter((t) => t.includes('data-testid="empty-state"'));
-    expect(emptyStates.length).toBeGreaterThanOrEqual(2);
-    expect(emptyStates.every((t) => t.includes('role="status"'))).toBe(true);
-    expect(html).toContain('Case studies are being written up');
-    expect(html).toContain('Writing starts soon');
+  it('renders featured project cards + latest writing from real content.json', () => {
+    /* The content pipeline populated content.json after this file was first
+     * written (4 projects, 3 posts). The EMPTY-state counterpart lives in
+     * personal.empty.test.tsx, which mocks 'app/content' to empty arrays. */
+    expect(html).toContain('data-testid="featured-grid"');
+    const featured = tags(html, 'article').filter((t) => t.includes('data-testid="featured-project"'));
+    expect(featured.length).toBeGreaterThanOrEqual(1);
+    expect(html).toContain('data-testid="latest-writing"');
+    /* The three launch posts exist; the home page shows at most the 3 latest. */
+    const writingItems = countOccurrences(html, 'min read');
+    expect(writingItems).toBeGreaterThanOrEqual(1);
+    expect(writingItems).toBeLessThanOrEqual(3);
+    /* No designed empty-states when data is present. */
+    expect(html).not.toContain('data-testid="empty-state"');
   });
 });
 

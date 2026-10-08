@@ -179,7 +179,7 @@ const InlineIcon = styled.span`
   color: ${(p) => p.theme.color.accent};
 `;
 
-function VideoRowItem({ video }: { video: Video }): React.ReactNode {
+export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
   const theme = useTheme() as Tokens;
   return (
     <VideoRow data-testid="video-row">

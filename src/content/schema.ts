@@ -1,6 +1,6 @@
 /**
  * Content schema (CONTRACT.md §4) — the single validation contract between
- * `content/**/*.md` files, `scripts/build-content.mjs`, and the app.
+ * content/*.md files, `scripts/build-content.mjs`, and the app.
  *
  * Every entry carries the shared fields (slug/title/summary/tags/date) plus
  * type-specific fields. All schemas are `.strict()`: an unknown frontmatter
@@ -25,9 +25,9 @@ const baseShape = {
 
 export const ProjectLinksSchema = z
   .object({
-    source: z.string().url(),
-    demo: z.string().url(),
-    paper: z.string().url(),
+    source: z.string().url().optional(),
+    demo: z.string().url().optional(),
+    paper: z.string().url().optional(),
   })
   .strict();
 

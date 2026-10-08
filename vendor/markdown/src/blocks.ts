@@ -118,11 +118,14 @@ function parseBlocks(lines: string[]): Blk[] {
     if (m) {
       const fence = m[2]!;
       const info = m[3]!.trim();
-      const exactClose = new RegExp('^ {0,3}' + fence[0].repeat(fence.length) + '[ \\t]*$');
+      const fenceIndent = m[1]!.length;
+      const exactClose = new RegExp('^ {0,3}' + fence[0]!.repeat(fence.length) + '[ \\t]*$');
       const body: string[] = [];
       i++;
       while (i < n && !exactClose.test(lines[i]!)) {
-        body.push(lines[i]!.replace(/^ {1,3}/, ''));
+        // CommonMark: strip at most the FENCE's own indentation from body
+        // lines — blindly removing up to 3 spaces corrupted indented code.
+        body.push(lines[i]!.slice(fenceIndent));
         i++;
       }
       i++; // consume closing fence (or run off the end — tolerate unclosed)

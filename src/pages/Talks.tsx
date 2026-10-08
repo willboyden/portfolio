@@ -85,6 +85,12 @@ const Disclosure = styled.details`
     }
   }
 
+  /* Chevron rotation follows the native disclosure state — no JS, so the
+   * prerendered shell behaves exactly like the live page. */
+  &[open] > summary svg {
+    transform: rotate(90deg);
+  }
+
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     & > summary {
       grid-template-columns: minmax(0, 1fr) auto;
@@ -136,18 +142,14 @@ const SummaryAside = styled.span`
   }
 `;
 
-/* The chevron follows the native disclosure state via `details[open]` — no JS,
- * no aria-expanded to lie about. Decorative (aria-hidden), summary is the
- * real control. */
+/* The chevron's rotation is owned by Disclosure's `&[open]` rule (above) —
+ * here it only carries the base look + motion. Decorative (aria-hidden);
+ * <summary> is the real control. */
 const Chevron = styled.span`
   display: inline-block;
   color: ${(p) => p.theme.color.textSubtle};
   transform: rotate(0deg);
   transition: transform ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  details[open] > summary & {
-    transform: rotate(90deg);
-  }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -195,7 +197,7 @@ function resourceLinkClass(theme: Tokens): string {
   });
 }
 
-function TalkCard({ talk }: { talk: Talk }): React.ReactNode {
+export function TalkCard({ talk }: { talk: Talk }): React.ReactNode {
   const theme = useTheme() as Tokens;
   const resources = talkResourceEntries(talk);
   return (
