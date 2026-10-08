@@ -154,7 +154,7 @@ function useParams() {
 * Anchor that routes client-side while staying a real link: middle-click,
 * cmd-click, and download targets fall through to the browser.
 */
-function Link$1({ to, children, onClick, onNavigate, ...rest }) {
+function Link({ to, children, onClick, onNavigate, ...rest }) {
 	const navigate = useRouter().navigate;
 	const handleClick = (event) => {
 		onClick?.(event);
@@ -934,8 +934,15 @@ var SITE = {
 	hiring: null,
 	email: null,
 	resume: null,
-	/** DRAFT: replace with the real X handle before launch (no @ prefix here). */
-	twitter: "alexriveradev",
+	/**
+	* X handle WITHOUT the @ prefix. Null until the owner confirms the real
+	* handle — R4-C F3: a placeholder shipped as twitter:site on every page
+	* violated the hide-don't-fabricate rule (the Footer hides unset handles;
+	* this was the missed sibling sink of R2-A A3). When set, twitter:site is
+	* emitted; unset means no tag at all.
+	* <!-- DRAFT-REVIEW(owner): set to the real handle before launch -->
+	*/
+	twitter: null,
 	lang: "en",
 	rssPath: "/rss.xml",
 	defaultImagePath: "/og-default.png"
@@ -1079,7 +1086,7 @@ function buildHead(meta) {
 	tags.push(`<meta property="og:locale" content="${escapeHtml(meta.lang)}">`);
 	if (meta.publishedTime) tags.push(`<meta property="article:published_time" content="${escapeHtml(meta.publishedTime)}">`);
 	tags.push(`<meta name="twitter:card" content="${escapeHtml(meta.twitterCard)}">`);
-	tags.push(`<meta name="twitter:site" content="@${escapeHtml(SITE.twitter)}">`);
+	if (SITE.twitter) tags.push(`<meta name="twitter:site" content="@${escapeHtml(SITE.twitter)}">`);
 	tags.push(`<meta name="twitter:title" content="${escapeHtml(meta.titlePlain)}">`);
 	tags.push(`<meta name="twitter:description" content="${escapeHtml(meta.description)}">`);
 	tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.image)}">`);
@@ -1109,7 +1116,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	contentHash: "eb75e24470cd4bd9",
+	contentHash: "8ff1c996bd17cb8a",
 	projects: [
 		{
 			"slug": "system-monitor",
@@ -1435,7 +1442,7 @@ var content_default = {
 		{
 			"slug": "testing-half-your-system-is-a-prompt",
 			"title": "Testing when half your system is a prompt",
-			"summary": "You cannot unit-test a prompt, so stop trying. Deterministic boundaries, a build that fails on a typo, golden output validated as an artifact, and statistical assertions with reps — the four patterns behind 493 unit tests and 49 browser checks on a site whose content pipeline eats markdown.",
+			"summary": "You cannot unit-test a prompt, so stop trying. Deterministic boundaries, a build that fails on a typo, golden output validated as an artifact, and statistical assertions with reps — the four patterns behind 501 unit tests and 53 browser checks on a site whose content pipeline eats markdown.",
 			"tags": [
 				"testing",
 				"llm",
@@ -1446,7 +1453,7 @@ var content_default = {
 			"date": "2026-10-06",
 			"readingMinutes": 5,
 			"series": "AI engineering notes",
-			"html": "<p>The honest architecture of most AI systems is: a deterministic shell, a\nstochastic core, and a prompt holding them together. Testing advice usually\nfails at the boundary: teams either unit-test the shell and pretend that\ncovers the system, or give up on automation and QA by vibes. The pattern that\nsurvived contact with two real projects (an LLM eval harness, and this\nportfolio site, which is a markdown-to-browser pipeline the content plan\nhopes counts as a credible prop) is boring and general: <strong>move work across\nthe boundary into the deterministic side, then test the deterministic side\nruthlessly.</strong></p>\n<h2 id=\"boundary-one-the-eval-harness-judges-with-rules-not-opinions\">Boundary one: the eval harness judges with rules, not opinions</h2>\n<p>The harness runs eight tool-calling scenarios against three models with two\nrepetitions each: 48 recorded runs. There is no LLM-as-judge anywhere in the\nscoring path. Every emitted tool call is validated against the scenario's\nJSON function schema, and every final answer is graded by rules like\n<code>answer_contains</code>, which match case-insensitively and tolerate thousands\nseparators (<code>1301.04</code> matches <code>1,301.04</code>). Substring checks are dull. They\nare also reproducible, and reproducibility is the entire job.</p>\n<p>Because the core is stochastic, the assertions get two tools the shell never\nneeds. First, repetitions: two reps per (model, scenario) pair turn &quot;it\nfailed&quot; into &quot;it failed 1 of 2 times,&quot; which is a different bug and a\ndifferent fix. Second, failure modes get named instead of bucketed: the\nharness records <code>empty_content_turns</code> (HTTP 200, <code>content: null</code>) and\n<code>reasoning_burn_turns</code> (<code>finish_reason=length</code> with empty content while\nreasoning tokens burn), because a 200-with-nothing and a budget artifact are\nnot the same incident.</p>\n<p>The shipped run shows why honesty at the boundary matters. One model\ncompleted 16/16 runs at 100% valid calls, and recorded 20 empty-content\nturns anyway: it kept hitting turns that returned nothing usable, and the\nmetric says so. The other two models were down at the broker, in\ndifferent ways: one threw a 404 &quot;model does not exist&quot; on eight attempts and\na 429 on the other eight (the cooldown flipping between calls), the other a\nflat 500 on all sixteen. Both recorded as failures with the real HTTP error\nbodies attached rather than dropped from the comparison. Latency after the\ncache-bust fix reported an honest distribution: min 0.83 s, median 1.29 s,\nmax 3.72 s. A harness that hides any of this is marketing.</p>\n<h2 id=\"boundary-two-a-content-pipeline-that-refuses-to-be-fuzzy\">Boundary two: a content pipeline that refuses to be fuzzy</h2>\n<p>This site renders markdown written by the same author who is trying to test\nit, which is exactly the trust problem a prompt layer creates. The answer was\nto make every step deterministic and loud.</p>\n<p><strong>A parser with opinions.</strong> The frontmatter format is a deliberately small\nYAML subset — scalars, inline arrays, one-level nesting, folded blocks — and\nanything outside the grammar throws with the offending line number. Flow\nmappings, tabs, anchors: rejected. Guessing silently is how content\npipelines rot, so the subset guesses nothing.</p>\n<p><strong>Schemas that are <code>.strict()</code> by contract.</strong> Unknown frontmatter keys are a\na loud build error: <code>scripts/build-content.mjs</code> runs every file\nthrough zod and exits 1 on any failure, printing one block per issue —\n<code>file: &lt;path&gt;</code>, then <code>field: &lt;collection&gt;/&lt;field&gt;</code>, then <code>error: &lt;message&gt;</code>. A typo'd field name cannot become a feature that quietly\nnever renders.</p>\n<p><strong>Output invariants as tests.</strong> <code>src/content/content.test.ts</code> validates the\ngenerated bundle against the whole-bundle schema, asserts unique slugs per\ncollection, date format everywhere, date-descending order, non-empty rendered\nHTML per post, excerpts capped at 140 characters plus an ellipsis, and\ninteger reading minutes. The build sorts with slug tie-breaks so identical\ninputs produce byte-stable output — which makes <code>generated/content.json</code> a\ngolden file: a build artifact the test suite re-validates rather than a\nmystery blob.</p>\n<p><strong>One security policy, both entry points.</strong> The markdown engine's\n<code>sanitizeUrl</code> allows only http/https/mailto and relative URLs (including\nrejecting obfuscation like <code>java\\nscript:</code>), and the frontmatter URL field is\na zod <code>SafeUrl</code> enforcing the same scheme allowlist, because <code>z.string().url()</code>\nalone happily accepts <code>javascript:</code> and <code>data:</code>. One policy, two entry points,\nasserted from both sides: unit tests check the generated HTML never contains\nraw script tags or <code>javascript:</code> hrefs; the browser suite refetches a post\npage and fails if any inline, execution-capable script survived.</p>\n<h2 id=\"the-pyramid-you-can-actually-run-offline\">The pyramid you can actually run offline</h2>\n<p>The container is air-gapped, so the harness is plain Node. Vitest runs in the\n<code>node</code> environment only — there is no jsdom package — so component tests\nrender through <code>renderToStaticMarkup</code> and assert structure: heading order,\nhrefs, rendered content. That is 493 tests across 20 files in about 0.8\nseconds, and it is genuinely useful because SSR caught a class of bugs\n(client hydration) that jsdom fakes anyway.</p>\n<p>Real behavior then moves to the browser: a self-written ~700-line CDP harness\ndrives real Chromium through 49 checks in 7 spec files. Security asserts CSP\n<code>script-src 'self'</code> and <code>frame-ancestors 'none'</code>, nosniff and frame-deny\nheaders, and greps shipped markup for secret shapes (<code>sk-…</code>, <code>AKIA…</code>, bearer\ntokens). Performance enforces budgets rather than aspirations: under 250 kB\nof JS+CSS transferred on the home page, client-side navigation under 1500\nms, and an <code>&lt;h1&gt;</code> present in prerendered HTML so LCP never paints from zero.\nEven nginx gets tested without nginx: <code>config-lint</code> parses the deploy config\nand enforces the add_header inheritance invariant, since one location\ndeclaring a header silently loses every server-level one.</p>\n<p>The prompt half still needs humans, of course — that is what the two\nrepetitions and the named failure modes are for. Everything around it does\nnot, and that is the point. Push the boundary out, name what crosses it, and\ntest the rest like it's a compiler, because from the user's side it is.</p>",
+			"html": "<p>The honest architecture of most AI systems is: a deterministic shell, a\nstochastic core, and a prompt holding them together. Testing advice usually\nfails at the boundary: teams either unit-test the shell and pretend that\ncovers the system, or give up on automation and QA by vibes. The pattern that\nsurvived contact with two real projects (an LLM eval harness, and this\nportfolio site, which is a markdown-to-browser pipeline the content plan\nhopes counts as a credible prop) is boring and general: <strong>move work across\nthe boundary into the deterministic side, then test the deterministic side\nruthlessly.</strong></p>\n<h2 id=\"boundary-one-the-eval-harness-judges-with-rules-not-opinions\">Boundary one: the eval harness judges with rules, not opinions</h2>\n<p>The harness runs eight tool-calling scenarios against three models with two\nrepetitions each: 48 recorded runs. There is no LLM-as-judge anywhere in the\nscoring path. Every emitted tool call is validated against the scenario's\nJSON function schema, and every final answer is graded by rules like\n<code>answer_contains</code>, which match case-insensitively and tolerate thousands\nseparators (<code>1301.04</code> matches <code>1,301.04</code>). Substring checks are dull. They\nare also reproducible, and reproducibility is the entire job.</p>\n<p>Because the core is stochastic, the assertions get two tools the shell never\nneeds. First, repetitions: two reps per (model, scenario) pair turn &quot;it\nfailed&quot; into &quot;it failed 1 of 2 times,&quot; which is a different bug and a\ndifferent fix. Second, failure modes get named instead of bucketed: the\nharness records <code>empty_content_turns</code> (HTTP 200, <code>content: null</code>) and\n<code>reasoning_burn_turns</code> (<code>finish_reason=length</code> with empty content while\nreasoning tokens burn), because a 200-with-nothing and a budget artifact are\nnot the same incident.</p>\n<p>The shipped run shows why honesty at the boundary matters. One model\ncompleted 16/16 runs at 100% valid calls, and recorded 20 empty-content\nturns anyway: it kept hitting turns that returned nothing usable, and the\nmetric says so. The other two models were down at the broker, in\ndifferent ways: one threw a 404 &quot;model does not exist&quot; on eight attempts and\na 429 on the other eight (the cooldown flipping between calls), the other a\nflat 500 on all sixteen. Both recorded as failures with the real HTTP error\nbodies attached rather than dropped from the comparison. Latency after the\ncache-bust fix reported an honest distribution: min 0.83 s, median 1.29 s,\nmax 3.72 s. A harness that hides any of this is marketing.</p>\n<h2 id=\"boundary-two-a-content-pipeline-that-refuses-to-be-fuzzy\">Boundary two: a content pipeline that refuses to be fuzzy</h2>\n<p>This site renders markdown written by the same author who is trying to test\nit, which is exactly the trust problem a prompt layer creates. The answer was\nto make every step deterministic and loud.</p>\n<p><strong>A parser with opinions.</strong> The frontmatter format is a deliberately small\nYAML subset — scalars, inline arrays, one-level nesting, folded blocks — and\nanything outside the grammar throws with the offending line number. Flow\nmappings, tabs, anchors: rejected. Guessing silently is how content\npipelines rot, so the subset guesses nothing.</p>\n<p><strong>Schemas that are <code>.strict()</code> by contract.</strong> Unknown frontmatter keys are a\nloud build error: <code>scripts/build-content.mjs</code> runs every file through zod and\nexits 1 on any failure, printing one block per issue: <code>file: &lt;path&gt;</code>, then\n<code>field: &lt;collection&gt;/&lt;field&gt;</code>, then <code>error: &lt;message&gt;</code>. A typo'd field name\ncannot become a feature that quietly never renders.</p>\n<p><strong>Output invariants as tests.</strong> <code>src/content/content.test.ts</code> validates the\ngenerated bundle against the whole-bundle schema, asserts unique slugs per\ncollection, date format everywhere, date-descending order, non-empty rendered\nHTML per post, excerpts capped at 140 characters plus an ellipsis, and\ninteger reading minutes. The build sorts with slug tie-breaks so identical\ninputs produce byte-stable output — which makes <code>generated/content.json</code> a\ngolden file: a build artifact the test suite re-validates rather than a\nmystery blob.</p>\n<p><strong>One security policy, both entry points.</strong> The markdown engine's\n<code>sanitizeUrl</code> allows only http/https/mailto and relative URLs (including\nrejecting obfuscation like <code>java\\nscript:</code>), and the frontmatter URL field is\na zod <code>SafeUrl</code> enforcing the same scheme allowlist, because <code>z.string().url()</code>\nalone happily accepts <code>javascript:</code> and <code>data:</code>. One policy, two entry points,\nasserted from both sides: unit tests check the generated HTML never contains\nraw script tags or <code>javascript:</code> hrefs; the browser suite refetches a post\npage and fails if any inline, execution-capable script survived.</p>\n<h2 id=\"the-pyramid-you-can-actually-run-offline\">The pyramid you can actually run offline</h2>\n<p>The container is air-gapped, so the harness is plain Node. Vitest runs in the\n<code>node</code> environment only — there is no jsdom package — so component tests\nrender through <code>renderToStaticMarkup</code> and assert structure: heading order,\nhrefs, rendered content. That is 501 tests across 20 files in about 0.8\nseconds, and it is genuinely useful because SSR caught a class of bugs\n(client hydration) that jsdom fakes anyway.</p>\n<p>Real behavior then moves to the browser: a self-written ~700-line CDP harness\ndrives real Chromium through 49 checks in 7 spec files. Security asserts CSP\n<code>script-src 'self'</code> and <code>frame-ancestors 'none'</code>, nosniff and frame-deny\nheaders, and greps shipped markup for secret shapes (<code>sk-…</code>, <code>AKIA…</code>, bearer\ntokens). Performance enforces budgets rather than aspirations: under 250 kB\nof JS+CSS transferred on the home page, client-side navigation under 1500\nms, and an <code>&lt;h1&gt;</code> present in prerendered HTML so LCP never paints from zero.\nEven nginx gets tested without nginx: <code>config-lint</code> parses the deploy config\nand enforces the add_header inheritance invariant, since one location\ndeclaring a header silently loses every server-level one.</p>\n<p>The prompt half still needs humans, of course — that is what the two\nrepetitions and the named failure modes are for. Everything around it does\nnot, and that is the point. Push the boundary out, name what crosses it, and\ntest the rest like it's a compiler, because from the user's side it is.</p>",
 			"excerpt": "The honest architecture of most AI systems is: a deterministic shell, a stochastic core, and a prompt holding them together. Testing advice …"
 		},
 		{
@@ -2081,7 +2088,7 @@ var ThemePrefSchema = z.object({ theme: z.enum([
 	"light"
 ]) });
 /** Storage key used for the theme preference (shared with themeInitScript). */
-var THEME_STORAGE_KEY$1 = "portfolio.theme";
+var THEME_STORAGE_KEY = "portfolio.theme";
 var registry = /* @__PURE__ */ new Map();
 /** Read + JSON.parse + zod-validate. Any failure (including absent) → undefined. */
 function getItem(key, schema) {
@@ -2179,7 +2186,7 @@ function createStore(key, schema) {
 	return store;
 }
 /** The one store the app ships with: theme preference. */
-var themeStore = createStore(THEME_STORAGE_KEY$1, ThemePrefSchema);
+var themeStore = createStore(THEME_STORAGE_KEY, ThemePrefSchema);
 if (typeof window !== "undefined") try {
 	window.addEventListener("storage", (event) => {
 		if (!event.key) return;
@@ -2380,8 +2387,8 @@ function useThemeNameState() {
 * See README.md for the (short) public API and how the platform provider wires
 * `activeTheme` into `<ThemeProvider>`.
 */
-/** Key used for the persisted preference. Namespaced to survive sibling apps. */
-var THEME_STORAGE_KEY = "portfolio.theme";
+/** Key used for the persisted preference. F4: single source is
+* app/lib/storage — re-export keeps this surface, import binds it locally. */
 /** What the prerender and the first hydration render both see. */
 var DEFAULT_THEME = "dark";
 function isThemeName(value) {
@@ -2650,6 +2657,7 @@ function readSystemPreferenceReducedMotion() {
 function scrollBehaviorFor(reduced) {
 	return reduced ? "auto" : "smooth";
 }
+`${THEME_STORAGE_KEY}`;
 var ThemeControllerContext = createContext(null);
 /**
 * Wrap the whole app. Provides the Emotion theme (tokens), the global stylesheet
@@ -3331,7 +3339,7 @@ function Nav$1({ currentPath, items = availableNavItems(), onNavigate, label = "
 		"aria-label": label,
 		"data-testid": "nav-list",
 		"data-current-path": path,
-		children: decorated.map((item) => /* @__PURE__ */ jsx(Item$2, { children: /* @__PURE__ */ jsx(Link$1, {
+		children: decorated.map((item) => /* @__PURE__ */ jsx(Item$2, { children: /* @__PURE__ */ jsx(Link, {
 			to: item.to,
 			className: navLinkClass(item.active, tokens),
 			"aria-current": item.active ? "page" : void 0,
@@ -4098,39 +4106,6 @@ function EmptyState({ icon = "search", title, description, action, className, ..
 		]
 	});
 }
-styled.a`
-  position: absolute;
-  top: ${(p) => p.theme.space["2"]};
-  left: ${(p) => p.theme.space["2"]};
-  z-index: ${(p) => p.theme.z.nav + 10};
-  transform: translateY(-1000px);
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: ${(p) => p.theme.space[3]} ${(p) => p.theme.space[5]};
-  background: ${(p) => p.theme.color.bgElevated};
-  color: ${(p) => p.theme.color.text};
-  border: 1px solid ${(p) => p.theme.color.borderStrong};
-  border-radius: ${(p) => p.theme.radius.md};
-  box-shadow: ${(p) => p.theme.shadow.md};
-  font-family: ${(p) => p.theme.font.sans};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
-  text-decoration: none;
-  transition: transform ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  &:focus,
-  &:focus-visible {
-    position: fixed;
-    transform: translateY(0);
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-`;
 //#endregion
 //#region src/components/ui/VisuallyHidden.tsx
 /**
@@ -4913,7 +4888,7 @@ function Header({ currentPath, menuOpen = false, name = "Alex Rivera" }) {
 		"data-testid": "site-header",
 		"data-theme": themeName,
 		children: /* @__PURE__ */ jsxs(Inner$1, { children: [
-			/* @__PURE__ */ jsxs(Link$1, {
+			/* @__PURE__ */ jsxs(Link, {
 				to: "/",
 				className: wordmarkClass(tokens),
 				"data-testid": "wordmark",
@@ -5156,7 +5131,7 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 					role: "list",
 					"aria-labelledby": "footer-sites-heading",
 					"data-testid": "footer-sitemap",
-					children: availableNavItems().map((item) => /* @__PURE__ */ jsx(LinkLine, { children: /* @__PURE__ */ jsx(Link$1, {
+					children: availableNavItems().map((item) => /* @__PURE__ */ jsx(LinkLine, { children: /* @__PURE__ */ jsx(Link, {
 						to: normalizePath(item.to),
 						className: classes,
 						"data-testid": `footer-link-${item.label.toLowerCase()}`,
@@ -5356,7 +5331,7 @@ function Layout({ children, currentPath, name = "Alex Rivera", role, menuOpen = 
 * `interactive` but is not the only affordance); CTAs are anchors, focus
 * rings come from Button.
 */
-var ROUTER_LINK$4 = Link$1;
+var ROUTER_LINK$4 = Link;
 var HeroShell = styled.section`
   position: relative;
   width: 100%;
@@ -5552,7 +5527,7 @@ function ProjectCard$1({ project, links }) {
 			] }),
 			/* @__PURE__ */ jsx(CardTitle$1, {
 				"data-testid": "featured-project-title",
-				children: /* @__PURE__ */ jsx(Link$1, {
+				children: /* @__PURE__ */ jsx(Link, {
 					to: detailHref,
 					className: links.title,
 					children: project.title
@@ -5569,7 +5544,7 @@ function ProjectCard$1({ project, links }) {
 					children: tag
 				}, tag))
 			}),
-			/* @__PURE__ */ jsx(CardFooter$1, { children: /* @__PURE__ */ jsxs(Link$1, {
+			/* @__PURE__ */ jsx(CardFooter$1, { children: /* @__PURE__ */ jsxs(Link, {
 				to: detailHref,
 				className: links.inline,
 				children: ["Read the case study ", /* @__PURE__ */ jsx("span", {
@@ -5707,7 +5682,7 @@ function Home() {
 				"data-testid": "latest-writing",
 				children: latestPosts.map((post) => /* @__PURE__ */ jsxs(PostRow, { children: [
 					/* @__PURE__ */ jsx(PostDate, { children: formatDate(post.date) }),
-					/* @__PURE__ */ jsx(PostTitle$1, { children: /* @__PURE__ */ jsx(Link$1, {
+					/* @__PURE__ */ jsx(PostTitle$1, { children: /* @__PURE__ */ jsx(Link, {
 						to: `/writing/${post.slug}`,
 						className: links.title,
 						children: post.title
@@ -5741,7 +5716,7 @@ function Home() {
 * A11Y: one h1; sections are labelled landmarks with h2 headings via Section;
 * the skills grid is a real <dl> (term = category, definition = tool list).
 */
-var ROUTER_LINK$3 = Link$1;
+var ROUTER_LINK$3 = Link;
 var Lede$5 = styled.p`
   margin: 0 0 ${(p) => p.theme.space[5]};
   max-width: 62ch;
@@ -5971,7 +5946,7 @@ function About() {
 * A11Y: one h1; each panel is a labelled section with an h2; "available for"
 * is a real list of commitments, not decorative bullets.
 */
-var ROUTER_LINK$2 = Link$1;
+var ROUTER_LINK$2 = Link;
 var Stamp = styled.p`
   margin: ${(p) => p.theme.space[4]} 0 0;
   display: inline-flex;
@@ -6226,7 +6201,11 @@ var CardSummary = styled.p`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.normal};
-  color: ${(p) => p.theme.color.textMuted};
+  color: ${(p) => p.theme.color.textMuted};  /* R2-D V7: clamp so one long blurb can't make a straggling tall card */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 var CardFooter = styled.div`
   margin-top: auto;
@@ -6276,6 +6255,8 @@ function ctaLinkClass(theme) {
 var MetricsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  /* R2-D V7: spread the strip so the last metric pins to the right edge */
+  justify-content: space-between;
   gap: ${(p) => `${p.theme.space[2]} ${p.theme.space[5]}`};
   padding: ${(p) => `${p.theme.space[2]} 0`};
   border-top: 1px solid ${(p) => p.theme.color.border};
@@ -6327,7 +6308,7 @@ function ProjectCard({ project }) {
 				}),
 				/* @__PURE__ */ jsx("span", { children: project.period })
 			] }),
-			/* @__PURE__ */ jsx(CardTitle, { children: /* @__PURE__ */ jsx(Link$1, {
+			/* @__PURE__ */ jsx(CardTitle, { children: /* @__PURE__ */ jsx(Link, {
 				to: href,
 				className: titleLinkClass(theme),
 				"data-testid": "project-card-title",
@@ -6345,7 +6326,7 @@ function ProjectCard({ project }) {
 					children: tag
 				}, tag))
 			}),
-			/* @__PURE__ */ jsx(CardFooter, { children: /* @__PURE__ */ jsxs(Link$1, {
+			/* @__PURE__ */ jsx(CardFooter, { children: /* @__PURE__ */ jsxs(Link, {
 				to: href,
 				className: ctaLinkClass(theme),
 				"data-testid": "project-card-cta",
@@ -6512,7 +6493,7 @@ function Projects() {
 * in reading order so keyboard users escape in one Tab pass; the big glyph is
 * aria-hidden decoration.
 */
-var ROUTER_LINK$1 = Link$1;
+var ROUTER_LINK$1 = Link;
 function textLinkClass(theme) {
 	return css({
 		color: theme.color.accent,
@@ -6615,17 +6596,17 @@ function NotFound() {
 			/* @__PURE__ */ jsxs(TextLinkList, {
 				"aria-label": "Recovery links",
 				children: [
-					/* @__PURE__ */ jsxs(TextLinkItem, { children: ["or jump straight to ", /* @__PURE__ */ jsx(Link$1, {
+					/* @__PURE__ */ jsxs(TextLinkItem, { children: ["or jump straight to ", /* @__PURE__ */ jsx(Link, {
 						to: "/contact",
 						className: linkClass,
 						children: "contact"
 					})] }),
-					/* @__PURE__ */ jsxs(TextLinkItem, { children: ["· ", /* @__PURE__ */ jsx(Link$1, {
+					/* @__PURE__ */ jsxs(TextLinkItem, { children: ["· ", /* @__PURE__ */ jsx(Link, {
 						to: "/about",
 						className: linkClass,
 						children: "about"
 					})] }),
-					/* @__PURE__ */ jsxs(TextLinkItem, { children: ["· ", /* @__PURE__ */ jsx(Link$1, {
+					/* @__PURE__ */ jsxs(TextLinkItem, { children: ["· ", /* @__PURE__ */ jsx(Link, {
 						to: "/now",
 						className: linkClass,
 						children: "now"
@@ -6835,7 +6816,7 @@ function ProjectDetail() {
 		children: [
 			/* @__PURE__ */ jsx(CrumbNav, {
 				"aria-label": "Breadcrumb",
-				children: /* @__PURE__ */ jsx(Link$1, {
+				children: /* @__PURE__ */ jsx(Link, {
 					to: "/projects",
 					className: crumbClass(theme),
 					children: "← All projects"
@@ -6938,7 +6919,7 @@ function ProjectDetail() {
 					children: "Related projects"
 				}), /* @__PURE__ */ jsx(RelatedGrid, {
 					"data-testid": "related-grid",
-					children: related.map((item) => /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(RelatedTitle, { children: /* @__PURE__ */ jsx(Link$1, {
+					children: related.map((item) => /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(RelatedTitle, { children: /* @__PURE__ */ jsx(Link, {
 						to: `/projects/${item.slug}`,
 						className: relatedLinkClass(theme),
 						children: item.title
@@ -7138,7 +7119,9 @@ var Toolbar = styled.div`
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     flex-direction: row;
-    align-items: flex-start;
+    /* R2-D V6: center keeps the 48px input visually balanced against the
+     * 36px chip row instead of hanging from the same top line. */
+    align-items: center;
     justify-content: space-between;
     gap: ${(p) => p.theme.space[6]};
   }
@@ -7479,7 +7462,7 @@ function Writing() {
 								children: post.series
 							})] })
 						] }),
-						/* @__PURE__ */ jsx(PostTitle, { children: /* @__PURE__ */ jsx(Link$1, {
+						/* @__PURE__ */ jsx(PostTitle, { children: /* @__PURE__ */ jsx(Link, {
 							to: `/writing/${post.slug}`,
 							className: linkCls,
 							"data-testid": `post-link-${post.slug}`,
@@ -7680,7 +7663,7 @@ function PostDetail() {
 		children: /* @__PURE__ */ jsxs(Article, {
 			"data-testid": "post-article",
 			children: [
-				/* @__PURE__ */ jsx(BackRow, { children: /* @__PURE__ */ jsxs(Link$1, {
+				/* @__PURE__ */ jsx(BackRow, { children: /* @__PURE__ */ jsxs(Link, {
 					to: "/writing",
 					className: backCls,
 					"data-testid": "back-to-writing",
@@ -7741,7 +7724,7 @@ function PostDetail() {
 						children: [/* @__PURE__ */ jsxs(PagerHint, { children: [/* @__PURE__ */ jsx(Icon$1, {
 							name: "chevron-left",
 							size: 12
-						}), "Previous (newer)"] }), /* @__PURE__ */ jsx(Link$1, {
+						}), "Previous (newer)"] }), /* @__PURE__ */ jsx(Link, {
 							to: `/writing/${neighbours.previous.slug}`,
 							className: pagerCls,
 							"data-testid": "prev-post",
@@ -7752,7 +7735,7 @@ function PostDetail() {
 						children: [/* @__PURE__ */ jsxs(PagerHint, { children: ["Next (older)", /* @__PURE__ */ jsx(Icon$1, {
 							name: "chevron-right",
 							size: 12
-						})] }), /* @__PURE__ */ jsx(Link$1, {
+						})] }), /* @__PURE__ */ jsx(Link, {
 							to: `/writing/${neighbours.next.slug}`,
 							className: pagerCls,
 							"data-testid": "next-post",
@@ -8283,7 +8266,7 @@ function Talks() {
 * A11Y: one h1; labelled regions; every link has a visible focus ring; the
 * email address is present as real text, not trapped inside a button label.
 */
-var ROUTER_LINK = Link$1;
+var ROUTER_LINK = Link;
 var CONTACT_EMAIL = SITE.email ?? null;
 var Lede = styled.p`
   margin: ${(p) => p.theme.space[5]} 0 0;

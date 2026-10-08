@@ -169,3 +169,19 @@ describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
     expect(htmlLoc!.body.toLowerCase()).toMatch('security-headers.conf'); // include snippet
   });
 });
+
+describe('theme storage key single-source (R4-C F4)', () => {
+  it('one TS literal, consumers import, theme-init.js pinned equal', async () => {
+    const { THEME_STORAGE_KEY } = await import('app/lib/storage');
+    const storage = readFileSync(resolve(root, 'src/lib/storage.ts'), 'utf8');
+    const tp = readFileSync(resolve(root, 'src/components/layout/ThemePreference.tsx'), 'utf8');
+    const tpr = readFileSync(resolve(root, 'src/theme/ThemeProvider.tsx'), 'utf8');
+    const init = readFileSync(resolve(root, 'public/theme-init.js'), 'utf8');
+    const defs = (storage.match(/(?:export )?const THEME_STORAGE_KEY = '[^']+'/g) ?? []).length;
+    expect(defs, 'THEME_STORAGE_KEY literal defined once (storage.ts)').toBe(1);
+    expect(tp).toContain("import { THEME_STORAGE_KEY } from 'app/lib/storage'");
+    expect(tpr).toContain('THEME_STORAGE_KEY as THEME_INIT_SCRIPT_STORAGE_KEY');
+    /* the pre-bundle script cannot import -> its literal is pinned equal */
+    expect(init).toContain(`'${THEME_STORAGE_KEY}'`);
+  });
+});

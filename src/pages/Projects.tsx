@@ -96,7 +96,11 @@ const CardSummary = styled.p`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.normal};
-  color: ${(p) => p.theme.color.textMuted};
+  color: ${(p) => p.theme.color.textMuted};  /* R2-D V7: clamp so one long blurb can't make a straggling tall card */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 
 const CardFooter = styled.div`
@@ -146,15 +150,6 @@ function ctaLinkClass(theme: Tokens): string {
   });
 }
 
-function inlineLinkClass(theme: Tokens): string {
-  return css({
-    color: theme.color.accent,
-    textDecoration: 'none',
-    borderRadius: theme.radius.sm,
-    '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
-  });
-}
 
 /* Metrics strip: label/value pairs. A flex row of columns — wraps on narrow
  * cards, token gaps only. Rendered ONLY when metrics exist (empty array must
@@ -162,6 +157,8 @@ function inlineLinkClass(theme: Tokens): string {
 const MetricsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  /* R2-D V7: spread the strip so the last metric pins to the right edge */
+  justify-content: space-between;
   gap: ${(p) => `${p.theme.space[2]} ${p.theme.space[5]}`};
   padding: ${(p) => `${p.theme.space[2]} 0`};
   border-top: 1px solid ${(p) => p.theme.color.border};

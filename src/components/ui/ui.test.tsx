@@ -22,7 +22,7 @@ import {
   Pagination,
   Prose,
   Section,
-  SkipLink,
+
   Spinner,
   Stack,
   Tag,
@@ -398,25 +398,6 @@ describe('EmptyState', () => {
     const html = dark(h(EmptyState, { title: 'Empty' }));
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('data-icon="search"');
-  });
-});
-
-describe('SkipLink', () => {
-  it('targets #main by default and is labelled', () => {
-    const html = dark(h(SkipLink, {}));
-    expect(html).toContain('href="#main"');
-    expect(html).toContain('Skip to main content');
-    expect(html).toContain('data-skip-target="#main"');
-  });
-
-  it('reveals on focus with a focus ring and no motion', () => {
-    dark(h(SkipLink, {}));
-    const sheet = __sheetCss();
-    expect(sheet).toMatch(/\.css-[a-z0-9]+:focus \{/);
-    expect(sheet).toMatch(/\.css-[a-z0-9]+:focus-visible \{/);
-    expect(sheet).toContain('position: fixed');
-    expect(sheet).toContain(`outline: 2px solid ${darkTheme.color.focus}`);
-    expect(sheet).toContain(REDUCED);
   });
 });
 

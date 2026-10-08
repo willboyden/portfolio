@@ -25,7 +25,11 @@ const MIN = minArg > -1 ? Number(process.argv[minArg + 1]) : null;
 
 const covDir = mkdtempSync(join(tmpdir(), 'v8cov-'));
 console.log(`running vitest under V8 coverage (${covDir}) ...`);
-const res = spawnSync(process.execPath, ['node_modules/vitest/vitest.mjs', 'run'], {
+/* --no-file-parallelism: tests then execute IN-PROCESS, so V8 attributes the
+ * transformed app modules with their real file:// URLs. Worker threads keep
+ * their own coverage that NODE_V8_COVERAGE never flushes (R4-C F2 root
+ * cause: worker-run profiles contained ZERO app-module entries). */
+const res = spawnSync(process.execPath, ['node_modules/vitest/vitest.mjs', 'run', '--no-file-parallelism'], {
   cwd: ROOT,
   stdio: ['ignore', 'inherit', 'inherit'],
   env: { ...process.env, NODE_V8_COVERAGE: covDir },
@@ -165,6 +169,10 @@ for (const [url, f] of perFile) {
 
 rows.sort((a, b) => a.pct - b.pct || b.lines - a.lines);
 console.log(`\nprofiles parsed: ${parsed}`);
+if (parsed === 0 || totalLines === 0) {
+  console.error('FAIL: coverage parsed no app modules — the tool is vacuous, not green (R4-C F2)');
+  process.exit(1);
+}
 console.log('files with below-average coverage:');
 for (const r of rows.filter((r) => r.pct < 100).slice(0, 18)) {
   console.log(`  ${r.pct.toFixed(1).padStart(5)}%  ${String(r.cov).padStart(4)}/${String(r.lines).padStart(4)}  ${r.file}`);

@@ -34,9 +34,10 @@ import type { ThemePreference } from 'app/lib/storage';
 /* themeInitScript — the snippet the prerenderer embeds in <head>             */
 /* -------------------------------------------------------------------------- */
 
-/** localStorage key this script and themeStore agree on (kept in sync manually:
- *  this string must never import runtime code — it is inlined verbatim). */
-export const THEME_INIT_SCRIPT_STORAGE_KEY = 'portfolio.theme';
+/* F4: same single source; the alias documents it as the key the INLINE
+ * pre-paint script must read. */
+import { THEME_STORAGE_KEY as THEME_INIT_SCRIPT_STORAGE_KEY } from 'app/lib/storage';
+export { THEME_INIT_SCRIPT_STORAGE_KEY };
 
 /**
  * Self-contained, dependency-free ES5-ish IIFE. Reads the stored preference,

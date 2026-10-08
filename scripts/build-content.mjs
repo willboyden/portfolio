@@ -155,7 +155,10 @@ async function main() {
    * generatedAt made every rebuild dirty git and made "byte-stable output"
    * claims false). Same inputs -> same file, byte for byte. */
   const { createHash } = await import('node:crypto');
-  const { contentHash: _omit, ...body } = out;
+  /* Hash the payload WITHOUT the hash field (self-reference would be circular):
+   * build the body explicitly — a destructured throwaway would be an unused
+   * var (lint gate; R4-C F1). */
+  const body = { projects: out.projects, posts: out.posts, videos: out.videos, talks: out.talks };
   out.contentHash = createHash('sha256')
     .update(JSON.stringify(body, null, 2))
     .digest('hex')

@@ -108,7 +108,9 @@ const Toolbar = styled.div`
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     flex-direction: row;
-    align-items: flex-start;
+    /* R2-D V6: center keeps the 48px input visually balanced against the
+     * 36px chip row instead of hanging from the same top line. */
+    align-items: center;
     justify-content: space-between;
     gap: ${(p) => p.theme.space[6]};
   }

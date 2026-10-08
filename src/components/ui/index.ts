@@ -12,7 +12,6 @@ export { Prose, type ProseProps } from './Prose';
 export { Heading, type HeadingProps, type HeadingLevel, type HeadingSize } from './Heading';
 export { Spinner, type SpinnerProps } from './Spinner';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
-export { SkipLink, type SkipLinkProps } from './SkipLink';
 export { VisuallyHidden, type VisuallyHiddenProps } from './VisuallyHidden';
 export { Pagination, pageWindow, type PaginationProps } from './Pagination';
 export { Icon, type IconProps, type IconName } from './Icon';

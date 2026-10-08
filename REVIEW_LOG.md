@@ -132,3 +132,79 @@ site), content builders (4 project entries + 3 launch posts, fact-checked).
 - R4-B (content fact-check): BLOCKER retracted after verification (the "Kubernetes in generated content" claim is a grep zero-hit — reviewer hallucination; content.json/content/projects searched). Real fixes applied: failure taxonomy (laguna 8x HTTP 404 + 8x 429 cooldown, gpt-oss 16x 500), median 1.31->1.29 (raw 36-turn median), formatIssues() quoted format corrected, test counts refreshed, voice de-tilt on posts 2/3 (<=1 antithesis each; em-dash cap 7 preserved).
 - R3C-06: closed as far as it should go — contract-drift duplicate `useThemeName` in ThemePreference REMOVED (CONTRACT §4 pins the API on ThemeProvider only; two impls = two behaviors waiting to diverge), `useActiveTheme` removed (zero consumers), `srClass` sr-only duplication removed (VisuallyHidden extended with role/aria-live). KEPT with justification: `useThemeNameState`+themeStore fallback (live provider-fallback path in ThemeProvider:96), `useMounted`/`readStoredThemePref`/`hasLocalStorage` (CONTRACT §3 surface, storage-gate semantics), `jsx`/`ClassNames` in vendor/emotion (upstream API parity — vendored package must not diverge silently).
 - Prerender "Invalid hook call" warnings: 2 -> 0 (last was module-scope css() in ProjectDetail; moved into render). Build log now warning-free.
+
+## Round 4 — fact-check + final acceptance
+
+### R4-B (content editor, independent fact-check of wave-2 posts)
+- **BLOCKER "Kubernetes in generated content" — RETRACTED**: verified zero
+  occurrences in `content/`, `src/content/generated/content.json`, `dist/`.
+  Reviewer hallucination; recorded so future rounds don't chase it.
+- Applied (verified against raw artifacts first): failure taxonomy
+  (laguna = 8x HTTP 404 + 8x 429 cooldown; gpt-oss-120b = 16x 500), median
+  1.31 -> 1.29 s (recomputed over all 36 qwen turns), `formatIssues()` output
+  format quoted correctly, unit-test counts 491 -> live counts, "not X"
+  antitheses cut to <=1/post in posts 2-3 (em-dash cap 7 preserved).
+- Post-3's "byte-stable golden file" claim was only true modulo a timestamp —
+  fixed at the root: `contentHash` replaces `generatedAt`, rebuilds are now
+  byte-identical (sha256 of the artifact equal across runs).
+- Non-fatal findings from its build run that WERE real and are fixed:
+  the perf-spec warm-cache defect (cold-visit measurement) and the 2
+  prerender "Invalid hook call" warnings (module-scope `css` -> in-render /
+  VisuallyHidden).
+
+### R4-C (principal engineer, final acceptance)
+- Running against HEAD; verdict + remaining-defect hunt appended on arrival.
+
+### Final gate battery (HEAD ~06:30)
+- unit: **501 passed / 20 files** · e2e: **53/53** (incl. new FOUC spec)
+- tsc `--noEmit`: 0 errors · `eslint . --max-warnings 0`: clean
+- build: **AUDIT OK — 23 pages, 136 kB JS gzipped**, prerender log warning-free
+- structural coverage gate (`src/coverage-inventory.test.ts`) green.
+  **Corrected (R4-C F2):** the earlier "V8 line coverage 96.6%" line is NOT
+  reproducible at HEAD — vitest 4 transforms app modules so V8 profiles carry
+  zero attributable `file://.../src|vendor` entries; `npm run coverage` now
+  detects that vacuous state and FAILS loudly (exit 1) instead of printing 0%
+  and exiting 0. The enforced coverage artifact is therefore the structural
+  import-graph inventory; any future line-% claim must quote a live, non-zero
+  run of `npm run coverage`.
+
+### R4-C (principal engineer, final acceptance) — disposition
+Verdict received: **NO-SHIP as claimed** (1 HIGH, 2 MEDIUM, several LOW).
+All dispositioned same-session:
+
+- **F1 HIGH — lint red at HEAD — FIXED.** `build-content.mjs` `_omit` unused
+  (explicit body construction instead) and dead `inlineLinkClass` in
+  Projects.tsx deleted. Root-cause class acknowledged: several "green gates"
+  commit claims rode on partial runs. `eslint .` verified clean in the batch
+  below before this commit.
+- **F2 MED — vacuous coverage tool — FIXED + LOG CORRECTED.**
+  `scripts/coverage-v8.mjs` now exits 1 when zero app modules are attributed
+  (loud fail instead of 0% + exit 0). Root cause documented in-file: vitest 4
+  transforms leave no attributable `file://.../src|vendor` entries in the
+  flushed profile (reproduced: 0 app entries even with --no-file-parallelism;
+  the earlier 96.6% figure is NOT reproducible at HEAD). REVIEW_LOG corrected:
+  the enforced coverage artifact is the structural import-graph inventory.
+- **F3 MED — fabricated twitter handle shipped on every page — FIXED.**
+  `SITE.twitter` now null by default (same hide-don't-fabricate rule as
+  email); `twitter:site` emitted only when set; seo.test pins absence. This
+  was the missed sibling sink of R2-A A3 — a real honesty bug the reviewer
+  caught; grep-pinned: no twitter:site in index.html or built pages.
+- **F4 LOW — storage key literal x4 — FIXED.** Single source =
+  `app/lib/storage`; ThemePreference + ThemeProvider import it; theme-init.js
+  (plain JS, cannot import) pinned equal by a new config-lint test.
+- **F5 LOW — sitemap lastmod wall-clock churn — FIXED.** lastmod is now the
+  last git commit date touching `content/` (stable across unchanged rebuilds),
+  floor date fallback when git is unavailable.
+- **F6 LOW — carry list — CLOSED.** SkipLink component deleted (zero
+  production consumers; Layout's own skip link is canonical, e2e + layout
+  tests pin it) — resolves the L4 duplication. L2 (Pagination disabled-edge)
+  DECLINED as intended design: disabled edges are aria-disabled + styled,
+  deliberately non-focusable per Pagination test "disabled edges are marked".
+  R1-B F9 remains (AX-tree/Tab-cycle/240px): re-declared carried LOW, not a
+  ship blocker — the CDP harness cannot synthesize a real Tab cycle across
+  the browser chrome; documented as accepted limitation instead of a fake pin.
+
+Reviewer's "verified honest" list (build/e2e/security/caching genuinely
+exercised, DRAFT comments stripped from shipped HTML, content.json
+determinism TRUE, theme-init parity tests eval shipped bytes, repo hygiene)
+is cross-checked and accepted.

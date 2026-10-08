@@ -47,8 +47,15 @@ export const SITE = {
   hiring: null as string | null,
   email: null as string | null,
   resume: null as string | null,
-  /** DRAFT: replace with the real X handle before launch (no @ prefix here). */
-  twitter: 'alexriveradev' /* <!-- DRAFT --> placeholder handle, unverified */,
+  /**
+   * X handle WITHOUT the @ prefix. Null until the owner confirms the real
+   * handle — R4-C F3: a placeholder shipped as twitter:site on every page
+   * violated the hide-don't-fabricate rule (the Footer hides unset handles;
+   * this was the missed sibling sink of R2-A A3). When set, twitter:site is
+   * emitted; unset means no tag at all.
+   * <!-- DRAFT-REVIEW(owner): set to the real handle before launch -->
+   */
+  twitter: null as string | null,
   lang: 'en',
   rssPath: '/rss.xml',
   defaultImagePath: '/og-default.png',
@@ -278,7 +285,9 @@ export function buildHead(meta: MetaResult): string[] {
 
   /* Twitter */
   tags.push(`<meta name="twitter:card" content="${escapeHtml(meta.twitterCard)}">`);
-  tags.push(`<meta name="twitter:site" content="@${escapeHtml(SITE.twitter)}">`);
+  if (SITE.twitter) {
+    tags.push(`<meta name="twitter:site" content="@${escapeHtml(SITE.twitter)}">`);
+  }
   tags.push(`<meta name="twitter:title" content="${escapeHtml(meta.titlePlain)}">`);
   tags.push(`<meta name="twitter:description" content="${escapeHtml(meta.description)}">`);
   tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.image)}">`);

@@ -19,7 +19,12 @@ describe('SITE constants', () => {
     expect(SITE.lang).toBe('en');
     expect(SITE.name.length).toBeGreaterThan(0);
     expect(SITE.author.length).toBeGreaterThan(0);
-    expect(typeof SITE.twitter).toBe('string');
+    expect(SITE.twitter === null || typeof SITE.twitter === 'string').toBe(true);
+    /* R4-C F3: unset handle must NOT emit twitter:site (hide, don't fabricate) */
+    const head = buildHead(pageMeta({ title: 'Home', description: 'd', path: '/' }));
+    expect(head.join('\n')).not.toContain('twitter:site');
+    /* ...but the other twitter cards still ship (card/title/desc/image) */
+    expect(head.join('\n')).toContain('twitter:card');
   });
 });
 

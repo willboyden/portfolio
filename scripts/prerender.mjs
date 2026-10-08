@@ -71,9 +71,25 @@ async function writeArtifacts(mod) {
 
   writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`, 'utf8');
 
-  const now = new Date().toISOString();
+  /* F5 (R4-C): lastmod must NOT be build wall-clock — mass churn on every
+   * rebuild with unchanged content is disfavored by crawlers and made the
+   * "byte-stable output" claim false for discovery docs. Use the last commit
+   * that actually touched content (stable until content changes); fall back
+   * to a fixed floor date when git is unavailable. */
+  let lastmod = '2026-01-01';
+  try {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync('git', ['log', '-1', '--format=%cs', '--', 'content'], {
+      cwd: ROOT ?? process.cwd(), encoding: 'utf8',
+    });
+    if (r.status === 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.stdout.trim())) {
+      lastmod = r.stdout.trim();
+    }
+  } catch {
+    /* keep floor date */
+  }
   const urls = sitemapPaths.map(
-    (p) => `  <url><loc>${ORIGIN}${p === '/' ? '/' : p}</loc><lastmod>${now}</lastmod></url>`,
+    (p) => `  <url><loc>${ORIGIN}${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod></url>`,
   );
   writeFileSync(
     join(DIST, 'sitemap.xml'),
@@ -106,7 +122,7 @@ async function writeArtifacts(mod) {
   <link>${ORIGIN}/</link>
   <description>${xmlEscape(siteMeta.description)}</description>
   <language>en-us</language>
-  <lastBuildDate>${rfc822(now)}</lastBuildDate>
+  <lastBuildDate>${rfc822(lastmod + 'T00:00:00Z')}</lastBuildDate>
   <atom:link href="${ORIGIN}/rss.xml" rel="self" type="application/rss+xml"/>
 ${items.join('\n')}
 </channel>

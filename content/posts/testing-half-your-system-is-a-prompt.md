@@ -8,8 +8,8 @@ slug: testing-half-your-system-is-a-prompt
 summary: >-
   You cannot unit-test a prompt, so stop trying. Deterministic boundaries,
   a build that fails on a typo, golden output validated as an artifact, and
-  statistical assertions with reps — the four patterns behind 493 unit tests
-  and 49 browser checks on a site whose content pipeline eats markdown.
+  statistical assertions with reps — the four patterns behind 501 unit tests
+  and 53 browser checks on a site whose content pipeline eats markdown.
 tags: [testing, llm, evals, typescript, python]
 date: 2026-10-06
 series: AI engineering notes
@@ -68,10 +68,10 @@ mappings, tabs, anchors: rejected. Guessing silently is how content
 pipelines rot, so the subset guesses nothing.
 
 **Schemas that are `.strict()` by contract.** Unknown frontmatter keys are a
-a loud build error: `scripts/build-content.mjs` runs every file
-through zod and exits 1 on any failure, printing one block per issue —
-`file: <path>`, then `field: <collection>/<field>`, then `error: <message>`. A typo'd field name cannot become a feature that quietly
-never renders.
+loud build error: `scripts/build-content.mjs` runs every file through zod and
+exits 1 on any failure, printing one block per issue: `file: <path>`, then
+`field: <collection>/<field>`, then `error: <message>`. A typo'd field name
+cannot become a feature that quietly never renders.
 
 **Output invariants as tests.** `src/content/content.test.ts` validates the
 generated bundle against the whole-bundle schema, asserts unique slugs per
@@ -96,7 +96,7 @@ page and fails if any inline, execution-capable script survived.
 The container is air-gapped, so the harness is plain Node. Vitest runs in the
 `node` environment only — there is no jsdom package — so component tests
 render through `renderToStaticMarkup` and assert structure: heading order,
-hrefs, rendered content. That is 493 tests across 20 files in about 0.8
+hrefs, rendered content. That is 501 tests across 20 files in about 0.8
 seconds, and it is genuinely useful because SSR caught a class of bugs
 (client hydration) that jsdom fakes anyway.
 

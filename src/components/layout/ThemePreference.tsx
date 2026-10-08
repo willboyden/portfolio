@@ -46,8 +46,10 @@ export type { ThemeName, Tokens };
 /* Pure helpers — unit tested directly (no DOM, no globals)                    */
 /* -------------------------------------------------------------------------- */
 
-/** Key used for the persisted preference. Namespaced to survive sibling apps. */
-export const THEME_STORAGE_KEY = 'portfolio.theme';
+/** Key used for the persisted preference. F4: single source is
+ * app/lib/storage — re-export keeps this surface, import binds it locally. */
+import { THEME_STORAGE_KEY } from 'app/lib/storage';
+export { THEME_STORAGE_KEY };
 
 /** What the prerender and the first hydration render both see. */
 export const DEFAULT_THEME: ThemeName = 'dark';
