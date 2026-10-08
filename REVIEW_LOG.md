@@ -208,3 +208,30 @@ Reviewer's "verified honest" list (build/e2e/security/caching genuinely
 exercised, DRAFT comments stripped from shipped HTML, content.json
 determinism TRUE, theme-init parity tests eval shipped bytes, repo hygiene)
 is cross-checked and accepted.
+
+### R5 (closeout verification engineer) — independent re-verification of HEAD 6eb0f42
+- **Verdict: SHIP-READY.** All 5 gates reproduced green (500 unit / 53 e2e /
+  tsc 0 / eslint 0 / AUDIT OK 23 pages 136 kB gz); all six F-claims verified
+  against artifacts AND source; adversarial back-to-back builds produced
+  byte-identical sitemap.xml / rss.xml / content.json with the wall clock
+  advancing — proving lastmod is content-bound, not clock-bound.
+- INFO items it raised (build-artifact dirt from concurrent builds, graphify
+  cache) were dispositioned same-session: entry.mjs + content.json + post
+  committed together as cfe0ed3; graphify cache left as tooling noise.
+
+## Closeout (final state)
+- Final HEAD after cfe0ed3 re-gated by parent: AUDIT OK 23 pages 136 kB gz,
+  e2e 53/53, eslint 0, unit 500. Review loop span: R1 dispatched ~03:59 →
+  R5 closeout verdict 06:45 local (~2.8 h across five rounds staffed with
+  hiring, content, SEO/performance, design, clean-code, acceptance, and
+  closeout personas; rounds 2-5 each ran parallel reviewers with post-hoc
+  verification — three reviewer HIGHS were disproven by measurement before
+  acting, and one real honesty bug (F3 twitter:site) was the reviewer's
+  catch).
+- Honest remaining state is unchanged and deliberate: SITE.email/hiring/
+  resume/socials null (hide, never fabricate); DRAFT-REVIEW frontmatter =
+  owner gate; 0 videos/talks with content-driven nav hiding them; container
+  runtime smoke untestable in-sandbox (no docker socket/nginx) — contract is
+  lint-pinned; line-% coverage not claimable offline — the enforced artifact
+  is the structural import-graph inventory; e2e is the custom CDP harness
+  because Playwright's npm runner can't install offline.
