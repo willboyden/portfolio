@@ -127,6 +127,22 @@ function titleLinkClass(theme: Tokens): string {
   });
 }
 
+function ctaLinkClass(theme: Tokens): string {
+  return css({
+    display: 'inline-flex',
+    alignItems: 'center',
+    minHeight: '28px',
+    color: theme.color.accent,
+    textDecoration: 'none',
+    borderRadius: theme.radius.sm,
+    '@media (max-width: ' + theme.breakpoint.md + ')': {
+      minHeight: '44px',
+    },
+    '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
+    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
+  });
+}
+
 function inlineLinkClass(theme: Tokens): string {
   return css({
     color: theme.color.accent,
@@ -218,7 +234,9 @@ export function ProjectCard({ project }: { project: Project }): React.ReactNode 
         ))}
       </Stack>
       <CardFooter>
-        <Link to={href} className={inlineLinkClass(theme)}>
+        {/* R3-D: this is a standalone CTA, not inline prose — WCAG 2.5.8's
+            inline-text exception does not apply; give it the phone hit area. */}
+        <Link to={href} className={ctaLinkClass(theme)} data-testid="project-card-cta">
           View case study <span aria-hidden="true">→</span>
         </Link>
       </CardFooter>

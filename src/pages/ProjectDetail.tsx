@@ -186,6 +186,11 @@ function relatedLinkClass(theme: Tokens): string {
     color: theme.color.text,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
+    /* R3-D: standalone title link — 44px hit area at phone widths. */
+    minHeight: '28px',
+    '@media (max-width: ' + theme.breakpoint.md + ')': {
+      minHeight: '44px',
+    },
     '&:hover': {
       color: theme.color.accent,
       textDecoration: 'underline',
