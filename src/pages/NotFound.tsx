@@ -18,6 +18,8 @@ import type { Tokens } from 'app/theme/tokens';
 
 /* Router links take css() classes, never styled(Link) — the vendored styled()
  * prop allow-list drops `to` on component targets (see Nav.tsx / Home.tsx). */
+const ROUTER_LINK = Link as unknown as 'a';
+
 function textLinkClass(theme: Tokens): string {
   return css({
     color: theme.color.accent,
@@ -79,23 +81,8 @@ const TextLinkItem = styled.li`
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
-const TextLink = styled(Link)`
-  color: ${(p) => p.theme.color.accent};
-  text-decoration: none;
-  border-radius: ${(p) => p.theme.radius.sm};
-
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
-  }
-`;
-
 export function NotFound(): React.ReactNode {
+  const linkClass = textLinkClass(useTheme() as Tokens);
   return (
     <Container data-testid="not-found">
       <Shell>
@@ -122,13 +109,13 @@ export function NotFound(): React.ReactNode {
         </CtaRow>
         <TextLinkList aria-label="Recovery links">
           <TextLinkItem>
-            or jump straight to <TextLink to="/contact">contact</TextLink>
+            or jump straight to <Link to="/contact" className={linkClass}>contact</Link>
           </TextLinkItem>
           <TextLinkItem>
-            · <TextLink to="/about">about</TextLink>
+            · <Link to="/about" className={linkClass}>about</Link>
           </TextLinkItem>
           <TextLinkItem>
-            · <TextLink to="/now">now</TextLink>
+            · <Link to="/now" className={linkClass}>now</Link>
           </TextLinkItem>
         </TextLinkList>
       </Shell>

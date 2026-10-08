@@ -37,9 +37,9 @@ export function deriveHeadingId(text: string): string {
 /** ~200 words per minute, minimum 1; fenced code blocks are excluded. */
 export function readingMinutes(text: string): number {
   const withoutCode = text.replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^(\1)[ \t]*$/gm, '');
-  const words = withoutCode
-    .split(/(?=\S)[^\s]*(?<=\S)/g)
-    .filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  // matchAll-style word count: the tokens BETWEEN matches of a split() regex
+  // are just the separators (whitespace), so counting split pieces always gave 0.
+  const words = (withoutCode.match(/\S+/g) ?? []).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
   return Math.max(1, Math.round(words / 200));
 }
 

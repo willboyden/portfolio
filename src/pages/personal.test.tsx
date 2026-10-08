@@ -124,8 +124,11 @@ describe('Home', () => {
     const contactCta = anchors.find((t) => t.includes('href="/contact"') && t.includes('data-testid="home-cta-contact"'));
     expect(projectsCta).toBeDefined();
     expect(contactCta).toBeDefined();
-    expect(projectsCta).toContain('View projects');
-    expect(contactCta).toContain('Get in touch');
+    /* Button's label renders in a <span data-slot="label"> after the tag. */
+    const afterProjects = html.slice(html.indexOf(projectsCta ?? ''));
+    const afterContact = html.slice(html.indexOf(contactCta ?? ''));
+    expect(afterProjects).toContain('View projects');
+    expect(afterContact).toContain('Get in touch');
   });
 
   it('survives the currently-empty content.json: hero-only state, zero cards, friendly empty states', () => {
@@ -170,7 +173,8 @@ describe('About', () => {
   it('how-I-work section renders all four principles in an ordered list', () => {
     expect(html).toContain('data-testid="about-principles"');
     expect(tags(html, 'ol').some((t) => t.includes('about-principles'))).toBe(true);
-    expect(countOccurrences(html, 'data-testid="heading-2"')).toBeGreaterThanOrEqual(2);
+    /* Section headers are h2 landmarks (Section renders Heading level 2). */
+    expect(countOccurrences(html, '<h2')).toBeGreaterThanOrEqual(2);
     for (const title of ['Diagnose before prescribing', 'Leave the team stronger', 'Numbers over vibes']) {
       expect(html).toContain(title);
     }

@@ -1,0 +1,333 @@
+/**
+ * ProjectDetail — /projects/:slug. Hero (title, role, period, status badge,
+ * stack tags, source/demo/paper buttons), highlights, metrics strip, then the
+ * build-time-rendered markdown body inside <Prose>.
+ *
+ * HTML SAFETY: `project.html` is produced at BUILD time by
+ * scripts/build-content.mjs from repo-owned markdown, validated with zod
+ * (CONTRACT §5). It is trusted content, not user input — same posture as
+ * prerendered HTML anywhere. dangerouslySetInnerHTML is confined to this one
+ * element; nothing runtime-supplied ever reaches it.
+ *
+ * UNKNOWN SLUG: getProject() miss → renders <NotFound/> (the router's
+ * fallback component, reused per CONTRACT §4b) and never crashes.
+ *
+ * A11Y: h1 project title; sections are landmark sections with h2s in order;
+ * external links get rel="noopener noreferrer" and a screen-reader suffix
+ * "(opens in a new tab)" via VisuallyHidden-free text (SSR-testable); related
+ * projects are real links.
+ */
+import styled from '@emotion/styled';
+import { css, useTheme } from '@emotion/react';
+import { Link, useParams } from '@portfolio/router';
+import { content, getProject, type Project } from 'app/content';
+import type { Tokens } from 'app/theme/tokens';
+import { formatDate } from 'app/lib/format';
+import { NotFound } from './NotFound';
+import { ProjectMetrics, statusTone } from './Projects';
+import {
+  Button,
+  Container,
+  Heading,
+  Icon,
+  Prose,
+  Stack,
+  Tag,
+  VisuallyHidden,
+} from 'app/components/ui';
+
+/* Cast per the ui.test.tsx polymorphic-`as` pattern (Home.tsx precedent). */
+const ROUTER_LINK = Link as unknown as 'a';
+
+/* -------------------------------------------------------------------------- */
+/* Pure, unit-tested helpers                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Related projects by tag overlap: shared-tag count desc, then newest first,
+ * then alpha; the project itself is never related to itself; max `limit`.
+ */
+export function relatedProjects(all: readonly Project[], current: Project, limit = 3): Project[] {
+  return all
+    .filter((p) => p.slug !== current.slug)
+    .map((p) => ({ project: p, overlap: p.tags.filter((t) => current.tags.includes(t)).length }))
+    .filter((entry) => entry.overlap > 0)
+    .sort(
+      (a, b) =>
+        b.overlap - a.overlap ||
+        (a.project.date < b.project.date ? 1 : a.project.date > b.project.date ? -1 : a.project.title.localeCompare(b.project.title)),
+    )
+    .slice(0, limit)
+    .map((entry) => entry.project);
+}
+
+/** Which of source/demo/paper links are present, in render order. */
+export function projectLinkEntries(
+  links: Project['links'],
+): { kind: 'source' | 'demo' | 'paper'; url: string }[] {
+  const entries: { kind: 'source' | 'demo' | 'paper'; url: string }[] = [];
+  if (links.source) entries.push({ kind: 'source', url: links.source });
+  if (links.demo) entries.push({ kind: 'demo', url: links.demo });
+  if (links.paper) entries.push({ kind: 'paper', url: links.paper });
+  return entries;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hero                                                                        */
+/* -------------------------------------------------------------------------- */
+
+const Hero = styled.header`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[4]};
+  padding-block-end: ${(p) => p.theme.space[6]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
+`;
+
+const MetaLine = styled.p`
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+
+const Lede = styled.p`
+  margin: 0;
+  max-width: 62ch;
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
+const LinkRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${(p) => p.theme.space[3]};
+`;
+
+/* -------------------------------------------------------------------------- */
+/* Body sections                                                               */
+/* -------------------------------------------------------------------------- */
+
+const Block = styled.section`
+  padding-block: ${(p) => p.theme.space[6]};
+
+  &:not(:last-of-type) {
+    border-bottom: 1px solid ${(p) => p.theme.color.border};
+  }
+`;
+
+const BlockTitle = styled.h2`
+  margin: 0 0 ${(p) => p.theme.space[4]};
+  font-size: ${(p) => p.theme.font.sizes['2xl']};
+  font-weight: ${(p) => p.theme.font.weights.bold};
+  line-height: ${(p) => p.theme.font.leading.tight};
+  letter-spacing: ${(p) => p.theme.font.tracking.tight};
+  color: ${(p) => p.theme.color.text};
+`;
+
+const HighlightList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[3]};
+  max-width: 68ch;
+`;
+
+const HighlightItem = styled.li`
+  display: flex;
+  gap: ${(p) => p.theme.space[3]};
+  color: ${(p) => p.theme.color.text};
+  line-height: ${(p) => p.theme.font.leading.normal};
+
+  & svg {
+    margin-top: ${(p) => p.theme.space[1]};
+    color: ${(p) => p.theme.color.accent};
+    flex: none;
+  }
+`;
+
+const RelatedGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: ${(p) => p.theme.space[4]};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+`;
+
+const RelatedTitle = styled.h3`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  line-height: ${(p) => p.theme.font.leading.snug};
+`;
+
+function relatedLinkClass(theme: Tokens): string {
+  return css({
+    display: 'block',
+    color: theme.color.text,
+    textDecoration: 'none',
+    borderRadius: theme.radius.sm,
+    '&:hover': {
+      color: theme.color.accent,
+      textDecoration: 'underline',
+      textUnderlineOffset: '3px',
+    },
+    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
+  });
+}
+
+/* Router links take css() classes on plain <Link> — styled(Link) would drop
+ * the `to` prop (vendored styled() prop allow-list, Nav.tsx precedent). */
+function crumbClass(theme: Tokens): string {
+  return css({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.space[1],
+    fontFamily: theme.font.mono,
+    fontSize: theme.font.sizes.sm,
+    color: theme.color.textSubtle,
+    textDecoration: 'none',
+    borderRadius: theme.radius.sm,
+    '&:hover': {
+      color: theme.color.accent,
+      textDecoration: 'underline',
+      textUnderlineOffset: '3px',
+    },
+    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
+  });
+}
+
+const CrumbNav = styled.nav`
+  margin-bottom: ${(p) => p.theme.space[5]};
+`;
+
+const buttonLink = css({ textDecoration: 'none' });
+
+const LINK_LABEL: Record<'source' | 'demo' | 'paper', string> = {
+  source: 'Source',
+  demo: 'Live demo',
+  paper: 'Paper',
+};
+
+/* -------------------------------------------------------------------------- */
+/* Page                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export function ProjectDetail(): React.ReactNode {
+  const { slug } = useParams<{ slug: string }>();
+  const project = slug !== undefined ? getProject(slug) : undefined;
+  const theme = useTheme() as Tokens;
+
+  if (!project) return <NotFound />;
+
+  const links = projectLinkEntries(project.links);
+  const related = relatedProjects(content.projects, project);
+
+  return (
+    <Container data-testid="project-detail">
+      <CrumbNav aria-label="Breadcrumb">
+        <Link to="/projects" className={crumbClass(theme)}>
+          ← All projects
+        </Link>
+      </CrumbNav>
+
+      <Hero>
+        <MetaLine>
+          <Tag tone={statusTone(project.status)} data-testid="project-status">
+            {project.status}
+          </Tag>
+          <span aria-hidden="true">·</span>
+          <span>{project.period}</span>
+          <span aria-hidden="true">·</span>
+          <span>{formatDate(project.date)}</span>
+        </MetaLine>
+        <Heading level={1} size="4xl" data-testid="detail-title">
+          {project.title}
+        </Heading>
+        <MetaLine data-testid="detail-role">{project.role}</MetaLine>
+        <Lede>{project.summary}</Lede>
+        <Stack direction="row" wrap gap="2">
+          {project.stack.map((tech) => (
+            <Tag key={tech} size="sm" tone="accent">
+              {tech}
+            </Tag>
+          ))}
+        </Stack>
+        {links.length > 0 && (
+          <LinkRow aria-label="Project links" data-testid="detail-links">
+            {links.map((entry) => (
+              <Button
+                key={entry.kind}
+                as="a"
+                href={entry.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant={entry.kind === 'demo' ? 'primary' : 'secondary'}
+                className={buttonLink}
+                iconRight="external-link"
+              >
+                {LINK_LABEL[entry.kind]}
+                <VisuallyHidden>(opens in a new tab)</VisuallyHidden>
+              </Button>
+            ))}
+          </LinkRow>
+        )}
+        <ProjectMetrics metrics={project.metrics} testid="detail-metrics" />
+      </Hero>
+
+      {project.highlights.length > 0 && (
+        <Block aria-labelledby="highlights-title">
+          <BlockTitle id="highlights-title">Highlights</BlockTitle>
+          <HighlightList data-testid="detail-highlights">
+            {project.highlights.map((highlight) => (
+              <HighlightItem key={highlight}>
+                <Icon name="check" size={18} />
+                <span>{highlight}</span>
+              </HighlightItem>
+            ))}
+          </HighlightList>
+        </Block>
+      )}
+
+      {project.html ? (
+        <Block aria-labelledby="case-study-title">
+          <BlockTitle id="case-study-title">Case study</BlockTitle>
+          <Prose data-testid="detail-body">
+            {/* Build-time validated markdown output — see file header. */}
+            <div dangerouslySetInnerHTML={{ __html: project.html }} />
+          </Prose>
+        </Block>
+      ) : null}
+
+
+      {related.length > 0 && (
+        <Block aria-labelledby="related-title">
+          <BlockTitle id="related-title">Related projects</BlockTitle>
+          <RelatedGrid data-testid="related-grid">
+            {related.map((item) => (
+              <div key={item.slug}>
+                <RelatedTitle>
+                  <Link to={`/projects/${item.slug}`} className={relatedLinkClass(theme)}>
+                    {item.title}
+                  </Link>
+                </RelatedTitle>
+                <MetaLine>{item.summary}</MetaLine>
+              </div>
+            ))}
+          </RelatedGrid>
+        </Block>
+      )}
+    </Container>
+  );
+}

@@ -23,6 +23,7 @@ import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import {
+  Button,
   Container,
   EmptyState,
   Heading,
@@ -287,10 +288,6 @@ const TagRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${(p) => p.theme.space[2]};
-`;
-
-const ClearWrap = styled.div`
-  margin-top: ${(p) => p.theme.space[5]};
 `;
 
 function titleLinkCss(theme: Tokens): string {
