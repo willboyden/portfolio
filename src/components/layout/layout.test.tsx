@@ -299,6 +299,26 @@ describe('Header', () => {
     expect(toggle).toContain('type="button"');
   });
 
+  it('theme toggle carries a polite live region naming the RESULT (R1-B F9)', () => {
+    const html = render(<Header />);
+    /* role=status live region announces the theme that just took effect —
+     * a changing aria-label alone is silent on activation. */
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    const announce = tags(html, 'span').find((t) => t.includes('data-testid="theme-announcement"'));
+    expect(announce).toBeDefined();
+    /* Sibling of the button, never inside it — button descendants flatten into
+     * the accessible name, which would double-announce on every focus. */
+    const btnStart = html.indexOf('data-testid="theme-toggle"');
+    const btnEnd = html.indexOf('</button>', btnStart);
+    const announceIdx = html.indexOf('data-testid="theme-announcement"');
+    expect(announceIdx).toBeGreaterThan(-1);
+    expect(announceIdx < btnStart || announceIdx > btnEnd).toBe(true);
+    /* text names the CURRENT theme (result), not the action — tags() only
+     * captures the opening tag, so match the span+text as emitted. */
+    expect(html).toMatch(/data-testid="theme-announcement"[^>]*>Dark theme</);
+  });
+
   it('icons are aria-hidden so the label is not duplicated', () => {
     const html = render(<Header />);
     expect(html).toContain('aria-hidden="true"');

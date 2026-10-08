@@ -107,6 +107,13 @@ export interface ThemeToggleProps {
   className?: string;
 }
 
+/* R1-B F9 carry: a toggle with only an icon + changing aria-label announces
+ * nothing to screen readers on activation (the label change lands AFTER the
+ * click sound). A polite live region states the RESULT: "Dark theme". */
+function themeAnnouncement(name: 'dark' | 'light'): string {
+  return name === 'dark' ? 'Dark theme' : 'Light theme';
+}
+
 export function ThemeToggle({ showLabel = false, className }: ThemeToggleProps): ReactNode {
   const tokens = useThemeTokens();
   const { themeName, toggleTheme } = useThemePreference();
@@ -120,17 +127,38 @@ export function ThemeToggle({ showLabel = false, className }: ThemeToggleProps):
   `;
 
   return (
-    <Button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={label}
-      title={label}
-      data-testid="theme-toggle"
-      data-theme={themeName}
-      className={className}
-    >
-      {themeName === 'dark' ? <SunIcon /> : <MoonIcon />}
-      {showLabel ? <span className={labelClass}>{label}</span> : null}
-    </Button>
+    <>
+      <Button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={label}
+        title={label}
+        data-testid="theme-toggle"
+        data-theme={themeName}
+        className={className}
+      >
+        {themeName === 'dark' ? <SunIcon /> : <MoonIcon />}
+        {showLabel ? <span className={labelClass}>{label}</span> : null}
+      </Button>
+      {/* polite, not assertive — the palette flips instantly; the words are
+       * confirmation, never an interrupt. SIBLING of the button (live text
+       * inside a button would be flattened into its accessible name),
+       * visually hidden via clip like VisuallyHidden. */}
+      <span data-testid="theme-announcement" role="status" aria-live="polite" className={srClass}>
+        {themeAnnouncement(themeName)}
+      </span>
+    </>
   );
 }
+
+const srClass = css`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+`;

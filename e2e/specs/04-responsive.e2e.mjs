@@ -78,14 +78,38 @@ describe('responsive', () => {
     await setReducedMotion(false);
   });
 
-  test('touch targets are at least ~40px on mobile', async ({ page, goto375 }) => {
-    await goto375('/');
-    const small = await page.evaluate(`
-      return [...document.querySelectorAll('header a, header button, main a')]
-        .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && (r.height < 28 || r.width < 24); })
-        .slice(0, 4).map(el => el.tagName + ' "' + (el.textContent || '').trim().slice(0, 20) + '" ' + Math.round(el.getBoundingClientRect().height) + 'px')
-    `);
-    if (small.length > 0) throw new Error(`tiny touch targets: ${small.join(' | ')}`);
+  test('touch targets meet 44px on interactive controls at phone width', async ({ page, goto320 }) => {
+    /* R3-D blind spot: this spec used to sweep `main a` only and a forgiving
+     * 28px threshold — filter BUTTONS (the primary mobile control on
+     * /projects and /writing) slipped through at 36px. Sweep anchors AND
+     * buttons, on the filter pages, at the narrowest device, at the WCAG
+     * 2.5.5 bar. Inline prose links are exempt (2.5.8 exception: their size
+     * is determined by the line height of the text). */
+    await goto320('/projects/');
+    const check = async (path) => {
+      if (path !== '/projects/') await goto320(path);
+      const small = await page.evaluate(`
+        (() => {
+          const sel = 'header a, header button, main a, main button, footer a';
+          const small = [...document.querySelectorAll(sel)]
+            .filter(el => {
+              const r = el.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) return false;                    /* hidden */
+              if (el.closest('p, li.prose, [data-prose]')) return false;           /* inline prose */
+              const s = getComputedStyle(el);
+              if (s.clipPath && s.clipPath !== 'none') return false;               /* a11y-hidden */
+              return r.height < 43.5; /* subpixel tolerance */
+            })
+            .slice(0, 5)
+            .map(el => el.tagName + ' "' + (el.textContent || '').trim().slice(0, 18) + '" ' + Math.round(el.getBoundingClientRect().height) + 'px');
+          return small;
+        })()
+      `);
+      if (small.length > 0) throw new Error(`${path} tiny touch targets: ${small.join(' | ')}`);
+    };
+    await check('/projects/');
+    await check('/writing/');
+    await check('/');
   });
 
   /* ---- Extreme mobile: 320x568 (narrowest phone in the wild) ------------- */

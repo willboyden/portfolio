@@ -196,6 +196,11 @@ const Chip = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
+  /* R3-D: 44px touch targets at phone widths (tag filtering is the main
+   * mobile affordance on this page). */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
   padding: ${(p) => p.theme.space['0']} ${(p) => p.theme.space[3]};
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};

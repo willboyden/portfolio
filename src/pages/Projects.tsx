@@ -258,6 +258,12 @@ const Chip = styled.button<{ $active: boolean }>`
   gap: ${(p) => p.theme.space[2]};
   /* R2-D V6: same control, same height as Writing chips + search input row. */
   min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
+
+  /* R3-D: filter chips are THE primary mobile interaction on this page —
+   * phone widths get the full 44px target (WCAG 2.5.5 territory). */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
   padding: ${(p) => `${p.theme.space['1']} ${p.theme.space[3]}`};
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};

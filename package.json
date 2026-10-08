@@ -9,6 +9,7 @@
   },
   "scripts": {
     "deps": "bash scripts/link-offline-deps.sh .",
+    "doctor": "node scripts/doctor.mjs",
     "dev": "vite",
     "build": "node scripts/build.mjs",
     "build:client": "vite build",
