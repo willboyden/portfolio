@@ -42,6 +42,38 @@ node node_modules/vite/bin/vite.js build                         # production bu
 9. Kill anything you start. Leave no servers running.
 10. Do not run `git commit` — the orchestrator owns git.
 
+## 2b. Type + CSS guarantees the vendored Emotion now enforces (verified)
+
+These are real, tested behaviours. Build on them — do not work around them.
+
+1. **Interpolations are contextually typed against real DOM props.** In
+   `styled.button\`...\``, `p` is `ButtonHTMLAttributes<HTMLButtonElement> & { theme }`,
+   so `p.disabled` type-checks and `p.definitelyNotARealProp` is a **compile error**
+   (verified with a negative probe). Add styling-only props with a type argument:
+   `styled.button<{ $active: boolean }>\`...\``.
+2. **A declaration whose value resolves to nothing is a hard error, not bad CSS.**
+   `color: ${(p) => (p.$on ? 'red' : false)}` throws
+   `[css-mini] declaration "color" has an empty value`. `false`, `null` and `undefined`
+   behave IDENTICALLY here (verified) — none of them is a safe "no value" branch.
+   When a whole declaration may be absent, gate the DECLARATION, not the value:
+   ```ts
+   ${(p) => p.$active && 'color: red;'}          // ✅ template form (verified)
+   ${(p) => p.$active && { color: 'red' }}       // ✅ object form (verified)
+   color: ${(p) => (p.$active ? 'red' : false)}; // ❌ THROWS
+   ```
+   `undefined`/`NaN`/`[object Object]` appearing *inside* a value are also rejected
+   (`margin: 0 calc(undefined - 1rem) auto` throws), which is what catches typo'd
+   theme token paths like `p.theme.space.NOT_A_TOKEN` at build/prerender time instead
+   of shipping CSS the browser silently drops. Note this is deliberately *stricter
+   than upstream Emotion*, which would emit `color: ;` and say nothing.
+3. Conditional and partial styles that DO work: whole-declaration conditionals
+   (template or object form above), arrays `${[base, override]}`, and nested style
+   objects `{'&:hover': {...}}`.
+4. `keyframes` does **not** interpolate theme values (same as upstream Emotion).
+   Animate `opacity`/`transform`, or reference a CSS custom property that `<Global>`
+   defines from tokens.
+5. No `css` JSX-prop transform exists. Use `styled(...)` or `css()` + `className`.
+
 ## 3. Routes (from `@portfolio/router`)
 
 `/` · `/about` · `/projects` · `/projects/:slug` · `/writing` · `/writing/:slug` · `/talks` · `/contact` · `*` (404)

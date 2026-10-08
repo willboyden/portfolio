@@ -29,8 +29,21 @@ export type StyleValue =
   | undefined
   | false
   | StyleObject
-  | StyleValue[]
-  | ((props: any) => StyleValue);
+  | StyleValue[];
+
+/**
+ * A CSS interpolation.
+ *
+ * Deliberately NOT part of `StyleValue`: if the union of accepted arguments
+ * contained a `((props: any) => ...)` member, TypeScript would match that
+ * member first and every `(p) => ...` interpolation in the codebase would bind
+ * `p` as implicit `any`, silently defeating the whole token type system. Keeping
+ * the function form out of `StyleValue` and adding it per-call-site with a
+ * concrete props type is what makes `(p) => p.theme.space[4]` type-checked.
+ */
+export type Interpolation<TProps extends object> =
+  | StyleValue
+  | ((props: TProps & { theme: any }) => StyleValue);
 
 export interface SerializedStyle {
   name: string;
@@ -128,6 +141,14 @@ export function serializeArgs(args: StyleValue[], theme: unknown): string {
   let out = '';
 
   const consume = (value: StyleValue): void => {
+    /* Falsy values contribute nothing — the Emotion idiom for conditional
+     * styles (`${p.$on && css`...`}` and `${cond ? '2rem' : false}`).
+     *
+     * Applied to a WHOLE interpolated value, so a declaration whose value is
+     * entirely a skipped falsy interpolation collapses to `prop: ;` — which
+     * parse() rejects as an empty value, rather than emitting CSS the browser
+     * silently drops. Only a genuinely empty interpolation throws, and the
+     * error names the property. */
     if (value === null || value === undefined || value === false) return;
     if (typeof value === 'number') {
       out += String(value);

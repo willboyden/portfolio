@@ -119,10 +119,18 @@ function readBrowserLocation(): Location {
 export interface RouterProviderProps {
   routes: RouteDefinition[];
   children?: ReactNode;
+  /**
+   * Render at this path instead of the live browser URL. Used by the static
+   * prerender pass (no `window` exists) and by tests. Ignored client-side
+   * after hydration-time first render unless the provider is remounted.
+   */
+  initialPath?: string;
 }
 
-export function RouterProvider({ routes, children }: RouterProviderProps): ReactNode {
-  const [location, setLocation] = useState<Location>(readBrowserLocation);
+export function RouterProvider({ routes, children, initialPath }: RouterProviderProps): ReactNode {
+  const [location, setLocation] = useState<Location>(() =>
+    initialPath !== undefined ? parseLocation(initialPath) : readBrowserLocation(),
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

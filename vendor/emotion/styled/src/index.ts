@@ -22,6 +22,7 @@ import {
   forwardRef,
   useContext,
   type ComponentType,
+  type JSX,
   type ReactNode,
   type Ref,
 } from 'react';
@@ -104,13 +105,37 @@ export interface StyledComponent<P extends object> {
   attrs<A extends object>(attrs: A | ((props: P & { theme: Theme }) => A)): StyledComponent<P & A>;
 }
 
-export interface StyledBuilder<P extends object> {
-  /** Template tag: styled.div`css`. */
-  (strings: TemplateStringsArray, ...interpolations: StyleValue[]): StyledComponent<P>;
-  /** Object styles: styled.div({...}). */
-  (style: StyleObject | StyleObject[]): StyledComponent<P>;
-  /** Raw argument list (used internally and by withConfig). */
-  (...args: StyleValue[]): StyledComponent<P>;
+/** A styled-component interpolation: CSS text, a style object, or a props function. */
+export type Interpolation<TProps extends object> =
+  | StyleValue
+  | ((props: TProps & { theme: Theme }) => StyleValue);
+
+/**
+ * Builder returned by `styled.div` / `styled(Component)`.
+ *
+ * `TBaseProps` is the element/component's own props, so `(p) => p.theme.space[4]`
+ * is always contextually typed. Pass an explicit type argument to add
+ * styling-only props: `styled.div<{ $active: boolean }>\`...\``.
+ *
+ * The non-generic signatures come FIRST: overload resolution only considers a
+ * signature with type parameters when type arguments are supplied, so the plain
+ * `styled.div\`...\`` form reliably binds `p` instead of falling through to an
+ * untyped rest signature (which used to make every interpolation parameter
+ * implicitly `any`).
+ */
+export interface StyledBuilder<TBaseProps extends object> {
+  (
+    strings: TemplateStringsArray,
+    ...interpolations: Array<Interpolation<TBaseProps>>
+  ): StyledComponent<TBaseProps>;
+  (style: StyleObject | StyleObject[]): StyledComponent<TBaseProps>;
+  <TExtraProps extends object>(
+    strings: TemplateStringsArray,
+    ...interpolations: Array<Interpolation<TBaseProps & TExtraProps>>
+  ): StyledComponent<TBaseProps & TExtraProps>;
+  <TExtraProps extends object>(
+    style: StyleObject | StyleObject[] | ((props: TBaseProps & TExtraProps & { theme: Theme }) => StyleObject)
+  ): StyledComponent<TBaseProps & TExtraProps>;
 }
 
 function mergeForward(
@@ -238,15 +263,45 @@ const DOM_TAGS: HtmlTag[] = [
  * object style — matching Emotion. For the options form use
  * `styled('div', { shouldForwardProp })`.
  */
-type TagMap = { [K in HtmlTag]: StyledBuilder<any> };
+/**
+ * Props for each intrinsic tag. Deriving these from React's JSX namespace means
+ * interpolations see real element props — `p.disabled` on a button, `p.href` on
+ * an anchor — instead of `any`, so a typo in a styled interpolation is a compile
+ * error rather than a runtime `undefined` in CSS.
+ */
+type JSXElementProps = JSX.IntrinsicElements;
+type TagMap = { [K in HtmlTag]: StyledBuilder<JSXElementProps[K]> };
 
-export type StyledFn = (<P extends object>(tag: ComponentType<P>, options?: StyledOptions) => StyledBuilder<P>) &
-  TagMap;
+export type StyledFnCall = <P extends object>(
+  tag: HtmlTag | ComponentType<P>,
+  options?: StyledOptions,
+) => StyledBuilder<any>;
 
-const styled = ((tag: any, options?: StyledOptions) => styledCall(tag, options)) as StyledFn;
-for (const tag of DOM_TAGS) {
-  styled[tag] = styledCall(tag as HtmlTag, { label: `styled.${tag}` }) as StyledBuilder<any>;
+export type StyledFn = StyledFnCall & TagMap;
+
+type TagFactory = (tag: HtmlTag, label: string) => unknown;
+
+/**
+ * Build the tag map.
+ *
+ * `styledCall` is generic over its props, so the returned builder for `'a'` and
+ * the builder for `'div'` are unrelated types: an array of all 60 tag builders
+ * is both unassignable to any one of them and too large a union for TypeScript
+ * to represent. Rather than fight variance inside the loop (where it buys
+ * nothing), the value is produced untyped and the SINGLE cast at the bottom
+ * gives `styled` its precise public type. `TagFactory` is the one honest hop —
+ * everything consumers see is still fully typed, and a mistake in `DOM_TAGS`
+ * would show up as a missing key on `styled.something`, not a silent `any`.
+ */
+function buildTagMap(): TagMap {
+  const create: TagFactory = (tag, label) => styledCall(tag, { label });
+  const entries = DOM_TAGS.map((tag) => [tag, create(tag, `styled.${tag}`)] as const);
+  return Object.fromEntries(entries) as TagMap;
 }
+
+const styledCallTyped = styledCall as StyledFnCall;
+
+const styled = Object.assign(styledCallTyped, buildTagMap());
 
 export default styled;
 export { styledCall as styled };

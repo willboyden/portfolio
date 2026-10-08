@@ -14,7 +14,8 @@ import styled from '@emotion/styled';
 import { __sheetCss } from '@emotion-mini/core';
 import { darkTheme } from 'app/theme/tokens';
 
-const h = <P,>(component: React.ComponentType<P>, props: P) => createElement(component, props);
+const h = (component: React.ComponentType<any>, props: Record<string, unknown>) =>
+  createElement(component, props);
 
 describe('vendored @emotion/react', () => {
   it('useTheme reads the nearest ThemeProvider', () => {
@@ -31,7 +32,7 @@ describe('vendored @emotion/react', () => {
     const html = renderToStaticMarkup(
       h(ThemeProvider, {
         theme: darkTheme,
-        children: h(ThemeProvider, { theme: (outer) => ({ ...outer, color: { ...outer.color, bg: '#000001' } } as never), children: h(Probe, {}) }),
+        children: h(ThemeProvider, { theme: (outer: typeof darkTheme) => ({ ...outer, color: { ...outer.color, bg: '#000001' } } as never), children: h(Probe, {}) }),
       }),
     );
     expect(html).toContain('#000001');
@@ -181,6 +182,51 @@ describe('vendored @emotion/styled', () => {
     );
     expect(html).toContain('<button');
     expect(html).toContain('type="submit"');
+  });
+
+  it('catches an interpolation that resolved to nothing (typo tokens)', () => {
+    const Broken = styled.div<{ $size?: any }>`
+      padding: ${(p) => p.$size};
+    `;
+    /* Without the guard this would silently emit `padding: ;` — invalid CSS and
+     * an invisible bug in a browser. */
+    expect(() =>
+      renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: h(Broken, {}) })),
+    ).toThrow(/empty value/);
+  });
+
+  it('catches a bad token path rather than emitting invalid CSS', () => {
+    const Typo = styled.div`
+      padding: ${(p) => (p.theme.space as any).NOT_A_TOKEN};
+    `;
+    expect(() =>
+      renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: h(Typo, {}) })),
+    ).toThrow(/empty value|non-CSS value/);
+  });
+
+  it('catches undefined string-concatenated into a function value', () => {
+    const Two = styled.div<{ $v?: number }>`
+      margin: 0 ${(p) => `calc(${p.$v} - 1rem)`} auto;
+    `;
+    /* calc(undefined - 1rem) is invalid CSS that browsers drop silently. */
+    expect(() =>
+      renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: h(Two, {}) })),
+    ).toThrow(/non-CSS value/);
+  });
+
+  it('still accepts valid declarations inside strings, parens and data URIs', () => {
+    const Ok = styled.div`
+      grid-template-areas: 'header header' 'sidebar main';
+      background: url("data:image/svg+xml;charset=utf8,%3Csvg/%3E") no-repeat;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+    `;
+    expect(() =>
+      renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: h(Ok, {}) })),
+    ).not.toThrow();
+    const sheet = __sheetCss();
+    expect(sheet).toContain('grid-template-areas');
+    expect(sheet).toContain('charset=utf8');
+    expect(sheet).toContain('box-shadow');
   });
 
   it('dynamic props produce distinct deterministic class names', () => {

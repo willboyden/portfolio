@@ -24,6 +24,37 @@ export type Node =
 const CONDITIONAL_AT = /^@(media|supports|container|layer|scope)\b/;
 const VERBATIM_AT = /^@(keyframes|-webkit-keyframes|font-face|page|viewport|counter-style|property)\b/;
 
+const SUSPECT_VALUE = /(^|[;{\s(,])(undefined|NaN|\[object Object])(\s|$|[;)}])/;
+
+/** Reject declarations that would silently emit broken CSS. */
+function assertValidDeclaration(decl: string, context: string): void {
+  const colon = decl.indexOf(':');
+  if (colon === -1) {
+    throw new Error(`[css-mini] not a declaration (missing ':')${context}: "${decl.slice(0, 60)}"`);
+  }
+  const property = decl.slice(0, colon).trim();
+  const value = decl.slice(colon + 1).trim().replace(/;+$/, '');
+
+  if (!property) {
+    throw new Error(`[css-mini] declaration has an empty property name${context}: "${decl.slice(0, 60)}"`);
+  }
+  if (!value) {
+    /* Almost always an interpolation that resolved to undefined — e.g. a typo'd
+     * theme token path like p.theme.space.NOPE. Emitting `padding: ;` would be
+     * silently invalid CSS, so fail loudly at the point of the mistake. */
+    throw new Error(
+      `[css-mini] declaration "${property}" has an empty value${context} — an interpolation ` +
+        `resolved to nothing (check the theme token path): "${decl.slice(0, 60)}"`,
+    );
+  }
+  if (SUSPECT_VALUE.test(` ${value} `)) {
+    throw new Error(
+      `[css-mini] declaration resolved to a non-CSS value${context}: "${decl.slice(0, 80)}" — ` +
+        `an interpolation returned undefined/NaN/[object Object]`,
+    );
+  }
+}
+
 /** Strip `//` line comments that live outside strings and block comments. */
 export function stripLineComments(css: string): string {
   let out = '';
@@ -176,7 +207,7 @@ function readStatement(css: string, start: number): { head: string; body: string
 }
 
 /** Parse a nested CSS string into a node tree. Declarations at this level are `decl` nodes. */
-export function parse(css: string): Node[] {
+export function parse(css: string, contextForErrors = ''): Node[] {
   const cleaned = stripLineComments(css);
   const nodes: Node[] = [];
   let i = skipTrivia(cleaned, 0);
@@ -200,10 +231,13 @@ export function parse(css: string): Node[] {
         nodes.push({ kind: 'stmt', text: trimmed });
         continue;
       }
-      if (!trimmed.includes(':')) {
-        throw new Error(`[css-mini] not a declaration (missing ':'): "${trimmed.slice(0, 48)}"`);
+      /* Split on ';' so `a:1;b:2` on one line validates each declaration. */
+      for (const part of splitDeclarations(trimmed)) {
+        const decl = part.trim();
+        if (!decl) continue;
+        assertValidDeclaration(decl, contextForErrors);
+        nodes.push({ kind: 'decl', text: decl.replace(/\s+/g, ' ') });
       }
-      nodes.push({ kind: 'decl', text: trimmed.replace(/\s+/g, ' ') });
       continue;
     }
 
@@ -211,12 +245,12 @@ export function parse(css: string): Node[] {
       if (VERBATIM_AT.test(trimmed)) {
         nodes.push({ kind: 'at', name: trimmed, body: null, raw: body });
       } else {
-        nodes.push({ kind: 'at', name: trimmed, body: parse(body), raw: null });
+        nodes.push({ kind: 'at', name: trimmed, body: parse(body, contextForErrors), raw: null });
       }
       continue;
     }
 
-    nodes.push({ kind: 'rule', selector: trimmed, body: parse(body) });
+    nodes.push({ kind: 'rule', selector: trimmed, body: parse(body, ` in "${trimmed.slice(0, 32)}"`) });
   }
 
   return nodes;
@@ -245,6 +279,40 @@ function indent(text: string, pad = '  '): string {
     .split('\n')
     .map((line) => (line.trim() ? pad + line : line))
     .join('\n');
+}
+
+/** Split declarations on top-level ';' only, respecting strings and () / []. */
+function splitDeclarations(input: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let current = '';
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input.charAt(i);
+    if (quote) {
+      current += ch;
+      if (ch === '\\') {
+        current += input.charAt(i + 1);
+        i += 1;
+      } else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === '(' || ch === '[') depth += 1;
+    if (ch === ')' || ch === ']') depth -= 1;
+    if (ch === ';' && depth === 0) {
+      out.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  out.push(current);
+  return out;
 }
 
 /** Split a comma-separated selector list, respecting functional notation. */

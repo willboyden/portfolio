@@ -29,7 +29,6 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
     /* Cap parallelism: the container is CPU-pressure sensitive under fleets. */
     maxWorkers: 4,
-    minWorkers: 1,
     testTimeout: 15000,
     reporters: ['default'],
   },
