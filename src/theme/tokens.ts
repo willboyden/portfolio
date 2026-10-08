@@ -213,6 +213,9 @@ export function themeToCssVars(theme: Tokens, prefix = '--'): Record<string, str
   for (const [key, value] of Object.entries(theme.radius)) {
     vars[`${prefix}r-${key}`] = value;
   }
+  for (const [key, value] of Object.entries(theme.shadow)) {
+    vars[`${prefix}sh-${kebab(key)}`] = value;
+  }
   vars[`${prefix}font-sans`] = theme.font.sans;
   vars[`${prefix}font-mono`] = theme.font.mono;
   return vars;
@@ -221,3 +224,44 @@ export function themeToCssVars(theme: Tokens, prefix = '--'): Record<string, str
 function kebab(input: string): string {
   return input.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
+
+/* --------------------------------------------------------------------------
+ * FOUC-proof token refs (R2C-5)
+ *
+ * The static HTML paints BEFORE any module runs, so components must not bake
+ * palette hexes into their serialized CSS — the prerenderer can only know the
+ * dark default, and light-preference users would flash. Instead the live app
+ * (server AND client — identical output, hydration-stable) interpolates these
+ * `var(--c-*, fallback)` refs, while global styles define the palettes as CSS
+ * custom properties on :root (dark) and [data-theme='light'] (light). The
+ * pre-paint theme-init script flips the attribute, so the resolved colors are
+ * correct at first frame with zero React involvement.
+ *
+ * `darkTheme`/`lightTheme` keep their concrete hexes — they remain the source
+ * of truth for the contrast gate, token tests, and any test that renders with
+ * a raw palette.
+ * -------------------------------------------------------------------------- */
+
+/** Concrete palette values expressed as CSS custom-property refs. Values match
+ * `themeToCssVars` keys exactly; fallbacks mirror the :root defaults. */
+export const colorVarRefs: Tokens['color'] = Object.fromEntries(
+  (Object.keys(darkTheme.color) as (keyof Tokens['color'])[]).map((k) => [
+    k,
+    `var(--c-${kebab(k)}, ${darkTheme.color[k]})`,
+  ]),
+) as Tokens['color'];
+
+export const shadowVarRefs: Tokens['shadow'] = Object.fromEntries(
+  (Object.keys(darkTheme.shadow) as (keyof Tokens['shadow'])[]).map((k) => [
+    k,
+    `var(--sh-${kebab(k)}, ${darkTheme.shadow[k]})`,
+  ]),
+) as Tokens['shadow'];
+
+/** The theme object components render against: identical object identity
+ * regardless of active palette (CSS variables carry the difference). */
+export const appTokens: Tokens = {
+  ...darkTheme,
+  color: colorVarRefs,
+  shadow: shadowVarRefs,
+};

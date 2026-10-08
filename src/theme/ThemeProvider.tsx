@@ -24,7 +24,7 @@
 
 import { createContext, createElement, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { Global, ThemeProvider as EmotionThemeProvider, useTheme } from '@emotion/react';
-import { darkTheme, lightTheme, themes, type ThemeName, type Tokens } from 'app/theme/tokens';
+import { appTokens, darkTheme, lightTheme, themes, type ThemeName, type Tokens } from 'app/theme/tokens';
 import { buildGlobalStyles } from './global-styles';
 import { useReducedMotion as useReducedMotionImpl, useThemeNameState } from 'app/lib/hooks';
 import { useThemePreferenceIfPresent } from 'app/components/layout/ThemePreference';
@@ -104,8 +104,14 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
     };
   }, [chrome, platform]);
   const themeName: ThemeName = forcedTheme ?? controller.themeName;
-  const theme: Tokens = themes[themeName];
-  const globalStyles = useMemo(() => buildGlobalStyles(theme), [theme]);
+  /* R2C-5 (FOUC): components receive `appTokens` — CSS-var references, not
+   * hexes — so serialized CSS is palette-independent and byte-stable across
+   * server/client/light/dark (hydration can never mismatch, and the pre-paint
+   * theme-init attribute resolves the real colors at frame one). The concrete
+   * palette still drives <Global> (:root values + both data-theme blocks). */
+  const theme: Tokens = appTokens;
+  const concreteTheme: Tokens = themes[forcedTheme ?? controller.themeName];
+  const globalStyles = useMemo(() => buildGlobalStyles(concreteTheme), [concreteTheme]);
 
   useEffect(() => {
     /* Keep the document shell in sync with React's view (init script did the

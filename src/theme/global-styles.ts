@@ -12,7 +12,7 @@
  */
 
 import type { CSSProperties } from 'react';
-import { themeToCssVars, type Tokens } from 'app/theme/tokens';
+import { darkTheme, lightTheme, themeToCssVars, type Tokens } from 'app/theme/tokens';
 
 /** Style-object shape accepted by the vendored Emotion <Global>. */
 export type StyleLeaf = string | number;
@@ -40,8 +40,10 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
     body: {
       margin: 0,
       minHeight: '100vh',
-      background: theme.color.bg,
-      color: theme.color.text,
+      /* R2C-5: var() refs (dark fallback) so the pre-paint [data-theme] flip
+       * resolves the right palette at frame one — no dark shell for light users. */
+      background: `var(--c-bg, ${theme.color.bg})`,
+      color: `var(--c-text, ${theme.color.text})`,
       fontFamily: theme.font.sans,
       fontSize: theme.font.sizes.md,
       lineHeight: theme.font.leading.normal,
@@ -55,8 +57,8 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
     h4: { fontSize: theme.font.sizes.xl, lineHeight: theme.font.leading.snug, margin: 0 },
     p: { marginTop: 0, marginBottom: '1em' },
     a: {
-      color: theme.color.accent,
-      textDecorationColor: theme.color.accentBorder,
+      color: 'var(--c-accent, ' + theme.color.accent + ')',
+      textDecorationColor: 'var(--c-accentBorder, ' + theme.color.accentBorder + ')',
       textDecorationThickness: 'from-font',
     },
     'a:hover': {
@@ -76,26 +78,38 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
     table: { borderCollapse: 'collapse', borderSpacing: 0 },
     hr: {
       border: 'none',
-      borderTop: `1px solid ${theme.color.border}`,
+      borderTop: '1px solid var(--c-border, ' + theme.color.border + ')',
       margin: `${theme.space[6]} 0`,
     },
 
     /* Custom properties --------------------------------------------------- */
+    /* R2C-5 (FOUC): :root carries the *rendered* palette's concrete values
+     * (prerender/hydration parity), and BOTH data-theme blocks ship in the
+     * same sheet so the pre-paint theme-init attribute flip resolves every
+     * `var(--c-*)` component reference to the right palette at frame one —
+     * no React, no module execution, no flash. */
     ':root': cssVars,
+    /* R3-A #1: UNQUOTED attribute values — `dark`/`light` are valid CSS
+     * identifiers, so no quoting is needed and the vendored serializer's
+     * quote-escaping can't corrupt the selector (quoted forms serialize to
+     * `[data-theme=\'dark\']`, which per CSS Syntax matches the literal
+     * string "'dark'" — broken in spec-strict engines). */
+    ':root[data-theme=dark]': themeToCssVars(darkTheme) as Record<string, string>,
+    ':root[data-theme=light]': themeToCssVars(lightTheme) as Record<string, string>,
 
     /* Focus: visible by DEFAULT (contract §5). We style :focus-visible and
      * deliberately do NOT remove :focus outlines for pointer users on
      * controls that can't match focus-visible — the browser default stays. */
     ':focus-visible': {
-      outline: `2px solid ${theme.color.focus}`,
+      outline: '2px solid var(--c-focus, ' + theme.color.focus + ')',
       outlineOffset: '2px',
       borderRadius: theme.radius.sm,
     },
 
     /* Selection ------------------------------------------------------------ */
     '::selection': {
-      background: theme.color.accentSoft,
-      color: theme.color.text,
+      background: 'var(--c-accentSoft, ' + theme.color.accentSoft + ')',
+      color: 'var(--c-text, ' + theme.color.text + ')',
     },
 
     /* Reduced motion: global guard (contract §5). Components should still

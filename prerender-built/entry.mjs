@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T05:41:34.070Z",
+	generatedAt: "2026-10-08T05:53:01.534Z",
 	projects: [
 		{
 			"slug": "langfuse-dashboard",
@@ -1597,69 +1597,71 @@ var shared = {
 		toast: 90
 	}
 };
-var themes = {
-	dark: {
-		...shared,
-		color: {
-			bg: "#0b0e14",
-			bgElevated: "#11151f",
-			bgSunken: "#070910",
-			surface: "#151a26",
-			surfaceHover: "#1b2130",
-			border: "#232a3a",
-			borderStrong: "#33405a",
-			text: "#eef1f8",
-			textMuted: "#9aa5bd",
-			textSubtle: "#7c88a3",
-			accent: "#5b8cff",
-			accentText: "#ffffff",
-			accentSoft: "rgba(91, 140, 255, 0.14)",
-			accentBorder: "rgba(91, 140, 255, 0.4)",
-			success: "#3ddc97",
-			warning: "#ffb454",
-			danger: "#ff6b81",
-			focus: "#7ea2ff",
-			scrim: "rgba(4, 6, 12, 0.72)",
-			skeleton: "rgba(255, 255, 255, 0.07)"
-		},
-		shadow: {
-			sm: "0 1px 2px rgba(0, 0, 0, 0.4)",
-			md: "0 4px 16px rgba(0, 0, 0, 0.45)",
-			lg: "0 16px 48px rgba(0, 0, 0, 0.55)",
-			glow: "0 0 0 1px rgba(91, 140, 255, 0.35), 0 8px 32px rgba(91, 140, 255, 0.18)"
-		}
+var darkTheme = {
+	...shared,
+	color: {
+		bg: "#0b0e14",
+		bgElevated: "#11151f",
+		bgSunken: "#070910",
+		surface: "#151a26",
+		surfaceHover: "#1b2130",
+		border: "#232a3a",
+		borderStrong: "#33405a",
+		text: "#eef1f8",
+		textMuted: "#9aa5bd",
+		textSubtle: "#7c88a3",
+		accent: "#5b8cff",
+		accentText: "#ffffff",
+		accentSoft: "rgba(91, 140, 255, 0.14)",
+		accentBorder: "rgba(91, 140, 255, 0.4)",
+		success: "#3ddc97",
+		warning: "#ffb454",
+		danger: "#ff6b81",
+		focus: "#7ea2ff",
+		scrim: "rgba(4, 6, 12, 0.72)",
+		skeleton: "rgba(255, 255, 255, 0.07)"
 	},
-	light: {
-		...shared,
-		color: {
-			bg: "#eef1f6",
-			bgElevated: "#ffffff",
-			bgSunken: "#e3e7f0",
-			surface: "#ffffff",
-			surfaceHover: "#f1f4fa",
-			border: "#ccd4e4",
-			borderStrong: "#b6c0d4",
-			text: "#101725",
-			textMuted: "#4a5568",
-			textSubtle: "#5d6880",
-			accent: "#2f5fe0",
-			accentText: "#ffffff",
-			accentSoft: "rgba(47, 95, 224, 0.1)",
-			accentBorder: "rgba(47, 95, 224, 0.35)",
-			success: "#0b7a53",
-			warning: "#8f5b04",
-			danger: "#c2273f",
-			focus: "#2f5fe0",
-			scrim: "rgba(16, 23, 37, 0.55)",
-			skeleton: "rgba(16, 23, 37, 0.06)"
-		},
-		shadow: {
-			sm: "0 1px 2px rgba(16, 23, 37, 0.06), 0 1px 3px rgba(16, 23, 37, 0.08)",
-			md: "0 2px 4px rgba(16, 23, 37, 0.06), 0 8px 24px rgba(16, 23, 37, 0.1)",
-			lg: "0 16px 48px rgba(16, 23, 37, 0.16)",
-			glow: "0 0 0 1px rgba(47, 95, 224, 0.3), 0 8px 32px rgba(47, 95, 224, 0.14)"
-		}
+	shadow: {
+		sm: "0 1px 2px rgba(0, 0, 0, 0.4)",
+		md: "0 4px 16px rgba(0, 0, 0, 0.45)",
+		lg: "0 16px 48px rgba(0, 0, 0, 0.55)",
+		glow: "0 0 0 1px rgba(91, 140, 255, 0.35), 0 8px 32px rgba(91, 140, 255, 0.18)"
 	}
+};
+var lightTheme = {
+	...shared,
+	color: {
+		bg: "#eef1f6",
+		bgElevated: "#ffffff",
+		bgSunken: "#e3e7f0",
+		surface: "#ffffff",
+		surfaceHover: "#f1f4fa",
+		border: "#ccd4e4",
+		borderStrong: "#b6c0d4",
+		text: "#101725",
+		textMuted: "#4a5568",
+		textSubtle: "#5d6880",
+		accent: "#2f5fe0",
+		accentText: "#ffffff",
+		accentSoft: "rgba(47, 95, 224, 0.1)",
+		accentBorder: "rgba(47, 95, 224, 0.35)",
+		success: "#0b7a53",
+		warning: "#8f5b04",
+		danger: "#c2273f",
+		focus: "#2f5fe0",
+		scrim: "rgba(16, 23, 37, 0.55)",
+		skeleton: "rgba(16, 23, 37, 0.06)"
+	},
+	shadow: {
+		sm: "0 1px 2px rgba(16, 23, 37, 0.06), 0 1px 3px rgba(16, 23, 37, 0.08)",
+		md: "0 2px 4px rgba(16, 23, 37, 0.06), 0 8px 24px rgba(16, 23, 37, 0.1)",
+		lg: "0 16px 48px rgba(16, 23, 37, 0.16)",
+		glow: "0 0 0 1px rgba(47, 95, 224, 0.3), 0 8px 32px rgba(47, 95, 224, 0.14)"
+	}
+};
+var themes = {
+	dark: darkTheme,
+	light: lightTheme
 };
 /**
 * CSS custom properties mirroring the theme, emitted by <Global>. Useful for
@@ -1671,6 +1673,7 @@ function themeToCssVars(theme, prefix = "--") {
 	for (const [key, value] of Object.entries(theme.color)) vars[`${prefix}c-${kebab(key)}`] = value;
 	for (const [key, value] of Object.entries(theme.space)) vars[`${prefix}s-${key}`] = value;
 	for (const [key, value] of Object.entries(theme.radius)) vars[`${prefix}r-${key}`] = value;
+	for (const [key, value] of Object.entries(theme.shadow)) vars[`${prefix}sh-${kebab(key)}`] = value;
 	vars[`${prefix}font-sans`] = theme.font.sans;
 	vars[`${prefix}font-mono`] = theme.font.mono;
 	return vars;
@@ -1678,6 +1681,17 @@ function themeToCssVars(theme, prefix = "--") {
 function kebab(input) {
 	return input.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
+/** Concrete palette values expressed as CSS custom-property refs. Values match
+* `themeToCssVars` keys exactly; fallbacks mirror the :root defaults. */
+var colorVarRefs = Object.fromEntries(Object.keys(darkTheme.color).map((k) => [k, `var(--c-${kebab(k)}, ${darkTheme.color[k]})`]));
+var shadowVarRefs = Object.fromEntries(Object.keys(darkTheme.shadow).map((k) => [k, `var(--sh-${kebab(k)}, ${darkTheme.shadow[k]})`]));
+/** The theme object components render against: identical object identity
+* regardless of active palette (CSS variables carry the difference). */
+var appTokens = {
+	...darkTheme,
+	color: colorVarRefs,
+	shadow: shadowVarRefs
+};
 //#endregion
 //#region src/theme/global-styles.ts
 function buildGlobalStyles(theme) {
@@ -1698,8 +1712,8 @@ function buildGlobalStyles(theme) {
 		body: {
 			margin: 0,
 			minHeight: "100vh",
-			background: theme.color.bg,
-			color: theme.color.text,
+			background: `var(--c-bg, ${theme.color.bg})`,
+			color: `var(--c-text, ${theme.color.text})`,
 			fontFamily: theme.font.sans,
 			fontSize: theme.font.sizes.md,
 			lineHeight: theme.font.leading.normal,
@@ -1732,8 +1746,8 @@ function buildGlobalStyles(theme) {
 			marginBottom: "1em"
 		},
 		a: {
-			color: theme.color.accent,
-			textDecorationColor: theme.color.accentBorder,
+			color: "var(--c-accent, " + theme.color.accent + ")",
+			textDecorationColor: "var(--c-accentBorder, " + theme.color.accentBorder + ")",
 			textDecorationThickness: "from-font"
 		},
 		"a:hover": { textDecoration: "underline" },
@@ -1759,18 +1773,20 @@ function buildGlobalStyles(theme) {
 		},
 		hr: {
 			border: "none",
-			borderTop: `1px solid ${theme.color.border}`,
+			borderTop: "1px solid var(--c-border, " + theme.color.border + ")",
 			margin: `${theme.space[6]} 0`
 		},
 		":root": cssVars,
+		":root[data-theme=dark]": themeToCssVars(darkTheme),
+		":root[data-theme=light]": themeToCssVars(lightTheme),
 		":focus-visible": {
-			outline: `2px solid ${theme.color.focus}`,
+			outline: "2px solid var(--c-focus, " + theme.color.focus + ")",
 			outlineOffset: "2px",
 			borderRadius: theme.radius.sm
 		},
 		"::selection": {
-			background: theme.color.accentSoft,
-			color: theme.color.text
+			background: "var(--c-accentSoft, " + theme.color.accentSoft + ")",
+			color: "var(--c-text, " + theme.color.text + ")"
 		},
 		"@media (prefers-reduced-motion: reduce)": { "*, *::before, *::after": {
 			animationDuration: "0.01ms !important",
@@ -2390,8 +2406,9 @@ function AppThemeProvider({ children, forcedTheme }) {
 		};
 	}, [chrome, platform]);
 	const themeName = forcedTheme ?? controller.themeName;
-	const theme = themes[themeName];
-	const globalStyles = useMemo(() => buildGlobalStyles(theme), [theme]);
+	const theme = appTokens;
+	const concreteTheme = themes[forcedTheme ?? controller.themeName];
+	const globalStyles = useMemo(() => buildGlobalStyles(concreteTheme), [concreteTheme]);
 	useEffect(() => {
 		if (typeof document === "undefined" || chrome) return;
 		try {

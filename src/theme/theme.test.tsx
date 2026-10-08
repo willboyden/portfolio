@@ -33,20 +33,37 @@ describe('AppThemeProvider (SSR)', () => {
     return createElement('span', { id: 'probe' }, theme.color.accent);
   };
 
-  it('renders children inside the Emotion theme, dark by default on the server', () => {
+  it('components receive CSS-var token refs, not palette hexes (R2C-5 FOUC design)', () => {
+    /* Serialized component CSS must be palette-independent: the SAME markup
+     * renders for dark and light, so server/client/prerender output is
+     * byte-identical and hydration can never mismatch. The palette is chosen
+     * by [data-theme] on the document BEFORE first paint (theme-init script). */
     const html = renderToStaticMarkup(
       h(AppThemeProvider, { children: h(AccentProbe, {}) }),
     );
     expect(html).toContain('<span id="probe">');
-    expect(html).toContain(darkTheme.color.accent);
+    expect(html).toContain(`var(--c-accent, ${darkTheme.color.accent})`);
     expect(html).not.toContain(lightTheme.color.accent);
-  });
-
-  it('forcedTheme switches the token set (prerenderer override)', () => {
-    const html = renderToStaticMarkup(
+    /* forcedTheme never changes the COMPONENT markup — only :root. Same probe
+     * renders byte-identical in both palettes: */
+    const lightHtml = renderToStaticMarkup(
       h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: h(AccentProbe, {}) }),
     );
-    expect(html).toContain(lightTheme.color.accent);
+    expect(lightHtml).toBe(html);
+  });
+
+  it('forcedTheme flips the :root concrete palette (prerenderer override)', () => {
+    renderToStaticMarkup(
+      h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: h(AccentProbe, {}) }),
+    );
+    const sheet = __sheetCss();
+    /* The concrete light values must be live in :root for non-var consumers
+     * (and the data-theme blocks both ship). */
+    expect(sheet).toContain('--c-bg:' + lightTheme.color.bg);
+    /* R3-A #1: selectors are UNQUOTED (quoted forms get quote-escaped by the
+     * serializer into a spec-broken selector). Pin the unquoted contract. */
+    expect(sheet).toContain('[data-theme=light]');
+    expect(sheet).toContain('[data-theme=dark]');
   });
 
   it('useThemeName returns [name, setter] pinned by CONTRACT §4', () => {
@@ -104,10 +121,16 @@ describe('buildGlobalStyles via <Global> in the provider', () => {
     expect(sheet).toMatch(/font-smoothing|text-rendering/);
   });
 
-  it('light theme build flips the CSS custom properties', () => {
+  it('every render ships BOTH palettes as data-theme blocks (R2C-5)', () => {
     renderToStaticMarkup(h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: null }));
     const sheet = __sheetCss();
     expect(sheet).toContain('--c-bg:' + lightTheme.color.bg);
+    /* dark block present too, and it is the DARK palette inside it */
+    const darkBlock = sheet.match(/\[data-theme=dark\]\s*\{([^}]*)\}/);
+    expect(darkBlock, 'dark data-theme block').toBeTruthy();
+    expect(darkBlock![1]).toContain('--c-bg:' + darkTheme.color.bg);
+    const lightBlock = sheet.match(/\[data-theme=light\]\s*\{([^}]*)\}/);
+    expect(lightBlock![1]).toContain('--c-bg:' + lightTheme.color.bg);
   });
 
   it('buildGlobalStyles is pure and theme-pinned (one source of truth)', () => {
