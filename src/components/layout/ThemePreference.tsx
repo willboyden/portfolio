@@ -373,21 +373,6 @@ export function useThemePreferenceIfPresent(): ThemePreferenceValue | null {
 }
 
 /**
- * Pinned-shape accessor matching CONTRACT §4's `useThemeName(): [ThemeName,
- * (t: ThemeName) => void]`, so platform-primitives can re-export this instead of
- * re-implementing it.
- */
-export function useThemeName(): [ThemeName, (name: ThemeName) => void] {
-  const { themeName, setThemeName } = useThemePreference();
-  return [themeName, setThemeName];
-}
-
-/** Tokens implied by the stored preference. `themes[themeName]`, always defined. */
-export function useActiveTheme(): Tokens {
-  return useThemePreference().activeTheme;
-}
-
-/**
  * Typed view of the Emotion theme. `@emotion/react`'s `useTheme()` returns an
  * index-signature `Theme`, which makes `theme.color.accent` untyped; every
  * component in this folder goes through here instead.

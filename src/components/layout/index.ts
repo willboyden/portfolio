@@ -26,8 +26,6 @@ export {
   ThemePreferenceProvider,
   useThemePreference,
   useThemePreferenceIfPresent,
-  useThemeName,
-  useActiveTheme,
   useThemeTokens,
   usePrefersReducedMotion,
   setThemePreference,
