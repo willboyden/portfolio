@@ -1,0 +1,324 @@
+/**
+ * Contact — the conversion page: one honest email CTA, the real social
+ * slots, and what working together actually looks like.
+ *
+ * NO FAKE FORM: there is no backend in this stack (static nginx, no server,
+ * no network egress) and CONTRACT §8 forbids pretending otherwise. A form
+ * that silently went nowhere would be worse than none. The deliverable is a
+ * mailto: CTA — it composes in the visitor's own client, works with zero
+ * infrastructure, and degrades honestly. If a real form is ever added, it
+ * needs a documented form backend first.
+ *
+ * A11Y: one h1; labelled regions; every link has a visible focus ring; the
+ * email address is present as real text, not trapped inside a button label.
+ */
+import styled from '@emotion/styled';
+import { Link } from '@portfolio/router';
+import { SOCIAL_LINKS } from 'app/components/layout';
+import { SITE } from 'app/lib/seo';
+import { Button, Heading, Icon, Section, type IconName } from 'app/components/ui';
+
+/* Cast per the ui.test.tsx polymorphic-`as` pattern — see Home.tsx. */
+const ROUTER_LINK = Link as unknown as 'a';
+
+/* DRAFT — launch blocker: SITE (src/lib/seo.ts, owned by platform-primitives)
+ * carries no `email` field yet, so we fall back to a placeholder mailbox.
+ * TODO for the site owner: add `email` to SITE in src/lib/seo.ts (or replace
+ * the fallback here) before launch. Kept in one expression so the swap is a
+ * one-liner; the DRAFT marker matches the Footer's placeholder convention. */
+const CONTACT_EMAIL: string = (SITE as { email?: string }).email ?? 'hello@example.com';
+
+/* -------------------------------------------------------------------------- */
+/* Layout                                                                      */
+/* -------------------------------------------------------------------------- */
+
+const Lede = styled.p`
+  margin: ${(p) => p.theme.space[5]} 0 0;
+  max-width: 62ch;
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
+const CardRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: ${(p) => p.theme.space[5]};
+  align-items: stretch;
+  margin-top: ${(p) => p.theme.space[6]};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const Panel = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[3]};
+  padding: ${(p) => p.theme.space[6]};
+  background: ${(p) => p.theme.color.bgElevated};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.lg};
+`;
+
+const EmailPanel = styled(Panel)`
+  border-color: ${(p) => p.theme.color.accentBorder};
+  background: ${(p) => p.theme.color.surface};
+`;
+
+const PanelTitle = styled.h2`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.xl};
+  font-weight: ${(p) => p.theme.font.weights.bold};
+  line-height: ${(p) => p.theme.font.leading.snug};
+  letter-spacing: ${(p) => p.theme.font.tracking.tight};
+  color: ${(p) => p.theme.color.text};
+`;
+
+const PanelBody = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.md};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
+const AddressLine = styled.a`
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.md};
+  color: ${(p) => p.theme.color.accent};
+  text-decoration: none;
+  border-radius: ${(p) => p.theme.radius.sm};
+  padding-block: ${(p) => p.theme.space[1]};
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 3px;
+  }
+`;
+
+const CtaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${(p) => p.theme.space[3]};
+  margin-top: ${(p) => p.theme.space[2]};
+`;
+
+const SocialList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+`;
+
+const SocialItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[3]};
+  min-height: 44px;
+  font-size: ${(p) => p.theme.font.sizes.md};
+`;
+
+const SocialAnchor = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]};
+  color: ${(p) => p.theme.color.text};
+  text-decoration: none;
+  border-radius: ${(p) => p.theme.radius.sm};
+
+  &:hover {
+    color: ${(p) => p.theme.color.accent};
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 3px;
+  }
+`;
+
+const SocialNote = styled.span`
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+
+const ExpectList = styled.dl`
+  margin: ${(p) => p.theme.space[2]} 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: ${(p) => p.theme.space[4]};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: ${(p) => p.theme.space[6]};
+  }
+`;
+
+const ExpectGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[1]};
+`;
+
+const ExpectTerm = styled.dt`
+  margin: 0;
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.wider};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.accent};
+`;
+
+const ExpectBody = styled.dd`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.md};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
+/* Map platform labels to the icon set we actually ship. */
+function socialIcon(label: string): IconName {
+  if (label.toLowerCase().includes('github')) return 'github';
+  if (label.toLowerCase().includes('linkedin')) return 'linkedin';
+  return 'external-link';
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export function Contact(): React.ReactNode {
+  return (
+    <>
+      <Section id="contact-intro" eyebrow="Contact" size="wide">
+        <Heading level={1} data-testid="contact-title" size="4xl">
+          Tell me what is actually broken.
+        </Heading>
+        <Lede>
+          The best first email is a paragraph of unpolished context: the
+          system, the constraint, the deadline you are worried about. I read
+          everything myself, and a concrete &ldquo;no&rdquo; or a referral is
+          a real answer — you will never be left in silence.
+        </Lede>
+      </Section>
+
+      <Section size="default" data-testid="contact-panels">
+        <CardRow>
+          <EmailPanel aria-labelledby="contact-email-title">
+            <PanelTitle id="contact-email-title">Email</PanelTitle>
+            <PanelBody>
+              The fastest route for everything: engagements, architecture
+              reviews, or a hard question you want a second opinion on.
+              Include a link to context — a repo, a doc, an incident timeline
+              — and I will come prepared instead of billable for warm-up.
+            </PanelBody>
+            <AddressLine href={`mailto:${CONTACT_EMAIL}`} data-testid="contact-email-link">
+              <Icon name="mail" size={16} />
+              {CONTACT_EMAIL}
+            </AddressLine>
+            <CtaRow>
+              <Button
+                as="a"
+                href={`mailto:${CONTACT_EMAIL}`}
+                variant="primary"
+                size="lg"
+                iconRight="arrow-right"
+                data-testid="contact-cta-email"
+              >
+                Start the conversation
+              </Button>
+            </CtaRow>
+          </EmailPanel>
+
+          <Panel aria-labelledby="contact-social-title">
+            <PanelTitle id="contact-social-title">Elsewhere</PanelTitle>
+            <PanelBody>
+              Where the work shows up before it shows up here. Slower than
+              email, better for follow-ups than for first contact.
+            </PanelBody>
+            <SocialList data-testid="contact-social-list">
+              {SOCIAL_LINKS.map((link) => (
+                <SocialItem key={link.label}>
+                  {link.url ? (
+                    <SocialAnchor href={link.url} rel="me noopener noreferrer">
+                      <Icon name={socialIcon(link.label)} size={16} />
+                      {link.label}
+                      {link.handle ? ` — ${link.handle}` : ''}
+                    </SocialAnchor>
+                  ) : (
+                    /* Empty url = the owner has not supplied a handle yet.
+                     * Rendered as inert text with a DRAFT marker (same
+                     * convention as the Footer) — never a dead link. */
+                    <>
+                      <Icon name={socialIcon(link.label)} size={16} />
+                      <span dangerouslySetInnerHTML={{ __html: `<!-- DRAFT: ${link.label} URL not set -->` }} />
+                      <SocialNote>
+                        {link.label}: add URL in src/components/layout/Footer.tsx
+                      </SocialNote>
+                    </>
+                  )}
+                </SocialItem>
+              ))}
+            </SocialList>
+          </Panel>
+        </CardRow>
+      </Section>
+
+      <Section
+        id="expectations"
+        eyebrow="Working together"
+        title="What to expect"
+        description="No sales sequence, no discovery-call gauntlet. Three commitments that hold on every engagement."
+      >
+        <ExpectList data-testid="contact-expectations">
+          <ExpectGroup>
+            <ExpectTerm>Reply, honestly</ExpectTerm>
+            <ExpectBody>
+              A considered response — including when the answer is that I am
+              not the right person for it. Silence is the failure mode I
+              promise to avoid.
+            </ExpectBody>
+          </ExpectGroup>
+          <ExpectGroup>
+            <ExpectTerm>Fixed scope, written down</ExpectTerm>
+            <ExpectBody>
+              Before work starts: the question, the deliverable, and what
+              &ldquo;done&rdquo; means, in one page. If scope changes, the
+              page changes — visibly.
+            </ExpectBody>
+          </ExpectGroup>
+          <ExpectGroup>
+            <ExpectTerm>Handover included</ExpectTerm>
+            <ExpectBody>
+              Every engagement ends with the team able to run and extend the
+              result without me. Dependency is a defect, not a business model.
+            </ExpectBody>
+          </ExpectGroup>
+        </ExpectList>
+        <CtaRow>
+          <Button as={ROUTER_LINK} to="/projects" variant="ghost" data-testid="contact-cta-projects">
+            See the work first
+          </Button>
+          <Button as={ROUTER_LINK} to="/now" variant="ghost" data-testid="contact-cta-now">
+            Current availability
+          </Button>
+        </CtaRow>
+      </Section>
+    </>
+  );
+}

@@ -58,7 +58,14 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
       res.writeHead(200, {
         'content-type': type,
         'cache-control': cacheControl,
+        /* Mirrors deploy/nginx.conf — the preview server must behave like
+         * production so the e2e security spec tests real responses. */
         'x-content-type-options': 'nosniff',
+        'x-frame-options': 'DENY',
+        'referrer-policy': 'strict-origin-when-cross-origin',
+        'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+        'content-security-policy':
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
       });
       createReadStream(file).pipe(res);
     };

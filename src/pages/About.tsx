@@ -12,6 +12,10 @@ import styled from '@emotion/styled';
 import { Link } from '@portfolio/router';
 import { Button, Heading, Section, Stack } from 'app/components/ui';
 
+/* Cast per the ui.test.tsx polymorphic-`as` pattern — see Home.tsx for the
+ * full rationale (component target keeps `to`, routes through css() class). */
+const ROUTER_LINK = Link as unknown as 'a';
+
 /* -------------------------------------------------------------------------- */
 /* Layout primitives                                                           */
 /* -------------------------------------------------------------------------- */
@@ -314,10 +318,10 @@ export function About(): React.ReactNode {
           ))}
         </PrincipleList>
         <ClosingRow>
-          <Button as={Link} to="/contact" variant="primary" data-testid="about-cta-contact">
+          <Button as={ROUTER_LINK} to="/contact" variant="primary" data-testid="about-cta-contact">
             Start a conversation
           </Button>
-          <Button as={Link} to="/now" variant="ghost" data-testid="about-cta-now">
+          <Button as={ROUTER_LINK} to="/now" variant="ghost" data-testid="about-cta-now">
             What I&rsquo;m focused on now
           </Button>
         </ClosingRow>

@@ -11,9 +11,11 @@
  * rings come from Button.
  */
 import styled from '@emotion/styled';
+import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import { content, featuredProjects, postsByDate, type Project } from 'app/content';
 import { formatDate } from 'app/lib/format';
+import type { Tokens } from 'app/theme/tokens';
 import {
   Button,
   Card,
@@ -23,6 +25,12 @@ import {
   Stack,
   Tag,
 } from 'app/components/ui';
+
+/* Button's component-target path is verified for the router Link (ui.test.tsx
+ * §polymorphic `as`); Link's props are wider than ButtonProps' `as` record
+ * type, so carry the same cast the UI tests use. Runtime stays a component,
+ * which routes Button through its css()-class branch and keeps `to` intact. */
+const ROUTER_LINK = Link as unknown as 'a';
 
 /* -------------------------------------------------------------------------- */
 /* Hero                                                                        */
@@ -121,22 +129,36 @@ const CardTitle = styled.h3`
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
 
-const CardLink = styled(Link)`
-  color: ${(p) => p.theme.color.text};
-  text-decoration: none;
-  border-radius: ${(p) => p.theme.radius.sm};
+/* Router links use css() classes on plain <Link>, never styled(Link): the
+ * vendored styled() prop allow-list silently drops `to` on component targets
+ * (documented in src/components/layout/Nav.tsx and caught by these tests). */
+function inlineLinkClass(theme: Tokens): string {
+  return css({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.space[1],
+    minHeight: '44px',
+    color: theme.color.accent,
+    textDecoration: 'none',
+    borderRadius: theme.radius.sm,
+    '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
+    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
+  });
+}
 
-  &:hover {
-    color: ${(p) => p.theme.color.accent};
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 3px;
-  }
-`;
+function titleLinkClass(theme: Tokens): string {
+  return css({
+    color: theme.color.text,
+    textDecoration: 'none',
+    borderRadius: theme.radius.sm,
+    '&:hover': {
+      color: theme.color.accent,
+      textDecoration: 'underline',
+      textUnderlineOffset: '3px',
+    },
+    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
+  });
+}
 
 const CardSummary = styled.p`
   margin: 0;
@@ -153,28 +175,6 @@ const CardFooter = styled.div`
   gap: ${(p) => p.theme.space[3]};
 `;
 
-const MoreLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  gap: ${(p) => p.theme.space[1]};
-  min-height: 44px;
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
-  color: ${(p) => p.theme.color.accent};
-  text-decoration: none;
-  border-radius: ${(p) => p.theme.radius.sm};
-
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
-  }
-`;
-
 /**
  * The three cards the landing page shows: featured first; if nothing is
  * flagged featured yet, the first three projects step in; if there are no
@@ -185,7 +185,20 @@ function heroProjects(): Project[] {
   return (featured.length > 0 ? featured : content.projects).slice(0, 3);
 }
 
-function ProjectCard({ project }: { project: Project }): React.ReactNode {
+interface LinkClasses {
+  /** Accent-colored inline link (case-study read-more, text links). */
+  inline: string;
+  /** Heading-styled link whose base colour matches card text. */
+  title: string;
+}
+
+function ProjectCard({
+  project,
+  links,
+}: {
+  project: Project;
+  links: LinkClasses;
+}): React.ReactNode {
   const detailHref = `/projects/${project.slug}`;
   return (
     <Card interactive data-testid="featured-project">
@@ -195,7 +208,9 @@ function ProjectCard({ project }: { project: Project }): React.ReactNode {
         <span>{project.period}</span>
       </MetaLine>
       <CardTitle data-testid="featured-project-title">
-        <CardLink to={detailHref}>{project.title}</CardLink>
+        <Link to={detailHref} className={links.title}>
+          {project.title}
+        </Link>
       </CardTitle>
       <CardSummary>{project.summary}</CardSummary>
       <Stack direction="row" wrap gap="2">
@@ -206,9 +221,9 @@ function ProjectCard({ project }: { project: Project }): React.ReactNode {
         ))}
       </Stack>
       <CardFooter>
-        <MoreLink to={detailHref}>
+        <Link to={detailHref} className={links.inline}>
           Read the case study <span aria-hidden="true">→</span>
-        </MoreLink>
+        </Link>
       </CardFooter>
     </Card>
   );
@@ -235,7 +250,7 @@ const PostRow = styled.li`
   }
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
-    grid-template-columns: ${`calc(${p.theme.space[10]} + ${p.theme.space[4]})`} minmax(0, 1fr) auto;
+    grid-template-columns: calc(${(p) => p.theme.space[10]} + ${(p) => p.theme.space[4]}) minmax(0, 1fr) auto;
     align-items: baseline;
     gap: ${(p) => p.theme.space[4]};
   }
@@ -271,6 +286,8 @@ const PostMeta = styled.span`
 /* -------------------------------------------------------------------------- */
 
 export function Home(): React.ReactNode {
+  const theme = useTheme() as Tokens;
+  const links: LinkClasses = { inline: inlineLinkClass(theme), title: titleLinkClass(theme) };
   const projects = heroProjects();
   const latestPosts = postsByDate().slice(0, 3);
 
@@ -294,10 +311,10 @@ export function Home(): React.ReactNode {
           advice holds up on both sides of that boundary.
         </Lede>
         <CtaRow>
-          <Button as={Link} to="/projects" variant="primary" size="lg" data-testid="home-cta-projects">
+          <Button as={ROUTER_LINK} to="/projects" variant="primary" size="lg" data-testid="home-cta-projects">
             View projects
           </Button>
-          <Button as={Link} to="/contact" variant="secondary" size="lg" data-testid="home-cta-contact">
+          <Button as={ROUTER_LINK} to="/contact" variant="secondary" size="lg" data-testid="home-cta-contact">
             Get in touch
           </Button>
         </CtaRow>
@@ -313,7 +330,7 @@ export function Home(): React.ReactNode {
         {projects.length > 0 ? (
           <Grid data-testid="featured-grid">
             {projects.map((project) => (
-              <ProjectCard key={project.slug} project={project} />
+              <ProjectCard key={project.slug} project={project} links={links} />
             ))}
           </Grid>
         ) : (
@@ -324,7 +341,7 @@ export function Home(): React.ReactNode {
             sanitized. In the meantime, the projects index is where they will
             land — and email is the fastest way to ask about work in progress."
             action={
-              <Button as={Link} to="/projects" variant="secondary" data-testid="home-featured-empty-cta">
+              <Button as={ROUTER_LINK} to="/projects" variant="secondary" data-testid="home-featured-empty-cta">
                 Browse all projects
               </Button>
             }
@@ -344,7 +361,9 @@ export function Home(): React.ReactNode {
               <PostRow key={post.slug}>
                 <PostDate>{formatDate(post.date)}</PostDate>
                 <PostTitle>
-                  <CardLink to={`/writing/${post.slug}`}>{post.title}</CardLink>
+                  <Link to={`/writing/${post.slug}`} className={links.title}>
+                    {post.title}
+                  </Link>
                 </PostTitle>
                 <PostMeta>{post.readingMinutes} min read</PostMeta>
               </PostRow>
@@ -357,7 +376,7 @@ export function Home(): React.ReactNode {
             description="The first posts are drafted and in review. Subscribe via the RSS
             link in the footer to hear about them the day they publish."
             action={
-              <Button as={Link} to="/writing" variant="secondary" data-testid="home-writing-empty-cta">
+              <Button as={ROUTER_LINK} to="/writing" variant="secondary" data-testid="home-writing-empty-cta">
                 Go to the writing index
               </Button>
             }

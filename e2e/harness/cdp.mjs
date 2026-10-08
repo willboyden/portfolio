@@ -129,6 +129,12 @@ export class Page {
       if (message.method === 'Network.loadingFailed') {
         this.failedRequests.push(message.params?.errorText ?? 'request failed');
       }
+      if (message.method === 'Network.responseReceived') {
+        const info = message.params?.response;
+        /* Record the LAST main-document response's headers; specs use
+         * lastResponseHeaders() for cache-control/CSP assertions. */
+        if (info && message.params?.type === 'Document') this.lastDocResponse = info;
+      }
     };
 
     await this.send('Page.enable');
@@ -352,6 +358,14 @@ export class Page {
 
   async url() {
     return this.evaluate('return location.href');
+  }
+
+  /** Lowercased header map of the last main-document response (CDP gives Title-Case). */
+  async lastResponseHeaders() {
+    const raw = this.lastDocResponse?.headers ?? {};
+    const out = {};
+    for (const [k, v] of Object.entries(raw)) out[k.toLowerCase()] = String(v);
+    return out;
   }
 
   async pathname() {
