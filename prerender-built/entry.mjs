@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T06:02:42.526Z",
+	generatedAt: "2026-10-08T06:05:24.734Z",
 	projects: [
 		{
 			"slug": "system-monitor",

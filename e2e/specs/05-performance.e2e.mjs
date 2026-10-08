@@ -6,7 +6,15 @@ import { describe, test } from '../harness/framework.mjs';
 
 describe('performance', () => {
   test('home loads fully with < 250 kB of JS+CSS transferred', async ({ page, goto }) => {
-    /* Warm the resource entries, then measure via the Resource Timing API. */
+    /* Measure a COLD first visit — what a hiring manager's browser actually
+     * pays. context.reset() navigates '/' before every spec, so by now the
+     * HTTP cache is warm: cached entries report transferSize 0 and
+     * encodedBodySize = DECODED bytes (raw, ~3.4x gzip), which once failed
+     * this spec while the app itself was fine. Clear + disable the cache for
+     * the measurement, restore after. (audit-dist.mjs independently proves
+     * the true gzip first-load graph size from the build output.) */
+    await page.send('Network.clearBrowserCache');
+    await page.send('Network.setCacheDisabled', { cacheDisabled: true });
     await goto('/');
     const bytes = await page.evaluate(`
       return performance.getEntriesByType('resource')

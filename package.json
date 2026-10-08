@@ -17,6 +17,7 @@
     "preview": "node scripts/serve-dist.mjs dist 4321",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "coverage": "node scripts/coverage-v8.mjs",
     "test:watch": "vitest",
     "test:e2e": "node e2e/run.mjs",
     "content:build": "node scripts/build-content.mjs",
