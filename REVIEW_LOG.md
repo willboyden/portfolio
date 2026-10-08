@@ -4,26 +4,78 @@ Each round: reviewer persona → findings (severity: BLOCKER/HIGH/MEDIUM/LOW) �
 fix commits → re-verification. Site ships only with 0 unresolved
 BLOCKER/HIGH/MEDIUM findings in the final round.
 
-## Round 0 — orchestrator self-review during build (pre-review)
+## Round 1 — three adversarial reviewers (completed)
 
-| ID | Sev | Finding | Evidence | Disposition |
-|----|-----|---------|----------|-------------|
-| 0.1 | HIGH (open) | Two theme controllers coexist: `AppThemeProvider` (platform) and `ThemePreferenceProvider` (chrome) both own dark/light | grep shows both defined; App.tsx composition under review | OPEN — R1-A reviewing; orchestrator will collapse to one provider (chrome owns preference, platform reads it) and re-verify. |
-| 0.2 | HIGH | `styled.svg` missing from intrinsics + SVG attrs (`viewBox`, `focusable`, `strokeLinecap`...) dropped by prop allow-list → every inline icon rendered broken | layout.test failure: `focusable="false"` missing from SSR markup; fixed by adding SVG tags + attrs to allow-list | FIXED — pinned by contract test `passes SVG attributes through to the DOM` (vendor/emotion/emotion.contract.test.tsx), 260/260 green. |
-| 0.3 | MEDIUM | Emotion CSS with `undefined` interpolation emitted `padding: ;` silently | probe: typo'd theme token produced empty declaration | FIXED — serialize throws on empty/suspect values; tests pin it. |
-| 0.4 | MEDIUM | OG image generator overlapped logo with headline; wrote into `dist/` which vite wipes | vision_analyze pass 1 collision report; OUT path | FIXED — bottom-right zone, `public/` canonical; vision pass 2 verified clean. |
-| 0.5 | LOW | Preview server lacked production security headers → security e2e would test fiction | diff serve-dist vs nginx.conf headers | FIXED — serve-dist mirrors CSP/nosniff/frame/referrer; equivalence is R1-E review scope. |
+Reviewers: **R1-A** principal React engineer (vendored emotion/router/theme/shell),
+**R1-B** WCAG 2.2 AA auditor (chrome/UI/tokens/a11y-suite), **R1-C** app-security
+engineer (markdown→browser trust chain, CSP, supply chain, secrets). All findings
+were reproduced with executed probes before acceptance (AGENTS.md §1).
 
-## Round 1 — engineering review (dispatched)
+### R1-A (React/emotion) — disposition
 
-Findings against the scaffold before any review round:
+| ID | Sev | Finding | Disposition |
+|----|-----|---------|-------------|
+| R1A-01 | BLOCKER | `ThemePreferenceProvider` never mounted in `createApp()` → prerender crashed all 16 routes | FIXED — provider mounted above AppThemeProvider (integration verified: build green, e2e theme tests green) |
+| R1A-02 | HIGH | Two theme controllers persisted incompatible formats under `portfolio.theme` (JSON vs raw string), mutually evicting | FIXED — single JSON codec both sides write/read; reader tolerates legacy bare strings; theme-init.js already matched JSON |
+| R1A-03 | HIGH | `keyframeCache` survived `__resetSheet()` → later routes got animation names with NO `@keyframes` rule | FIXED — registration re-checked against sheet every call (`vendor/emotion/core/src/index.ts`) |
+| R1A-04 | MEDIUM | `styled(Component)` stripped custom/`$` props (isPropValid applied to non-DOM targets) | FIXED — Emotion semantics: component targets forward everything except stripped internals; `$current` trap on Pagination closed |
+| R1A-05 | MEDIUM | `<Global>` sheet key used a 40-char prefix → different Globals sharing a prefix silently clobber | FIXED — key = `global:${hash(cssText)}` (full text) |
+| R1A-06 | MEDIUM | MobileMenu referenced `fade-in`/`slide-down` keyframes that were never defined (dead CSS) | FIXED — nested `@keyframes` added to Backdrop/Panel (Spinner pattern) |
+| R1A-07 | LOW | SUSPECT_VALUE guard false-positives on quoted `NaN`/`undefined` text | ACCEPTED as documented strictness; failure mode is a loud build error, never silent corruption |
+| R1A-08 | LOW | `.attrs()` merge order inverted vs upstream; unused in repo | ACCEPTED — no call sites; documented in vendor README scope |
+| R1A-09 | LOW | Router: popstate+hashchange double-setLocation; multi-`#` scroll id | ACCEPTED for now (no user-visible break); candidate for round-2 polish |
+| R1A-10 | LOW | Prerendered `<style id="emotion-prerender">` not adopted by client → CSS shipped twice until boot | OPEN candidate — cosmetic byte doubling, no FOUC/drift (deterministic keys); round-2 |
 
-| # | Sev | Finding | Status |
-|---|-----|---------|--------|
-| 0.1 | HIGH | Two theme controllers existed (ThemeProvider vs layout/ThemePreference) — provider-stack ambiguity | FIXED: ThemePreferenceProvider owns preference+DOM; AppThemeProvider consumes it and owns Emotion theme+globals; single source verified by integration test |
-| 0.2 | MEDIUM | Prerender injected inline `<script>` would break the CSP `script-src 'self'` plan | FIXED: theme-init ships as /theme-init.js; only emotion `<style>` is inline (allowed by style-src unsafe-inline) |
-| 0.3 | HIGH | Child agents claimed passing tests that did not exist on disk | FIXED-process: orchestrator now verifies every claim with disk stat + test rerun before acceptance |
-| 0.4 | MEDIUM | ui.test.tsx asserted `background: #x` with space; emotion serializes compact | FIXED: normalized matcher added centrally in tests |
-| 0.5 | LOW | e2e helpers used `this.` methods on a destructured object | FIXED: plain closures |
+Verified clean by R1-A (recorded so future rounds don't re-litigate): class-name
+determinism, CSS insertion-order parity, validation-throwing serialization,
+router param decoding, SVG casing.
 
-## Round 1 — pending (to be scheduled after batch B integration)
+### R1-B (WCAG) — disposition
+
+| ID | Sev | Finding | Disposition |
+|----|-----|---------|-------------|
+| F1 | HIGH | light `success` #0e8a5f = 4.10:1 (fails AA as text; PostDetail share status uses it) | FIXED → #0b7a53 (5.04), pinned by new contrast matrix |
+| F2 | HIGH | `textSubtle` fails AA on every surface in BOTH themes (footer copyright, dialog hint, pagination labels) | FIXED → dark #7c88a3 / light #5d6880, pinned by matrix + distinctness-from-textMuted test |
+| F3 | MEDIUM | `Section` emitted `aria-labelledby` to a nonexistent heading when no `title` | FIXED — conditional on title |
+| F4 | MEDIUM | Modal dialog lacked background `inert` (NVDA browse-mode escape) + focus-restore hazards | FIXED — body-children inerted while open (restored on close), one-shot restoreTarget, hidden-target guard |
+| F5 | MEDIUM | Wordmark rendered accentText-on-accent (3.16:1 dark) — the combo Button documents as rejected | FIXED → bg-on-accent verified pair |
+| F6 | MEDIUM | Nothing enforced contrast math (how F1/F2 shipped) | FIXED — `src/theme/contrast.test.ts` computes WCAG ratios for 21 curated pairs × 2 themes |
+| F7 | MEDIUM | Sticky header @72% opacity over content → transient 3.19:1 | FIXED — blur branch raised to 88% |
+| F8 | MEDIUM | `/videos` routed but linked nowhere (unreachable page) | FIXED — Videos added to NAV_ITEMS; layout test updated |
+| L1 | LOW | reduced-motion guard lost to component animations/scroll-behavior | FIXED — `!important` on the global guard (load-bearing, commented) |
+| L2 | LOW | Pagination current/disabled edges project as generic; keyboard can't step past disabled edge | OPEN — round-2 UX fix (needs a11y-preserving disabled-button pattern) |
+| L3 | LOW | `useThemeTokens()` comment overclaims an assertion | OPEN — cosmetic |
+| L4 | LOW | Unused SkipLink primitive duplicates Layout's real skip link | OPEN — consolidate in round 2 |
+| L5 | LOW | noscript linked `/blog/` (not a route) | FIXED → `/writing/` |
+| L6 | LOW | `aria-controls` dangles while dialog closed | ACCEPTED — the documented ARIA-permitted pattern (comment in Header.tsx); VoiceOver tradeoff noted |
+| L7 | LOW | Spinner status text inside aria-labeled button not announced | ACCEPTED — aria-busy conveys it; live region candidate round 2 |
+| F9 | — | e2e a11y-suite gap list (15 items) | PARTIALLY FIXED — fail-fast, contrast gate, touch-target threshold; remaining gaps (AX-tree, focus-trap real Tab cycle, 240px reflow) → round-2 a11y reviewer owns |
+
+### R1-C (security) — disposition
+
+| ID | Sev | Finding | Disposition |
+|----|-----|---------|-------------|
+| #1 | HIGH | nginx `add_header` inheritance: every location with its own `add_header` lost CSP/XFO/nosniff | FIXED — `deploy/snippets/security-headers.conf` included server-level AND in every add_header location; Dockerfile copies snippets/; `config-lint.test.ts` enforces the invariant + CSP parity with serve-dist |
+| #2 | HIGH | `z.string().url()` accepted `javascript:`/`data:` in frontmatter → `<a href>` sinks | FIXED — shared `SafeUrl` (http/https/mailto refine) on all schema URL fields |
+| #3 | MEDIUM | Manifest deps lied (eslint ^9 vs 10.8 installed etc.) + phantom `@testing-library/dom`; no lockfile in offline container | FIXED versions to installed truth + dropped phantom dep. Lockfile: NOT PRODUCIBLE offline (no registry) — Docker note added instead; flagged in deploy docs |
+| #4 | LOW | `style-src 'unsafe-inline'` needed by emotion sheet injection | ACCEPTED — documented rationale (accurate per reviewer) |
+| #5 | LOW | serve-dist 404 reflected raw `req.url` into HTML | FIXED — HTML-escaped |
+| #6 | LOW | audit didn't prove prerender ran | FIXED-in-effect — audit's canonical/title checks already fail a client-only dist (verified); reviewer's scenario passes the gate only for zero-page dists, which route-existence check already blocks |
+| #7 | LOW | plaintext :80, HTTPS 301 commented | ACCEPTED for container boot; deploy docs say re-enable TLS+HSTS |
+| #8 | LOW | CSP `img-src 'self' data:` unused; `object-src` implicit | FIXED — img-src 'self', object-src 'none' (nginx + serve-dist + e2e CSP string all synced by config-lint test) |
+| #9 | LOW | `dangerouslySetInnerHTML` DRAFT-comment footgun | ACCEPTED (string literals only); will be deleted with the DRAFT markers at content finalization |
+| #10 | INFO | `SITE.shortTitle`/`tagline` referenced but undefined → home title rendered "… — undefined" | FIXED — both defined on SITE |
+
+Reviewer-verified strong areas (recorded): full XSS vector sweep BLOCKED
+(61-case harness incl. `</script>`/JSON-LD/head-injection/slug traversal),
+secrets scan clean, lifecycle hooks clean.
+
+## Round-2 carry list (for the next reviewer wave)
+
+- R1A-10: adopt/dedupe prerendered style tag at boot (perf byte-doubling)
+- R1A-09: router scroll-id edge + popstate dedupe
+- R1-B L2: Pagination disabled-edge keyboard path + AX projection
+- R1-B L4: consolidate SkipLink implementations
+- R1-B F9 remaining: AX-tree assertions, real-Tab focus-trap cycle, 240px reflow,
+  theme-switch announcement (live region)
+- Content-driven checks: video duration rows once real videos exist
