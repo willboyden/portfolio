@@ -125,7 +125,10 @@ const Panel = styled.div`
   z-index: ${(p) => p.theme.z.overlay + 1};
   max-height: 100dvh;
   overflow-y: auto;
-  padding: ${(p) => p.theme.space[5]} ${(p) => p.theme.layout.gutter}
+  /* Extreme-mobile (M4): safe-area insets both ends — top for standalone/
+   * fullscreen notches, bottom for home-indicator devices. */
+  padding: calc(${(p) => p.theme.space[5]} + env(safe-area-inset-top))
+    ${(p) => p.theme.layout.gutter}
     calc(${(p) => p.theme.space[6]} + env(safe-area-inset-bottom));
   background: ${(p) => p.theme.color.bgElevated};
   border-bottom: 1px solid ${(p) => p.theme.color.border};

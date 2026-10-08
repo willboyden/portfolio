@@ -146,6 +146,9 @@ export interface GlobalProps {
 export function Global({ styles }: GlobalProps): null {
   const theme = useContextSafe();
   const list: StyleValue[] = Array.isArray(styles) ? (styles as StyleValue[]) : [styles as StyleValue];
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- `list` is a fresh
+   * array derived from `styles` every render; [styles, theme] IS its identity.
+   * Adding `list` would blow the memo away (new array on every render). */
   const cssText = useMemo(() => serializeArgs(list, theme), [styles, theme]);
 
   if (cssText.trim()) {

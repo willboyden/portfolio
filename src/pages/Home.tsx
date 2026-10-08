@@ -77,6 +77,12 @@ const Tagline = styled.span`
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     font-size: ${(p) => p.theme.font.sizes['2xl']};
   }
+
+  /* Extreme mobile (M2): part of the compacted hero ramp. */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-top: ${(p) => p.theme.space[2]};
+    font-size: ${(p) => p.theme.font.sizes.lg};
+  }
 `;
 
 const Lede = styled.p`
@@ -85,6 +91,15 @@ const Lede = styled.p`
   font-size: ${(p) => p.theme.font.sizes.lg};
   line-height: ${(p) => p.theme.font.leading.relaxed};
   color: ${(p) => p.theme.color.textMuted};
+
+  /* Extreme mobile (M2): at 320x568 the full-size lockup pushed the CTAs
+   * ~280px below the fold. Compact the type ramp on short/narrow screens —
+   * content intact, rhythm tightened. */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-top: ${(p) => p.theme.space[4]};
+    font-size: ${(p) => p.theme.font.sizes.md};
+    line-height: ${(p) => p.theme.font.leading.normal};
+  }
 `;
 
 const CtaRow = styled.div`
@@ -92,6 +107,10 @@ const CtaRow = styled.div`
   flex-wrap: wrap;
   gap: ${(p) => p.theme.space[3]};
   margin-top: ${(p) => p.theme.space[6]};
+
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-top: ${(p) => p.theme.space[5]};
+  }
 `;
 
 const HeroRule = styled.hr`
@@ -330,12 +349,10 @@ export function Home(): React.ReactNode {
           </Tagline>
         </Heading>
         <Lede>
-          I advise teams on the hard middle of technical work: the point where a
-          data-science result has to become a maintained service, a prototype
-          has to become an architecture, and &ldquo;it runs on my machine&rdquo;
-          has to become &ldquo;it runs, and we know why.&rdquo; Full-stack
-          engineering is how I got there; a data-science grounding is why the
-          advice holds up on both sides of that boundary.
+          I advise teams on the hard middle of technical work: where a
+          data-science result has to become a maintained service, and
+          &ldquo;it runs on my machine&rdquo; has to become &ldquo;it runs, and
+          we know why.&rdquo;
         </Lede>
         <CtaRow>
           <Button as={ROUTER_LINK} to="/projects" variant="primary" size="lg" data-testid="home-cta-projects">

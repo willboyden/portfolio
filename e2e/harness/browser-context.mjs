@@ -72,6 +72,21 @@ export async function startBrowser(baseUrl) {
       await gotoSized(375, 720, path);
     },
 
+    /** 320x568 — the narrowest phone still in the wild (iPhone SE 1st gen).
+     *  "Extreme mobile": if it survives 320, everything above it does. */
+    async goto320(path) {
+      await gotoSized(320, 568, path);
+    },
+
+    /** Landscape phone: short-viewport layout traps (sticky header eats 40%). */
+    async gotoLandscape(path) {
+      await gotoSized(844, 390, path);
+    },
+
+    async goto768(path) {
+      await gotoSized(768, 1024, path);
+    },
+
     async goto1280(path) {
       await gotoSized(1280, 800, path);
     },

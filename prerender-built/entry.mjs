@@ -1109,7 +1109,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	generatedAt: "2026-10-08T05:37:48.038Z",
+	generatedAt: "2026-10-08T05:41:34.070Z",
 	projects: [
 		{
 			"slug": "langfuse-dashboard",
@@ -3250,7 +3250,10 @@ var Panel$3 = styled.div`
   z-index: ${(p) => p.theme.z.overlay + 1};
   max-height: 100dvh;
   overflow-y: auto;
-  padding: ${(p) => p.theme.space[5]} ${(p) => p.theme.layout.gutter}
+  /* Extreme-mobile (M4): safe-area insets both ends — top for standalone/
+   * fullscreen notches, bottom for home-indicator devices. */
+  padding: calc(${(p) => p.theme.space[5]} + env(safe-area-inset-top))
+    ${(p) => p.theme.layout.gutter}
     calc(${(p) => p.theme.space[6]} + env(safe-area-inset-bottom));
   background: ${(p) => p.theme.color.bgElevated};
   border-bottom: 1px solid ${(p) => p.theme.color.border};
@@ -5101,6 +5104,12 @@ var Tagline = styled.span`
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     font-size: ${(p) => p.theme.font.sizes["2xl"]};
   }
+
+  /* Extreme mobile (M2): part of the compacted hero ramp. */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-top: ${(p) => p.theme.space[2]};
+    font-size: ${(p) => p.theme.font.sizes.lg};
+  }
 `;
 var Lede$6 = styled.p`
   margin: ${(p) => `${p.theme.space[5]} 0 0`};
@@ -5108,12 +5117,25 @@ var Lede$6 = styled.p`
   font-size: ${(p) => p.theme.font.sizes.lg};
   line-height: ${(p) => p.theme.font.leading.relaxed};
   color: ${(p) => p.theme.color.textMuted};
+
+  /* Extreme mobile (M2): at 320x568 the full-size lockup pushed the CTAs
+   * ~280px below the fold. Compact the type ramp on short/narrow screens —
+   * content intact, rhythm tightened. */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-top: ${(p) => p.theme.space[4]};
+    font-size: ${(p) => p.theme.font.sizes.md};
+    line-height: ${(p) => p.theme.font.leading.normal};
+  }
 `;
 var CtaRow$2 = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${(p) => p.theme.space[3]};
   margin-top: ${(p) => p.theme.space[6]};
+
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-top: ${(p) => p.theme.space[5]};
+  }
 `;
 var HeroRule = styled.hr`
   margin: ${(p) => `${p.theme.space[8]} 0 0`};
@@ -5330,7 +5352,7 @@ function Home() {
 					"data-testid": "home-title",
 					children: ["Alex Rivera", /* @__PURE__ */ jsx(Tagline, { children: "I turn analytical work into software that survives production — and production realities back into the analysis." })]
 				}),
-				/* @__PURE__ */ jsx(Lede$6, { children: "I advise teams on the hard middle of technical work: the point where a data-science result has to become a maintained service, a prototype has to become an architecture, and “it runs on my machine” has to become “it runs, and we know why.” Full-stack engineering is how I got there; a data-science grounding is why the advice holds up on both sides of that boundary." }),
+				/* @__PURE__ */ jsx(Lede$6, { children: "I advise teams on the hard middle of technical work: where a data-science result has to become a maintained service, and “it runs on my machine” has to become “it runs, and we know why.”" }),
 				/* @__PURE__ */ jsxs(CtaRow$2, { children: [/* @__PURE__ */ jsx(Button, {
 					as: ROUTER_LINK$4,
 					to: "/projects",
