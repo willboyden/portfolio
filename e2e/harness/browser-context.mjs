@@ -16,6 +16,26 @@ export async function startBrowser(baseUrl) {
   const browser = await launchBrowser({ port: ++counter });
   const page = await browser.newPage();
 
+  /* Plain closures, not methods: specs receive this object destructured, and
+   * `this`-based methods would lose their receiver. */
+  const text = async (selector) => {
+    const value = await page.textContent(selector);
+    if (value === null) throw new Error(`expected element "${selector}" to exist, it did not`);
+    return value.trim();
+  };
+
+  const goto = async (path) => {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'load' });
+    await page.waitForAppReady();
+  };
+
+  /* Verified emulation recipe: setDeviceMetricsOverride drives layout AND
+   * matchMedia width queries in headless shell (checked: 375 -> mobile). */
+  const gotoSized = async (width, height, path) => {
+    await page.setViewport({ width, height });
+    await goto(path);
+  };
+
   return {
     baseUrl,
     browser,
@@ -23,30 +43,31 @@ export async function startBrowser(baseUrl) {
 
     /** Fresh document + cleared error listeners, without paying browser boot. */
     async reset() {
-      await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
-      await page.waitForAppReady();
+      await goto('/');
       page.consoleMessages.length = 0;
       page.pageErrors.length = 0;
       page.failedRequests.length = 0;
     },
 
-    async goto(path) {
-      await page.goto(`${baseUrl}${path}`, { waitUntil: 'load' });
-      await page.waitForAppReady();
+    goto,
+
+    async goto375(path) {
+      await gotoSized(375, 720, path);
     },
 
-    /**
-     * Assertion helpers. Deliberately tiny and dependency-free; failures say
-     * what was expected and what the page actually contained.
-     */
-    async text(selector) {
-      const value = await page.textContent(selector);
-      if (value === null) throw new Error(`expected element "${selector}" to exist, it did not`);
-      return value.trim();
+    async goto1280(path) {
+      await gotoSized(1280, 800, path);
+    },
+
+    /** prefers-reduced-motion: reduce/no-preference via CDP media override. */
+    async setReducedMotion(on) {
+      await page.send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: on ? 'reduce' : 'no-preference' }],
+      });
     },
 
     async expectText(selector, expected) {
-      const actual = await this.text(selector);
+      const actual = await text(selector);
       if (!actual.includes(expected)) {
         throw new Error(`"${selector}" text was ${JSON.stringify(actual)}, expected to contain ${JSON.stringify(expected)}`);
       }

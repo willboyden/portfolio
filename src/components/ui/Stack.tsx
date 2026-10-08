@@ -31,7 +31,8 @@ const Flex = styled.div<{
   flex-direction: ${(p) => p.$direction};
   flex-wrap: ${(p) => (p.$wrap ? 'wrap' : 'nowrap')};
   gap: ${(p) => p.theme.space[p.$gap]};
-  align-items: ${(p) => (p.$align === 'stretch' ? 'stretch' : p.$align === 'between' ? 'stretch' : p.$align)};
+  align-items: ${(p) =>
+    p.$align === 'start' ? 'flex-start' : p.$align === 'end' ? 'flex-end' : p.$align};
   justify-content: ${(p) =>
     p.$justify === 'between'
       ? 'space-between'
