@@ -45,11 +45,6 @@ export const useIsomorphicLayoutEffect: typeof useEffect =
 /* useSyncExternalStore helpers (React 19, no use-sync-external-store shim)   */
 /* -------------------------------------------------------------------------- */
 
-/** Stable no-op subscribe for the server snapshot. */
-function serverSubscribe(): () => void {
-  return () => {};
-}
-
 /**
  * Subscribe to a `store` (src/lib/storage) with React 19's useSyncExternalStore.
  * On the server the snapshot is always `undefined`, so server HTML renders the
@@ -62,6 +57,7 @@ export function useStore<T>(store: {
   return useSyncExternalStore(
     (onChange) => store.subscribe(() => onChange()),
     () => store.get(),
+    /* Server snapshot: never stored, matching the prerender shell. */
     () => undefined,
   );
 }
@@ -329,26 +325,22 @@ export interface ThemeNameState {
 
 /**
  * The concrete theme + preference, wired to localStorage AND the OS setting.
- * Server + first client paint report 'dark' (matching the prerender shell —
- * see themeInitScript, which fixes the real value before paint anyway); after
- * mount it follows the resolved preference.
+ * Derived from the store: theme-init.js already fixed `data-theme` before
+ * paint, so server and first client paint agree without an effect-sync pass.
  */
 export function useThemeNameState(): ThemeNameState {
   const stored = useStore<ThemePref>(themeStore);
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)');
   const preference: ThemePreference = stored?.theme ?? 'system';
-  const [themeName, setThemeNameState] = useState<ThemeName>('dark');
-
-  useEffect(() => {
-    /* Runs after hydration; init script already matched data-theme, so this is
-     * normally a no-op unless the stored pref changed in another tab. */
-    setThemeNameState(resolveTheme(preference, systemDark));
-  }, [preference, systemDark]);
+  /* Derived, not staged into state (no effect-sync, no cascading render).
+   * The server always reports 'dark' — CONTRACT pins prerender markup to the
+   * dark theme; the client derives from store + media query immediately
+   * (theme-init.js already fixed data-theme before this runs). */
+  const themeName = typeof window === 'undefined' ? 'dark' : resolveTheme(preference, systemDark);
 
   const setThemeName = useCallback((name: ThemeName): void => {
     const pref: ThemePref = { theme: name };
-    themeStore.set(pref);
-    setThemeNameState(name);
+    themeStore.set(pref); /* store write re-renders via useStore above */
     if (typeof document !== 'undefined') {
       try {
         document.documentElement.setAttribute('data-theme', name);
@@ -364,7 +356,6 @@ export function useThemeNameState(): ThemeNameState {
       preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
     if (next === 'system') {
       themeStore.remove();
-      setThemeNameState(resolveTheme('system', systemDark));
       if (typeof document !== 'undefined') {
         try {
           const name = resolveTheme('system', systemDark);

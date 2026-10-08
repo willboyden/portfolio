@@ -32,7 +32,7 @@ export const routes: RouteDefinition[] = [
   { path: '/contact', component: Contact },
 ];
 
-function Shell({ children }: { children: ReactNode }): ReactNode {
+function Shell(): ReactNode {
   return createElement(Layout, {
     /* Outlet inside Layout resolves the matched route. */
     children: createElement(Outlet, { NotFound }),

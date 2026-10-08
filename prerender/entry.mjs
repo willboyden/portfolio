@@ -9,12 +9,11 @@
  * The app shell (src/app/App.tsx) exports `createApp(path)` so the same tree
  * renders on both sides of the build.
  */
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createElement } from 'react';
 import { createApp } from '../src/app/App.tsx';
 import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE, pageMeta } from '../src/lib/seo.ts';
-import { themeInitScript } from '../src/theme/ThemeProvider.tsx';
 import { content } from '../src/content/index.ts';
 
 export function prerenderPaths(): string[] {

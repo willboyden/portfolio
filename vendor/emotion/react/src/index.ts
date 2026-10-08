@@ -95,6 +95,10 @@ function useContextSafe(): Theme {
 export function css(strings: TemplateStringsArray, ...interpolations: StyleValue[]): string;
 export function css(...args: StyleValue[]): string;
 export function css(...args: unknown[]): string {
+  /* eslint-disable-next-line react-hooks/rules-of-hooks --
+   * useContextSafe reads React's internal dispatcher defensively (returns
+   * empty theme outside render); it is not a Hook at this call site, and
+   * upstream Emotion's css() likewise reads theme out-of-band. */
   const theme = useContextSafe();
   const { name, styles } = serializeStyles('css', interpolate(args), { theme });
   return registerStyle(name, styles);

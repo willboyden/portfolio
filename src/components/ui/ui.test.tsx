@@ -30,9 +30,10 @@ import {
   pageWindow,
 } from './index';
 
-const h = <P,>(c: React.ComponentType<P>, p: P) => createElement(c, p);
-const dark = (node: ReactNode) => renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: node }));
-const light = (node: ReactNode) => renderToStaticMarkup(h(ThemeProvider, { theme: lightTheme, children: node }));
+const h = (c: React.ComponentType<any> | string, p?: Record<string, unknown>, ...kids: unknown[]) =>
+  createElement(c, p, ...(kids as React.ReactNode[]));
+const dark = (node: ReactNode) => renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: node as never }));
+const light = (node: ReactNode) => renderToStaticMarkup(h(ThemeProvider, { theme: lightTheme, children: node as never }));
 
 const REDUCED = '@media (prefers-reduced-motion: reduce)';
 
@@ -103,7 +104,7 @@ describe('Button', () => {
   it('polymorphic `as` accepts a component and keeps custom props (router Link pattern)', () => {
     const Linkish = (props: { to: string; className?: string; children?: ReactNode }) =>
       h('a', { href: props.to, className: props.className, 'data-probe': 'linkish', children: props.children });
-    const html = dark(h(Button, { as: Linkish, to: '/writing', children: 'Blog' }));
+    const html = dark(h(Button, { as: Linkish as unknown as 'button', to: '/writing', children: 'Blog' }));
     expect(html).toContain('href="/writing"');
     expect(html).toContain('data-probe="linkish"');
     expect(html).toMatch(/class="css-[a-z0-9]+"/);
@@ -457,7 +458,7 @@ describe('Pagination', () => {
   });
 
   it('hrefFor controls the generated links', () => {
-    const html = dark(h(Pagination, { page: 1, total: 2, hrefFor: (n) => `/p/${n}` }));
+    const html = dark(h(Pagination, { page: 1, total: 2, hrefFor: (n: number) => `/p/${n}` }));
     expect(html).toContain('href="/p/2"');
   });
 

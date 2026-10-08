@@ -65,6 +65,13 @@ const SAFE_DOM_PROPS = new Set([
   'onLoadedMetadata','onLoadStart','onPause','onPlay','onPlaying','onProgress','onRateChange','onSeeked','onSeeking',
   'onStalled','onTimeUpdate','onVolumeChange','onWaiting','onLoad','onAuxClick','onToggle','onPointerDown',
   'onPointerUp','onPointerMove','onPointerEnter','onPointerLeave','onGotPointerCapture','onLostPointerCapture',
+  /* SVG presentation + geometry attributes — without these, styled.svg/path
+   * silently drop fill/stroke/viewBox and every inline icon renders blank. */
+  'focusable','viewBox','preserveAspectRatio','d','cx','cy','r','rx','ry','x','x1','x2','y','y1','y2','points',
+  'fill','fillOpacity','fillRule','stroke','strokeOpacity','strokeWidth','strokeLinecap','strokeLinejoin',
+  'strokeDasharray','strokeDashoffset','strokeMiterlimit','strokeMiterlimit','clipPath','clipRule',
+  'stopColor','stopOpacity','offset','textAnchor','dominantBaseline','vectorEffect','shapeRendering',
+  'transform','transformOrigin','markerEnd','markerStart','markerMid','targetX','targetY','aspectRatio','xmlns','xmlnsXLink',
 ]);
 
 export function isPropValid(prop: string): boolean {
@@ -87,7 +94,10 @@ export type HtmlTag =
   | 'ol' | 'optgroup' | 'option' | 'output' | 'p' | 'picture' | 'pre' | 'progress' | 'q' | 's' | 'samp'
   | 'section' | 'select' | 'slot' | 'small' | 'source' | 'span' | 'strong' | 'sub' | 'summary' | 'sup'
   | 'table' | 'tbody' | 'td' | 'textarea' | 'tfoot' | 'th' | 'thead' | 'time' | 'tr' | 'u' | 'ul' | 'var'
-  | 'video' | 'wbr';
+  | 'video' | 'wbr'
+  /* SVG intrinsics (inline icons are first-class in this design system). */
+  | 'svg' | 'path' | 'circle' | 'rect' | 'line' | 'polyline' | 'polygon' | 'g'
+  | 'defs' | 'stop' | 'linearGradient' | 'radialGradient';
 
 export interface StyledProps {
   as?: HtmlTag | ComponentType<any>;
@@ -154,8 +164,6 @@ function buildComponent<P extends object>(
   forward: (prop: string) => boolean,
   options: StyledOptions,
 ): StyledComponent<P> {
-  const isTagString = typeof tag === 'string';
-
   const Inner = forwardRef<any, any>((rawProps: Record<string, unknown>, ref: Ref<any>) => {
     const theme = useContext(ThemeContext) ?? emptyTheme;
 
@@ -256,6 +264,8 @@ const DOM_TAGS: HtmlTag[] = [
   'ol','optgroup','option','output','p','picture','pre','progress','q','s','samp','section','select','slot',
   'small','source','span','strong','sub','summary','sup','table','tbody','td','textarea','tfoot','th','thead',
   'time','tr','u','ul','var','video','wbr',
+  /* SVG intrinsics: styled.svg / styled.path for inline icons. */
+  'svg','path','circle','rect','line','polyline','polygon','g','defs','stop','linearGradient','radialGradient',
 ];
 
 /**

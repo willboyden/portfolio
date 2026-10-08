@@ -28,7 +28,7 @@ import {
   useScrollProgress,
 } from 'app/lib/hooks';
 
-const h = (component: React.ComponentType, props: Record<string, unknown> = {}): React.ReactNode =>
+const h = (component: React.ComponentType<any>, props: Record<string, unknown> = {}): React.ReactNode =>
   createElement(component, props);
 
 /** Render `Probe` inside an Emotion ThemeProvider (hooks need no theme, but

@@ -229,6 +229,26 @@ describe('vendored @emotion/styled', () => {
     expect(sheet).toContain('box-shadow');
   });
 
+  it('passes SVG attributes through to the DOM (icon regression)', () => {
+    /* styled.svg must not drop focusable/fill/viewBox — every inline icon
+     * renders blank if the prop allow-list forgets SVG attributes. */
+    const Svg = styled.svg`
+      color: red;
+    `;
+    const html = renderToStaticMarkup(
+      createElement(Svg, {
+        viewBox: '0 0 24 24',
+        focusable: 'false',
+        'aria-hidden': true,
+        width: 24,
+        height: 24,
+      } as never),
+    );
+    expect(html).toContain('viewBox="0 0 24 24"');
+    expect(html).toContain('focusable="false"');
+    expect(html).toContain('aria-hidden="true"');
+  });
+
   it('dynamic props produce distinct deterministic class names', () => {
     const Flag = styled.span<{ $tone: 'a' | 'b' }>`
       color: ${(p) => (p.$tone === 'a' ? 'red' : 'green')};

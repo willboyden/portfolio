@@ -63,7 +63,7 @@ describe('a11y', () => {
     if (missing > 0) throw new Error(`${missing} <img> without alt attribute`);
   });
 
-  test('interactive controls are keyboard reachable and operable', async ({ goto, page, expectVisible }) => {
+  test('interactive controls are keyboard reachable and operable', async ({ goto, page }) => {
     await goto('/');
     /* Tab through the header: reach nav links and the theme toggle. */
     const seen = new Set();

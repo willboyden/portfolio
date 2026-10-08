@@ -70,7 +70,7 @@ const routes: RouteDefinition[] = [
 ];
 
 /** Full provider stack the chrome expects: Emotion theme → preference → router. */
-function render(ui: ReactNode, theme: typeof darkTheme = darkTheme, prefTheme = 'dark'): string {
+function render(ui: ReactNode, theme: typeof darkTheme = darkTheme, prefTheme: 'dark' | 'light' = 'dark'): string {
   return renderToStaticMarkup(
     createElement(
       ThemeProvider,

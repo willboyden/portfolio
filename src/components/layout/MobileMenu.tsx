@@ -254,7 +254,7 @@ export function MobileMenu({
       const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
       if (focusables.length === 0) return;
       const active = document.activeElement as HTMLElement | null;
-      const index = focusables.indexOf(active);
+      const index = active ? focusables.indexOf(active) : -1;
       const next = event.shiftKey ? prevFocusIndex(index, focusables.length) : nextFocusIndex(index, focusables.length);
       const target = focusables[next];
       if (target) {

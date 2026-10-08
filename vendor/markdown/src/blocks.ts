@@ -328,6 +328,6 @@ export function plainText(src: string): string {
 
 /** Parse + render a body (frontmatter already stripped) to HTML. */
 export function renderBody(src: string, headingId: HeadingIdFn): string {
-  const normalized = src.replace(/\r\n?/g, '\n').replace(/ +\n/g, '  \n');
+  const normalized = src.replace(/\r\n?/g, '\n').replace(/ {2,}\n/g, '  \n');
   return renderBlocks(parseBlocks(normalized.split('\n')), headingId);
 }

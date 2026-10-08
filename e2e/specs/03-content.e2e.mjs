@@ -5,7 +5,7 @@
 import { describe, test } from '../harness/framework.mjs';
 
 describe('content', () => {
-  test('projects list links each resolve to a detail page with the same title', async ({ goto, page, attribute }) => {
+  test('projects list links each resolve to a detail page with the same title', async ({ goto, page }) => {
     await goto('/projects');
     const hrefs = await page.evaluate(
       `return [...document.querySelectorAll('a[href^="/projects/"]')].map(a => a.getAttribute('href')).filter(h => h.replace(/\\/$/, '').split('/').length > 3).slice(0, 5)`,

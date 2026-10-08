@@ -401,7 +401,6 @@ export class Page {
 }
 
 export async function launchBrowser({ port = 9400, headless = true } = {}) {
-  const fs = await import('node:fs');
   const userDataDir = mkdtempSync(join(process.cwd(), '.cdp-prof-'));
   const args = [
     `${headless ? '--headless' : ''}`,

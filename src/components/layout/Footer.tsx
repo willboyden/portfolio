@@ -103,15 +103,6 @@ const Heading = styled.h2`
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
-const List = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[1]};
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-
 const LinkLine = styled.li`
   margin: 0;
 `;
