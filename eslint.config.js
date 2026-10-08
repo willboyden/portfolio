@@ -40,6 +40,23 @@ export default tseslint.config(
     rules: { 'no-console': 'off' },
   },
   {
+    /* public/*.js — pre-paint snippets (theme-init). Deliberately ES5 +
+     * dependency-free so they run BEFORE any module and in every engine,
+     * including the empty-catch private-mode fallbacks. R3-C: this file used
+     * to fall outside the linted set entirely — the config now covers every
+     * JS file in the repo, and `npm run lint` is `eslint .`. */
+    files: ['public/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
+    rules: {
+      'no-var': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { caughtErrors: 'none', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     files: ['*.config.ts', '*.config.mjs', 'eslint.config.js'],
     languageOptions: { globals: { ...globals.node } },
   },

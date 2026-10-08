@@ -1,6 +1,139 @@
 {
-  "generatedAt": "2026-10-08T05:53:01.534Z",
+  "generatedAt": "2026-10-08T05:55:38.004Z",
   "projects": [
+    {
+      "slug": "system-monitor",
+      "title": "System Monitor MCP Fleet",
+      "summary": "Three local monitoring services built on pure-stdlib /proc readers — a FastMCP query server with 8 telemetry tools, a sqlite-backed threshold alerting server with a CLI exit-code contract, and a unified FastAPI dashboard rendering Rich-styled gauges, tasks and violations across four routes. 61 tests, all load-independent via known-answer fixtures.",
+      "tags": [
+        "mcp",
+        "fastapi",
+        "python",
+        "monitoring",
+        "testing"
+      ],
+      "date": "2026-10-07",
+      "role": "Design and implementation (solo)",
+      "status": "shipped",
+      "period": "2026",
+      "highlights": [
+        "8 MCP tools for CPU, memory, disk, network, processes, uptime, health verdicts and a full snapshot — exact integer bytes from /proc and statvfs, CPU% from a two-sample /proc/stat delta",
+        "Every reading flows through a keyword-free module-level seam the tests monkeypatch with fixture files, so known-answer assertions (exact CPU%, exact memory bytes, exactly 2 violations on a breach fixture) pass identically under any machine load",
+        "Alert rules persist in a private sqlite db via ALERT_MCP_DB; the server refuses to open kanban.db/tasks.db and never writes outside /tmp, and the CLI exits 2 when any rule fires",
+        "The dashboard imports the two MCP modules read-only — neither file modified — and mounts HTML, /metrics, /tasks and /alerts routes; its tests use starlette TestClient with tmp dbs only",
+        "Hardened 2026-10-07 under mypy strict after an initial 2026-07-10 FastMCP build"
+      ],
+      "stack": [
+        "Python 3.13",
+        "mcp SDK (FastMCP)",
+        "FastAPI + Jinja2",
+        "sqlite3",
+        "/proc"
+      ],
+      "metrics": [
+        {
+          "label": "tests",
+          "value": "61 passed (verified 2026-10-08)"
+        },
+        {
+          "label": "MCP query tools",
+          "value": "8"
+        },
+        {
+          "label": "dashboard routes",
+          "value": "4"
+        }
+      ],
+      "featured": false
+    },
+    {
+      "slug": "ds-core",
+      "title": "ds_core Data Science Toolkit",
+      "summary": "Pure-Python data science toolkit backed by the DuckDB CLI subprocess — 38 modules covering a DuckDB DataFrame, statistics, clustering, dimensionality reduction, ensembles, calibration and conformal prediction intervals, with no Python duckdb binding and no numpy at runtime. Survived a five-reviewer, module-by-module audit that confirmed 26 bugs (5 critical) — every one fixed and verified against a concrete reproduction.",
+      "tags": [
+        "data-science",
+        "duckdb",
+        "python",
+        "ml",
+        "testing"
+      ],
+      "date": "2026-08-16",
+      "role": "Design, implementation and adversarial audit (solo)",
+      "status": "shipped",
+      "period": "2026",
+      "highlights": [
+        "38 modules, all running on stdlib + subprocess calls to the duckdb binary — genuine Lloyd's k-means, power-iteration PCA, Lee & Seung NMF, logistic-loss gradient boosting, bootstrap random forests, all hand-rolled and audit-verified",
+        "2026-07-12 full-codebase audit by 5 reviewers found 26 confirmed findings (5 CRITICAL, 16 HIGH, 4 MEDIUM, 1 LOW); all fixed with 72 inline AUDIT FIX comments, plus 3 extra bugs surfaced only while verifying",
+        "Fixes proven by measurement, not inspection — t-SNE same-cluster 5-NN accuracy 0.57 to 0.97, UMAP cluster separation chance to 1.0, AutoML selection leakage removed (validation 0.95 vs honest test 0.90), new Platt/isotonic calibrators cut ECE 0.221 to 0.019",
+        "Security hardening in the same pass — HTML/JS escaping in report and dashboard generators, a trusted_sql opt-in gate on Pipeline.load, and path-traversal refusal in the model downloader",
+        "One honest gap: the seeded fractional-sample test intermittently fails its tolerance band — 294/295 tests pass on a fresh 2026-10-08 run and the flake is documented, not deleted"
+      ],
+      "stack": [
+        "Python 3.11+",
+        "DuckDB CLI subprocess",
+        "stdlib only",
+        "pytest"
+      ],
+      "metrics": [
+        {
+          "label": "modules",
+          "value": "38"
+        },
+        {
+          "label": "audit findings fixed",
+          "value": "26 (+3 found during verification)"
+        },
+        {
+          "label": "test suite",
+          "value": "295 tests"
+        }
+      ],
+      "featured": true
+    },
+    {
+      "slug": "gov-payroll-workbench",
+      "title": "Gov Payroll Analytics Workbench",
+      "summary": "End-to-end analytics pipeline over a 23-table, ~279M-row ClickHouse database of government payroll, PPP loans and federal spending: a JSON-RPC/SSE query client, 14 re-runnable probe datasets that embed their own SQL and timings, and a single self-contained dark-theme dashboard with a 51-tile US map, dual-axis SVG trends and a full SQL provenance section.",
+      "tags": [
+        "data-viz",
+        "clickhouse",
+        "python",
+        "analytics",
+        "dashboards"
+      ],
+      "date": "2026-08-16",
+      "role": "Design and implementation (solo)",
+      "status": "shipped",
+      "period": "2026-08",
+      "highlights": [
+        "The sandbox cannot reach the ClickHouse HTTP port directly — the query layer drives the clickhouse-mcp server over JSON-RPC with SSE responses, session-id handshakes, retry and stale-session re-handshake",
+        "Every dataset is self-documenting — each data/*.json embeds the exact SQL, per-attempt elapsed time and row count, and the dashboard ships a provenance section exposing all of it",
+        "Three real ClickHouse quirks diagnosed and worked around — missing arbitrary() (error 46), alias-shadowing ILLEGAL_AGGREGATION (error 184), and non-uniform column names like fiscal_year stored as the string FY2026",
+        "Two coverage traps caught before they lied — QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70) and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award)",
+        "KPIs are recomputed from the rows at build time, never hardcoded; the single index.html embeds data as a JSON island and opens over file:// with zero network requests"
+      ],
+      "stack": [
+        "Python 3.13 stdlib",
+        "ClickHouse 24.3",
+        "MCP JSON-RPC + SSE",
+        "vanilla JS/CSS"
+      ],
+      "metrics": [
+        {
+          "label": "database",
+          "value": "23 tables, ~279M rows"
+        },
+        {
+          "label": "probe datasets",
+          "value": "14, each under 0.3 s server-side"
+        },
+        {
+          "label": "dashboard",
+          "value": "1 self-contained HTML file"
+        }
+      ],
+      "featured": false
+    },
     {
       "slug": "langfuse-dashboard",
       "title": "Langfuse Observability Dashboard",
@@ -71,6 +204,50 @@
         }
       ],
       "featured": true
+    },
+    {
+      "slug": "code-quality-dashboard",
+      "title": "Code Quality Metrics MCP",
+      "summary": "FastMCP server computing AST-based Python code-quality metrics with only the stdlib ast module — line classification, cyclomatic complexity per function, import inventory and static detection of bare excepts, print calls and oversized parameter lists, exposed as four scan/query/compare/alert tools. Its own scanner flagged its own code, and the findings were fixed.",
+      "tags": [
+        "mcp",
+        "python",
+        "static-analysis",
+        "developer-tools",
+        "testing"
+      ],
+      "date": "2026-08-04",
+      "role": "Design and implementation (solo)",
+      "status": "shipped",
+      "period": "2026",
+      "highlights": [
+        "Cyclomatic complexity straight from the AST — branch points counted for If, IfExp, For, While, ExceptHandler, With, Assert plus BoolOp AND/OR chains",
+        "Three anti-pattern detectors (bare except, print instead of logging, functions over 5 params) turned into file- and function-level alerts with warning/error severities at configurable thresholds (default complexity 10, LOC 500)",
+        "Four MCP tools — scan a directory, query files by complexity/LOC ranges, compare two directories, list threshold breaches; the recursive scanner skips venv, __pycache__ and node_modules",
+        "Dogfooding closed the loop — its own scan flagged print statements and bare excepts in this codebase, and a follow-up commit replaced them with logging on 2026-08-04",
+        "Complexity of the scanner itself was refactored down (72 to 66 total, alert logic 9 to 7) under test coverage"
+      ],
+      "stack": [
+        "Python 3.13",
+        "stdlib ast",
+        "mcp SDK (FastMCP)",
+        "pytest"
+      ],
+      "metrics": [
+        {
+          "label": "MCP tools",
+          "value": "4"
+        },
+        {
+          "label": "tests",
+          "value": "26 passed (verified 2026-10-08)"
+        },
+        {
+          "label": "detectors",
+          "value": "3 anti-patterns"
+        }
+      ],
+      "featured": false
     },
     {
       "slug": "duckdb-mcp",

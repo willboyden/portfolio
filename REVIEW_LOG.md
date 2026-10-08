@@ -79,3 +79,36 @@ secrets scan clean, lifecycle hooks clean.
 - R1-B F9 remaining: AX-tree assertions, real-Tab focus-trap cycle, 240px reflow,
   theme-switch announcement (live region)
 - Content-driven checks: video duration rows once real videos exist
+
+## Round 2 — four persona reviewers (completed, dispositioned)
+
+| Reviewer | Persona | Verdict after fixes |
+|---|---|---|
+| R2-A | Hiring manager / recruiter | A1-A12: fabricated email/handles/source-URLs removed (hidden-not-fabricated), fake orchestrator server count corrected to 6 verified MCP modules, title-glitch fixed, content-driven nav (empty Videos/Talks hidden, Now added), hiring/resume slots added (unset = hidden). |
+| R2-B | Technical content editor | B1-B17: falsified claims fixed against live repos (ATTACH caveat, SERIAL vs IDENTITY error classes, retry set 408/429/5xx, max_tokens attribution, scenario key `type`, reasoning_burn=0 honesty, recomputed latency triple, machine disclosure line, voice de-tilt, em-dash caps). |
+| R2-C | Performance & SEO engineer | 1-10: single SITE.url origin (no example.com in sitemap/robots), titles composed exactly once, 404 noindex + sitemap-excluded, modulepreload re-emitted, per-section OG images + Article JSON-LD image, RSS guid = permalink, og:locale en_US, SPA head sync via shared `metaFor` route-meta module. |
+| R2-D | Senior product/visual designer | V1-V9: one content rail (no double gutter), auto-fit featured grid, honest case-study placeholder + footer dead-band, light-mode material language (deepened canvas, real shadows, contrast re-derived + AA-gated), one chip recipe, hero folds at 568px height, safe-area insets both ends. |
+
+Round-2 verification: 491 unit / 49 e2e (4 new 320x568 extreme-mobile specs) /
+tsc 0 / lint 0 / AUDIT OK. R2C-5 (theme FOUC) shipped in round 3 below.
+
+## Round 3 — in progress
+
+**R2C-5 FOUC fix (shipped):** components now consume CSS-var token refs
+(`var(--c-*, fallback)`) so serialized component CSS is palette-independent and
+byte-identical server↔client (unit-pinned); BOTH palettes ship as `:root` +
+`[data-theme=dark|light]` blocks; the pre-paint theme-init flips the attribute.
+Verified in live Chromium: reload with light preference → first computed
+frame is rgb(238,241,246) (light bg), zero dark frame.
+
+**R3-A clean-code review (staff engineer):** F1 lint-red catch (dropped quote in
+new config-lint line — fixed, gate re-pinned); #1 data-theme selectors were
+serializing with corrupted quote-escapes (spec-strict engines would match
+nothing) → UNQUOTED identifier values, contract pinned by unit test; #2
+serve-dist answered 400/404 without security headers and one 404 call site
+reflected `req.url` unescaped → shared SECURITY_HEADERS on every response +
+sink-side escapeHtml. Reflected-XSS probe now returns escaped text with full
+CSP.
+
+**Running:** R3-C (clean code, fresh lens), R3-D (mobile-first design, built
+site), content builders (4 project entries + 3 launch posts, fact-checked).
