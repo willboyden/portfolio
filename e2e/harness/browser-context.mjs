@@ -47,8 +47,15 @@ export async function startBrowser(baseUrl) {
 
     /** Fresh document + cleared error listeners, without paying browser boot.
      *  ALSO restores the desktop viewport — specs mutate it via goto375 and a
-     *  leaked 375px window made later specs 'zero-size element' on desktop UI. */
+     *  leaked 375px window made later specs 'zero-size element' on desktop UI.
+     *  R3-D flake fix: Emulation.setEmulatedMedia (prefers-color-scheme /
+     *  prefers-reduced-motion) silently REVERTS to the shell default across
+     *  navigations in this headless build (probe: alternating light/dark
+     *  cycles lost the override after every commit). reset() therefore
+     *  re-asserts no-preference + no color-scheme override so every test
+     *  starts from a known media state instead of the last test's leftover. */
     async reset() {
+      await page.send('Emulation.setEmulatedMedia', { features: [] });
       await page.setViewport({ width: 1280, height: 800 });
       await goto('/');
       page.consoleMessages.length = 0;

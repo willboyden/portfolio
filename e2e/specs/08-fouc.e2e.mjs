@@ -20,6 +20,26 @@ async function firstPaint(page, baseUrl, { system, stored }) {
   await page.send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-color-scheme', value: system }],
   });
+  /* Flake guard (R3-D round): this headless shell can drop the emulated
+   * media across document commits. Verify the override actually took BEFORE
+   * navigating; if it was lost, re-send and verify again (up to 3 tries).
+   * Without this, a dropped override made the stored-pref tests resolve the
+   * wrong palette ~50% of runs — the "legacy bare-string" flake. */
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const effective = await page.evaluate(
+      `matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'`,
+    );
+    if (effective === system) break;
+    await page.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-color-scheme', value: system }],
+    });
+  }
+  const verified = await page.evaluate(
+    `matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'`,
+  );
+  if (verified !== system) {
+    throw new Error(`emulated prefers-color-scheme never took effect (wanted ${system})`);
+  }
   await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
   return page.evaluate(`(() => {
     const cs = getComputedStyle(document.body);
