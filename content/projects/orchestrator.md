@@ -15,6 +15,7 @@ role: Design and implementation (solo)
 status: shipped
 period: "2026"
 featured: false
+relatedPost: mcp-production-lessons
 stack: [Python, MCP servers, DuckDB, asyncio]
 highlights:
   - "Direct Python import of six MCP server modules bypasses stdio/JSON-RPC overhead for same-process composition"

@@ -11,6 +11,7 @@ summary: >-
 tags: [mcp, agents, python, duckdb, architecture]
 date: 2026-09-02
 series: AI engineering notes
+relatedProject: orchestrator
 ---
 
 The MCP spec is short enough to read in an afternoon and vague enough to hide

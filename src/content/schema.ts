@@ -61,6 +61,9 @@ export const ProjectSchema = z
      * no link button at all (fabricated source URLs 404 and read as fake). */
     links: ProjectLinksSchema.optional(),
     metrics: z.array(ProjectMetricSchema).optional(),
+    /** R6-C C1: optional hand-curated cross-link to the post that tells this
+     * project's story (slug validated against posts at build time). */
+    relatedPost: Slug.optional(),
     featured: z.boolean(),
     accent: z.string().min(1).optional(),
     /** Optional long-form body rendered from the markdown below frontmatter. */
@@ -74,6 +77,12 @@ export const PostSchema = z
     readingMinutes: z.number().int().positive(),
     series: z.string().min(1).optional(),
     heroImage: z.string().min(1).optional(),
+    /** R6-C C1: optional hand-curated cross-links. Slugs are validated
+     * against their collection at build time (build-content checks
+     * existence), so a typo here fails the build instead of rendering a
+     * dead link. */
+    relatedProject: Slug.optional(),
+    relatedPosts: z.array(Slug).optional(),
     /** Sanitized rendered markdown — the build pipeline's output. */
     html: z.string().min(1),
     excerpt: z.string().min(1),

@@ -98,6 +98,19 @@ export function formatDate(iso: string, options: FormatDateOptions = {}): string
 }
 
 /**
+ * R6-B: project `period` frontmatter is free-form ("2026", "2026-08") and was
+ * rendered verbatim — "SHIPPED · 2026" next to "SHIPPED · 2026-08" read as
+ * two different granularities side by side. Normalize: YYYY-MM → "Mon YYYY",
+ * bare YYYY stays as-is, anything else passes through untouched.
+ */
+export function formatPeriod(period: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(period);
+  if (m === null) return period;
+  const month = MONTHS_SHORT[Number(m[2]) - 1];
+  return month !== undefined ? `${month} ${m[1]}` : period;
+}
+
+/**
  * Range of two ISO dates, condensed:
  * - same day        → "Mar 14, 2026"
  * - same year       → "Mar 14 – Apr 02, 2026"

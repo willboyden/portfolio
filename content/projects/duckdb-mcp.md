@@ -16,6 +16,7 @@ role: Design and implementation (solo)
 status: shipped
 period: "2026"
 featured: true
+relatedPost: duckdb-for-agent-workflows
 stack: [Python 3.11+, mcp SDK, DuckDB CLI 1.5.4+, stdio JSON-RPC, pytest]
 highlights:
   - "15 tools spanning query, DDL/DML, CSV/Parquet import-export, profiling, ATTACH-based cross-DB joins"

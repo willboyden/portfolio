@@ -16,6 +16,7 @@ role: Design and implementation (solo)
 status: shipped
 period: "2026-08"
 featured: false
+relatedPost: agent-proof-your-data-layer
 stack: [Python 3.13 stdlib, ClickHouse 24.3, MCP JSON-RPC + SSE, vanilla JS/CSS]
 highlights:
   - "The sandbox cannot reach the ClickHouse HTTP port directly — the query layer drives the clickhouse-mcp server over JSON-RPC with SSE responses, session-id handshakes, retry and stale-session re-handshake"

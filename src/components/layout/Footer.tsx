@@ -235,6 +235,12 @@ export function Footer({
     window.scrollTo({ top: 0, behavior: scrollBehaviorFor(reduced) });
   };
 
+  /* R6-B: configured socials only. Unconfigured entries are DRAFT comment
+   * markers (owner gate); rendering their <li> produced a visible empty
+   * bullet under "Elsewhere" on every page. When all entries are
+   * unconfigured, the whole column skips cleanly. */
+  const configuredSocials = social.filter((entry) => entry.url !== '');
+
   return (
     <Shell data-testid="site-footer">
       <Inner>
@@ -299,12 +305,15 @@ export function Footer({
             </ul>
           </div>
 
-          <div>
-            <Heading id="footer-social-heading">Elsewhere</Heading>
-            <ul role="list" aria-labelledby="footer-social-heading" data-testid="footer-social">
-              {social.map((entry) => (
-                <LinkLine key={entry.label}>
-                  {entry.url ? (
+          {configuredSocials.length > 0 && (
+            <div>
+              <Heading id="footer-social-heading">Elsewhere</Heading>
+              <ul role="list" aria-labelledby="footer-social-heading" data-testid="footer-social">
+                {configuredSocials.map((entry) => (
+                  <LinkLine key={entry.label}>
+                    {/* R2-A A12: configured profiles render as real links;
+                     * unconfigured ones never reach this list (filtered
+                     * above), so no empty bullets and no "@your-handle". */}
                     <a
                       href={entry.url}
                       className={classes}
@@ -314,16 +323,11 @@ export function Footer({
                     >
                       {entry.label}
                     </a>
-                  ) : (
-                    /* R2-A A12: unconfigured profiles are hidden (HTML comment
-                     * DRAFT marker only) — "@your-handle" on 16 pages reads as
-                     * a broken template to a hiring manager. */
-                    <span dangerouslySetInnerHTML={{ __html: `<!-- DRAFT: replace handle for ${entry.label} in Footer SOCIAL_LINKS -->` }} />
-                  )}
-                </LinkLine>
-              ))}
-            </ul>
-          </div>
+                  </LinkLine>
+                ))}
+              </ul>
+            </div>
+          )}
         </Column>
       </Inner>
 

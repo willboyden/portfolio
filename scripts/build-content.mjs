@@ -150,6 +150,33 @@ async function main() {
       seen.add(it.slug);
     }
   }
+  // R6-C C1: cross-link slugs must resolve, or a typo ships a dead link.
+  const projectSlugs = new Set(out.projects.map((p) => p.slug));
+  const postSlugs = new Set(out.posts.map((p) => p.slug));
+  for (const post of out.posts) {
+    if (post.relatedProject && !projectSlugs.has(post.relatedProject)) {
+      process.stderr.write(
+        `build-content: post "${post.slug}" relatedProject "${post.relatedProject}" does not match any project slug\n`,
+      );
+      process.exit(1);
+    }
+    for (const rel of post.relatedPosts ?? []) {
+      if (!postSlugs.has(rel)) {
+        process.stderr.write(
+          `build-content: post "${post.slug}" relatedPosts entry "${rel}" does not match any post slug\n`,
+        );
+        process.exit(1);
+      }
+    }
+  }
+  for (const project of out.projects) {
+    if (project.relatedPost && !postSlugs.has(project.relatedPost)) {
+      process.stderr.write(
+        `build-content: project "${project.slug}" relatedPost "${project.relatedPost}" does not match any post slug\n`,
+      );
+      process.exit(1);
+    }
+  }
   await mkdir(dirname(OUT_FILE), { recursive: true });
   /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
    * generatedAt made every rebuild dirty git and made "byte-stable output"

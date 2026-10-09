@@ -25,6 +25,9 @@ import type { Post } from 'app/content';
 const { store } = vi.hoisted(() => ({ store: { posts: [] as unknown[] } }));
 
 vi.mock('app/content', () => ({
+  /* R6-C: PostDetail also reads `content.projects` for the related-project
+   * cross-link block — the fixture store carries an empty project list. */
+  content: { projects: [] as unknown[] },
   getPost: (slug: string) =>
     store.posts.find((p) => (p as { slug: string }).slug === slug) as never,
   postsByDate: () =>

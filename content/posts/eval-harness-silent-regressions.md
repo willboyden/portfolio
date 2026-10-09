@@ -10,6 +10,7 @@ summary: >-
 tags: [evals, llm, testing, python]
 date: 2026-08-20
 series: AI engineering notes
+relatedProject: model-quality-harness
 ---
 
 Every team that ships an LLM feature eventually builds an eval harness, and

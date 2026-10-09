@@ -119,6 +119,15 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
       color: 'var(--c-text, ' + theme.color.text + ')',
     },
 
+    /* R6-B: every pressable control gets physical press feedback. Sites
+     * with hover-only affordances feel dead on touch screens — a 1px
+     * translate reads as "the button registered the touch". The global
+     * reduced-motion guard below zeroes the transition, and :active is
+     * transient by nature, so no extra guard is needed. */
+    'button:not(:disabled):active': {
+      transform: 'translateY(1px)',
+    },
+
     /* Reduced motion: global guard (contract §5). Components should still
      * honour useReducedMotion() for behaviour; this backstops CSS animation.
      * !important is load-bearing (R1-B L1, live-Chromium probe): component

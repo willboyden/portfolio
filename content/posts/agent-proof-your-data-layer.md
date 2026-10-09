@@ -10,6 +10,7 @@ summary: >-
 tags: [data-engineering, clickhouse, etl, agents, python]
 date: 2026-10-04
 series: AI engineering notes
+relatedProject: gov-payroll-workbench
 ---
 
 A human analyst learns the hard way that a table's grain is not what its name

@@ -32,12 +32,21 @@ export function titleFor(path: string): string {
   };
   if (seg === 'projects') {
     const slug = path.split('/')[2];
-    if (slug) return `${content.projects.find((p) => p.slug === slug)?.title ?? 'Project'} — Projects`;
+    /* R6-E: an unknown slug must keep the honest "Page not found" title the
+     * prerendered 404 shipped — the old fallback retitled the tab to
+     * "Project — Projects" after hydration while the page said 404. */
+    if (slug) {
+      const project = content.projects.find((p) => p.slug === slug);
+      return project ? `${project.title} — Projects` : 'Page not found';
+    }
     return 'Projects';
   }
   if (seg === 'writing') {
     const slug = path.split('/')[2];
-    if (slug) return `${content.posts.find((p) => p.slug === slug)?.title ?? 'Post'} — Writing`;
+    if (slug) {
+      const post = content.posts.find((p) => p.slug === slug);
+      return post ? `${post.title} — Writing` : 'Page not found';
+    }
     return 'Writing';
   }
   return seg ? (pageNames[seg] ?? '') : '';

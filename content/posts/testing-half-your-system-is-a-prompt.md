@@ -13,6 +13,7 @@ summary: >-
 tags: [testing, llm, evals, typescript, python]
 date: 2026-10-06
 series: AI engineering notes
+relatedPosts: [duckdb-for-agent-workflows, eval-harness-silent-regressions]
 ---
 
 The honest architecture of most AI systems is: a deterministic shell, a

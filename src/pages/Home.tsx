@@ -15,7 +15,7 @@ import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import { content, featuredProjects, postsByDate, type Project } from 'app/content';
 import { SITE } from 'app/lib/seo';
-import { formatDate } from 'app/lib/format';
+import { formatDate, formatPeriod } from 'app/lib/format';
 import type { Tokens } from 'app/theme/tokens';
 import {
   Button,
@@ -257,7 +257,7 @@ function ProjectCard({
       <MetaLine>
         <span>{project.status}</span>
         <span aria-hidden="true">·</span>
-        <span>{project.period}</span>
+        <span>{formatPeriod(project.period)}</span>
       </MetaLine>
       <CardTitle data-testid="featured-project-title">
         <Link to={detailHref} className={links.title}>

@@ -27,9 +27,8 @@ import {
   Heading,
   Icon,
   Prose,
-  Tag,
 } from 'app/components/ui';
-import { getPost, postsByDate } from 'app/content';
+import { content, getPost, postsByDate } from 'app/content';
 import { formatDate, formatReadingTime } from 'app/lib/format';
 import { useCopyToClipboard } from 'app/lib/hooks';
 import type { Tokens } from 'app/theme/tokens';
@@ -66,6 +65,31 @@ export function neighboursByDate<T extends { slug: string }>(
 export function shareUrl(origin: string, slug: string): string {
   const base = origin.replace(/\/+$/, '');
   return `${base}/writing/${slug}`;
+}
+
+/**
+ * R6-C C2: series position for the "N of M" affordance. Zero-based index in a
+ * newest-first list; -1 when the post is not in the series (or series unset).
+ */
+export function seriesPosition(
+  postsNewestFirst: readonly { slug: string; series?: string }[],
+  slug: string,
+): { index: number; total: number } {
+  const post = postsNewestFirst.find((p) => p.slug === slug);
+  if (!post?.series) return { index: -1, total: 0 };
+  const inSeries = postsNewestFirst.filter((p) => p.series === post.series);
+  return { index: inSeries.findIndex((p) => p.slug === slug) + 1, total: inSeries.length };
+}
+
+/**
+ * R6-C C1: the project this post is about, if the content curates one.
+ * Resolves by slug at render time; undefined when unset or stale.
+ */
+export function relatedProjectOf(
+  projects: readonly { slug: string; title: string; summary: string }[],
+  slug: string | undefined,
+): { slug: string; title: string; summary: string } | undefined {
+  return slug !== undefined ? projects.find((p) => p.slug === slug) : undefined;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -170,6 +194,101 @@ const PagerHint = styled.span`
 
 const PagerSpacer = styled.div``;
 
+/** R6-C C2: series badge as a link — pill styling that survives being an <a>.
+ * 44px phone hit area (R3D-03 recipe): it's a primary navigation affordance,
+ * and the e2e touch-target sweep caught the first cut at 24px. */
+function seriesCls(theme: Tokens): string {
+  const t = theme;
+  return css({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: t.space[1],
+    padding: `0 ${t.space[2]}`,
+    minHeight: '28px',
+    ['@media (max-width: ' + t.breakpoint.md + ')']: {
+      minHeight: '44px',
+    },
+    borderRadius: t.radius.full,
+    background: t.color.accentSoft,
+    color: t.color.accent,
+    fontFamily: t.font.sans,
+    fontSize: t.font.sizes.xs,
+    fontWeight: t.font.weights.medium,
+    lineHeight: t.font.leading.none,
+    letterSpacing: t.font.tracking.normal,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
+    transition: `color ${t.motion.fast} ${t.motion.ease}`,
+    '&:hover': { color: t.color.accent, textDecoration: 'underline', textUnderlineOffset: '2px' },
+    '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '2px' },
+    /* R3D-01: series names are content — break rather than overflow. */
+    'overflow-wrap': 'anywhere',
+  });
+}
+
+const SeriesPos = styled.span`
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
+/** R6-C C1: "read the case study" cross-link block at the end of a post. */
+const RelatedProjectBlock = styled.aside`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  margin-block: ${(p) => p.theme.space[5]} 0;
+  padding: ${(p) => p.theme.space[4]};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.md};
+  background: ${(p) => p.theme.color.bgSunken};
+`;
+
+const RelatedProjectHint = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+
+const RelatedProjectTitle = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+  line-height: ${(p) => p.theme.font.leading.snug};
+`;
+
+const RelatedProjectSummary = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textMuted};
+  line-height: ${(p) => p.theme.font.leading.normal};
+`;
+
+/** R6-C C1: the cross-link card — whole block is one link (css() class on a
+ * plain <Link>; styled(Link) would strip the `to` prop). */
+function relatedProjectCls(theme: Tokens): string {
+  const t = theme;
+  return css({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: t.space[1],
+    textDecoration: 'none',
+    borderRadius: t.radius.sm,
+    color: 'inherit',
+    /* R3D-03: this is a primary affordance — 44px floor at phone widths. */
+    minHeight: '28px',
+    ['@media (max-width: ' + t.breakpoint.md + ')']: {
+      minHeight: '44px',
+    },
+    '&:hover .related-title': { color: t.color.accent },
+    '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '3px' },
+  });
+}
+
 /**
  * Link skinning: styled(Link) would strip the router `to` prop (the vendored
  * prop filter drops non-DOM props from component targets — see Button.tsx),
@@ -216,6 +335,18 @@ export function PostDetail(): ReactNode {
   /* Newest-first order defines the timeline; memoised so prev/next are stable. */
   const neighbours = useMemo(
     () => (post ? neighboursByDate(postsByDate(), post.slug) : { previous: undefined, next: undefined }),
+    [post],
+  );
+
+  /* R6-C C2: position within the series (for the badge's "N of M"). */
+  const seriesPos = useMemo(
+    () => (post ? seriesPosition(postsByDate(), post.slug) : { index: -1, total: 0 }),
+    [post],
+  );
+
+  /* R6-C C1: the curated project link, when the content declares one. */
+  const relatedProject = useMemo(
+    () => relatedProjectOf(content.projects, post?.relatedProject),
     [post],
   );
 
@@ -267,9 +398,22 @@ export function PostDetail(): ReactNode {
               {post.series !== undefined && (
                 <>
                   <Sep aria-hidden="true">·</Sep>
-                  <Tag tone="accent" size="sm" data-testid="series-badge">
+                  {/* R6-C C2: the badge is a real link to the writing index —
+                      the one narrative spine gets navigation — and announces
+                      the position in the series. */}
+                  <Link
+                    to="/writing"
+                    className={seriesCls(theme)}
+                    data-testid="series-badge"
+                    aria-label={`${post.series} — post ${seriesPos.index} of ${seriesPos.total}`}
+                  >
                     {post.series}
-                  </Tag>
+                    {seriesPos.total > 0 && (
+                      <SeriesPos aria-hidden="true">
+                        {seriesPos.index}/{seriesPos.total}
+                      </SeriesPos>
+                    )}
+                  </Link>
                 </>
               )}
             </MetaRow>
@@ -330,6 +474,24 @@ export function PostDetail(): ReactNode {
               <PagerSpacer aria-hidden="true" />
             )}
           </Pager>
+        )}
+
+        {/* R6-C C1: posts are about work — close the loop to the case study. */}
+        {relatedProject !== undefined && (
+          <RelatedProjectBlock data-testid="related-project">
+            <RelatedProjectHint>
+              <Icon name="arrow-right" size={12} />
+              The project behind this post
+            </RelatedProjectHint>
+            <Link
+              to={`/projects/${relatedProject.slug}`}
+              className={relatedProjectCls(theme)}
+              data-testid="related-project-link"
+            >
+              <RelatedProjectTitle className="related-title">{relatedProject.title}</RelatedProjectTitle>
+              <RelatedProjectSummary>{relatedProject.summary}</RelatedProjectSummary>
+            </Link>
+          </RelatedProjectBlock>
         )}
       </Article>
     </Container>

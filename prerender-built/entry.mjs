@@ -872,6 +872,18 @@ function formatDate(iso, options = {}) {
 	}
 	return out;
 }
+/**
+* R6-B: project `period` frontmatter is free-form ("2026", "2026-08") and was
+* rendered verbatim — "SHIPPED · 2026" next to "SHIPPED · 2026-08" read as
+* two different granularities side by side. Normalize: YYYY-MM → "Mon YYYY",
+* bare YYYY stays as-is, anything else passes through untouched.
+*/
+function formatPeriod(period) {
+	const m = /^(\d{4})-(\d{2})$/.exec(period);
+	if (m === null) return period;
+	const month = MONTHS_SHORT[Number(m[2]) - 1];
+	return month !== void 0 ? `${month} ${m[1]}` : period;
+}
 /** `5` → `5 min read`; clamps to a minimum of 1 minute. */
 function formatReadingTime(minutes) {
 	if (!Number.isFinite(minutes) || minutes <= 0) return "1 min read";
@@ -1120,7 +1132,7 @@ function applyDocumentMeta(meta) {
 	} catch {}
 }
 var content_default = {
-	contentHash: "53f0bd8af0c58db3",
+	contentHash: "612a8e1e5bd3660d",
 	projects: [
 		{
 			"slug": "system-monitor",
@@ -1253,6 +1265,7 @@ var content_default = {
 					"value": "1 self-contained HTML file"
 				}
 			],
+			"relatedPost": "agent-proof-your-data-layer",
 			"featured": false
 		},
 		{
@@ -1283,6 +1296,7 @@ var content_default = {
 				"Langfuse 3.200.0",
 				"vanilla JS/CSS"
 			],
+			"relatedPost": "langfuse-observability-pragmatic",
 			"featured": false
 		},
 		{
@@ -1304,7 +1318,7 @@ var content_default = {
 				"8-scenario fixed suite: single-tool lookups, multi-constraint calls, two-step dependencies, and a retry scenario where the simulator rejects the first call",
 				"Deterministic judge only — schema-valid tool-call JSON, parameter accuracy under normalization, and success criteria like call_made / params_exact / param_absent / answer_contains",
 				"Tracks silent failures HTTP 200 hides: empty_content_turns, reasoning_burn_turns (finish_reason=length with content null), finish_reason per turn",
-				"Proved the broker response-cached identical request bodies (~0.01 s replays); cache-busting user stamps restored real latency distributions (min 0.83 s / med 1.31 s / max 3.72 s)",
+				"Proved the broker response-cached identical request bodies (~0.01 s replays); cache-busting user stamps restored real latency distributions (min 0.83 s / median 1.29 s / max 3.72 s)",
 				"Broker outages are recorded as failures with the real HTTP error body, never papered over"
 			],
 			"stack": [
@@ -1321,6 +1335,7 @@ var content_default = {
 				"label": "best model run (cache-bust re-run)",
 				"value": "16/16 completed, 100% valid calls"
 			}],
+			"relatedPost": "eval-harness-silent-regressions",
 			"featured": true
 		},
 		{
@@ -1410,6 +1425,7 @@ var content_default = {
 					"value": "27 ms"
 				}
 			],
+			"relatedPost": "duckdb-for-agent-workflows",
 			"featured": true
 		},
 		{
@@ -1439,6 +1455,7 @@ var content_default = {
 				"DuckDB",
 				"asyncio"
 			],
+			"relatedPost": "mcp-production-lessons",
 			"featured": false
 		}
 	],
@@ -1457,6 +1474,7 @@ var content_default = {
 			"date": "2026-10-06",
 			"readingMinutes": 5,
 			"series": "AI engineering notes",
+			"relatedPosts": ["duckdb-for-agent-workflows", "eval-harness-silent-regressions"],
 			"html": "<p>The honest architecture of most AI systems is: a deterministic shell, a\nstochastic core, and a prompt holding them together. Testing advice usually\nfails at the boundary: teams either unit-test the shell and pretend that\ncovers the system, or give up on automation and QA by vibes. The pattern that\nsurvived contact with two real projects (an LLM eval harness, and this\nportfolio site, which is a markdown-to-browser pipeline the content plan\nhopes counts as a credible prop) is boring and general: <strong>move work across\nthe boundary into the deterministic side, then test the deterministic side\nruthlessly.</strong></p>\n<h2 id=\"boundary-one-the-eval-harness-judges-with-rules-not-opinions\">Boundary one: the eval harness judges with rules, not opinions</h2>\n<p>The harness runs eight tool-calling scenarios against three models with two\nrepetitions each: 48 recorded runs. There is no LLM-as-judge anywhere in the\nscoring path. Every emitted tool call is validated against the scenario's\nJSON function schema, and every final answer is graded by rules like\n<code>answer_contains</code>, which match case-insensitively and tolerate thousands\nseparators (<code>1301.04</code> matches <code>1,301.04</code>). Substring checks are dull. They\nare also reproducible, and reproducibility is the entire job.</p>\n<p>Because the core is stochastic, the assertions get two tools the shell never\nneeds. First, repetitions: two reps per (model, scenario) pair turn &quot;it\nfailed&quot; into &quot;it failed 1 of 2 times,&quot; which is a different bug and a\ndifferent fix. Second, failure modes get named instead of bucketed: the\nharness records <code>empty_content_turns</code> (HTTP 200, <code>content: null</code>) and\n<code>reasoning_burn_turns</code> (<code>finish_reason=length</code> with empty content while\nreasoning tokens burn), because a 200-with-nothing and a budget artifact are\nnot the same incident.</p>\n<p>The shipped run shows why honesty at the boundary matters. One model\ncompleted 16/16 runs at 100% valid calls, and recorded 20 empty-content\nturns anyway: it kept hitting turns that returned nothing usable, and the\nmetric says so. The other two models were down at the broker, in\ndifferent ways: one threw a 404 &quot;model does not exist&quot; on eight attempts and\na 429 on the other eight (the cooldown flipping between calls), the other a\nflat 500 on all sixteen. Both recorded as failures with the real HTTP error\nbodies attached rather than dropped from the comparison. Latency after the\ncache-bust fix reported an honest distribution: min 0.83 s, median 1.29 s,\nmax 3.72 s. A harness that hides any of this is marketing.</p>\n<h2 id=\"boundary-two-a-content-pipeline-that-refuses-to-be-fuzzy\">Boundary two: a content pipeline that refuses to be fuzzy</h2>\n<p>This site renders markdown written by the same author who is trying to test\nit, which is exactly the trust problem a prompt layer creates. The answer was\nto make every step deterministic and loud.</p>\n<p><strong>A parser with opinions.</strong> The frontmatter format is a deliberately small\nYAML subset — scalars, inline arrays, one-level nesting, folded blocks — and\nanything outside the grammar throws with the offending line number. Flow\nmappings, tabs, anchors: rejected. Guessing silently is how content\npipelines rot, so the subset guesses nothing.</p>\n<p><strong>Schemas that are <code>.strict()</code> by contract.</strong> Unknown frontmatter keys are a\nloud build error: <code>scripts/build-content.mjs</code> runs every file through zod and\nexits 1 on any failure, printing one block per issue: <code>file: &lt;path&gt;</code>, then\n<code>field: &lt;collection&gt;/&lt;field&gt;</code>, then <code>error: &lt;message&gt;</code>. A typo'd field name\ncannot become a feature that quietly never renders.</p>\n<p><strong>Output invariants as tests.</strong> <code>src/content/content.test.ts</code> validates the\ngenerated bundle against the whole-bundle schema, asserts unique slugs per\ncollection, date format everywhere, date-descending order, non-empty rendered\nHTML per post, excerpts capped at 140 characters plus an ellipsis, and\ninteger reading minutes. The build sorts with slug tie-breaks so identical\ninputs produce byte-stable output — which makes <code>generated/content.json</code> a\ngolden file: a build artifact the test suite re-validates rather than a\nmystery blob.</p>\n<p><strong>One security policy, both entry points.</strong> The markdown engine's\n<code>sanitizeUrl</code> allows only http/https/mailto and relative URLs (including\nrejecting obfuscation like <code>java\\nscript:</code>), and the frontmatter URL field is\na zod <code>SafeUrl</code> enforcing the same scheme allowlist, because <code>z.string().url()</code>\nalone happily accepts <code>javascript:</code> and <code>data:</code>. One policy, two entry points,\nasserted from both sides: unit tests check the generated HTML never contains\nraw script tags or <code>javascript:</code> hrefs; the browser suite refetches a post\npage and fails if any inline, execution-capable script survived.</p>\n<h2 id=\"the-pyramid-you-can-actually-run-offline\">The pyramid you can actually run offline</h2>\n<p>The container is air-gapped, so the harness is plain Node. Vitest runs in the\n<code>node</code> environment only — there is no jsdom package — so component tests\nrender through <code>renderToStaticMarkup</code> and assert structure: heading order,\nhrefs, rendered content. That is 503 tests across 21 files in about 0.8\nseconds, and it is genuinely useful because SSR caught a class of bugs\n(client hydration) that jsdom fakes anyway.</p>\n<p>Real behavior then moves to the browser: a self-written ~700-line CDP harness\ndrives real Chromium through 53 checks in 8 spec files. Security asserts CSP\n<code>script-src 'self'</code> and <code>frame-ancestors 'none'</code>, nosniff and frame-deny\nheaders, and greps shipped markup for secret shapes (<code>sk-…</code>, <code>AKIA…</code>, bearer\ntokens). Performance enforces budgets rather than aspirations: under 250 kB\nof JS+CSS transferred on the home page, client-side navigation under 1500\nms, and an <code>&lt;h1&gt;</code> present in prerendered HTML so LCP never paints from zero.\nEven nginx gets tested without nginx: <code>config-lint</code> parses the deploy config\nand enforces the add_header inheritance invariant, since one location\ndeclaring a header silently loses every server-level one.</p>\n<p>The prompt half still needs humans, of course — that is what the two\nrepetitions and the named failure modes are for. Everything around it does\nnot, and that is the point. Push the boundary out, name what crosses it, and\ntest the rest like it's a compiler, because from the user's side it is.</p>",
 			"excerpt": "The honest architecture of most AI systems is: a deterministic shell, a stochastic core, and a prompt holding them together. Testing advice …"
 		},
@@ -1474,6 +1492,7 @@ var content_default = {
 			"date": "2026-10-04",
 			"readingMinutes": 4,
 			"series": "AI engineering notes",
+			"relatedProject": "gov-payroll-workbench",
 			"html": "<p>A human analyst learns the hard way that a table's grain is not what its name\nsuggests. An agent never learns it — it queries whatever you give it,\nconfidently, every time. I built an analytics pipeline over the <code>gov_payroll</code>\nClickHouse database (23 tables, ~279M rows) in the local-ai-lab sandbox, and\nthe process of making it safe to point an agent at it taught me more about\ndata hygiene than any governance framework deck.</p>\n<p>The pipeline is three stages: a query layer, a probe script that materializes\n14 datasets as JSON, and a build step that compiles them into a single\nself-contained dashboard. Python 3.13 stdlib only, no pip, no CDN, and a\nread-only ClickHouse MCP server as the only data path. The read-only part is\nload-bearing: DDL and DML are refused at the server, so the probe script is\naggregate-only by construction, not by discipline.</p>\n<h2 id=\"the-traps-hide-in-the-grain\">The traps hide in the grain</h2>\n<p>Three ClickHouse quirks broke naive queries first (all verified against\n24.3.18): <code>arbitrary()</code> does not exist (error 46, even on literals — use\n<code>any()</code>); aliasing <code>sum(x) AS x</code> then writing <code>avg(x)</code> triggers error 184\nbecause the parser resolves the second <code>x</code> to the alias; and column names\ndrift per table — <code>irs_soi_zip.tax_year</code> instead of <code>year</code>, and\n<code>federal_spending_awards.fiscal_year</code> is the string <code>'FY2026'</code>, so <code>int()</code>\nthrows and a regex parse is mandatory. These fail loudly, which is the good\ncategory of failure.</p>\n<p>The dangerous ones distort silently. <code>bls_qcew_ma</code> stores nine <code>agglvl_code</code>\naggregation levels per county; summing all levels overstates employment\nroughly 9x. The fix is a one-token predicate, <code>agglvl_code = '70'</code>, on every\nQCEW query. <code>federal_spending_awards</code> stores cumulative modifications per\n<code>award_id</code>, so a raw <code>SUM(total_obligated_amount)</code> overstates spending about\n12x; the two federal datasets dedupe to <code>max(total_obligated_amount)</code> per\naward before summing. And <code>municipal_payroll</code> only ever covers one to four\ncities per fiscal year (FY2027: one city, FY2026: two): a &quot;top cities&quot;\nchart built on a partial year ranks a rounding error. The city ranking\ntherefore runs on 2025, the best-coverage year, and the trend view carries a\n<code>cities</code> column so the reader cannot forget the grain.</p>\n<p>None of these raise an exception. A capable agent will write the\nreasonable-looking query, get a number, and cite it. That is the definition\nof an unagent-proofed data layer: correctness depends on tribal knowledge\nthat lives outside the schema.</p>\n<h2 id=\"lineage-lives-in-the-schema\">Lineage lives in the schema</h2>\n<p>Every dataset file embeds its own provenance in <code>meta</code>: the exact SQL used,\nper-attempt timings, row count, notes, and a <code>failed</code> flag. The dashboard\ncarries a provenance section rendering the SQL behind every dataset. When a\nnumber looks wrong, the audit path is: open the JSON, read the SQL, re-run\nit. No archaeology.</p>\n<p>This costs nothing if you generate the files programmatically, and it turns\nthe dataset itself into the documentation. When an agent (or a new human)\nwants to know why the federal totals look small, the dedupe CTE is right\nthere in <code>meta.sql</code> — the tribal knowledge moved inside the artifact.</p>\n<h2 id=\"checkpoints-where-the-fan-out-starts\">Checkpoints where the fan-out starts</h2>\n<p><code>00_ranges</code> is the first query: min/max year per core table, one row. It is\ncached, and every subsequent query derives its year filters from it rather\nthan hardcoding 2024 or guessing. That makes the whole 14-query fan-out\ndate-correct without anyone editing files when new years land, and it gives\nthe probe one natural checkpoint: if ranges look wrong, nothing downstream is\ntrusted.</p>\n<p>The rest is boring in the right way. <code>probe.py</code> is idempotent — rewrites\n<code>data/*.json</code> on every run, server-side aggregation keeps every query under\n0.3 s (the shipped run's slowest query: 0.21 s), and re-running is cheap\nenough that refresh becomes a habit. The FEC tables, 216M rows of\nthem, were deliberately excluded under the performance rules; a dataset that\ndoes not fit the budget gets cut. KPIs on the dashboard are\nrecomputed from the embedded rows at build time, never hardcoded, so the\nheadline numbers and the drill-downs cannot drift apart.</p>\n<h2 id=\"the-transport-is-part-of-the-data-layer\">The transport is part of the data layer</h2>\n<p>The ClickHouse HTTP endpoint is not reachable directly from the sandbox; the\nonly working path is the clickhouse-mcp JSON-RPC server over HTTP plus\nServer-Sent-Events. Four handshakes, one per-session token: send\n<code>Accept: application/json, text/event-stream</code> with <em>both</em> media types or the\nserver rejects you with 406; capture <code>Mcp-Session-Id</code> from the <em>response\nheaders</em> and replay it on every later request; post\n<code>notifications/initialized</code> and expect 202; then <code>tools/call run_query</code> and\nparse the SSE <code>data:</code> line. The query wrapper hides timeout handling, one\nretry, and a stale-session re-handshake, plus normalization of the\n<code>{columns, rows}</code> result shape into dicts.</p>\n<p>That is an unglamorous 279-line module (<code>ch_client.py</code>), and it is why the\nagent-facing interface is one function — <code>query(sql) -&gt; list[dict]</code> —\ninstead of a protocol the model would have to get right at generation time.\nWrap the transport; do not prompt for it.</p>\n<h2 id=\"why-agents-raise-the-stakes\">Why agents raise the stakes</h2>\n<p>A junior analyst who sums nine aggregation levels gets corrected in code\nreview. An agent doing the same thing produces a dashboard, a summary of the\ndashboard, and three confident sentences about it before anyone asks. The\nmitigations are old data-engineering virtues with new urgency: filters that\nencode grain go <em>in</em> the query templates; provenance travels with the data;\nrefresh is idempotent so stale numbers never accumulate; and the server says\nread-only even when the prompt says otherwise. None of it is glamorous. All\nof it is what &quot;the agent can be trusted with this data&quot; actually means.</p>",
 			"excerpt": "A human analyst learns the hard way that a table's grain is not what its name suggests. An agent never learns it — it queries whatever you …"
 		},
@@ -1491,6 +1510,7 @@ var content_default = {
 			"date": "2026-10-02",
 			"readingMinutes": 4,
 			"series": "AI engineering notes",
+			"relatedProject": "langfuse-dashboard",
 			"html": "<p>Every LLM observability demo opens on a gorgeous trace explorer with data in\nit. Nobody demos the part where the dashboard is the deliverable and the data\nplane refuses to cooperate. I built that dashboard for the traces of project\n<code>mesh</code> (org <code>local-ai-lab</code>) on a Langfuse 3.200.0 instance, and it taught me\nmore about observability than any panel layout did.</p>\n<p>The shape: two scripts. <code>fetch_traces.py</code> pulls traces, observations,\nsessions and scores into local JSON; <code>build_dashboard.py</code> compiles them into\na single dark-theme <code>index.html</code>: vanilla JS/CSS, no CDN, zero network\nrequests once built. Both use the SDK client (Langfuse SDK 4.14.3) from the\nsame code path as the <code>langfuse</code> MCP server, so the fetch layer is the one\npiece I'd reuse verbatim under different infrastructure.</p>\n<h2 id=\"the-triangle-you-actually-check-daily\">The triangle you actually check daily</h2>\n<p>Cost, latency, quality, but checked in that order, because that's the order\nthings catch you flat-footed. My KPI header is deliberately small: total\ncost, total tokens split in/out, average trace latency, error count, plus\nsession and trace counts over the date range. Then exactly three drill-downs:</p>\n<ul>\n<li><p><strong>Time series</strong> — per-day trace count as bars, average latency as a line,\ninline SVG with hover tooltips. Latency drift shows up here first.</p></li>\n<li><p><strong>Model breakdown</strong> — per-model calls, tokens, cost, and average latency\nas a table. This is where a cheap-looking model turns into your most\nexpensive one once you multiply by its call volume.</p></li>\n<li><p><strong>Trace explorer</strong> — searchable by name, id, user, tags and model, with a\nclick-through panel showing each trace's observations as a parent/child\ntree linked by <code>parentObservationId</code>, each node carrying level, latency,\nusage and expandable input/output previews.\nEverything the dashboard renders comes from those four collections. Nothing\nis synthesized at build time; KPIs are computed from the fetched rows.</p></li>\n</ul>\n<h2 id=\"the-broker-said-no\">The broker said no</h2>\n<p>Verified on 2026-08-16 (<code>data/step1_verification.txt</code>): the instance answers\n<code>GET /api/public/health</code> with <code>{'version': '3.200.0', 'status': 'OK'}</code> and\n<code>GET /api/public/projects</code> with the <code>lab-project</code> / <code>mesh</code> / <code>local-ai-lab</code>\nmetadata. That's control plane. For data plane:</p>\n<table>\n<thead><tr><th>endpoint</th><th>result</th></tr></thead>\n<tbody>\n<tr><td><code>/api/public/traces</code></td><td>403 — <code>path not allowed by hermes-local langfuse ingestion broker</code></td></tr>\n<tr><td><code>/api/public/v2/observations</code></td><td>403 (same)</td></tr>\n<tr><td><code>/api/public/sessions</code></td><td>403 (same)</td></tr>\n<tr><td><code>/api/public/scores</code></td><td>403 (same)</td></tr>\n</tbody>\n</table>\n<p>An ingestion broker fronting the instance whitelists only a few public API\npaths, and the SDK's read calls hit exactly the blocked ones. Zero traces,\nzero observations, zero sessions, zero scores at build time.</p>\n<p>The interesting decision is what a dashboard does with that. The lazy answer\nis a spinner that never ends. The dishonest answer is demo data. This one\nships in a clean &quot;no data — data-plane read blocked at broker&quot; state: a red\nbanner quoting the 403, zeroed KPIs, and empty states in all four views.\nEach <code>data/*.json</code> records the broker's error verbatim in its <code>error</code> field,\nand <code>fetch_report.json</code> records the whole per-collection picture.</p>\n<h2 id=\"a-fetch-pipeline-built-to-be-re-run\">A fetch pipeline built to be re-run</h2>\n<p>Observability pipelines fail in boring ways, so the boring parts are\nexplicit:</p>\n<ul>\n<li><strong>Idempotent and atomic.</strong> Every run rewrites each JSON file wholesale via\na temp-file-and-replace. Re-running is always safe; partial writes aren't.</li>\n<li><strong>Capped pagination.</strong> Page-based collections (traces, sessions, scores)\nwalk <code>page</code>/<code>limit</code> with <code>limit=100</code> and honor <code>meta.total_pages</code>;\nobservations use the v2 cursor endpoint with <code>limit=1000</code>; the scores API\nhard-caps <code>limit</code> at 100, so the fetcher doesn't fight it. Each collection\nis capped at 5000 items: enough for a dashboard, small enough that the\nembedding step never chokes.</li>\n<li><strong>Field groups requested explicitly.</strong> The observations call names its\nfield groups (<code>core,basic,time,io,metadata,model,usage,metrics,trace_context</code>)\ninstead of accepting whatever default the API guesses for you.</li>\n<li><strong>Credentials from the environment only.</strong> Base URL, public/secret keys and\nenv come from the environment; no secret is ever printed or written to\ndisk, and the JSON files are safe to commit.</li>\n</ul>\n<h2 id=\"rendering-for-a-world-without\">Rendering for a world without <code>fetch()</code></h2>\n<p>The dashboard must open from <code>file://</code>, which means it cannot fetch its own\ndata — the data is embedded as a JS constant in the HTML. Embedding author-\nuncontrolled JSON inside <code>&lt;script&gt;</code> needs one guard most people forget:\n<code>&lt;/</code> is escaped to <code>&lt;\\/</code> during serialization, so a trace name containing\n<code>&lt;/script&gt;</code> cannot end the script tag early. Prose fields are additionally\nescaped on render (<code>&amp; &lt; &gt; &quot;</code> to entities), and the shipped artifact makes\nzero external requests.</p>\n<p>How do you test all that with no data? A throwaway synthetic dataset: charts,\nKPIs, model table, tree nesting, error badges all validated against fake\nrows, then the synthetic data was deleted. The shipped <code>index.html</code> contains\nonly the real (empty) collections. That ordering matters — validate the\nrendering logic while the fake data is obviously fake and quarantined, not\nafter it has been quietly promoted to &quot;sample data.&quot;</p>\n<p>The payoff of this design is that the blocked state is temporary by\nconstruction. The moment the broker allows the read paths, re-running\n<code>fetch_traces.py</code> populates the JSON files, <code>build_dashboard.py</code> re-renders,\nand real KPIs appear with no code changes. Observability infrastructure that\nneeds surgery to become useful is just a screenshot with extra steps.</p>",
 			"excerpt": "Every LLM observability demo opens on a gorgeous trace explorer with data in it. Nobody demos the part where the dashboard is the …"
 		},
@@ -1508,6 +1528,7 @@ var content_default = {
 			"date": "2026-09-15",
 			"readingMinutes": 3,
 			"series": "AI engineering notes",
+			"relatedProject": "duckdb-mcp",
 			"html": "<p>When you build tools that let an LLM agent query data, the database choice\nstops being an architecture-slide decision and becomes a <em>failure-mode</em>\ndecision: what happens when the model does something reasonable-sounding but\nslow, or generates DDL that quietly does not work. I benchmarked that question\nthe slow way — a 14-benchmark suite behind the duckdb-mcp server, measuring\neverything from DDL speed to MCP round-trip overhead. The numbers argued for\nDuckDB, and the gotchas were worth the exercise by themselves.</p>\n<h2 id=\"the-numbers-that-changed-my-defaults\">The numbers that changed my defaults</h2>\n<p>All figures below come from the project's benchmark suite (<code>test_benchmarks.py</code>\nand the integration tests that pin each practice), run against DuckDB CLI\nv1.5.4. One machine: 8-core laptop, NVMe, DuckDB 1.5.4 (Variegata) defaults,\nsingle run, warm cache. Treat the ratios as the finding and the absolutes as\nindicative.</p>\n<p><strong>Bulk insert: <code>generate_series</code>, never <code>INSERT VALUES</code>.</strong> 100,000 users land\nin 27 ms via a select-from-generate_series. Hand the same task to a model's\nnatural instinct — long <code>INSERT INTO ... VALUES (...), (...)</code> lists — and you\nare paying parse costs per statement, and the practice guide's rule of thumb\nis to stop generating them past a thousand rows anyway.</p>\n<p><strong>Parquet as the ingest format, not CSV.</strong> Parquet files came in around 27%\nof the equivalent CSV size, and <code>read_parquet</code> queries the file zero-copy\nwithout loading it into a database first. For agent pipelines this matters\ntwice: smaller files mean faster handoffs between pipeline stages and\ncheaper multi-copy retention — files are what agents pass around, after all.</p>\n<p><strong>Cross-database joins are instant.</strong> Three attached databases of 100K rows\neach joined in 8 ms. One caveat that cost me an hour: <code>ATTACH</code> needs a path\nwithin reach of the session doing the attaching (attached <code>:memory:</code>\ndatabases, for what it is worth, do join fine within a single v1.5.4\nsession), and every CLI invocation is a fresh session — so anything doing\ncross-process cross-DB work still means temp files, which the server does\nfor you.</p>\n<p><strong>Window functions scale flat-ish.</strong> ROW_NUMBER, RANK, LAG/LEAD, running\nsums and NTILE at 100K rows all landed in a uniform 6.9–7.5 ms band. The\nkind of analysis an agent is most likely to be asked for is exactly what\ncolumnar engines are boringly good at.</p>\n<p><strong>JSON output is affordable.</strong> The CLI's <code>-json</code> mode adds 9–15% overhead\nversus plain text. For machine-readable tool responses, that is a tax worth\npaying — but see the coercion post, because the JSON types need re-hydration.</p>\n<h2 id=\"the-failure-you-will-only-find-at-runtime\">The failure you will only find at runtime</h2>\n<p>Here is the one the documentation under-sells: on DuckDB v1.5.4, <code>DEFAULT</code>,\n<code>UNIQUE</code>, <code>CHECK</code> and <code>FOREIGN KEY</code> constraints all work fine.\n<code>IDENTITY</code> fails with <code>Constraint not implemented!</code>. <code>SERIAL</code> fails earlier,\nat parse time: v1.5.4 has no <code>SERIAL</code> type at all (<code>Catalog Error: Type with\nname SERIAL does not exist!</code>). Any model\ntrained on Postgres-heavy corpora will generate <code>SERIAL PRIMARY KEY</code> on\ndemand, all day, and every one of those calls dies.</p>\n<p>The fix belongs below the prompt, at the tool level:</p>\n<pre><code class=\"language-sql\">CREATE SEQUENCE user_id_seq;\nCREATE TABLE users (\n  id BIGINT DEFAULT nextval('user_id_seq') PRIMARY KEY,\n  email TEXT UNIQUE CHECK (email LIKE '%@%')\n);\n</code></pre>\n<p>Auto-increment through <code>CREATE SEQUENCE</code> + <code>nextval()</code> works and keeps the\nIDs in the database, where they belong — the practice notes are blunt about\nit: <em>never generate IDs in Python, use DuckDB-native bulk patterns</em>. Because\nthe MCP server exposes schema creation through recipes that already use the\nworking pattern, the model never gets the chance to discover the failure at\n3 a.m. on someone's pipeline.</p>\n<h2 id=\"why-this-matters-for-agents-specifically\">Why this matters for agents specifically</h2>\n<p>An agent workflow is an unpredictable query generator with a budget. Three\nproperties of DuckDB line up with that: it is a library-grade database that\nneeds no server to administer (an agent can be handed a file path and be\nproductive immediately), it is columnar and fast on exactly the analytical\nshapes models tend to write, and its failure modes are loud exceptions\nrather than silent plan degradations.</p>\n<p>The benchmark suite is not an argument that DuckDB beats a warehouse for\neverything — 500K rows is not big data. It is an argument that for the\nagent-tooling niche — single-node files, sub-second interactive queries,\nParquet in the middle, JSON out the other side — the boring choice is the\ndatabase that lets your tools encode the three patterns that work\n(<code>generate_series</code> bulk insert, <code>SEQUENCE</code> auto-increment, Parquet ingest)\nand make the wrong ones impossible.</p>",
 			"excerpt": "When you build tools that let an LLM agent query data, the database choice stops being an architecture-slide decision and becomes a …"
 		},
@@ -1525,6 +1546,7 @@ var content_default = {
 			"date": "2026-09-02",
 			"readingMinutes": 4,
 			"series": "AI engineering notes",
+			"relatedProject": "orchestrator",
 			"html": "<p>The MCP spec is short enough to read in an afternoon and vague enough to hide\nabout a week of debugging in every one of its &quot;implementations MAY&quot; clauses.\nI shipped two projects that live on both sides of that vagueness: <code>duckdb-mcp</code>,\na stdio MCP server exposing 15 DuckDB tools, and <code>orchestrator</code>, a CLI that\ncomposes six MCP servers in one process. Here is what the spec did not warn\nme about.</p>\n<h2 id=\"1-fastmcp-gets-you-a-hello-world-the-low-level-server-is-the-job\">1. FastMCP gets you a hello world; the low-level server is the job</h2>\n<p><code>FastMCP</code> gets you a hello world in ten lines — then hides the three things\nyou need to control. The moment you need a tool\nrouter, structured error semantics, or control over the JSON-RPC lifecycle,\nyou want the lower-level <code>mcp.server.stdio</code> API with an explicit <code>Server</code>\ninstance. The DuckDB server ends up as three pieces: a <code>TOOLS</code> list of\ntool-definition objects with input schemas, a <code>HANDLERS</code> dict mapping tool\nnames to async functions, and a <code>call_tool</code> router that dispatches by name.\nThat separation costs you nothing and pays for itself the first time a tool\nneeds to return a structured error instead of crashing the connection.</p>\n<h2 id=\"2-you-will-hit-the-argument-length-wall\">2. You will hit the argument-length wall</h2>\n<p>My first instinct for running SQL through the DuckDB CLI was\n<code>duckdb -c &quot;SELECT ...&quot;</code>. Multi-statement scripts, or anything with bulk\ndata, eventually dies on the OS argument-length limit. The pattern that\nholds: write the SQL to a temp file and run <code>duckdb -f tmpfile.sql</code>. Same\nfor results: <code>-json</code> mode gives you structured output that you parse\nyourself. Which leads to the next one.</p>\n<h2 id=\"3-json-over-stdio-erodes-your-types\">3. JSON over stdio erodes your types</h2>\n<p>DuckDB's <code>-json</code> output stringifies more than you would guess, though not\nuniformly: ints and bools come back as real JSON types, while\nfloats/decimals/dates are strings — <code>SELECT 42 AS i, 1.23::DECIMAL(18,2) AS d</code>\nreturns <code>{&quot;i&quot;:42,&quot;d&quot;:&quot;1.23&quot;}</code>. Older CLI versions stringified numbers\nwholesale, so pin the version you test against. If you hand that straight to\na model, the model will learn\nthat <code>count</code> looks like <code>&quot;42&quot;</code> and start emitting comparisons against\nstrings. The server has a recursive <code>_coerce_types()</code> pass that walks parsed\nJSON and converts strings back to <code>int</code>, <code>float</code>, <code>bool</code>, and <code>None</code>. Every\ntool boundary where you serialize through the weakest format in the pipe\nneeds a re-hydration step on the way back. Nobody tells you this in the\nprotocol docs because the protocol has no types to lose — your data does.</p>\n<h2 id=\"4-return-shapes-are-folklore-not-a-standard\">4. Return shapes are folklore, not a standard</h2>\n<p>When the orchestrator imports six MCP server modules directly (more on that\nbelow), I found their <code>call_tool</code> implementations do not agree on anything:\none returns a <code>tuple</code> of <code>(list_of_TextContent, dict)</code> where the useful\npayload lives at index 1; the rest return a bare list of <code>TextContent</code> whose\n<code>.text</code> is a JSON string. The dispatcher is 15 lines of shape-sniffing. The\nspec describes what a wire response looks like, not what your in-process\nhandler function returns, so every server you import is a small archaeology\ndig. Two more discoveries, filed under &quot;why are these not in the README&quot;:\ntool listing lives on the private <code>_tool_manager</code>, not the name you will\nguess, so plan on reading the SDK source once; and server\nmodules with top-level imports must be imported <em>after</em> <code>sys.path</code> is set up.</p>\n<h2 id=\"5-in-process-skip-the-wire-entirely\">5. In-process, skip the wire entirely</h2>\n<p>JSON-RPC over stdio exists to cross a process boundary. When the consumer is\nyour own Python CLI, that boundary is pure overhead — serialization,\nsubprocess lifecycle, an event loop per server. The orchestrator imports the\nserver modules directly and calls <code>asyncio.run(server.call_tool(name, kwargs))</code>.\nThat collapses &quot;run a code-quality scan, log the findings as tasks, write a\nwiki report, query the trend in DuckDB&quot; from a distributed-systems problem\ninto one command. The stdio transport stays where it belongs: for external\nclients like Claude Desktop or IDE integrations.</p>\n<h2 id=\"6-the-server-is-where-the-lessons-belong\">6. The server is where the lessons belong</h2>\n<p>duckdb-mcp's most useful feature isn't query execution. It's that\nnine benchmark-proven practices are encoded in the tools themselves: bulk\ninsert via <code>generate_series</code> instead of <code>INSERT VALUES</code>, <code>CREATE SEQUENCE</code>\ninstead of broken <code>IDENTITY</code>/<code>SERIAL</code>, Parquet-first ingest. The server stops\nthe model from choosing the wrong pattern, which is worth more than any\nprompt that says &quot;please prefer bulk inserts&quot;. Treat your MCP server as the\nplace where operational knowledge becomes a tool constraint.</p>\n<p>The spec covers the handshake. Everything above is the part you learn by\nhaving the thing fail at 2 a.m., and all of it is now a unit test.</p>",
 			"excerpt": "The MCP spec is short enough to read in an afternoon and vague enough to hide about a week of debugging in every one of its …"
 		},
@@ -1541,6 +1563,7 @@ var content_default = {
 			"date": "2026-08-20",
 			"readingMinutes": 4,
 			"series": "AI engineering notes",
+			"relatedProject": "model-quality-harness",
 			"html": "<p>Every team that ships an LLM feature eventually builds an eval harness, and\nevery harness eventually answers the same question wrong: <em>did the model\nsucceed, or did the HTTP layer just return 200?</em> This post is the methodology\nbehind the harness I built for local models behind an OpenAI-compatible\nLiteLLM broker — eight scenarios, three models, two repetitions, and a\nscoring pass that never asks another model for its opinion.</p>\n<h2 id=\"the-scenario-suite-is-fixed-and-adversarial\">The scenario suite is fixed and adversarial</h2>\n<p>The suite ships as eight JSON files. Each scenario defines an OpenAI function\nschema, a user prompt, simulated tool implementations, and success criteria.\nThe scenarios escalate deliberately:</p>\n<ul>\n<li><p><code>weather_tokyo</code>: one tool call, final answer must cite the tool's value.</p></li>\n<li><p><code>table_booking</code>: argument extraction. &quot;Eight people&quot; and &quot;7:30 PM&quot; must\narrive as <code>party_size: 8</code> and <code>19:30</code>.</p></li>\n<li><p><code>pizza_distractor</code>: an expired coupon in context that must <strong>not</strong> appear\nin the call (<code>param_absent</code>).</p></li>\n<li><p><code>inventory_then_reserve</code>: a two-step dependency. Query the catalog, take\nthe SKU from the tool result, reserve with it.</p></li>\n<li><p><code>fx_conversion_retry</code>: the first call uses non-ISO currency names and the\nsimulator <em>rejects</em> it; the model must retry with <code>EUR</code>/<code>USD</code>.\nThe retry scenario is the one that separates models. A single-shot accuracy\nmetric says nothing about whether a model can consume a tool error and\nrecover, which is most of what agent loops actually do.</p></li>\n</ul>\n<h2 id=\"deterministic-judging-on-purpose\">Deterministic judging, on purpose</h2>\n<p>There is no LLM-as-judge anywhere in the pipeline. Each emitted tool call is\nvalidated against the scenario's function schema: no missing required keys,\nno extras, no mistyped params. Parameter accuracy is checked under\nnormalization (numbers compared as floats, strings trimmed and\ncase-insensitive). The final answer is graded with criteria like:</p>\n<pre><code class=\"language-json\">{\n  &quot;type&quot;: &quot;params_exact_any&quot;,\n  &quot;name&quot;: &quot;get_fx_rate&quot;,\n  &quot;params&quot;: { &quot;from_ccy&quot;: &quot;EUR&quot;, &quot;to_ccy&quot;: &quot;USD&quot;, &quot;amount&quot;: 1200 }\n}\n</code></pre>\n<p>(Judge output and results JSON use the key <code>kind</code> for the same concept;\nscenario files, shown above, use <code>type</code>.)</p>\n<p>A fluent-but-wrong answer passes only if it actually states the expected\nvalues (<code>answer_contains</code> matches case-insensitively and tolerates thousands\nseparators, so <code>1,301.04</code> matches <code>1301.04</code>). Yes, substring checks are\ndull. They are also reproducible, which is the property an eval needs when\nits whole job is telling you that Tuesday's deploy made Thursday worse.</p>\n<h2 id=\"what-http-200-hides\">What HTTP 200 hides</h2>\n<p>Three real findings, all from logging one field deeper than the status code.</p>\n<p><strong>Empty content turns.</strong> A turn can return 200 with <code>content: null</code>. The\nharness records <code>empty_content_turns</code> per scenario; a model that &quot;completed&quot;\nwithout ever producing usable content now fails loudly instead of silently.</p>\n<p><strong>Reasoning burn.</strong> One of the tested models is a reasoning model served by\nvLLM. With a small <code>max_tokens</code> the entire output budget disappears into\n<code>reasoning_content</code> while <code>content</code> stays null and <code>finish_reason</code> reads\n<code>length</code>. That combination (<code>finish_reason=length</code> plus empty content plus\nnon-zero reasoning) is scored as a distinct failure mode\n(<code>reasoning_burn_turns</code>). The shipped run recorded zero burn turns; the\nmetric exists because the failure is cheap to instrument and invisible\notherwise. It is also why the reasoning model under test gets\n<code>max_tokens=2048</code> on its generation calls while the others run 1024: at\n1024, its failure looks like model incompetence when it is really a sampling-budget artifact.</p>\n<p><strong>The cache that flattered everyone.</strong> The broker response-caches identical\nrequest bodies. Sending the same JSON body twice returned the cached\ncompletion in ~0.01 s with the same <code>id</code>, which made rep-to-rep variance\nlook near zero and latency look phenomenal. Proof: a repeated body came back\nin 0.01 s versus ~1.4 s for a distinct one. The fix is one field: every\nrequest gets a unique <code>user: mqh-&lt;uuid&gt;</code> stamp to bust the cache. After the\nfix the same model's per-turn latency showed a real distribution: min\n0.83 s, median 1.29 s, max 3.72 s; before the fix it showed a flat line that\nwas never real.</p>\n<h2 id=\"outages-are-data-not-footnotes\">Outages are data, not footnotes</h2>\n<p>During one re-run, two of the three models were down at the broker: one\nreturned a LiteLLM 404 (the upstream model does not exist), the other a 500\nconnection error. Both ran anyway and both were recorded as failures with\nthe real HTTP error bodies attached, and the dashboard shows that honestly\nrather than silently shrinking the comparison to the one live model. Only\ntimeouts and transient codes fail open: 408, 429, and 5xx get the single\nretry; everything else 4xx (a 404 &quot;model does not exist&quot;, a bad request)\nfails fast with the error body attached. A harness\nthat quietly drops unavailable models is not an eval, it is marketing.</p>\n<p>The whole thing is Python 3.13 stdlib only: no pip, no framework, ~5–10\nminutes for a full run, and a standalone vanilla-JS dashboard rendered from\nthe results JSON. An eval harness earns its keep on reproducibility, not\nsophistication: the same input gives you the same number twice, so the day\nthe number moves, you can believe it.</p>",
 			"excerpt": "Every team that ships an LLM feature eventually builds an eval harness, and every harness eventually answers the same question wrong: did …"
 		}
@@ -1601,6 +1624,9 @@ var ProjectSchema = z.object({
 	* no link button at all (fabricated source URLs 404 and read as fake). */
 	links: ProjectLinksSchema.optional(),
 	metrics: z.array(ProjectMetricSchema).optional(),
+	/** R6-C C1: optional hand-curated cross-link to the post that tells this
+	* project's story (slug validated against posts at build time). */
+	relatedPost: Slug.optional(),
 	featured: z.boolean(),
 	accent: z.string().min(1).optional(),
 	/** Optional long-form body rendered from the markdown below frontmatter. */
@@ -1611,6 +1637,12 @@ var PostSchema = z.object({
 	readingMinutes: z.number().int().positive(),
 	series: z.string().min(1).optional(),
 	heroImage: z.string().min(1).optional(),
+	/** R6-C C1: optional hand-curated cross-links. Slugs are validated
+	* against their collection at build time (build-content checks
+	* existence), so a typo here fails the build instead of rendering a
+	* dead link. */
+	relatedProject: Slug.optional(),
+	relatedPosts: z.array(Slug).optional(),
 	/** Sanitized rendered markdown — the build pipeline's output. */
 	html: z.string().min(1),
 	excerpt: z.string().min(1)
@@ -1704,12 +1736,18 @@ function titleFor(path) {
 	};
 	if (seg === "projects") {
 		const slug = path.split("/")[2];
-		if (slug) return `${content.projects.find((p) => p.slug === slug)?.title ?? "Project"} — Projects`;
+		if (slug) {
+			const project = content.projects.find((p) => p.slug === slug);
+			return project ? `${project.title} — Projects` : "Page not found";
+		}
 		return "Projects";
 	}
 	if (seg === "writing") {
 		const slug = path.split("/")[2];
-		if (slug) return `${content.posts.find((p) => p.slug === slug)?.title ?? "Post"} — Writing`;
+		if (slug) {
+			const post = content.posts.find((p) => p.slug === slug);
+			return post ? `${post.title} — Writing` : "Page not found";
+		}
 		return "Writing";
 	}
 	return seg ? pageNames[seg] ?? "" : "";
@@ -2026,6 +2064,7 @@ function buildGlobalStyles(theme) {
 			background: "var(--c-accent-soft, " + theme.color.accentSoft + ")",
 			color: "var(--c-text, " + theme.color.text + ")"
 		},
+		"button:not(:disabled):active": { transform: "translateY(1px)" },
 		"@media (prefers-reduced-motion: reduce)": { "*, *::before, *::after": {
 			animationDuration: "0.01ms !important",
 			animationIterationCount: "1 !important",
@@ -5126,6 +5165,7 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 			behavior: scrollBehaviorFor(reduced)
 		});
 	};
+	const configuredSocials = social.filter((entry) => entry.url !== "");
 	return /* @__PURE__ */ jsxs(Shell$3, {
 		"data-testid": "site-footer",
 		children: [/* @__PURE__ */ jsxs(Inner, { children: [/* @__PURE__ */ jsxs(Identity, { children: [/* @__PURE__ */ jsx(Name, { children: name }), /* @__PURE__ */ jsx(Role, { children: role })] }), /* @__PURE__ */ jsxs(Column, {
@@ -5178,21 +5218,21 @@ function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM sys
 						}) : /* @__PURE__ */ jsx("span", { dangerouslySetInnerHTML: { __html: "<!-- DRAFT: replace email address in src/lib/seo.ts -->" } }) })
 					]
 				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading, {
+				configuredSocials.length > 0 && /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Heading, {
 					id: "footer-social-heading",
 					children: "Elsewhere"
 				}), /* @__PURE__ */ jsx("ul", {
 					role: "list",
 					"aria-labelledby": "footer-social-heading",
 					"data-testid": "footer-social",
-					children: social.map((entry) => /* @__PURE__ */ jsx(LinkLine, { children: entry.url ? /* @__PURE__ */ jsx("a", {
+					children: configuredSocials.map((entry) => /* @__PURE__ */ jsx(LinkLine, { children: /* @__PURE__ */ jsx("a", {
 						href: entry.url,
 						className: classes,
 						target: "_blank",
 						rel: "noreferrer noopener",
 						"data-testid": `footer-social-${entry.label.toLowerCase()}`,
 						children: entry.label
-					}) : /* @__PURE__ */ jsx("span", { dangerouslySetInnerHTML: { __html: `<!-- DRAFT: replace handle for ${entry.label} in Footer SOCIAL_LINKS -->` } }) }, entry.label))
+					}) }, entry.label))
 				})] })
 			]
 		})] }), /* @__PURE__ */ jsxs(BottomRow, { children: [/* @__PURE__ */ jsx(Copy, {
@@ -5462,7 +5502,7 @@ var CardTitle$1 = styled.h3`
   line-height: ${(p) => p.theme.font.leading.snug};
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
-function inlineLinkClass(theme) {
+function inlineLinkClass$1(theme) {
 	return css({
 		display: "inline-flex",
 		alignItems: "center",
@@ -5534,7 +5574,7 @@ function ProjectCard$1({ project, links }) {
 					"aria-hidden": "true",
 					children: "·"
 				}),
-				/* @__PURE__ */ jsx("span", { children: project.period })
+				/* @__PURE__ */ jsx("span", { children: formatPeriod(project.period) })
 			] }),
 			/* @__PURE__ */ jsx(CardTitle$1, {
 				"data-testid": "featured-project-title",
@@ -5612,7 +5652,7 @@ var PostMeta = styled.span`
 function Home() {
 	const theme = useTheme();
 	const links = {
-		inline: inlineLinkClass(theme),
+		inline: inlineLinkClass$1(theme),
 		title: titleLinkClass$1(theme)
 	};
 	const projects = heroProjects();
@@ -6317,7 +6357,7 @@ function ProjectCard({ project }) {
 					"aria-hidden": "true",
 					children: "·"
 				}),
-				/* @__PURE__ */ jsx("span", { children: project.period })
+				/* @__PURE__ */ jsx("span", { children: formatPeriod(project.period) })
 			] }),
 			/* @__PURE__ */ jsx(CardTitle, { children: /* @__PURE__ */ jsx(Link, {
 				to: href,
@@ -6764,6 +6804,40 @@ var RelatedGrid = styled.div`
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 `;
+var RelatedPostCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  padding: ${(p) => p.theme.space[4]};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.md};
+  background: ${(p) => p.theme.color.bgSunken};
+`;
+var RelatedPostHint = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+var RelatedPostTitle = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+  line-height: ${(p) => p.theme.font.leading.snug};
+  transition: color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
+`;
+var RelatedPostMeta = styled.span`
+  display: flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textMuted};
+`;
 var RelatedTitle = styled.h3`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.lg};
@@ -6785,6 +6859,38 @@ function relatedLinkClass(theme) {
 		},
 		"&:focus-visible": {
 			outline: `2px solid ${theme.color.focus}`,
+			outlineOffset: "3px"
+		}
+	});
+}
+/** Inline prose-link skin (R6-C C6): used inside PanelBody copy. */
+function inlineLinkClass(theme) {
+	return css({
+		color: theme.color.accent,
+		textDecoration: "underline",
+		textUnderlineOffset: "3px",
+		"&:hover": { color: theme.color.text },
+		"&:focus-visible": {
+			outline: `2px solid ${theme.color.focus}`,
+			outlineOffset: "2px"
+		}
+	});
+}
+/** R6-C C1: the related-post card link (whole card is one <Link>). */
+function relatedPostCls(theme) {
+	const t = theme;
+	return css({
+		display: "flex",
+		flexDirection: "column",
+		gap: t.space[1],
+		textDecoration: "none",
+		borderRadius: t.radius.sm,
+		color: "inherit",
+		minHeight: "28px",
+		["@media (max-width: " + t.breakpoint.md + ")"]: { minHeight: "44px" },
+		"&:hover .related-post-title": { color: t.color.accent },
+		"&:focus-visible": {
+			outline: `2px solid ${t.color.focus}`,
 			outlineOffset: "3px"
 		}
 	});
@@ -6828,6 +6934,7 @@ function ProjectDetail() {
 	if (!project) return /* @__PURE__ */ jsx(NotFound, {});
 	const links = projectLinkEntries(project.links);
 	const related = relatedProjects(content.projects, project);
+	const relatedPost = project.relatedPost ? content.posts.find((p) => p.slug === project.relatedPost) : void 0;
 	return /* @__PURE__ */ jsxs(Container, {
 		"data-testid": "project-detail",
 		children: [
@@ -6924,9 +7031,48 @@ function ProjectDetail() {
 				children: [/* @__PURE__ */ jsx(BlockTitle, {
 					id: "case-study-title",
 					children: "Case study"
-				}), /* @__PURE__ */ jsx(PanelBody$1, {
+				}), /* @__PURE__ */ jsxs(PanelBody$1, {
 					"data-testid": "detail-body-pending",
-					children: "The full write-up for this project is in review. The highlights above are the short version; email me for the long one — I keep the design docs."
+					children: [
+						"The full write-up for this project is in review. The highlights above are the short version; ",
+						/* @__PURE__ */ jsx(Link, {
+							to: "/contact",
+							className: inlineLinkClass(theme),
+							children: "email me"
+						}),
+						" for the long one — I keep the design docs."
+					]
+				})]
+			}),
+			relatedPost !== void 0 && /* @__PURE__ */ jsxs(Block, {
+				"aria-labelledby": "related-post-title",
+				children: [/* @__PURE__ */ jsx(BlockTitle, {
+					id: "related-post-title",
+					children: "Related writing"
+				}), /* @__PURE__ */ jsxs(RelatedPostCard, {
+					"data-testid": "related-post",
+					children: [/* @__PURE__ */ jsxs(RelatedPostHint, { children: [/* @__PURE__ */ jsx(Icon$1, {
+						name: "arrow-right",
+						size: 12
+					}), "The thinking behind this project"] }), /* @__PURE__ */ jsxs(Link, {
+						to: `/writing/${relatedPost.slug}`,
+						className: relatedPostCls(theme),
+						"data-testid": "related-post-link",
+						children: [/* @__PURE__ */ jsx(RelatedPostTitle, {
+							className: "related-post-title",
+							children: relatedPost.title
+						}), /* @__PURE__ */ jsxs(RelatedPostMeta, { children: [
+							/* @__PURE__ */ jsx("time", {
+								dateTime: relatedPost.date,
+								children: formatDate(relatedPost.date)
+							}),
+							/* @__PURE__ */ jsx("span", {
+								"aria-hidden": "true",
+								children: "·"
+							}),
+							formatReadingTime(relatedPost.readingMinutes)
+						] })]
+					})]
 				})]
 			}),
 			related.length > 0 && /* @__PURE__ */ jsxs(Block, {
@@ -7546,6 +7692,29 @@ function neighboursByDate(postsNewestFirst, slug) {
 function shareUrl(origin, slug) {
 	return `${origin.replace(/\/+$/, "")}/writing/${slug}`;
 }
+/**
+* R6-C C2: series position for the "N of M" affordance. Zero-based index in a
+* newest-first list; -1 when the post is not in the series (or series unset).
+*/
+function seriesPosition(postsNewestFirst, slug) {
+	const post = postsNewestFirst.find((p) => p.slug === slug);
+	if (!post?.series) return {
+		index: -1,
+		total: 0
+	};
+	const inSeries = postsNewestFirst.filter((p) => p.series === post.series);
+	return {
+		index: inSeries.findIndex((p) => p.slug === slug) + 1,
+		total: inSeries.length
+	};
+}
+/**
+* R6-C C1: the project this post is about, if the content curates one.
+* Resolves by slug at render time; undefined when unset or stale.
+*/
+function relatedProjectOf(projects, slug) {
+	return slug !== void 0 ? projects.find((p) => p.slug === slug) : void 0;
+}
 var Article = styled.article`
   display: flex;
   flex-direction: column;
@@ -7631,6 +7800,98 @@ var PagerHint = styled.span`
   color: ${(p) => p.theme.color.textSubtle};
 `;
 var PagerSpacer = styled.div``;
+/** R6-C C2: series badge as a link — pill styling that survives being an <a>.
+* 44px phone hit area (R3D-03 recipe): it's a primary navigation affordance,
+* and the e2e touch-target sweep caught the first cut at 24px. */
+function seriesCls(theme) {
+	const t = theme;
+	return css({
+		display: "inline-flex",
+		alignItems: "center",
+		gap: t.space[1],
+		padding: `0 ${t.space[2]}`,
+		minHeight: "28px",
+		["@media (max-width: " + t.breakpoint.md + ")"]: { minHeight: "44px" },
+		borderRadius: t.radius.full,
+		background: t.color.accentSoft,
+		color: t.color.accent,
+		fontFamily: t.font.sans,
+		fontSize: t.font.sizes.xs,
+		fontWeight: t.font.weights.medium,
+		lineHeight: t.font.leading.none,
+		letterSpacing: t.font.tracking.normal,
+		textDecoration: "none",
+		whiteSpace: "nowrap",
+		transition: `color ${t.motion.fast} ${t.motion.ease}`,
+		"&:hover": {
+			color: t.color.accent,
+			textDecoration: "underline",
+			textUnderlineOffset: "2px"
+		},
+		"&:focus-visible": {
+			outline: `2px solid ${t.color.focus}`,
+			outlineOffset: "2px"
+		},
+		"overflow-wrap": "anywhere"
+	});
+}
+var SeriesPos = styled.span`
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+/** R6-C C1: "read the case study" cross-link block at the end of a post. */
+var RelatedProjectBlock = styled.aside`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  margin-block: ${(p) => p.theme.space[5]} 0;
+  padding: ${(p) => p.theme.space[4]};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.md};
+  background: ${(p) => p.theme.color.bgSunken};
+`;
+var RelatedProjectHint = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+var RelatedProjectTitle = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+  line-height: ${(p) => p.theme.font.leading.snug};
+`;
+var RelatedProjectSummary = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textMuted};
+  line-height: ${(p) => p.theme.font.leading.normal};
+`;
+/** R6-C C1: the cross-link card — whole block is one link (css() class on a
+* plain <Link>; styled(Link) would strip the `to` prop). */
+function relatedProjectCls(theme) {
+	const t = theme;
+	return css({
+		display: "flex",
+		flexDirection: "column",
+		gap: t.space[1],
+		textDecoration: "none",
+		borderRadius: t.radius.sm,
+		color: "inherit",
+		minHeight: "28px",
+		["@media (max-width: " + t.breakpoint.md + ")"]: { minHeight: "44px" },
+		"&:hover .related-title": { color: t.color.accent },
+		"&:focus-visible": {
+			outline: `2px solid ${t.color.focus}`,
+			outlineOffset: "3px"
+		}
+	});
+}
 /**
 * Link skinning: styled(Link) would strip the router `to` prop (the vendored
 * prop filter drops non-DOM props from component targets — see Button.tsx),
@@ -7668,6 +7929,11 @@ function PostDetail() {
 		previous: void 0,
 		next: void 0
 	}, [post]);
+	const seriesPos = useMemo(() => post ? seriesPosition(postsByDate(), post.slug) : {
+		index: -1,
+		total: 0
+	}, [post]);
+	const relatedProject = useMemo(() => relatedProjectOf(content.projects, post?.relatedProject), [post]);
 	if (!post) return /* @__PURE__ */ jsx(NotFound, {});
 	const backCls = linkSkin(theme, { size: "back" });
 	const pagerCls = linkSkin(theme, { size: "pager" });
@@ -7711,11 +7977,19 @@ function PostDetail() {
 						post.series !== void 0 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Sep, {
 							"aria-hidden": "true",
 							children: "·"
-						}), /* @__PURE__ */ jsx(Tag, {
-							tone: "accent",
-							size: "sm",
+						}), /* @__PURE__ */ jsxs(Link, {
+							to: "/writing",
+							className: seriesCls(theme),
 							"data-testid": "series-badge",
-							children: post.series
+							"aria-label": `${post.series} — post ${seriesPos.index} of ${seriesPos.total}`,
+							children: [post.series, seriesPos.total > 0 && /* @__PURE__ */ jsxs(SeriesPos, {
+								"aria-hidden": "true",
+								children: [
+									seriesPos.index,
+									"/",
+									seriesPos.total
+								]
+							})]
 						})] })
 					]
 				})] }), /* @__PURE__ */ jsxs(ShareWrap, { children: [/* @__PURE__ */ jsx(Button$1, {
@@ -7762,6 +8036,21 @@ function PostDetail() {
 							children: neighbours.next.title
 						})]
 					}) : /* @__PURE__ */ jsx(PagerSpacer, { "aria-hidden": "true" })]
+				}),
+				relatedProject !== void 0 && /* @__PURE__ */ jsxs(RelatedProjectBlock, {
+					"data-testid": "related-project",
+					children: [/* @__PURE__ */ jsxs(RelatedProjectHint, { children: [/* @__PURE__ */ jsx(Icon$1, {
+						name: "arrow-right",
+						size: 12
+					}), "The project behind this post"] }), /* @__PURE__ */ jsxs(Link, {
+						to: `/projects/${relatedProject.slug}`,
+						className: relatedProjectCls(theme),
+						"data-testid": "related-project-link",
+						children: [/* @__PURE__ */ jsx(RelatedProjectTitle, {
+							className: "related-title",
+							children: relatedProject.title
+						}), /* @__PURE__ */ jsx(RelatedProjectSummary, { children: relatedProject.summary })]
+					})]
 				})
 			]
 		})

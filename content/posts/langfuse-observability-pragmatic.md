@@ -11,6 +11,7 @@ summary: >-
 tags: [llm, observability, langfuse, python, dashboards]
 date: 2026-10-02
 series: AI engineering notes
+relatedProject: langfuse-dashboard
 ---
 
 Every LLM observability demo opens on a gorgeous trace explorer with data in

@@ -11,6 +11,7 @@ summary: >-
 tags: [duckdb, analytics, agents, python, performance]
 date: 2026-09-15
 series: AI engineering notes
+relatedProject: duckdb-mcp
 ---
 
 When you build tools that let an LLM agent query data, the database choice

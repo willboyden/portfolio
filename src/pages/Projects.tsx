@@ -22,7 +22,7 @@ import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import { content, type Project, type ProjectMetric } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
-import { pluralize } from 'app/lib/format';
+import { formatPeriod, pluralize } from 'app/lib/format';
 import {
   Button,
   Card,
@@ -217,7 +217,7 @@ export function ProjectCard({ project }: { project: Project }): React.ReactNode 
           {project.status}
         </Tag>
         <span aria-hidden="true">·</span>
-        <span>{project.period}</span>
+        <span>{formatPeriod(project.period)}</span>
       </MetaLine>
       <CardTitle>
         <Link to={href} className={titleLinkClass(theme)} data-testid="project-card-title">

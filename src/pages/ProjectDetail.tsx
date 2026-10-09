@@ -22,7 +22,7 @@ import { css, useTheme } from '@emotion/react';
 import { Link, useParams } from '@portfolio/router';
 import { content, getProject, type Project } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
-import { formatDate } from 'app/lib/format';
+import { formatDate, formatReadingTime } from 'app/lib/format';
 import { NotFound } from './NotFound';
 import { ProjectMetrics, statusTone } from './Projects';
 import {
@@ -177,6 +177,46 @@ const RelatedGrid = styled.div`
   }
 `;
 
+/* R6-C C1: "Related writing" card — mirrors PostDetail's related-project
+ * block so the two directions read as one design system. */
+const RelatedPostCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  padding: ${(p) => p.theme.space[4]};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.md};
+  background: ${(p) => p.theme.color.bgSunken};
+`;
+
+const RelatedPostHint = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+
+const RelatedPostTitle = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+  line-height: ${(p) => p.theme.font.leading.snug};
+  transition: color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
+`;
+
+const RelatedPostMeta = styled.span`
+  display: flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
 const RelatedTitle = styled.h3`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.lg};
@@ -206,6 +246,36 @@ function relatedLinkClass(theme: Tokens): string {
 
 /* Router links take css() classes on plain <Link> — styled(Link) would drop
  * the `to` prop (vendored styled() prop allow-list, Nav.tsx precedent). */
+/** Inline prose-link skin (R6-C C6): used inside PanelBody copy. */
+function inlineLinkClass(theme: Tokens): string {
+  return css({
+    color: theme.color.accent,
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+    '&:hover': { color: theme.color.text },
+    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
+  });
+}
+
+/** R6-C C1: the related-post card link (whole card is one <Link>). */
+function relatedPostCls(theme: Tokens): string {
+  const t = theme;
+  return css({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: t.space[1],
+    textDecoration: 'none',
+    borderRadius: t.radius.sm,
+    color: 'inherit',
+    minHeight: '28px',
+    ['@media (max-width: ' + t.breakpoint.md + ')']: {
+      minHeight: '44px', /* R3D-03: primary affordance at phone widths */
+    },
+    '&:hover .related-post-title': { color: t.color.accent },
+    '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '3px' },
+  });
+}
+
 function crumbClass(theme: Tokens): string {
   return css({
     display: 'inline-flex',
@@ -258,6 +328,10 @@ export function ProjectDetail(): React.ReactNode {
 
   const links = projectLinkEntries(project.links);
   const related = relatedProjects(content.projects, project);
+  /* R6-C C1: the curated post that tells this project's story. */
+  const relatedPost = project.relatedPost
+    ? content.posts.find((p) => p.slug === project.relatedPost)
+    : undefined;
 
   return (
     <Container data-testid="project-detail">
@@ -340,9 +414,35 @@ export function ProjectDetail(): React.ReactNode {
           <BlockTitle id="case-study-title">Case study</BlockTitle>
           <PanelBody data-testid="detail-body-pending">
             The full write-up for this project is in review. The highlights
-            above are the short version; email me for the long one — I keep
-            the design docs.
+            above are the short version; <Link to="/contact" className={inlineLinkClass(theme)}>email me</Link> for
+            the long one — I keep the design docs.
           </PanelBody>
+        </Block>
+      )}
+
+      {/* R6-C C1: the writing that tells this project's story — closes the
+          work→thinking loop the IA round found missing. */}
+      {relatedPost !== undefined && (
+        <Block aria-labelledby="related-post-title">
+          <BlockTitle id="related-post-title">Related writing</BlockTitle>
+          <RelatedPostCard data-testid="related-post">
+            <RelatedPostHint>
+              <Icon name="arrow-right" size={12} />
+              The thinking behind this project
+            </RelatedPostHint>
+            <Link
+              to={`/writing/${relatedPost.slug}`}
+              className={relatedPostCls(theme)}
+              data-testid="related-post-link"
+            >
+              <RelatedPostTitle className="related-post-title">{relatedPost.title}</RelatedPostTitle>
+              <RelatedPostMeta>
+                <time dateTime={relatedPost.date}>{formatDate(relatedPost.date)}</time>
+                <span aria-hidden="true">·</span>
+                {formatReadingTime(relatedPost.readingMinutes)}
+              </RelatedPostMeta>
+            </Link>
+          </RelatedPostCard>
         </Block>
       )}
 

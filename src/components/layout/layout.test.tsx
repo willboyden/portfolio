@@ -527,8 +527,10 @@ describe('Footer', () => {
   });
 
   it('unsupplied social handles are HIDDEN (R2-A A12), never fake URLs or @your-handle', () => {
-    expect(html).toContain('<!-- DRAFT: replace handle');
-    expect(html).not.toContain('data-placeholder');
+    /* R6-B: the whole Elsewhere column now skips when nothing is configured —
+     * the old DRAFT-comment <li> rendered a visible empty bullet. */
+    expect(html).not.toContain('data-testid="footer-social"');
+    expect(html).not.toContain('Elsewhere');
     expect(html).not.toContain('your-handle');
     for (const entry of SOCIAL_LINKS) {
       expect(entry.url).toBe('');
@@ -548,13 +550,25 @@ describe('Footer', () => {
     expect(anchor).toContain('href="https://example.com/someone"');
     expect(anchor).toContain('target="_blank"');
     expect(anchor).toContain('rel="noreferrer noopener"');
-    expect(filled).not.toContain('DRAFT: replace handle');
+    /* R6-B: configured entries render; the column comes back with them. */
+    expect(filled).toContain('data-testid="footer-social"');
+    expect(filled).toContain('Elsewhere');
   });
 
-  it('social list is a labelled list, not a bare run of links', () => {
-    expect(html).toContain('data-testid="footer-social"');
-    expect(html).toContain('aria-labelledby="footer-social-heading"');
-    expect(html).toContain('Elsewhere');
+  it('social list is a labelled list, not a bare run of links (when configured)', () => {
+    /* R6-B: the list only exists when at least one social is configured —
+     * assert against a configured render, not the default (unset) one. */
+    const filled = render(
+      <Footer
+        now={new Date('2026-01-01T00:00:00Z')}
+        social={[{ label: 'GitHub', url: 'https://example.com/someone' }]}
+      />,
+    );
+    expect(filled).toContain('data-testid="footer-social"');
+    expect(filled).toContain('aria-labelledby="footer-social-heading"');
+    expect(filled).toContain('Elsewhere');
+    /* And the default render must NOT carry the labelled list at all. */
+    expect(html).not.toContain('footer-social-heading');
   });
 
   it('year helper survives an absurd clock', () => {

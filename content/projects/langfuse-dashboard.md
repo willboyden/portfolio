@@ -17,6 +17,7 @@ role: Design and implementation (solo)
 status: active
 period: "2026-08"
 featured: false
+relatedPost: langfuse-observability-pragmatic
 stack: [Python, Langfuse SDK v4.14.3, Langfuse 3.200.0, vanilla JS/CSS]
 highlights:
   - "Idempotent fetch pipeline: atomic rewrites, page- and cursor-based pagination, ~5000-item caps per collection"
