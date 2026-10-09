@@ -106,7 +106,7 @@ export interface LayoutProps {
 export function Layout({
   children,
   currentPath,
-  name = 'Alex Rivera',
+  name = 'William Boyden',
   role,
   menuOpen = false,
   chrome = true,

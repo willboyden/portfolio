@@ -219,7 +219,7 @@ export interface FooterProps {
 }
 
 export function Footer({
-  name = 'Alex Rivera',
+  name = 'William Boyden',
   role = 'Technical consultant — LLM systems, data platforms, full-stack engineering',
   now,
   social = SOCIAL_LINKS,

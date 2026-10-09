@@ -110,7 +110,7 @@ def card(title: str, subtitle: str, kicker: str, out: Path) -> Path:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--title", default="Alex Rivera — Technical Consultant")
+    ap.add_argument("--title", default="William Boyden — Technical Consultant")
     ap.add_argument("--subtitle", default="Full-stack engineering and data science for teams that ship.")
     ap.add_argument("--kicker", default="portfolio")
     ap.add_argument("--out", default="")

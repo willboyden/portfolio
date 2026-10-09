@@ -930,22 +930,22 @@ function truncateAtWordBoundary(text, max, ellipsis = "…") {
 *   still valid JSON after unescaping. Tests JSON.parse it back.
 */
 var SITE = {
-	name: "Alex Rivera",
+	name: "William Boyden",
 	url: "https://alexrivera.dev",
-	title: "Alex Rivera — AI Engineering & Technical Consulting",
+	title: "William Boyden — AI Engineering & Technical Consulting",
 	/** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
-	shortTitle: "Alex Rivera",
+	shortTitle: "William Boyden",
 	/** Tagline appended to the home <title> only. */
 	tagline: "Technical Consulting",
-	description: "Portfolio of Alex Rivera, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.",
-	author: "Alex Rivera",
+	description: "Portfolio of William Boyden, technical consultant and AI engineer: LLM systems, data platforms, full-stack builds, writing and talks.",
+	author: "William Boyden",
 	/**
 	* R2-A A3: hire-me metadata a recruiter looks for in 20 seconds. UNSET =
 	* hidden (never fabricated). Owner: set these before launching the job push —
 	*   hiring: one line, e.g. "Seeking senior AI-platform / full-stack roles —
 	*           remote (UTC-5 ±3) — available from Nov 2026"
 	*   email:  the mailbox that receives engagements and recruiter mail
-	*   resume: path to a PDF in public/ (e.g. '/alex-rivera-resume.pdf')
+	*   resume: path to a PDF in public/ (e.g. '/william-boyden-resume.pdf')
 	*/
 	hiring: null,
 	email: null,
@@ -1805,7 +1805,7 @@ var shared = {
 			"2xl": "1.75rem",
 			"3xl": "2.25rem",
 			"4xl": "3rem",
-			"5xl": "clamp(2.75rem, 6vw, 4.25rem)"
+			"5xl": "clamp(2.5rem, 6vw, 4.25rem)"
 		},
 		weights: {
 			normal: 400,
@@ -4912,7 +4912,7 @@ var Bars = styled.span`
     }
   }
 `;
-function Header({ currentPath, menuOpen = false, name = "Alex Rivera" }) {
+function Header({ currentPath, menuOpen = false, name = "William Boyden" }) {
 	const [open, setOpen] = useState(menuOpen);
 	const triggerRef = useRef(null);
 	const tokens = useThemeTokens();
@@ -5153,7 +5153,7 @@ function linkClass(tokens) {
     }
   `;
 }
-function Footer({ name = "Alex Rivera", role = "Technical consultant — LLM systems, data platforms, full-stack engineering", now, social = SOCIAL_LINKS, email = "" }) {
+function Footer({ name = "William Boyden", role = "Technical consultant — LLM systems, data platforms, full-stack engineering", now, social = SOCIAL_LINKS, email = "" }) {
 	const tokens = useThemeTokens();
 	const reduced = usePrefersReducedMotion();
 	const year = currentYear(now ?? /* @__PURE__ */ new Date());
@@ -5329,7 +5329,7 @@ function skipLinkClass(tokens) {
     }
   `;
 }
-function Layout({ children, currentPath, name = "Alex Rivera", role, menuOpen = false, chrome = true }) {
+function Layout({ children, currentPath, name = "William Boyden", role, menuOpen = false, chrome = true }) {
 	const tokens = useThemeTokens();
 	const skip = skipLinkClass(tokens);
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Global, { styles: {
@@ -5387,6 +5387,13 @@ var HeroShell = styled.section`
    * no extra top padding — Main's space[7] is the single top gutter. The old
    * stack wasted ~144px above the eyebrow at 375 and ate the mobile fold. */
   padding-block: 0 ${(p) => p.theme.space[6]};
+
+  /* William Boyden persona swap: the longer name wraps the h1 an extra line
+   * at 320x568, so the hero bottom padding drops a notch on extreme mobile
+   * to keep the CTAs above the fold (fold spec enforces this). */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    padding-block: 0 ${(p) => p.theme.space[4]};
+  }
 `;
 var Eyebrow = styled.p`
   margin: 0 0 ${(p) => p.theme.space[4]};
@@ -5401,6 +5408,7 @@ var Eyebrow = styled.p`
    * "FULL-STACK" mid-token. Tighter tracking + smaller size keep it to two
    * lines; text uses non-breaking hyphens (see the JSX). */
   @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-bottom: ${(p) => p.theme.space[3]};
     font-size: ${(p) => p.theme.font.sizes.xs};
     letter-spacing: ${(p) => p.theme.font.tracking.wide};
   }
@@ -5434,9 +5442,11 @@ var Lede$6 = styled.p`
 
   /* Extreme mobile (M2): at 320x568 the full-size lockup pushed the CTAs
    * ~280px below the fold. Compact the type ramp on short/narrow screens —
-   * content intact, rhythm tightened. */
+   * content intact, rhythm tightened. William Boyden: tightened a notch
+   * further (space[4]->space[3]) — the longer name wraps one extra h1 line
+   * at 320 and the fold spec enforces CTA visibility. */
   @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
-    margin-top: ${(p) => p.theme.space[4]};
+    margin-top: ${(p) => p.theme.space[3]};
     font-size: ${(p) => p.theme.font.sizes.md};
     line-height: ${(p) => p.theme.font.leading.normal};
   }
@@ -5448,7 +5458,12 @@ var CtaRow$2 = styled.div`
   margin-top: ${(p) => p.theme.space[6]};
 
   @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
-    margin-top: ${(p) => p.theme.space[5]};
+    /* William Boyden: the name is 3 chars longer than the old persona's,
+     * which wrapped the h1 an extra line at 320 and pushed the CTAs to
+     * top=535/bottom=591 — below the 568 fold. space[5]->space[4] reclaims
+     * 8px; combined with the 5xl clamp min (2.75->2.5rem) the CTAs are
+     * fully on-screen again. */
+    margin-top: ${(p) => p.theme.space[4]};
   }
 `;
 var HeroRule = styled.hr`
@@ -5668,21 +5683,21 @@ function Home() {
 					id: "home-title",
 					size: "5xl",
 					"data-testid": "home-title",
-					children: ["Alex Rivera", /* @__PURE__ */ jsx(Tagline, { children: "I turn analytical work into software that survives production — and production realities back into the analysis." })]
+					children: ["William Boyden", /* @__PURE__ */ jsx(Tagline, { children: "I turn analytical work into software that survives production — and production realities back into the analysis." })]
 				}),
 				/* @__PURE__ */ jsx(Lede$6, { children: "I advise teams on the hard middle of technical work: where a data-science result has to become a maintained service, and “it runs on my machine” has to become “it runs, and we know why.”" }),
 				/* @__PURE__ */ jsxs(CtaRow$2, { children: [/* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$4,
 					to: "/projects",
 					variant: "primary",
-					size: "lg",
+					size: "md",
 					"data-testid": "home-cta-projects",
 					children: "View projects"
 				}), /* @__PURE__ */ jsx(Button$1, {
 					as: ROUTER_LINK$4,
 					to: "/contact",
 					variant: "secondary",
-					size: "lg",
+					size: "md",
 					"data-testid": "home-cta-contact",
 					children: "Get in touch"
 				})] }),
@@ -5936,7 +5951,7 @@ function About() {
 				gap: "4",
 				className: "lede-block",
 				children: [
-					/* @__PURE__ */ jsx(Lede$5, { children: "I am Alex Rivera — a technical consultant who came through full-stack web engineering and a data-science degree, and who still writes the code he recommends." }),
+					/* @__PURE__ */ jsx(Lede$5, { children: "I am William Boyden — a technical consultant who came through full-stack web engineering and a data-science degree, and who still writes the code he recommends." }),
 					/* @__PURE__ */ jsxs(Paragraph, { children: [
 						"My path is the one I recommend to teams hiring for the fuzzy boundary between “data” and “engineering”: I started building web applications — interfaces, APIs, the whole request-to-database loop — and went back for a",
 						" ",

@@ -249,7 +249,7 @@ export function About(): React.ReactNode {
         </Heading>
         <Stack gap="4" className="lede-block">
           <Lede>
-            I am Alex Rivera — a technical consultant who came through
+            I am William Boyden — a technical consultant who came through
             full-stack web engineering and a data-science degree, and who still
             writes the code he recommends.
           </Lede>

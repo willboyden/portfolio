@@ -47,8 +47,8 @@ describe('route-meta (shared prerender/SPA source, R2C-3)', () => {
     const m = metaFor('/');
     /* capTitle's empty-title path returns the full brand title verbatim —
      * no duplicated name, no mid-word ellipsis. */
-    expect(m.titlePlain).toBe('Alex Rivera — AI Engineering & Technical Consulting');
-    expect(m.titlePlain.match(/Alex Rivera/g)?.length).toBe(1);
+    expect(m.titlePlain).toBe('William Boyden — AI Engineering & Technical Consulting');
+    expect(m.titlePlain.match(/William Boyden/g)?.length).toBe(1);
     expect(m.titlePlain.length).toBeLessThanOrEqual(60);
   });
 

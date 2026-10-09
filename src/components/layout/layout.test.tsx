@@ -232,7 +232,7 @@ describe('Header', () => {
     expect(html).toContain('data-testid="site-header"');
     const wordmark = tags(html, 'a').find((t) => t.includes('data-testid="wordmark"'));
     expect(wordmark).toContain('href="/"');
-    expect(html).toContain('Alex Rivera');
+    expect(html).toContain('William Boyden');
     expect(sheet).toContain('position: sticky');
     expect(sheet).toContain(`z-index: ${darkTheme.z.nav}`);
   });
@@ -514,9 +514,9 @@ describe('Footer', () => {
   });
 
   it('name/role line and a real current year', () => {
-    expect(html).toContain('Alex Rivera');
+    expect(html).toContain('William Boyden');
     expect(html).toContain('Technical consultant');
-    expect(html).toContain(`© ${currentYear(new Date())} Alex Rivera`);
+    expect(html).toContain(`© ${currentYear(new Date())} William Boyden`);
     expect(html).toContain('2026');
   });
 

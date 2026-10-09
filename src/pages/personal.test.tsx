@@ -109,7 +109,7 @@ describe('Home', () => {
   it('h1 carries the name and the tagline reads as part of the same heading', () => {
     const h1 = tags(html, 'h1')[0] ?? '';
     expect(h1).toBeDefined();
-    expect(html).toContain('Alex Rivera');
+    expect(html).toContain('William Boyden');
     expect(html).toContain('production realities back into the analysis');
   });
 

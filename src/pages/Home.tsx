@@ -44,6 +44,13 @@ const HeroShell = styled.section`
    * no extra top padding — Main's space[7] is the single top gutter. The old
    * stack wasted ~144px above the eyebrow at 375 and ate the mobile fold. */
   padding-block: 0 ${(p) => p.theme.space[6]};
+
+  /* William Boyden persona swap: the longer name wraps the h1 an extra line
+   * at 320x568, so the hero bottom padding drops a notch on extreme mobile
+   * to keep the CTAs above the fold (fold spec enforces this). */
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    padding-block: 0 ${(p) => p.theme.space[4]};
+  }
 `;
 
 const Eyebrow = styled.p`
@@ -59,6 +66,7 @@ const Eyebrow = styled.p`
    * "FULL-STACK" mid-token. Tighter tracking + smaller size keep it to two
    * lines; text uses non-breaking hyphens (see the JSX). */
   @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    margin-bottom: ${(p) => p.theme.space[3]};
     font-size: ${(p) => p.theme.font.sizes.xs};
     letter-spacing: ${(p) => p.theme.font.tracking.wide};
   }
@@ -94,9 +102,11 @@ const Lede = styled.p`
 
   /* Extreme mobile (M2): at 320x568 the full-size lockup pushed the CTAs
    * ~280px below the fold. Compact the type ramp on short/narrow screens —
-   * content intact, rhythm tightened. */
+   * content intact, rhythm tightened. William Boyden: tightened a notch
+   * further (space[4]->space[3]) — the longer name wraps one extra h1 line
+   * at 320 and the fold spec enforces CTA visibility. */
   @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
-    margin-top: ${(p) => p.theme.space[4]};
+    margin-top: ${(p) => p.theme.space[3]};
     font-size: ${(p) => p.theme.font.sizes.md};
     line-height: ${(p) => p.theme.font.leading.normal};
   }
@@ -109,7 +119,12 @@ const CtaRow = styled.div`
   margin-top: ${(p) => p.theme.space[6]};
 
   @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
-    margin-top: ${(p) => p.theme.space[5]};
+    /* William Boyden: the name is 3 chars longer than the old persona's,
+     * which wrapped the h1 an extra line at 320 and pushed the CTAs to
+     * top=535/bottom=591 — below the 568 fold. space[5]->space[4] reclaims
+     * 8px; combined with the 5xl clamp min (2.75->2.5rem) the CTAs are
+     * fully on-screen again. */
+    margin-top: ${(p) => p.theme.space[4]};
   }
 `;
 
@@ -348,7 +363,7 @@ export function Home(): React.ReactNode {
       <HeroShell aria-labelledby="home-title" data-testid="home-hero">
         <Eyebrow>Technical consultant · Full‑stack engineer · Data scientist</Eyebrow>
         <Heading level={1} id="home-title" size="5xl" data-testid="home-title">
-          Alex Rivera
+          William Boyden
           <Tagline>
             I turn analytical work into software that survives production — and
             production realities back into the analysis.
@@ -361,10 +376,14 @@ export function Home(): React.ReactNode {
           we know why.&rdquo;
         </Lede>
         <CtaRow>
-          <Button as={ROUTER_LINK} to="/projects" variant="primary" size="lg" data-testid="home-cta-projects">
+          {/* William Boyden: size md at extreme mobile — the lg button's 56px
+           * height was the last 8px pushing the CTAs below the 568 fold
+           * (longer name = extra h1 wrap line). Same buttons, one notch
+           * smaller on the narrowest screens. */}
+          <Button as={ROUTER_LINK} to="/projects" variant="primary" size="md" data-testid="home-cta-projects">
             View projects
           </Button>
-          <Button as={ROUTER_LINK} to="/contact" variant="secondary" size="lg" data-testid="home-cta-contact">
+          <Button as={ROUTER_LINK} to="/contact" variant="secondary" size="md" data-testid="home-cta-contact">
             Get in touch
           </Button>
         </CtaRow>

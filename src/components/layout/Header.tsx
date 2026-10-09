@@ -210,7 +210,7 @@ export interface HeaderProps {
 export function Header({
   currentPath,
   menuOpen = false,
-  name = 'Alex Rivera',
+  name = 'William Boyden',
 }: HeaderProps): ReactNode {
   const [open, setOpen] = useState(menuOpen);
   const triggerRef = useRef<HTMLButtonElement | null>(null);

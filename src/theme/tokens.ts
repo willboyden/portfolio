@@ -85,7 +85,7 @@ const shared = {
       '2xl': '1.75rem',
       '3xl': '2.25rem',
       '4xl': '3rem',
-      '5xl': 'clamp(2.75rem, 6vw, 4.25rem)',
+      '5xl': 'clamp(2.5rem, 6vw, 4.25rem)',
     },
     weights: { normal: 400, medium: 500, semibold: 600, bold: 700 },
     leading: { none: 1, tight: 1.15, snug: 1.3, normal: 1.6, relaxed: 1.75 },

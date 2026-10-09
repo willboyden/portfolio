@@ -14,7 +14,7 @@ import { SITE, pageMeta, type MetaResult } from './seo';
 const SITE_FALLBACK_DESCRIPTION: string = SITE.description;
 
 export function titleFor(path: string): string {
-  /* R2C-2/R2-A A10: buildHead's capTitle owns the single " — Alex Rivera"
+  /* R2C-2/R2-A A10: buildHead's capTitle owns the single " — William Boyden"
    * brand suffix. titleFor returns the BARE page part — any prior suffix here
    * double-branded and forced mid-word ellipsis. Home returns '' so capTitle
    * emits SITE.title as-is. */
