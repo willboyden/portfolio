@@ -472,9 +472,18 @@ describe('Layout', () => {
   });
 
   it('skip link styles hide visually but stay focusable', () => {
-    const cssClass = skipLinkClass(darkTheme);
-    expect(cssClass).toMatch(/^css-/);
+    /* Compute the class INSIDE a component render, exactly the way Layout does
+     * in production. Calling skipLinkClass at test top level would push the
+     * vendored css() through useContextSafe() outside a render — React then
+     * logs its "Invalid hook call" warning (harmless, but noisy stderr). */
+    let cssClass = '';
+    const ClassProbe = (): ReactNode => {
+      cssClass = skipLinkClass(darkTheme);
+      return null;
+    };
     render(<Layout />);
+    render(<ClassProbe />);
+    expect(cssClass).toMatch(/^css-/);
     /* Scoped to the skip link's own rules — MenuSlot legitimately uses
        display:none elsewhere in the sheet, which is why a sheet-wide grep
        would prove nothing here. */
