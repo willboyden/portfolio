@@ -309,3 +309,107 @@ LIVE — wave-2 content had regressed a fixed area. All real findings fixed now:
 Flake note: first full e2e after this fix batch showed one fouc pre-paint timing
 flake (legacy-bare-string case); isolated rerun 4/4 and second full run 53/53.
 Watch for recurrence in fouc specs under parallel load.
+
+## Round 6 — five-lens improvement wave (fresh eyes, beyond placeholder gates)
+
+Five parallel read-only reviewers (deleg_ac73ec94, 2026-10-09): perf (R6-A),
+design polish (R6-B), narrative/IA (R6-C), DX/maintainability (R6-D),
+i18n/robustness (R6-E). Every finding re-verified against the current build
+before acting. ~28 findings total; dispositions:
+
+### R6-A (performance) — measured, mostly clean
+- F1 MEDIUM post HTML ships in entry chunk (26% of 57 kB gz) on every route: ACCEPTED
+  for now (23-page scale, byte-stable prerender contract); revisit if entry >40 kB after
+  future content growth. Logged as the top optimization headroom.
+- F2 MEDIUM zod parse machinery in client bundle: ACCEPTED (runtime cost ~0.15 ms
+  measured; the import-time re-validation is a deliberate integrity gate — removing it
+  trades a real safety property for bytes; revisit with zod/mini if bundle grows).
+- F3 LOW no route-level code-splitting: ACCEPTED at current scale (follows F1).
+- F4-F6 LOW/INFO (TBT at 6x borderline, backdrop-filter watch, clean bill otherwise):
+  logged as watch items; no action.
+- Orphaned serve-dist :8901 killed; .cdp-prof dirs noted (see D8).
+
+### R6-B (design polish)
+- R6B-1 MEDIUM mixed period granularity ("2026" vs "2026-08" verbatim): FIXED —
+  formatPeriod() (YYYY-MM -> "Aug 2026") used on both card MetaLines.
+- R6B-2 MEDIUM no :active press state on any button: FIXED — global
+  button:not(:disabled):active translateY(1px) in global-styles.
+- R6B-4 LOW footer Elsewhere empty bullets: FIXED — column renders only
+  configured socials; skips entirely when unset (tests re-pinned).
+- R6B-3 LOW transition:none elements (wordmark/skip/back-to-top): PARTIAL — series
+  badge (new) carries motion.fast transition; the others are intentional
+  reduced-motion-conservative elements, ACCEPTED.
+- R6B-5 LOW card hover-lift unconfirmed live: ACCEPTED (probe limitation noted;
+  hover verified via inner title-link color change).
+- R6B-6/7/8 LOW (writing chip counts, excerpt clamp, ghost-button contrast): ACCEPTED
+  as future polish backlog; noted in BACKLOG-style list below.
+- R6B-9 INFO art direction (hero ornament, link-underline animation): ACCEPTED as
+  optional polish; restraint is a defensible design choice.
+
+### R6-C (narrative + IA) — the round's substantive wins
+- C1 HIGH zero project<->post cross-links: FIXED — optional relatedProject/
+  relatedPosts (post) + relatedPost (project) frontmatter, build-time slug
+  validation (typo fails the build), rendered "The project behind this post" /
+  "The thinking behind this project" blocks on both detail templates. 5 posts +
+  5 projects wired to their real counterparts.
+- C2 MEDIUM inert series badge: FIXED — badge is now a real link to /writing
+  with aria-label "AI engineering notes — post N of 6" and visible position.
+- C3 MEDIUM post/project detail are terminal nodes: PARTIAL — cross-link blocks
+  (C1) give every deep page a next click; full author-card/contact CTA unit
+  ACCEPTED for a future pass (email is an owner gate).
+- C4 MEDIUM home arc never lands on contact: PARTIAL — "All writing ->" affordance
+  ACCEPTED (writing section now reachable in 1 click via nav); closing contact band
+  deferred with C3 (owner-gate copy).
+- C5 MEDIUM empty sections with no next-click: FIXED via C6-style fix below +
+  action wiring deferred (copy points at /contact which exists).
+- C6 LOW dead "email me"/"start from the projects" copy: FIXED — both are real
+  links now (ProjectDetail pending-writeup -> /contact; Contact empty state ->
+  /projects).
+- C7 LOW footer duplicates nav: ACCEPTED (deliberate sitemap column; revisiting
+  means an IA change beyond this round's scope).
+- C8 LOW nav order (About->Now->Contact): ACCEPTED as-is (Now placement is
+  deliberate per code comment; reorder is opinion-level).
+- C9 LOW /now h1 is a date: ACCEPTED (minor; flagged for next content edit).
+
+### R6-D (DX + maintainability)
+- D1 MEDIUM Invalid-hook-call stderr in layout.test: FIXED earlier this round
+  (e8ee32f, before reports landed) — suite is now zero-warning.
+- D2 MEDIUM setReducedMotion lacks verify-after-set: FIXED — ported the fouc
+  verify loop into the harness helper (same silent-revert root cause).
+- D3 MEDIUM performance spec no-op predicate (`|| true`): FIXED — real assertion
+  (SPA navigation must not full-reload) replaces the tautology.
+- D4/D5 LOW dead exports (formatDateRange/formatDuration/slugify/initials;
+  useMediaQuery/useMounted/useScrollProgress/useOnClickOutside): ACCEPTED-BY-
+  DESIGN — they are the documented public helper surface for future content
+  (CONTRACT §4 API-stability rationale), covered by tests, tree-shaken from the
+  client bundle. Zero bundle cost; keeping.
+- D6 LOW CONTRACT §3 missing /now + /videos: FIXED.
+- D7 LOW CONTRACT §4 + ui/README still pin deleted SkipLink: FIXED.
+- D8 LOW 22 .cdp-prof dirs: FIXED — e2e runner GCs stale dirs on start.
+- D9 LOW gzip-after-audit noise notes: FIXED — precompress reordered before audit.
+- D10 INFO export surface narrowing: ACCEPTED (optional).
+
+### R6-E (i18n + robustness)
+- R6E-1 MEDIUM unknown-future content overflows nav/footer/pager links: FIXED —
+  overflow-wrap:anywhere on nav/footer link classes + post-pager links (measured
+  643px -> 0 with injected 139-char tokens).
+- R6E-2 MEDIUM no chrome copy seam: ACCEPTED (documented ~4-6 day estimate;
+  single-locale today, seam noted for the future).
+- R6E-3 MEDIUM US-locked date formatting: ACCEPTED (UTC-pinned determinism is
+  the contract; Intl swap point documented in format.ts).
+- R6E-4 LOW median 1.31s vs 1.29s divergence: FIXED — project frontmatter
+  reconciled to the recomputed 1.29 s.
+- R6E-5 LOW 7 physical-direction CSS props: ACCEPTED (RTL not a requirement;
+  logical-property conversion documented).
+- R6E-6 LOW empty-section orphans + hydrated 404 title: FIXED — titleFor
+  returns "Page not found" for unknown slugs (tab title matches the page at
+  every layer); sitemap/footer for empty sections ACCEPTED as-is (they are
+  honest, designed pages).
+- R6E-7 LOW DRAFT-comment innerHTML pattern: MOOT — R6B-4's fix removed the
+  last dynamic-interpolation sink (the handle comment); the email comment is a
+  compile-time literal. Zero dangerouslySetInnerHTML sinks now interpolate
+  variables.
+
+Battery after fixes: 503 unit / 53 e2e / tsc 0 / lint 0 / AUDIT OK 23 pages
+137 kB gz (was 136 kB — the cross-link blocks cost ~1 kB gz across the bundle).
+Commits: e8ee32f (D1 pre-fix), 9ad3c6b (round-6 batch).
