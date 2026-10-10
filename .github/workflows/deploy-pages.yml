@@ -70,7 +70,12 @@ jobs:
       - name: Build + audit
         run: node scripts/build.mjs
       - name: E2E (CDP harness, headless Chromium)
-        run: node e2e/run.mjs
+        run: |
+          node e2e/run.mjs 2>&1 | tee /tmp/e2e.log
+          exit ${PIPESTATUS[0]}
+      - name: E2E failures (annotations)
+        if: failure()
+        run: grep -E "✗|FAILURES|Error" /tmp/e2e.log | head -20 | while read -r l; do echo "::error::$l"; done; true
 
       # Vite base path: GitHub Pages serves project sites under /<repo>/.
       # SITE.url + vite base are derived from the repo name here so the same
