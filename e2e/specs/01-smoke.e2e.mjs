@@ -40,7 +40,7 @@ describe('smoke', () => {
   test('header nav links navigate client-side and update content', async ({ goto, page }) => {
     await goto('/');
     const before = await page.textContent('h1');
-    await page.click('header nav a[href="/writing"], header nav a[href="/writing/"]');
+    await page.click('header nav a[href$="/writing"], header nav a[href$="/writing/"]');
     await page.waitForAppReady();
     const after = await page.textContent('h1');
     if (!after || after === before) throw new Error(`navigation did not change h1 ("${before}" -> "${after}")`);
@@ -49,7 +49,7 @@ describe('smoke', () => {
 
   test('deep link to a prerendered project page works (nginx try_files shape)', async ({ goto, page, attribute }) => {
     await goto('/projects');
-    const href = await attribute('a[href^="/projects/"]', 'href');
+    const href = await attribute('a[href*="/projects/"]', 'href');
     if (!href) throw new Error('no project link found on /projects');
     await goto(href.replace(/\/$/, ''));
     await expectVisibleH1(page);
