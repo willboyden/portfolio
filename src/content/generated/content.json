@@ -1,5 +1,5 @@
 {
-  "contentHash": "612a8e1e5bd3660d",
+  "contentHash": "ec30e5e43861803f",
   "projects": [
     {
       "slug": "system-monitor",
@@ -442,5 +442,203 @@
     }
   ],
   "videos": [],
-  "talks": []
+  "talks": [],
+  "aiCapabilities": [
+    {
+      "slug": "local-inference",
+      "title": "Local LLM inference",
+      "summary": "Serve, probe, and benchmark open-weight models through an OpenAI-compatible broker on a single-GPU host — with a failure taxonomy that refuses to call a listed model healthy.",
+      "tags": [
+        "llm",
+        "vllm",
+        "sglang",
+        "benchmark",
+        "litellm"
+      ],
+      "date": "2026-10-10",
+      "capability": "Local LLM inference",
+      "oneLiner": "One GPU, twenty-one model groups, honest health: inventory, probes, benchmarks, and runbooks for a LiteLLM/vLLM/SGLang fleet.",
+      "status": "shipped",
+      "stack": [
+        "LiteLLM broker",
+        "vLLM",
+        "SGLang",
+        "Python stdlib",
+        "DuckDB"
+      ],
+      "howItWorks": [
+        "List model groups from GET /models, then health-probe each one — a listed group is not a healthy group.",
+        "Classify every failure by latency and response body (engine down vs bad upstream name vs GPU contention) before calling anything dead.",
+        "Benchmark sequentially with cache-busting (unique user field plus prompt nonce), logging finish_reason and reasoning burn per turn.",
+        "Re-test any surprising throughput claim adversarially (ascending and descending concurrency ladder) before believing it.",
+        "Convert persistent DOWN groups into an operator-ready repair runbook instead of narrating failures."
+      ],
+      "proof": [
+        {
+          "claim": "Broker playbook — failure taxonomy, probe scripts, engine forensics",
+          "path": "/opt/data/skills/mlops/local-llm-broker/SKILL.md"
+        },
+        {
+          "claim": "Tested fleet tooling — pulse, bench, runbook generator, 18-test suite",
+          "path": "/opt/data/workspace/broker-tools"
+        },
+        {
+          "claim": "Controlled 50-probe cache experiment proving full-body response caching",
+          "path": "/opt/data/workspace/cache-lab"
+        },
+        {
+          "claim": "Adversarial replay ruling out order-drift in a throughput-collapse claim",
+          "path": "/opt/data/workspace/adversarial"
+        },
+        {
+          "claim": "Deterministic tool-call scoring harness with dashboard",
+          "path": "/opt/data/workspace/model-quality-harness"
+        }
+      ],
+      "limits": [
+        "One large model is resident at a time; most listed groups are dead by construction on a single-GPU host.",
+        "Engines can only be restarted by the operator — the container has no GPU, no daemon socket, and a /v1-only broker allowlist.",
+        "Identical request bodies hit the broker cache in ~0.02 s; latency numbers without cache busting are fiction.",
+        "GET /models 200 does not mean inference works — probe a chat completion before relying on a group."
+      ],
+      "relatedPosts": [
+        "eval-harness-silent-regressions",
+        "langfuse-observability-pragmatic"
+      ],
+      "relatedProjects": [
+        "model-quality-harness"
+      ],
+      "html": "<p>Serving open-weight models is the easy part. Knowing what is actually up, how\nfast, and why something failed is the work.</p>"
+    },
+    {
+      "slug": "smart-routing",
+      "title": "Smart routing — RAG, MCP & A2A",
+      "summary": "Making a fleet of MCP servers actually usable: deterministic NL-to-tool planning with guardrails, measured per-tool latency, same-process orchestration, FTS5 retrieval, and agent-to-agent fleet discipline.",
+      "tags": [
+        "mcp",
+        "routing",
+        "rag",
+        "agents",
+        "orchestrator"
+      ],
+      "date": "2026-10-10",
+      "capability": "Smart routing",
+      "oneLiner": "Guardrail-first tool routing with golden tests, real-latency benchmarks, an in-process MCP orchestrator, FTS5 retrieval, and fleet patterns that survived overnight runs.",
+      "status": "shipped",
+      "stack": [
+        "FastMCP",
+        "SQLite FTS5",
+        "Python stdlib",
+        "DuckDB",
+        "kanban fleet"
+      ],
+      "howItWorks": [
+        "Catalog every MCP server's tools with capability classes, then score natural-language goals against name and description signals into a ranked routing table.",
+        "Enforce policy before execution — deny-rules veto destructive candidates (duckdb_drop_table is DENIED in read-only mode); plans are dry-runnable.",
+        "Replay plans against golden fixtures so routing changes are testable — no LLM in the loop keeps decisions reproducible and auditable.",
+        "Measure the fleet with real stdio handshakes — p50/p95 per tool, cold start, error rate — because agent loops hang on the slowest tool.",
+        "Compose, don't concatenate — same-process import for zero-overhead calls, FTS5 stores for retrieval, pooled worker fleets for parallel execution."
+      ],
+      "proof": [
+        {
+          "claim": "mcp-router — deterministic NL-to-tool planner with deny-rules and dry-run traces, 13 of 13 golden goals, SHIPPED v0.2.0",
+          "path": "/opt/data/workspace/portfolio/mcp-router"
+        },
+        {
+          "claim": "mcp-bench — real stdio MCP handshake benchmarks, per-tool p50/p95, cold-start ms, 85 tests",
+          "path": "/opt/data/workspace/portfolio/mcp-bench"
+        },
+        {
+          "claim": "Multi-MCP orchestrator — one CLI over six imported MCP servers, chained pipeline mode",
+          "path": "/opt/data/workspace/orchestrator"
+        },
+        {
+          "claim": "wiki-search — FastMCP server over a SQLite FTS5 search engine",
+          "path": "/opt/data/workspace/projects/wiki-search"
+        },
+        {
+          "claim": "hwdocs RAG store — chunked FTS5 store, 100 percent recall at 0.11 ms vs grep 88 percent at 1.63 ms",
+          "path": "/opt/data/workspace/hwdocs"
+        },
+        {
+          "claim": "Agent-to-agent fleet runner — pooled kanban workers, dispatcher-exact spawn, overnight runbooks",
+          "path": "/opt/data/skills/kanban-fleet-runner/SKILL.md"
+        }
+      ],
+      "limits": [
+        "No LLM in the router loop is a feature and a limit — deterministic and golden-testable, but it plans on lexical signals, not semantics.",
+        "hwdocs retrieval is lexical FTS5 only; the fleet has an embedding model, but no embedding store is built yet — semantic recall is future work.",
+        "Worker fleets cap at about 8 concurrent sessions — a 15-worker dispatcher run crashed the box on RLIMIT_NPROC, documented not folklore.",
+        "Kanban workers cannot complete cards under an uncompleted parent umbrella — orchestrators must verify and force-close."
+      ],
+      "relatedPosts": [
+        "mcp-production-lessons",
+        "agent-proof-your-data-layer",
+        "duckdb-for-agent-workflows"
+      ],
+      "relatedProjects": [
+        "orchestrator",
+        "duckdb-mcp"
+      ],
+      "html": "<p>A fleet of MCP servers is only as good as the layer that routes, measures, and\ncomposes it. Guardrails beat scores; golden tests beat vibes.</p>"
+    },
+    {
+      "slug": "video-generation",
+      "title": "Programmatic video generation",
+      "summary": "Code-first video pipelines that run where diffusion stacks can't — a Manim CE MCP server plus a zero-dependency Pillow+ffmpeg frame pipeline — with the diffusion lane honestly declared not yet exercised here.",
+      "tags": [
+        "video",
+        "manim",
+        "ffmpeg",
+        "pillow",
+        "mcp"
+      ],
+      "date": "2026-10-10",
+      "capability": "Video generation",
+      "oneLiner": "Scenes as code: Manim CE via an MCP server, Pillow frame pipelines through ffmpeg — seven shipped explainer videos, web-ready and moov-safe.",
+      "status": "in-progress",
+      "stack": [
+        "Manim CE",
+        "Pillow",
+        "ffmpeg",
+        "MCP",
+        "Python stdlib"
+      ],
+      "howItWorks": [
+        "Author scenes as code — Manim CE Scene classes, or Pillow section functions drawing frame-by-frame with progress t in the 0-1 range.",
+        "Render frames headlessly — manim CLI via the MCP server, or Pillow PNG sequences at 24 to 30 fps.",
+        "Stitch with ffmpeg — libx264, yuv420p chroma for player compatibility.",
+        "Ship web-ready — re-mux with +faststart so the moov atom leads; scan bytes to verify before calling an MP4 browser-playable."
+      ],
+      "proof": [
+        {
+          "claim": "MCP server for Manim rendering — stdlib JSON-RPC over stdio, scene tools, 12 tests",
+          "path": "/opt/data/workspace/projects/animated-explainer/explainer_mcp.py"
+        },
+        {
+          "claim": "Seven rendered videos on disk — 1280x720 h264, 23.5 s, moov at file start",
+          "path": "/opt/data/workspace/projects/animated-explainer/project_videos"
+        },
+        {
+          "claim": "First-party Pillow+ffmpeg pipeline skill — section-function template, faststart pitfall documented",
+          "path": "/opt/data/skills/creative/animated-videos"
+        },
+        {
+          "claim": "Manim CE authoring playbooks — explainer scenes and math/algorithm patterns",
+          "path": "/opt/data/skills/creative/manim-explainer"
+        },
+        {
+          "claim": "Runnable in this container — ffmpeg 7.1.5 and Pillow 12.3.0 verified installed",
+          "path": "/usr/bin/ffmpeg"
+        }
+      ],
+      "limits": [
+        "No GPU diffusion stack in this container — no comfy binary, no weights, no ComfyUI workspace; the diffusion lane is offered, not yet exercised locally.",
+        "Manim is not currently importable in the container; renders above date from 2026-07-10. Regeneration needs the environment reinstalled.",
+        "Typography constrained to installed fonts (DejaVu/Liberation/Noto) — the same font reality as this site.",
+        "Frame pipelines are CPU-bound — hundreds of MB of transient disk per render; frames are always cleaned up after stitching."
+      ],
+      "html": "<p>When diffusion is not an option, video is still a code problem: scenes authored\nas functions, frames rendered deterministically, bytes verified before shipping.</p>"
+    }
+  ]
 }
