@@ -17,6 +17,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # R8: visible to EVERY step — including 'Build + audit' (which builds
+      # the prerender bundle inside build.mjs; vite.config.prerender.ts
+      # inlines import.meta.env.BASE_URL from this at bundle time).
+      VITE_BASE: /${{ github.event.repository.name }}/
     steps:
       - uses: actions/checkout@v4
 
@@ -69,10 +74,6 @@ jobs:
         id: base
         run: |
           echo "path=/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
-          # Job-level: the prerender BUNDLE is built inside scripts/build.mjs
-          # (vite.config.prerender.ts inlines import.meta.env.BASE_URL from
-          # VITE_BASE at bundle time), so it must be set BEFORE the rebuild.
-          echo "VITE_BASE=${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
 
       - name: Rebuild with Pages base path
         run: |
@@ -82,8 +83,7 @@ jobs:
           # SITE_URL override: canonical/sitemap/RSS/OG must carry the FINAL
           # Pages URL (https://<user>.github.io/<repo>), not the placeholder
           # domain, or search engines index the wrong origin.
-          VITE_BASE="${{ steps.base.outputs.path }}/" \
-            SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
+          SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
             node scripts/prerender.mjs
           node scripts/audit-dist.mjs
 
