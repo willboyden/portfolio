@@ -8,11 +8,11 @@
  */
 import raw from './generated/content.json';
 import { SiteContentSchema } from './schema';
-import type { Project, Post, SiteContent } from './schema';
+import type { Project, Post, SiteContent, AiCapability } from './schema';
 
-export type { Project, Post, Video, Talk, ProjectLinks, ProjectMetric } from './schema';
+export type { Project, Post, Video, Talk, ProjectLinks, ProjectMetric, AiCapability, AiProof } from './schema';
 export type { SiteContent };
-export { ProjectSchema, PostSchema, VideoSchema, TalkSchema } from './schema';
+export { ProjectSchema, PostSchema, VideoSchema, TalkSchema, AiCapabilitySchema } from './schema';
 
 function validate(): SiteContent {
   const parsed = SiteContentSchema.safeParse(raw);
@@ -31,6 +31,17 @@ function validate(): SiteContent {
 }
 
 export const content: SiteContent = validate();
+
+/** R9: the AI Engineering capability API the section pages code against. */
+export function getAiCapability(slug: string): AiCapability | undefined {
+  return content.aiCapabilities.find((c) => c.slug === slug);
+}
+
+export function aiCapabilitiesByDate(): AiCapability[] {
+  return [...content.aiCapabilities].sort((a, b) =>
+    a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1,
+  );
+}
 
 export function getProject(slug: string): Project | undefined {
   return content.projects.find((p) => p.slug === slug);
