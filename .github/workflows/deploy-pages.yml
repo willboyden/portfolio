@@ -72,10 +72,13 @@ jobs:
       - name: Rebuild with Pages base path
         run: |
           npx vite build --base="${{ steps.base.outputs.path }}/"
+          # VITE_BASE: the prerender bundle's import.meta.env.BASE_URL (injected
+          # via vite define) - the SSR pass emits base-prefixed hrefs too.
           # SITE_URL override: canonical/sitemap/RSS/OG must carry the FINAL
           # Pages URL (https://<user>.github.io/<repo>), not the placeholder
           # domain, or search engines index the wrong origin.
-          SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
+          VITE_BASE="${{ steps.base.outputs.path }}/" \
+            SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
             node scripts/prerender.mjs
           node scripts/audit-dist.mjs
 
