@@ -25,6 +25,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # R8 ROOT FIX: VITE_BASE must be set BEFORE 'Build + audit' — the
+      # CLIENT vite build inlines import.meta.env.BASE_URL from the `base`
+      # config (process.env.VITE_BASE), and the prerender bundle does the
+      # same via vite.config.prerender.ts define. Both bundles must bake
+      # /<repo>/ or the client router pushes root-absolute URLs on every
+      # click (404 on refresh/navigation).
+      - name: Compute Pages base path (early)
+        run: |
+          echo "VITE_BASE=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
+          echo "SITE_URL=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_ENV"
+
       # Node 22. The npm cache is enabled ONLY when a lockfile exists —
       # setup-node hard-fails on cache:npm without one, and the lockfile is
       # generated host-side (the sandbox cannot reach the npm registry).
@@ -80,18 +91,11 @@ jobs:
       # Vite base path: GitHub Pages serves project sites under /<repo>/.
       # SITE.url + vite base are derived from the repo name here so the same
       # source deploys to both nginx (root) and Pages (subpath).
-      - name: Compute Pages base path
-        run: |
-          # Job-wide env: build.mjs (step 10) built the prerender bundle with
-          # whatever VITE_BASE was set THEN (nothing) — the old client-only
-          # rebuild left that stale root-absolute bundle in place, so every
-          # prerendered link 404'd. Export both vars now and re-run the FULL
-          # build (prerender bundle included), then prerender + audit.
-          echo "VITE_BASE=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
-          echo "SITE_URL=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_ENV"
-
       - name: Rebuild with Pages base path
         run: |
+          # VITE_BASE + SITE_URL were exported before Build+audit; this step
+          # re-runs the FULL build so the deployed artifact carries
+          # base-prefixed prerendered pages, then audits it.
           node scripts/build.mjs
           node scripts/audit-dist.mjs
 
