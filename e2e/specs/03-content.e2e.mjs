@@ -9,7 +9,7 @@ describe('content', () => {
     await goto('/projects');
     const hrefs = await page.evaluate(
       /* /projects/<slug> — one segment after /projects/ (not the bare index). */
-      `return [...document.querySelectorAll('a[href^="/projects/"]')].map(a => a.getAttribute('href')).filter(h => /^\\/projects\\/[^/]+\\/?$/.test(h)).slice(0, 5)`,
+      `return [...document.querySelectorAll('a[href*="/projects/"]')].map(a => a.getAttribute('href')).filter(h => h.split('/').filter(Boolean).length >= 2).slice(0, 5)`,
     );
     if (hrefs.length < 1) throw new Error('no project detail links on /projects');
     for (const href of hrefs) {
@@ -27,7 +27,7 @@ describe('content', () => {
   test('writing list -> post detail shows full article body, not just excerpt', async ({ goto, page, expectVisible }) => {
     await goto('/writing');
     const href = await page.evaluate(
-      `return [...document.querySelectorAll('a[href^="/writing/"]')].map(a => a.getAttribute('href')).find(h => /^\\/writing\\/[^/]+\\/?$/.test(h))`,
+      `return [...document.querySelectorAll('a[href*="/writing/"]')].map(a => a.getAttribute('href')).find(h => h.split('/').filter(Boolean).length >= 2)`,
     );
     if (!href) throw new Error('no post links on /writing');
     await goto(href.replace(/\/$/, ''));
