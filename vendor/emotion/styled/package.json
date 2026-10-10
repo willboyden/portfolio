@@ -8,10 +8,6 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "dependencies": {
-    "@emotion-mini/core": "file:../core",
-    "@emotion-mini/react": "file:../react"
-  },
   "peerDependencies": {
     "react": ">=18"
   }
