@@ -30,7 +30,7 @@ function walk(dir: string): string[] {
     if (entry.name === 'node_modules' || entry.isSymbolicLink()) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walk(full));
-    else if (entry.isFile() && /\.(ts|tsx)$/.test(full) && !full.includes('.smoke')) out.push(full);
+    else if (entry.isFile() && /\.(ts|tsx)$/.test(full) && !full.includes('.smoke') && !full.endsWith('.d.ts')) out.push(full);
   }
   return out;
 }
