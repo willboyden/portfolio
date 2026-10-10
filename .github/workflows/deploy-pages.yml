@@ -31,12 +31,9 @@ jobs:
       - name: Install (lockfile-pinned when present)
         run: |
           if [ -f package-lock.json ]; then
-            npm ci
+            npm ci || { echo "::error::npm ci failed"; grep -h "npm error" ~/.npm/_logs/*.log | head -20 | while read -r l; do echo "::error::$l"; done; exit 1; }
           else
-            # No lockfile in-repo yet (sandbox egress blocks the npm registry).
-            # A plain install keeps CI moving; the lockfile lands on the next
-            # host-side push and npm ci takes over.
-            npm install --no-audit --no-fund
+            npm install --no-audit --no-fund || { echo "::error::npm install failed"; grep -h "npm error" ~/.npm/_logs/*.log | head -20 | while read -r l; do echo "::error::$l"; done; exit 1; }
           fi
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
