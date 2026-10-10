@@ -44,9 +44,7 @@
     "globals": "^17.7.0",
     "typescript": "^6.0.3",
     "vite": "^8.2.0",
-    "vitest": "^4.1.10",
-    "@types/node": "^22.0.0",
-    "typescript-eslint": "^8.46.0"
+    "vitest": "^4.1.10"
   },
   "workspaces": [
     "vendor/emotion/*"
