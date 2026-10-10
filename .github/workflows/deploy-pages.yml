@@ -31,13 +31,21 @@ jobs:
       - name: Install (lockfile-pinned when present)
         run: |
           if [ -f package-lock.json ]; then
-            npm ci || { echo "::error::npm ci failed"; grep -n -B2 -A8 -E "npm error (code|command|path)|ERESOLVE|ETARGET|E404|Unsupported URL" ~/.npm/_logs/*.log | head -40 | while read -r l; do echo "::error::$l"; done; exit 1; }
+            npm ci || { echo "::error::npm ci failed"; exit 1; }
           else
-            npm install --no-audit --no-fund || { echo "::error::npm install failed"; grep -n -B2 -A8 -E "npm error (code|command|path)|ERESOLVE|ETARGET|E404|Unsupported URL" ~/.npm/_logs/*.log | head -40 | while read -r l; do echo "::error::$l"; done; exit 1; }
+            npm install --no-audit --no-fund || { echo "::error::npm install failed"; exit 1; }
           fi
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
       # Install the same binary the sandbox uses, then point CHROME_BIN at it.
+      - name: Upload npm debug logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-logs
+          path: /home/runner/.npm/_logs/
+          if-no-files-found: ignore
+
       - name: Install chrome-headless-shell for e2e
         run: |
           npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path "$HOME/.cache/chrome"
