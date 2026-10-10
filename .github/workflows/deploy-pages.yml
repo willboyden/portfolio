@@ -1,0 +1,77 @@
+name: Deploy portfolio to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 22 + the committed package-lock.json give a byte-reproducible
+      # install. The lockfile is committed to the repo; npm ci fails loudly
+      # if manifest and lockfile ever disagree.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (lockfile-pinned)
+        run: npm ci
+
+      # Full gate chain BEFORE any deploy: a red build never ships.
+      # The e2e suite runs against the served dist with headless Chromium
+      # (the repo's zero-dep CDP harness) — no Playwright download needed.
+      - name: Typecheck
+        run: node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+      - name: Lint
+        run: node node_modules/eslint/bin/eslint.js . --max-warnings 0
+      - name: Unit tests
+        run: node node_modules/vitest/vitest.mjs run
+      - name: Build + audit
+        run: node scripts/build.mjs
+      - name: E2E (CDP harness, headless Chromium)
+        run: node e2e/run.mjs
+
+      # Vite base path: GitHub Pages serves project sites under /<repo>/.
+      # SITE.url + vite base are derived from the repo name here so the same
+      # source deploys to both nginx (root) and Pages (subpath).
+      - name: Compute Pages base path
+        id: base
+        run: echo "path=/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild with Pages base path
+        run: |
+          npx vite build --base="${{ steps.base.outputs.path }}/"
+          # SITE_URL override: canonical/sitemap/RSS/OG must carry the FINAL
+          # Pages URL (https://<user>.github.io/<repo>), not the placeholder
+          # domain, or search engines index the wrong origin.
+          SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
+            node scripts/prerender.mjs
+          node scripts/audit-dist.mjs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

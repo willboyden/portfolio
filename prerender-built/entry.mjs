@@ -1651,11 +1651,18 @@ var VideoSchema = z.object({
 	...baseShape,
 	url: SafeUrl,
 	embedId: z.string().min(1).optional(),
+	/** R7: `podcast`/`audio` render an inline <audio> player + download link
+	* instead of a provider badge; `youtube`/`vimeo` render an external link
+	* (no iframes — CSP has no frame-src allowance and external embeds are
+	* tracking surfaces). */
 	provider: z.enum([
 		"youtube",
 		"vimeo",
+		"podcast",
+		"audio",
 		"other"
 	]),
+	/** Human display: "42 min" / "1 h 12 min" (free-form, verified at build). */
 	duration: z.string().min(1),
 	speakers: z.array(z.string().min(1)).optional(),
 	event: z.string().min(1).optional()
@@ -8108,7 +8115,22 @@ function splitByDate(all, todayIso) {
 }
 /** Display label for the provider badge. */
 function providerLabel(provider) {
-	return provider === "youtube" ? "YouTube" : provider === "vimeo" ? "Vimeo" : "Other";
+	switch (provider) {
+		case "youtube": return "YouTube";
+		case "vimeo": return "Vimeo";
+		case "podcast": return "Podcast";
+		case "audio": return "Audio";
+		default: return "Other";
+	}
+}
+/**
+* R7: audio providers (podcast/audio) render an inline <audio controls>
+* player in the row — the visitor plays without leaving the page — plus a
+* "Download" affordance on the same URL. Video providers keep the external
+* link (no iframes: CSP frame-src is not opened, and embeds are trackers).
+*/
+function isAudioProvider(provider) {
+	return provider === "podcast" || provider === "audio";
 }
 /** TODAY under UTC — zone-pinned so server and client group identically. */
 function todayUtcIso(now = /* @__PURE__ */ new Date()) {
@@ -8187,6 +8209,40 @@ var DurationBadge = styled.span`
   font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textMuted};
 `;
+var AudioPlayerControls = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  max-width: 32rem;
+
+  & audio {
+    width: 100%;
+    height: 40px;
+    border-radius: ${(p) => p.theme.radius.sm};
+  }
+`;
+function downloadCls(theme) {
+	const t = theme;
+	return css({
+		display: "inline-flex",
+		alignItems: "center",
+		gap: t.space[1],
+		fontFamily: t.font.mono,
+		fontSize: t.font.sizes.sm,
+		color: t.color.accent,
+		textDecoration: "none",
+		minHeight: "28px",
+		["@media (max-width: " + t.breakpoint.md + ")"]: { minHeight: "44px" },
+		"&:hover": {
+			textDecoration: "underline",
+			textUnderlineOffset: "3px"
+		},
+		"&:focus-visible": {
+			outline: `2px solid ${t.color.focus}`,
+			outlineOffset: "2px"
+		}
+	});
+}
 var RowAside = styled.div`
   display: flex;
   align-items: center;
@@ -8221,7 +8277,18 @@ function VideoRowItem({ video }) {
 	return /* @__PURE__ */ jsxs(VideoRow, {
 		"data-testid": "video-row",
 		children: [/* @__PURE__ */ jsxs(RowMain, { children: [
-			/* @__PURE__ */ jsx(TitleRow, { children: /* @__PURE__ */ jsxs("a", {
+			/* @__PURE__ */ jsx(TitleRow, { children: isAudioProvider(video.provider) ? /* @__PURE__ */ jsxs("span", {
+				className: videoTitleClass(theme),
+				"data-testid": "video-link",
+				children: [
+					/* @__PURE__ */ jsx(InlineIcon, { children: /* @__PURE__ */ jsx(Icon$1, {
+						name: "play",
+						size: 16
+					}) }),
+					" ",
+					video.title
+				]
+			}) : /* @__PURE__ */ jsxs("a", {
 				href: video.url,
 				target: "_blank",
 				rel: "noopener noreferrer",
@@ -8238,6 +8305,22 @@ function VideoRowItem({ video }) {
 				]
 			}) }),
 			/* @__PURE__ */ jsx(Summary, { children: video.summary }),
+			isAudioProvider(video.provider) && /* @__PURE__ */ jsxs(AudioPlayerControls, {
+				"data-testid": "video-audio",
+				children: [/* @__PURE__ */ jsx("audio", {
+					controls: true,
+					preload: "none",
+					src: video.url,
+					"data-testid": "video-audio-player",
+					children: /* @__PURE__ */ jsx("track", { kind: "captions" })
+				}), /* @__PURE__ */ jsxs("a", {
+					href: video.url,
+					download: true,
+					className: downloadCls(theme),
+					"data-testid": "video-download",
+					children: ["Download", /* @__PURE__ */ jsx(VisuallyHidden, { children: ` ${video.title} (audio file)` })]
+				})]
+			}),
 			/* @__PURE__ */ jsxs(MetaLine$1, { children: [
 				/* @__PURE__ */ jsx("span", { children: formatDate(video.date) }),
 				video.event && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("span", {

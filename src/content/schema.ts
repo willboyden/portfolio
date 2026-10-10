@@ -94,7 +94,12 @@ export const VideoSchema = z
     ...baseShape,
     url: SafeUrl,
     embedId: z.string().min(1).optional(),
-    provider: z.enum(['youtube', 'vimeo', 'other']),
+    /** R7: `podcast`/`audio` render an inline <audio> player + download link
+     * instead of a provider badge; `youtube`/`vimeo` render an external link
+     * (no iframes — CSP has no frame-src allowance and external embeds are
+     * tracking surfaces). */
+    provider: z.enum(['youtube', 'vimeo', 'podcast', 'audio', 'other']),
+    /** Human display: "42 min" / "1 h 12 min" (free-form, verified at build). */
     duration: z.string().min(1),
     speakers: z.array(z.string().min(1)).optional(),
     event: z.string().min(1).optional(),

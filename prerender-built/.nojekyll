@@ -1,0 +1,4 @@
+# GitHub Pages serves the prerendered site as-is; without this file, Pages
+# runs Jekyll and chokes on (or silently drops) paths starting with `_`.
+# Our dist has none today, but hashed vendor chunks and future tooling make
+# this the cheap insurance.

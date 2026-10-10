@@ -51,7 +51,23 @@ export function splitByDate(
 
 /** Display label for the provider badge. */
 export function providerLabel(provider: Video['provider']): string {
-  return provider === 'youtube' ? 'YouTube' : provider === 'vimeo' ? 'Vimeo' : 'Other';
+  switch (provider) {
+    case 'youtube': return 'YouTube';
+    case 'vimeo': return 'Vimeo';
+    case 'podcast': return 'Podcast';
+    case 'audio': return 'Audio';
+    default: return 'Other';
+  }
+}
+
+/**
+ * R7: audio providers (podcast/audio) render an inline <audio controls>
+ * player in the row — the visitor plays without leaving the page — plus a
+ * "Download" affordance on the same URL. Video providers keep the external
+ * link (no iframes: CSP frame-src is not opened, and embeds are trackers).
+ */
+export function isAudioProvider(provider: Video['provider']): boolean {
+  return provider === 'podcast' || provider === 'audio';
 }
 
 /** TODAY under UTC — zone-pinned so server and client group identically. */
@@ -148,6 +164,39 @@ const DurationBadge = styled.span`
   color: ${(p) => p.theme.color.textMuted};
 `;
 
+/* R7: inline audio player + download affordance for podcast/audio rows. */
+const AudioPlayerControls = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  max-width: 32rem;
+
+  & audio {
+    width: 100%;
+    height: 40px;
+    border-radius: ${(p) => p.theme.radius.sm};
+  }
+`;
+
+function downloadCls(theme: Tokens): string {
+  const t = theme;
+  return css({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: t.space[1],
+    fontFamily: t.font.mono,
+    fontSize: t.font.sizes.sm,
+    color: t.color.accent,
+    textDecoration: 'none',
+    minHeight: '28px',
+    ['@media (max-width: ' + t.breakpoint.md + ')']: {
+      minHeight: '44px',
+    },
+    '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
+    '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '2px' },
+  });
+}
+
 const RowAside = styled.div`
   display: flex;
   align-items: center;
@@ -185,21 +234,51 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
     <VideoRow data-testid="video-row">
       <RowMain>
         <TitleRow>
-          <a
-            href={video.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={videoTitleClass(theme)}
-            data-testid="video-link"
-          >
-            <InlineIcon>
-              <Icon name="play" size={16} />
-            </InlineIcon>{' '}
-            {video.title}
-            <VisuallyHidden>(opens in a new tab)</VisuallyHidden>
-          </a>
+          {isAudioProvider(video.provider) ? (
+            /* R7: audio stays on-page — the title is not a link, the player
+             * below is the affordance (a link that duplicates the player's
+             * controls is noise for keyboard users). */
+            <span className={videoTitleClass(theme)} data-testid="video-link">
+              <InlineIcon>
+                <Icon name="play" size={16} />
+              </InlineIcon>{' '}
+              {video.title}
+            </span>
+          ) : (
+            <a
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={videoTitleClass(theme)}
+              data-testid="video-link"
+            >
+              <InlineIcon>
+                <Icon name="play" size={16} />
+              </InlineIcon>{' '}
+              {video.title}
+              <VisuallyHidden>(opens in a new tab)</VisuallyHidden>
+            </a>
+          )}
         </TitleRow>
         <Summary>{video.summary}</Summary>
+        {isAudioProvider(video.provider) && (
+          <AudioPlayerControls data-testid="video-audio">
+            {/* preload=none: audio is heavy and off the critical path; the
+             * browser fetches only when the visitor presses play. */}
+            <audio controls preload="none" src={video.url} data-testid="video-audio-player">
+              <track kind="captions" />
+            </audio>
+            <a
+              href={video.url}
+              download
+              className={downloadCls(theme)}
+              data-testid="video-download"
+            >
+              Download
+              <VisuallyHidden>{` ${video.title} (audio file)`}</VisuallyHidden>
+            </a>
+          </AudioPlayerControls>
+        )}
         <MetaLine>
           <span>{formatDate(video.date)}</span>
           {video.event && (
