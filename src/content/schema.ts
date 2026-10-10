@@ -117,6 +117,40 @@ export const TalkSchema = z
   })
   .strict();
 
+/** R9 (AI Engineering section): one evidence bullet. `path` cites the build
+ * workstation's workspace — rendered as monospace citation text, never a
+ * hyperlink (no public URL). */
+export const AiProofSchema = z
+  .object({
+    claim: z.string().min(1),
+    path: z.string().min(1),
+  })
+  .strict();
+
+export const AiCapabilityStatus = z.enum(['offered', 'in-progress', 'shipped']);
+
+export const AiCapabilitySchema = z
+  .object({
+    ...baseShape,
+    capability: z.string().min(1),
+    oneLiner: z.string().min(1),
+    status: AiCapabilityStatus,
+    stack: z.array(z.string().min(1)).min(1),
+    howItWorks: z.array(z.string().min(1)).min(3).max(6),
+    proof: z.array(AiProofSchema).min(3).max(6),
+    /** Honest constraints — mandatory: a capability page without limits is
+     * marketing, not engineering. */
+    limits: z.array(z.string().min(1)).min(1),
+    relatedPosts: z.array(Slug).optional(),
+    relatedProjects: z.array(Slug).optional(),
+    /** Long-form body rendered from the markdown below the frontmatter. */
+    html: z.string().optional(),
+  })
+  .strict();
+
+export type AiProof = z.infer<typeof AiProofSchema>;
+export type AiCapability = z.infer<typeof AiCapabilitySchema>;
+
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
 export const SiteContentSchema = z
   .object({
@@ -125,6 +159,7 @@ export const SiteContentSchema = z
     posts: z.array(PostSchema),
     videos: z.array(VideoSchema),
     talks: z.array(TalkSchema),
+    aiCapabilities: z.array(AiCapabilitySchema),
   })
   .strict();
 
@@ -140,4 +175,5 @@ export interface SiteContent {
   posts: Post[];
   videos: Video[];
   talks: Talk[];
+  aiCapabilities: AiCapability[];
 }
