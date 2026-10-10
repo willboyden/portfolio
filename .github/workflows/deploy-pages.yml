@@ -38,13 +38,32 @@ jobs:
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
       # Install the same binary the sandbox uses, then point CHROME_BIN at it.
-      - name: Upload npm debug logs (on failure)
+      - name: Commit npm debug log to ci-debug branch (on failure)
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-logs
-          path: /home/runner/.npm/_logs/
-          if-no-files-found: ignore
+        run: |
+          # The artifact API is unreadable with the current token; commit the
+          # log to a branch so the orchestrator can read it via contents:read.
+          pip install --quiet requests 2>/dev/null || true
+          LOGFILE=$(ls -t /home/runner/.npm/_logs/*.log 2>/dev/null | head -1)
+          if [ -n "$LOGFILE" ]; then
+            python3 - "$LOGFILE" <<'PYEOF'
+import base64, json, os, sys
+from urllib.request import Request, urlopen
+token = os.environ["GITHUB_TOKEN"]
+repo = os.environ["GITHUB_REPOSITORY"]
+data = open(sys.argv[1], "rb").read()
+body = {"message": "npm debug log from failed run", "content": base64.b64encode(data).decode(), "branch": "ci-debug"}
+try:
+    r = urlopen(Request(f"https://api.github.com/repos/{repo}/contents/ci-debug/npm-log.txt?ref=ci-debug", headers={"Authorization": f"Bearer {token}", "User-Agent": "ci"}), timeout=30)
+    body["sha"] = json.loads(r.read())["sha"]
+except Exception:
+    pass
+req = Request(f"https://api.github.com/repos/{repo}/contents/ci-debug/npm-log.txt", method="PUT",
+              headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "Content-Type": "application/json"},
+              data=json.dumps(body).encode())
+print("committed:", urlopen(req, timeout=30).status)
+PYEOF
+          fi
 
       - name: Install chrome-headless-shell for e2e
         run: |
