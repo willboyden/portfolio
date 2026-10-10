@@ -20,7 +20,7 @@ import {
   readingMinutes,
   plainText,
 } from '../vendor/markdown/src/index.ts';
-import { ProjectSchema, PostSchema, VideoSchema, TalkSchema } from '../src/content/schema.ts';
+import { ProjectSchema, PostSchema, VideoSchema, TalkSchema, AiCapabilitySchema } from '../src/content/schema.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = join(ROOT, 'content');
@@ -33,6 +33,7 @@ const COLLECTIONS = [
   { dir: 'posts', schema: PostSchema },
   { dir: 'videos', schema: VideoSchema },
   { dir: 'talks', schema: TalkSchema },
+  { dir: 'ai-engineering', key: 'aiCapabilities', schema: AiCapabilitySchema },
 ];
 
 const byDateDesc = (a, b) =>
@@ -105,6 +106,21 @@ async function loadCollection(dir, schema) {
         entry.excerpt = makeExcerpt(body);
       } else if (dir === 'projects' && body.trim() !== '') {
         entry.html = renderMarkdown(body);
+      } else if (dir === 'ai-engineering' && body.trim() !== '') {
+        entry.html = renderMarkdown(body);
+      }
+      /* R9: capability proof bullets arrive as `claim = path` strings (the
+       * frontmatter subset can't express arrays-of-objects) — same expansion
+       * pattern as metrics above. Authoring rule: claim text must not
+       * contain '='. */
+      if (dir === 'ai-engineering' && Array.isArray(entry.proof)) {
+        entry.proof = entry.proof.map((p) => {
+          if (typeof p === 'string' && p.includes('=')) {
+            const i = p.indexOf('=');
+            return { claim: p.slice(0, i).trim(), path: p.slice(i + 1).trim() };
+          }
+          return p;
+        });
       }
     } catch (err) {
       failures.push(`  file: ${stem}\n  error: ${err.message}`);
@@ -127,11 +143,11 @@ async function loadCollection(dir, schema) {
 }
 
 async function main() {
-  const out = { contentHash: '', projects: [], posts: [], videos: [], talks: [] };
+  const out = { contentHash: '', projects: [], posts: [], videos: [], talks: [], aiCapabilities: [] };
   const failures = [];
-  for (const { dir, schema } of COLLECTIONS) {
+  for (const { dir, schema, key } of COLLECTIONS) {
     const { items, failures: f } = await loadCollection(dir, schema);
-    out[dir] = items;
+    out[key ?? dir] = items;
     failures.push(...f);
   }
   if (failures.length > 0) {
@@ -177,6 +193,25 @@ async function main() {
       process.exit(1);
     }
   }
+  // R9: capability cross-links validate like posts/projects — typos fail the build.
+  for (const cap of out.aiCapabilities) {
+    for (const rel of cap.relatedPosts ?? []) {
+      if (!postSlugs.has(rel)) {
+        process.stderr.write(
+          `build-content: capability "${cap.slug}" relatedPosts entry "${rel}" does not match any post slug\n`,
+        );
+        process.exit(1);
+      }
+    }
+    for (const rel of cap.relatedProjects ?? []) {
+      if (!projectSlugs.has(rel)) {
+        process.stderr.write(
+          `build-content: capability "${cap.slug}" relatedProjects entry "${rel}" does not match any project slug\n`,
+        );
+        process.exit(1);
+      }
+    }
+  }
   await mkdir(dirname(OUT_FILE), { recursive: true });
   /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
    * generatedAt made every rebuild dirty git and made "byte-stable output"
@@ -185,7 +220,7 @@ async function main() {
   /* Hash the payload WITHOUT the hash field (self-reference would be circular):
    * build the body explicitly — a destructured throwaway would be an unused
    * var (lint gate; R4-C F1). */
-  const body = { projects: out.projects, posts: out.posts, videos: out.videos, talks: out.talks };
+  const body = { projects: out.projects, posts: out.posts, videos: out.videos, talks: out.talks, aiCapabilities: out.aiCapabilities };
   out.contentHash = createHash('sha256')
     .update(JSON.stringify(body, null, 2))
     .digest('hex')
