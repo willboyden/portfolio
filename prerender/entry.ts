@@ -107,6 +107,7 @@ ${head}
     <link rel="apple-touch-icon" href="${import.meta.env?.BASE_URL ?? '/'}apple-touch-icon.png" />
     <link rel="manifest" href="${import.meta.env?.BASE_URL ?? '/'}site.webmanifest" />
 ${preloads ? preloads + '\n' : ''}    <script src="${import.meta.env?.BASE_URL ?? '/'}theme-init.js"></script>
+    <script src="${import.meta.env?.BASE_URL ?? '/'}spa-gate.js"></script>
     <style id="emotion-prerender">${css}</style>
   </head>
   <body>
