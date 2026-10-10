@@ -9,8 +9,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@emotion-mini/core": "1.0.0",
-    "@emotion-mini/react": "1.0.0"
+    "@emotion-mini/core": "file:../core",
+    "@emotion-mini/react": "file:../react"
   },
   "peerDependencies": {
     "react": ">=18"
