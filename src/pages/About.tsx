@@ -257,12 +257,12 @@ export function About(): React.ReactNode {
             My path is the one I recommend to teams hiring for the fuzzy
             boundary between &ldquo;data&rdquo; and &ldquo;engineering&rdquo;:
             I started building web applications — interfaces, APIs, the whole
-            request-to-database loop — and went back for a{' '}
-            <strong>B.S. in Data Science</strong> because I kept meeting
-            problems where the interesting decision was statistical, not
-            structural. That order matters. I learned to build first, so when
-            an analysis says &ldquo;deploy this model,&rdquo; I know exactly
-            what deploying it costs.
+            request-to-database loop — and earned a{' '}
+            <strong>B.S. in Data Science</strong> along the way, because I kept
+            meeting problems where the interesting decision was statistical,
+            not structural. That order matters. I learned to build first, so
+            when an analysis says &ldquo;deploy this model,&rdquo; I know
+            exactly what deploying it costs.
           </Paragraph>
           <Paragraph>
             Today I work as a <strong>technical consultant</strong>: embedded
