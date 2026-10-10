@@ -29,7 +29,7 @@ describe('smoke', () => {
      * real invariant instead: the snippet is a classic script ordered BEFORE
      * the module graph, and after a fresh load data-theme is set. */
     const homeHtml = await page.evaluate(`return new Promise(r => fetch('/').then(x=>x.text()).then(r))`);
-    const initIdx = homeHtml.indexOf('<script src="/theme-init.js">');
+    const initIdx = homeHtml.search(/<script src="[^"]*\/theme-init.js">/);
     const moduleIdx = homeHtml.search(/<script[^>]+type="module"/);
     if (initIdx === -1) throw new Error('theme-init.js script tag missing from head');
     if (moduleIdx !== -1 && initIdx > moduleIdx) throw new Error('theme-init.js loads AFTER the module script');
@@ -74,20 +74,12 @@ describe('smoke', () => {
     const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     if (urls.length < 10) throw new Error(`sitemap only has ${urls.length} urls`);
     const origin = new URL(baseUrl).origin;
-    /* R8: the sitemap carries production absolute URLs which may include the
-     * hosting base (/portfolio/... on GitHub Pages). Strip it before fetching
-     * from the test server, which serves the site at root. */
-    const base = (process.env.VITE_BASE ?? '/').replace(/\/$/, '');
     for (const url of urls) {
       /* Sitemap carries production (absolute) URLs; rewrite onto the test
        * server but first assert they ARE absolute + https. */
       const parsed = new URL(url);
       if (parsed.protocol !== 'https:') throw new Error(`sitemap url not https: ${url}`);
-      let pathname = parsed.pathname;
-      if (base && (pathname === base || pathname.startsWith(`${base}/`))) {
-        pathname = pathname.slice(base.length) || '/';
-      }
-      const res = await fetch(origin + pathname);
+      const res = await fetch(origin + parsed.pathname);
       const body = await res.text();
       if (!res.ok) throw new Error(`${url} -> ${res.status}`);
       if (!/<h1[\s>]/.test(body)) throw new Error(`${url} served HTML without <h1>`);
