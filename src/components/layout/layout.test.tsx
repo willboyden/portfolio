@@ -117,10 +117,11 @@ describe('Nav', () => {
 
   it('NAV_ITEMS is the full route list; chrome shows availableNavItems() (R2-A A7/A11)', () => {
     /* Full list = every chrome-eligible route (CONTRACT §3). If nav changes,
-     * update CONTRACT §3 routes AND this list. */
+     * update CONTRACT §3 routes AND this list. R9: AI Engineering joins. */
     expect(NAV_ITEMS.map((i) => i.label)).toEqual([
       'Home',
       'Projects',
+      'AI Engineering',
       'Writing',
       'Videos',
       'Talks',
@@ -129,15 +130,18 @@ describe('Nav', () => {
       'Contact',
     ]);
     /* With zero videos/talks published, chrome hides those tabs (empty tabs
-     * read as inexperience) but keeps Now (recruiters check it). */
+     * read as inexperience) but keeps Now (recruiters check it). R9: AI
+     * Engineering renders — 3 capabilities exist. */
     const labels = availableNavItems().map((i) => i.label);
     expect(labels).not.toContain('Videos');
     expect(labels).not.toContain('Talks');
     expect(labels).toContain('Now');
+    expect(labels).toContain('AI Engineering');
     /* Rendered header chrome must match the filtered set. */
     const h = render(<Layout currentPath="/" />);
     expect(h).not.toContain('>Videos</a>');
     expect(h).toContain('>Now</a>');
+    expect(h).toContain('>AI Engineering</a>');
   });
 
   it('marks exactly one link with aria-current="page" for a section route', () => {
