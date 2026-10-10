@@ -122,7 +122,16 @@ export function resolveRoute(routes: RouteDefinition[], pathname: string): Route
 
 function readBrowserLocation(): Location {
   if (typeof window === 'undefined') return { pathname: '/', search: '', hash: '' };
-  return parseLocation(window.location.pathname + window.location.search + window.location.hash);
+  /* R8 (GitHub Pages): the site can be served under a sub-path
+   * (github.io/<repo>/). Vite injects import.meta.env.BASE_URL at build time
+   * ('/portfolio/' on Pages, '/' on nginx). Strip it so route matching keeps
+   * operating on app-relative paths; Link re-adds it when emitting hrefs. */
+  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+  let full = window.location.pathname + window.location.search + window.location.hash;
+  if (base && (full === base || full.startsWith(`${base}/`))) {
+    full = full.slice(base.length) || '/';
+  }
+  return parseLocation(full);
 }
 
 export interface RouterProviderProps {
@@ -165,13 +174,19 @@ export function RouterProvider({ routes, children, initialPath }: RouterProvider
 
   const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
     if (typeof window === 'undefined') return;
-    const next = to;
+    /* R8: pushState must carry the hosting base (GitHub Pages /<repo>/) or
+     * every SPA click rewrites the address bar OUTSIDE the subpath — the page
+     * renders (no reload) but refresh/bookmark/404-gate then 404s. Symmetric
+     * with readBrowserLocation, which strips it back off. */
+    const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+    const external = /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(to);
+    const next = !external && base && !to.startsWith(base) ? `${base}${to === '/' ? '/' : to}` : to;
     if (options?.replace) {
       window.history.replaceState(null, '', next);
     } else {
       window.history.pushState(null, '', next);
     }
-    setLocation(parseLocation(next));
+    setLocation(parseLocation(to));
     /* Scroll to top on navigation, honour #anchors and reduced-motion.
      * R1A-09(b): everything after the FIRST # is the id (split('#')[1]
      * truncated '/x#a#b' to 'a', missing the element entirely). */
@@ -229,9 +244,15 @@ export interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>,
 /**
  * Anchor that routes client-side while staying a real link: middle-click,
  * cmd-click, and download targets fall through to the browser.
+ * R8 (GitHub Pages): hrefs get the Vite base path prefix so served-under-
+ * /<repo>/ deployments produce working URLs; navigate() strips it back off
+ * (see readBrowserLocation), so app code keeps writing plain '/projects'.
  */
 export function Link({ to, children, onClick, onNavigate, ...rest }: LinkProps): ReactNode {
   const navigate = useRouter().navigate;
+
+  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+  const href = base && !to.startsWith('/') ? `${base}/${to}` : base ? `${base}${to === '/' ? '/' : to}` : to;
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
@@ -245,7 +266,7 @@ export function Link({ to, children, onClick, onNavigate, ...rest }: LinkProps):
     onNavigate?.();
   };
 
-  return createElement('a', { href: to, onClick: handleClick, ...rest }, children);
+  return createElement('a', { href, onClick: handleClick, ...rest }, children);
 }
 
 /** Render the matched route (routes come from RouterProvider), or NotFound. */
