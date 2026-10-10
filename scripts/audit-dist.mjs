@@ -65,10 +65,14 @@ for (const page of pages) {
 
   if (!/<h1[\s>]/.test(visible)) fail(`${rel}: no <h1> on page`);
 
-  /* Internal hrefs must exist on disk (file, clean-URL dir, or asset). */
+  /* Internal hrefs must exist on disk (file, clean-URL dir, or asset).
+   * R8: strip the hosting base (VITE_BASE, e.g. /portfolio/ on GitHub Pages)
+   * before checking — hrefs are emitted base-prefixed but dist is rooted. */
+  const BASE = (process.env.VITE_BASE ?? '/').replace(/\/$/, '');
   for (const m of html.matchAll(/href="(\/[^"#?]*)"/g)) {
-    const href = m[1];
+    let href = m[1];
     if (href.startsWith('//')) continue;
+    if (BASE && (href === BASE || href.startsWith(`${BASE}/`))) href = href.slice(BASE.length) || '/';
     const candidates = [join(DIST, href), join(DIST, href, 'index.html'), join(DIST, `${href}/index.html`)];
     if (!candidates.some((c) => existsSync(c))) fail(`${rel}: internal link ${href} has no dist file`);
   }
