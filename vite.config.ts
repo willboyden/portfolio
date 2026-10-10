@@ -10,6 +10,9 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
  * published packages later is a delete-and-`npm install`, not a code change.
  */
 export default defineConfig({
+  /* R8: base from env so CI (and any host) can build for sub-path
+   * hosting without CLI flags; defaults to '/' for nginx root. */
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
   resolve: {
     alias: [
