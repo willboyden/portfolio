@@ -46,6 +46,23 @@ async function main() {
     const outFile = path === '/' ? join(DIST, 'index.html') : join(DIST, path.replace(/^\//, ''), 'index.html');
     mkdirSync(dirname(outFile), { recursive: true });
     writeFileSync(outFile, html, 'utf8');
+    /* R8 (GitHub Pages): Pages has no nginx try_files — it serves
+     * <route>/index.html only for the EXACT directory URL, and uses a
+     * root-level 404.html for everything else. Emit both: 404/index.html
+     * (nginx parity) and 404.html (Pages), plus the SPA-gate script that
+     * turns any missing path into the right clean URL. */
+    if (path === '/404') {
+      writeFileSync(join(DIST, '404.html'), html, 'utf8');
+      writeFileSync(
+        join(DIST, 'spa-gate.js'),
+        '(function(){' +
+          'var p=location.pathname.replace(/\\.html$/,"");' +
+          'var base="/' + 'portfolio' + '/";' +
+          'if(p.slice(-1)!=="/"){location.replace(p+"/");}' +
+        '})();',
+        'utf8',
+      );
+    }
     written += 1;
   }
   process.stderr.write(`${written} page(s)\n`);
