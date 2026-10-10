@@ -56,7 +56,7 @@ describe('content', () => {
        * equivalent path on the test server must resolve. */
       const parsed = new URL(link);
       if (parsed.protocol !== 'https:') throw new Error(`rss link not https: ${link}`);
-      const res = await fetch(origin + parsed.pathname);
+      const res = await fetch(origin + pathname);
       if (!res.ok) throw new Error(`rss link ${link} -> ${res.status}`);
     }
   });
