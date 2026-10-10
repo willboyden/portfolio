@@ -50,7 +50,8 @@ jobs:
       # The e2e suite runs against the served dist with headless Chromium
       # (the repo's zero-dep CDP harness) — no Playwright download needed.
       - name: Typecheck
-        run: node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+        run: |
+          node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json             || { echo "::error::tsc failed - errors below";                  node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json 2>&1 | head -30 | while read -r l; do echo "::error::$l"; done;                  exit 1; }
       - name: Lint
         run: node node_modules/eslint/bin/eslint.js . --max-warnings 0
       - name: Unit tests
