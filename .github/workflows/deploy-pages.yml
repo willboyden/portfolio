@@ -17,24 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # R8: visible to EVERY step — including 'Build + audit' (which builds
-      # the prerender bundle inside build.mjs; vite.config.prerender.ts
-      # inlines import.meta.env.BASE_URL from this at bundle time).
-      VITE_BASE: /${{ github.event.repository.name }}/
     steps:
       - uses: actions/checkout@v4
-
-      # R8 ROOT FIX: VITE_BASE must be set BEFORE 'Build + audit' — the
-      # CLIENT vite build inlines import.meta.env.BASE_URL from the `base`
-      # config (process.env.VITE_BASE), and the prerender bundle does the
-      # same via vite.config.prerender.ts define. Both bundles must bake
-      # /<repo>/ or the client router pushes root-absolute URLs on every
-      # click (404 on refresh/navigation).
-      - name: Compute Pages base path (early)
-        run: |
-          echo "VITE_BASE=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
-          echo "SITE_URL=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_ENV"
 
       # Node 22. The npm cache is enabled ONLY when a lockfile exists —
       # setup-node hard-fails on cache:npm without one, and the lockfile is
@@ -47,11 +31,12 @@ jobs:
       - name: Install (lockfile-pinned when present)
         run: |
           if [ -f package-lock.json ]; then
-            npm ci || { echo "::error::npm ci failed"; grep -h "npm error" ~/.npm/_logs/*.log | head -20 | while read -r l; do echo "::error::$l"; done; exit 1; }
+            npm ci
           else
-            npm install --no-audit --no-fund --legacy-peer-deps \
-              || npm install --no-audit --no-fund --legacy-peer-deps --install-strategy=shallow \
-              || { echo "::error::all install strategies failed"; tail -60 ~/.npm/_logs/*.log | while read -r l; do echo "::error::$l"; done; exit 1; }
+            # No lockfile in-repo yet (sandbox egress blocks the npm registry).
+            # A plain install keeps CI moving; the lockfile lands on the next
+            # host-side push and npm ci takes over.
+            npm install --no-audit --no-fund
           fi
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
@@ -66,37 +51,31 @@ jobs:
       # The e2e suite runs against the served dist with headless Chromium
       # (the repo's zero-dep CDP harness) — no Playwright download needed.
       - name: Typecheck
-        run: |
-          node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json             || { echo "::error::tsc failed - errors below";                  node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json 2>&1 | head -30 | while read -r l; do echo "::error::$l"; done;                  exit 1; }
+        run: node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
       - name: Lint
-        run: |
-          node node_modules/eslint/bin/eslint.js . --max-warnings 0             || { echo "::error::eslint failed - errors below";                  node node_modules/eslint/bin/eslint.js . --max-warnings 0 2>&1 | tail -40 | while read -r l; do echo "::error::$l"; done;                  exit 1; }
+        run: node node_modules/eslint/bin/eslint.js . --max-warnings 0
       - name: Unit tests
-        run: |
-          node node_modules/vitest/vitest.mjs run 2>&1 | tee /tmp/vitest.log
-          exit ${PIPESTATUS[0]}
-      - name: Unit test failures (annotations)
-        if: failure()
-        run: grep -E "FAIL|AssertionError|×" /tmp/vitest.log | head -30 | while read -r l; do echo "::error::$l"; done; true
+        run: node node_modules/vitest/vitest.mjs run
       - name: Build + audit
         run: node scripts/build.mjs
       - name: E2E (CDP harness, headless Chromium)
-        run: |
-          node e2e/run.mjs 2>&1 | tee /tmp/e2e.log
-          exit ${PIPESTATUS[0]}
-      - name: E2E failures (annotations)
-        if: failure()
-        run: grep -E "✗|FAILURES|Error" /tmp/e2e.log | head -20 | while read -r l; do echo "::error::$l"; done; true
+        run: node e2e/run.mjs
 
       # Vite base path: GitHub Pages serves project sites under /<repo>/.
       # SITE.url + vite base are derived from the repo name here so the same
       # source deploys to both nginx (root) and Pages (subpath).
+      - name: Compute Pages base path
+        id: base
+        run: echo "path=/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
+
       - name: Rebuild with Pages base path
         run: |
-          # VITE_BASE + SITE_URL were exported before Build+audit; this step
-          # re-runs the FULL build so the deployed artifact carries
-          # base-prefixed prerendered pages, then audits it.
-          node scripts/build.mjs
+          npx vite build --base="${{ steps.base.outputs.path }}/"
+          # SITE_URL override: canonical/sitemap/RSS/OG must carry the FINAL
+          # Pages URL (https://<user>.github.io/<repo>), not the placeholder
+          # domain, or search engines index the wrong origin.
+          SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
+            node scripts/prerender.mjs
           node scripts/audit-dist.mjs
 
       - uses: actions/upload-pages-artifact@v3
