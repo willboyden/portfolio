@@ -26,12 +26,15 @@ export function prerenderPaths(): string[] {
     '/writing',
     '/videos',
     '/talks',
+    '/ai-engineering',
     '/contact',
     /* nginx error_page serves /404/index.html — rendered via the router
      * fallback since no route matches the path. */
     '/404',
     ...content.projects.map((p) => `/projects/${p.slug}`),
     ...content.posts.map((p) => `/writing/${p.slug}`),
+    /* R9: capability detail pages (hub + per-capability). */
+    ...content.aiCapabilities.map((c) => `/ai-engineering/${c.slug}`),
   ];
 }
 
@@ -100,10 +103,10 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6" />
 ${head}
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-${preloads ? preloads + '\n' : ''}    <script src="/theme-init.js"></script>
+    <link rel="icon" href="${import.meta.env?.BASE_URL ?? '/'}favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="${import.meta.env?.BASE_URL ?? '/'}apple-touch-icon.png" />
+    <link rel="manifest" href="${import.meta.env?.BASE_URL ?? '/'}site.webmanifest" />
+${preloads ? preloads + '\n' : ''}    <script src="${import.meta.env?.BASE_URL ?? '/'}theme-init.js"></script>
     <style id="emotion-prerender">${css}</style>
   </head>
   <body>
@@ -125,23 +128,31 @@ function readManifest(): Record<string, { file?: string; src?: string }> | null 
   }
 }
 
-/** Every JS asset in the manifest (entry + its imported chunks), as /hrefs. */
+/** Every JS asset in the manifest (entry + its imported chunks), as hrefs.
+ * R8: base-prefixed for sub-path hosting (GitHub Pages). */
 function chunkHrefs(): string[] {
   const manifest = readManifest();
   if (!manifest) return [];
+  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
   return Object.values(manifest)
-    .flatMap((e) => (typeof e.file === 'string' && e.file.endsWith('.js') ? [`/${e.file}`] : []));
+    .flatMap((e) => (typeof e.file === 'string' && e.file.endsWith('.js') ? [`${base}/${e.file}`] : []));
 }
 
 function assetHref(): string {
   /* vite emits dist/.vite/manifest.json; with rollup input 'index.html' the
-   * entry key IS 'index.html'. Fall back only if the manifest is missing. */
+   * entry key IS 'index.html'. Fall back only if the manifest is missing.
+   * R8: hrefs are base-relative (vite build --base wrote the manifest paths
+   * WITH the base already? No — manifest paths are always 'assets/...'; the
+   * base belongs in the emitted URL). */
   try {
     const manifestPath = new URL('../dist/.vite/manifest.json', import.meta.url);
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     const entry = manifest['index.html'] ?? manifest['src/main.tsx'];
     const file = entry?.file ?? entry?.src;
-    if (typeof file === 'string' && file.startsWith('assets/')) return `/${file}`;
+    if (typeof file === 'string' && file.startsWith('assets/')) {
+      const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+      return `${base}/${file}`;
+    }
   } catch {
     /* R3C-11: no silent fallback — a wrong entry href means a white page on
      * every route, which the href-only audit regex would never see. */
