@@ -19,8 +19,14 @@ import { Writing } from 'app/pages/Writing';
 import { PostDetail } from 'app/pages/PostDetail';
 import { Videos } from 'app/pages/Videos';
 import { Talks } from 'app/pages/Talks';
+import { AiEngineeringHub, AiCapabilityDetail } from 'app/pages/AiEngineering';
 import { Contact } from 'app/pages/Contact';
 import { NotFound } from 'app/pages/NotFound';
+
+/** R9: route shims adapt the shared detail template to the router's params shape. */
+function AiDetailShim({ slug }: { slug: string }): ReactNode {
+  return <AiCapabilityDetail slug={slug} />;
+}
 
 export const routes: RouteDefinition[] = [
   { path: '/', component: Home },
@@ -32,6 +38,10 @@ export const routes: RouteDefinition[] = [
   { path: '/writing/:slug', component: PostDetail },
   { path: '/videos', component: Videos },
   { path: '/talks', component: Talks },
+  { path: '/ai-engineering', component: AiEngineeringHub as never },
+  { path: '/ai-engineering/local-inference', component: () => <AiDetailShim slug="local-inference" /> },
+  { path: '/ai-engineering/video-generation', component: () => <AiDetailShim slug="video-generation" /> },
+  { path: '/ai-engineering/smart-routing', component: () => <AiDetailShim slug="smart-routing" /> },
   { path: '/contact', component: Contact },
 ];
 
