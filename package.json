@@ -29,6 +29,7 @@
   "dependencies": {
     "@emotion/react": "file:vendor/emotion/react",
     "@emotion/styled": "file:vendor/emotion/styled",
+    "@emotion-mini/core": "file:vendor/emotion/core",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"
