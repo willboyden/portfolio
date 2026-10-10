@@ -18,7 +18,7 @@ describe('caching', () => {
 
   test('hashed assets are immutable 1y', async ({ baseUrl }) => {
     const html = await (await fetch(`${baseUrl}/`)).text();
-    const asset = html.match(/(?:src|href)="(\/assets\/[^"]+\.(?:js|css))"/)?.[1];
+    const asset = html.match(/(?:src|href)="([^"]*\/assets\/[^"]+\.(?:js|css))"/)?.[1];
     if (!asset) throw new Error('no /assets/ reference found in home HTML');
     const res = await fetch(`${baseUrl}${asset}`);
     const cc = header(res, 'cache-control');
