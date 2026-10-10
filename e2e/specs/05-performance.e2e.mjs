@@ -51,7 +51,7 @@ describe('performance', () => {
   test('repeat navigation is fast (client routing, no full reload)', async ({ page, goto }) => {
     await goto('/');
     const t0 = Date.now();
-    await page.click('header nav a[href="/about"], header nav a[href="/about/"]');
+    await page.click('header nav a[href$="/about"], header nav a[href$="/about/"]');
     await page.waitForFunction(`return document.querySelector('h1')?.textContent?.includes('About') || true`);
     const ms = Date.now() - t0;
     if (ms > 1500) throw new Error(`client-side navigation took ${ms}ms`);
