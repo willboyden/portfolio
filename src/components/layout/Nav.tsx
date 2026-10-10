@@ -33,6 +33,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Home', to: '/', exact: true },
   { label: 'Projects', to: '/projects' },
+  { label: 'AI Engineering', to: '/ai-engineering' },
   { label: 'Writing', to: '/writing' },
   { label: 'Videos', to: '/videos' },
   { label: 'Talks', to: '/talks' },
@@ -46,12 +47,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
  * Talks) stay OUT of chrome until seeded — empty-but-advertised tabs read as
  * inexperience. The routes still prerender (deep links never 404). `Now` is
  * always present: recruiters check it, and it renders honest static copy
- * regardless of content counts.
+ * regardless of content counts. R9: AI Engineering is gated the same way —
+ * it can never ship as an empty advertised tab.
  */
 export function availableNavItems(): NavItem[] {
   return NAV_ITEMS.filter((item) => {
     if (item.to === '/videos') return content.videos.length > 0;
     if (item.to === '/talks') return content.talks.length > 0;
+    if (item.to === '/ai-engineering') return content.aiCapabilities.length > 0;
     return true;
   });
 }
