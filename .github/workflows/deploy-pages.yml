@@ -61,7 +61,12 @@ jobs:
         run: |
           node node_modules/eslint/bin/eslint.js . --max-warnings 0             || { echo "::error::eslint failed - errors below";                  node node_modules/eslint/bin/eslint.js . --max-warnings 0 2>&1 | tail -40 | while read -r l; do echo "::error::$l"; done;                  exit 1; }
       - name: Unit tests
-        run: node node_modules/vitest/vitest.mjs run
+        run: |
+          node node_modules/vitest/vitest.mjs run 2>&1 | tee /tmp/vitest.log
+          exit ${PIPESTATUS[0]}
+      - name: Unit test failures (annotations)
+        if: failure()
+        run: grep -E "FAIL|AssertionError|×" /tmp/vitest.log | head -30 | while read -r l; do echo "::error::$l"; done; true
       - name: Build + audit
         run: node scripts/build.mjs
       - name: E2E (CDP harness, headless Chromium)
