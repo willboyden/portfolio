@@ -76,20 +76,18 @@ jobs:
       # SITE.url + vite base are derived from the repo name here so the same
       # source deploys to both nginx (root) and Pages (subpath).
       - name: Compute Pages base path
-        id: base
         run: |
-          echo "path=/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
+          # Job-wide env: build.mjs (step 10) built the prerender bundle with
+          # whatever VITE_BASE was set THEN (nothing) — the old client-only
+          # rebuild left that stale root-absolute bundle in place, so every
+          # prerendered link 404'd. Export both vars now and re-run the FULL
+          # build (prerender bundle included), then prerender + audit.
+          echo "VITE_BASE=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
+          echo "SITE_URL=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_ENV"
 
       - name: Rebuild with Pages base path
         run: |
-          npx vite build --base="${{ steps.base.outputs.path }}/"
-          # VITE_BASE: the prerender bundle's import.meta.env.BASE_URL (injected
-          # via vite define) - the SSR pass emits base-prefixed hrefs too.
-          # SITE_URL override: canonical/sitemap/RSS/OG must carry the FINAL
-          # Pages URL (https://<user>.github.io/<repo>), not the placeholder
-          # domain, or search engines index the wrong origin.
-          SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
-            node scripts/prerender.mjs
+          node scripts/build.mjs
           node scripts/audit-dist.mjs
 
       - uses: actions/upload-pages-artifact@v3
