@@ -66,7 +66,15 @@ function safeJoin(rootDir, urlPath) {
 
 export function startServer({ dir = root, port: bindPort = port, spaMode = spa } = {}) {
   const server = createServer((req, res) => {
-    const path = safeJoin(dir, req.url ?? '/');
+    /* R8: strip the hosting base (VITE_BASE, e.g. /portfolio/ on Pages) so
+     * the e2e server — which serves dist at root — resolves base-prefixed
+     * asset/asset-script refs the same way nginx-with-subpath would. */
+    let reqUrl = req.url ?? '/';
+    const base = (process.env.VITE_BASE ?? '/').replace(/\/$/, '');
+    if (base && (reqUrl === base || reqUrl.startsWith(`${base}/`))) {
+      reqUrl = reqUrl.slice(base.length) || '/';
+    }
+    const path = safeJoin(dir, reqUrl);
     if (path === null) {
       res.writeHead(400, { ...SECURITY_HEADERS, 'content-type': 'text/plain; charset=utf-8' }).end('Bad path');
       return;
