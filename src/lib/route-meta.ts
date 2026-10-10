@@ -28,6 +28,7 @@ export function titleFor(path: string): string {
     writing: 'Writing',
     videos: 'Videos',
     talks: 'Talks',
+    'ai-engineering': 'AI Engineering',
     contact: 'Contact',
   };
   if (seg === 'projects') {
