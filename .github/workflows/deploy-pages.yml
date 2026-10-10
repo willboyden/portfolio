@@ -33,7 +33,7 @@ jobs:
           if [ -f package-lock.json ]; then
             npm ci || { echo "::error::npm ci failed"; grep -h "npm error" ~/.npm/_logs/*.log | head -20 | while read -r l; do echo "::error::$l"; done; exit 1; }
           else
-            npm install --no-audit --no-fund || { echo "::error::npm install failed"; grep -h "npm error" ~/.npm/_logs/*.log | head -20 | while read -r l; do echo "::error::$l"; done; exit 1; }
+            npm install --no-audit --no-fund || { echo "::error::npm install failed"; tail -40 ~/.npm/_logs/*.log | while read -r l; do echo "::error::$l"; done; exit 1; }
           fi
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
