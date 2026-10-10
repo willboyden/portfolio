@@ -31,6 +31,14 @@ jobs:
       - name: Install (lockfile-pinned)
         run: npm ci
 
+      # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
+      # Install the same binary the sandbox uses, then point CHROME_BIN at it.
+      - name: Install chrome-headless-shell for e2e
+        run: |
+          npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path "$HOME/.cache/chrome"
+          CHROME_PATH=$(find "$HOME/.cache/chrome" -name "chrome-headless-shell" -type f | head -1)
+          echo "CHROME_BIN=$CHROME_PATH" >> "$GITHUB_ENV"
+
       # Full gate chain BEFORE any deploy: a red build never ships.
       # The e2e suite runs against the served dist with headless Chromium
       # (the repo's zero-dep CDP harness) — no Playwright download needed.

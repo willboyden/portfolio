@@ -16,6 +16,12 @@ export const CHROME_BIN =
   process.env.CHROME_BIN ??
   '/opt/hermes/.playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell';
 
+/* CI (GitHub Actions): chrome-headless-shell is not preinstalled on
+ * ubuntu-latest runners. The workflow installs it via npm's
+ * @puppeteer/browsers and points CHROME_BIN here — same harness, no
+ * Playwright dependency. */
+export const CHROME_BIN_CI = process.env.CHROME_BIN ?? null;
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class Browser {
