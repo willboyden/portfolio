@@ -51,7 +51,7 @@ describe('responsive', () => {
 
   test('desktop width shows inline nav, hides hamburger', async ({ page, goto1280 }) => {
     await goto1280('/');
-    const navVisible = await page.isVisible('header nav a[href="/writing"]');
+    const navVisible = await page.isVisible('header nav a[href$="/writing"]');
     if (!navVisible) throw new Error('primary nav links not visible at 1280px');
     const burgerVisible = await page.evaluate(`
       (() => {
