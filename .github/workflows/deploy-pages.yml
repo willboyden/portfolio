@@ -89,6 +89,13 @@ jobs:
           echo "::error::BAKED BASE = $BAKED (expected /portfolio/)"
           grep -o 'let n=`[^`]*`' "$JSFILE" | head -1
 
+      - name: DEBUG emitted page hrefs
+        run: |
+          echo '::error::HOME hrefs:'
+          grep -o 'href="[^"]*"' dist/index.html | head -8 | while read -r l; do echo "::error::$l"; done
+          echo '::error::PROJECTS hrefs:'
+          grep -o 'href="[^"]*"' dist/projects/index.html | head -8 | while read -r l; do echo "::error::$l"; done
+
       - name: E2E (CDP harness, headless Chromium)
         run: node e2e/run.mjs
 
