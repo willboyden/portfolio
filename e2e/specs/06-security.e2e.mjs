@@ -38,7 +38,8 @@ describe('security', () => {
     /* The build pipeline renders author markdown; the browser must never run
      * markup-sourced script. Fetch a post page and assert no non-app scripts. */
     const html = await (await fetch(`${baseUrl}/writing/`)).text();
-    const postMatch = html.match(/href="(\/writing\/[a-z0-9-]+)"/);
+    /* R8: hrefs are base-prefixed when built for sub-path hosting. */
+    const postMatch = html.match(/href="([^"]*\/writing\/[a-z0-9-]+)"/);
     if (!postMatch) throw new Error('writing index lists no posts — content pipeline regressed (this test must have a target)');
     const postHtml = await (await fetch(baseUrl + postMatch[1] + '/')).text();
     const scripts = [...postHtml.matchAll(/<script([^>]*)>/g)].map((m) => m[1]);
