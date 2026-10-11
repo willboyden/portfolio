@@ -11,6 +11,14 @@ import { fileURLToPath } from 'node:url';
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
+  /* R8: prerender runs in plain node; import.meta.env does not exist there.
+   * Inject BASE_URL at bundle time from the env (VITE_BASE is job-level in
+   * CI, defaults to '/' for nginx root hosting). Without this define the
+   * prerendered pages emit root-absolute hrefs and every link 404s on
+   * GitHub Pages. */
+  define: {
+    'import.meta.env.BASE_URL': JSON.stringify(process.env.VITE_BASE ?? '/'),
+  },
   plugins: [react()],
   resolve: {
     alias: {
