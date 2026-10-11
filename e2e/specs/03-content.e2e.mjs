@@ -56,6 +56,13 @@ describe('content', () => {
        * equivalent path on the test server must resolve. */
       const parsed = new URL(link);
       if (parsed.protocol !== 'https:') throw new Error(`rss link not https: ${link}`);
+      /* R8: strip the hosting base (/portfolio/...) — the test server serves
+       * the site at root. */
+      const base = (process.env.VITE_BASE ?? '/').replace(/\/$/, '');
+      let pathname = parsed.pathname;
+      if (base && (pathname === base || pathname.startsWith(`${base}/`))) {
+        pathname = pathname.slice(base.length) || '/';
+      }
       const res = await fetch(origin + pathname);
       if (!res.ok) throw new Error(`rss link ${link} -> ${res.status}`);
     }
