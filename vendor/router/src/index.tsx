@@ -126,7 +126,7 @@ function readBrowserLocation(): Location {
    * (github.io/<repo>/). Vite injects import.meta.env.BASE_URL at build time
    * ('/portfolio/' on Pages, '/' on nginx). Strip it so route matching keeps
    * operating on app-relative paths; Link re-adds it when emitting hrefs. */
-  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+  const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
   let full = window.location.pathname + window.location.search + window.location.hash;
   if (base && (full === base || full.startsWith(`${base}/`))) {
     full = full.slice(base.length) || '/';
@@ -178,7 +178,7 @@ export function RouterProvider({ routes, children, initialPath }: RouterProvider
      * every SPA click rewrites the address bar OUTSIDE the subpath — the page
      * renders (no reload) but refresh/bookmark/404-gate then 404s. Symmetric
      * with readBrowserLocation, which strips it back off. */
-    const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+    const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
     const external = /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(to);
     const next = !external && base && !to.startsWith(base) ? `${base}${to === '/' ? '/' : to}` : to;
     if (options?.replace) {
@@ -251,7 +251,7 @@ export interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>,
 export function Link({ to, children, onClick, onNavigate, ...rest }: LinkProps): ReactNode {
   const navigate = useRouter().navigate;
 
-  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+  const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
   const href = base && !to.startsWith('/') ? `${base}/${to}` : base ? `${base}${to === '/' ? '/' : to}` : to;
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
