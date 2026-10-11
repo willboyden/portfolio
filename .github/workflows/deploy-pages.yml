@@ -28,13 +28,16 @@ jobs:
           node-version: 22
           cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
 
-      - name: Install (lockfile-pinned when present)
+      - name: Install (resolve once, then ci from the resolved lockfile)
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci || { echo "::error::npm ci failed"; exit 1; }
-          else
-            npm install --no-audit --no-fund || { echo "::error::npm install failed"; exit 1; }
+          if [ ! -f package-lock.json ]; then
+            # Resolve ONCE with the wide net (legacy-peer-deps tolerates the
+            # peer ranges in this graph), producing a complete lockfile.
+            npm install --package-lock-only --no-audit --no-fund --legacy-peer-deps
           fi
+          # ci installs from the lockfile WITHOUT re-resolving (arborist
+          # skip) — deterministic regardless of the file: graph.
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
       # Install the same binary the sandbox uses, then point CHROME_BIN at it.
