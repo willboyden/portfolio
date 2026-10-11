@@ -17,6 +17,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # R8: BOTH bundles (client via vite.config.ts base, prerender via
+      # vite.config.prerender.ts define) inline this at BUILD time. It must
+      # be set before ANY build step — job-level env guarantees that.
+      VITE_BASE: /${{ github.event.repository.name }}/
+      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
     steps:
       - uses: actions/checkout@v4
 
@@ -79,21 +85,14 @@ jobs:
       - name: E2E (CDP harness, headless Chromium)
         run: node e2e/run.mjs
 
-      # Vite base path: GitHub Pages serves project sites under /<repo>/.
-      # SITE.url + vite base are derived from the repo name here so the same
-      # source deploys to both nginx (root) and Pages (subpath).
-      - name: Compute Pages base path
-        id: base
-        run: echo "path=/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
-
-      - name: Rebuild with Pages base path
+      # R8: VITE_BASE/SITE_URL are job-level env (set above); this rebuild
+      # re-runs the FULL pipeline so BOTH bundles + prerendered pages carry
+      # the base-prefixed paths. (The earlier Build+audit step ran the same
+      # pipeline with the same env, so dist is already correct — this pass
+      # is a belt-and-braces rebuild + final audit.)
+      - name: Rebuild + final audit (Pages base)
         run: |
-          npx vite build --base="${{ steps.base.outputs.path }}/"
-          # SITE_URL override: canonical/sitemap/RSS/OG must carry the FINAL
-          # Pages URL (https://<user>.github.io/<repo>), not the placeholder
-          # domain, or search engines index the wrong origin.
-          SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
-            node scripts/prerender.mjs
+          node scripts/build.mjs
           node scripts/audit-dist.mjs
 
       - uses: actions/upload-pages-artifact@v3
