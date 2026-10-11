@@ -82,6 +82,13 @@ jobs:
         run: node node_modules/vitest/vitest.mjs run
       - name: Build + audit
         run: node scripts/build.mjs
+      - name: DEBUG baked base in client bundle
+        run: |
+          JSFILE=$(ls dist/assets/vendor-*.js | head -1)
+          BAKED=$(grep -oP 'let n=\`[^\`]*\`' "$JSFILE" | head -1)
+          echo "::error::BAKED BASE = $BAKED (expected /portfolio/)"
+          grep -o 'let n=`[^`]*`' "$JSFILE" | head -1
+
       - name: E2E (CDP harness, headless Chromium)
         run: node e2e/run.mjs
 
