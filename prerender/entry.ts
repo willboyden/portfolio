@@ -103,11 +103,11 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6" />
 ${head}
-    <link rel="icon" href="${import.meta.env?.BASE_URL ?? '/'}favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="${import.meta.env?.BASE_URL ?? '/'}apple-touch-icon.png" />
-    <link rel="manifest" href="${import.meta.env?.BASE_URL ?? '/'}site.webmanifest" />
-${preloads ? preloads + '\n' : ''}    <script src="${import.meta.env?.BASE_URL ?? '/'}theme-init.js"></script>
-    <script src="${import.meta.env?.BASE_URL ?? '/'}spa-gate.js"></script>
+    <link rel="icon" href="${import.meta.env.BASE_URL ?? '/'}favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="${import.meta.env.BASE_URL ?? '/'}apple-touch-icon.png" />
+    <link rel="manifest" href="${import.meta.env.BASE_URL ?? '/'}site.webmanifest" />
+${preloads ? preloads + '\n' : ''}    <script src="${import.meta.env.BASE_URL ?? '/'}theme-init.js"></script>
+    <script src="${import.meta.env.BASE_URL ?? '/'}spa-gate.js"></script>
     <style id="emotion-prerender">${css}</style>
   </head>
   <body>
@@ -134,7 +134,7 @@ function readManifest(): Record<string, { file?: string; src?: string }> | null 
 function chunkHrefs(): string[] {
   const manifest = readManifest();
   if (!manifest) return [];
-  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+  const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
   return Object.values(manifest)
     .flatMap((e) => (typeof e.file === 'string' && e.file.endsWith('.js') ? [`${base}/${e.file}`] : []));
 }
@@ -151,7 +151,7 @@ function assetHref(): string {
     const entry = manifest['index.html'] ?? manifest['src/main.tsx'];
     const file = entry?.file ?? entry?.src;
     if (typeof file === 'string' && file.startsWith('assets/')) {
-      const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
+      const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
       return `${base}/${file}`;
     }
   } catch {
