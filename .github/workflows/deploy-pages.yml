@@ -21,8 +21,8 @@ jobs:
       # R8: BOTH bundles (client via vite.config.ts base, prerender via
       # vite.config.prerender.ts define) inline this at BUILD time. It must
       # be set before ANY build step — job-level env guarantees that.
-      VITE_BASE: /${{ github.event.repository.name }}/
-      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      VITE_BASE: /portfolio/
+      SITE_URL: https://willboyden.github.io/portfolio/
     steps:
       - uses: actions/checkout@v4
 
