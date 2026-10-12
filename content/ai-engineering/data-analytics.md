@@ -19,16 +19,16 @@ status: shipped
 stack: [ClickHouse 24.3, SQL, Python stdlib, DuckDB, JSON-RPC + SSE, vanilla JS/CSS]
 howItWorks:
   - Model the domain across 23 tables — state payroll, municipal payroll, BLS QCEW employment, SBA PPP loans, federal awards, property parcels, IRS SOI income — with explicit grain and coverage rules per table.
-  - Write self-documenting probe datasets: each data/*.json embeds the exact SQL, per-attempt elapsed time and row count, so findings are re-runnable and auditable.
+  - Write self-documenting probe datasets — each data/*.json embeds the exact SQL, per-attempt elapsed time and row count, so findings are re-runnable and auditable.
   - Drive ClickHouse through a JSON-RPC/SSE MCP server — the sandbox cannot reach the HTTP port directly, so the query layer handles session-id handshakes, retry, and stale-session re-handshake.
-  - Surface three real ClickHouse quirks: missing arbitrary() (error 46), alias-shadowing ILLEGAL_AGGREGATION (error 184), and fiscal_year stored as the string FY2026 — each diagnosed and worked around.
-  - Catch coverage traps before they lie: QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70), and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award).
+  - Surface three real ClickHouse quirks (missing arbitrary() (error 46), alias-shadowing ILLEGAL_AGGREGATION (error 184), and fiscal_year stored as the string FY2026) — each diagnosed and worked around.
+  - Catch coverage traps before they lie — QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70) and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award).
 proof:
   - 14 self-documenting probe datasets with embedded SQL and timings = /opt/data/workspace/gov-payroll-workbench/data
   - Single self-contained dashboard — 51-tile US map, dual-axis SVG trends, SQL provenance section = /opt/data/workspace/gov-payroll-workbench/dashboard
   - Query client with JSON-RPC/SSE, session-id handshake, retry, re-handshake = /opt/data/workspace/gov-payroll-workbench/ch_client.py
   - Three ClickHouse quirks diagnosed and worked around = /opt/data/workspace/gov-payroll-workbench/probe_run.log
-  - Coverage traps documented — QCEW agglvl_code filtering, federal award dedup = /opt/data/workspace/gov-payroll-workbench/README.md
+  - Coverage traps documented (QCEW agglvl_code filtering and federal award dedup) = /opt/data/workspace/gov-payroll-workbench/README.md
 limits:
   - The sandbox cannot reach the ClickHouse HTTP port directly — all queries go through the MCP server over JSON-RPC/SSE.
   - QCEW data covers 2021-2024 only; state payroll covers 2009-2026; municipal covers FY2011-FY2027.
