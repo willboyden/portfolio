@@ -1,5 +1,5 @@
 {
-  "contentHash": "f87a79b7cb26bf33",
+  "contentHash": "370759a14cea0a52",
   "projects": [
     {
       "slug": "system-monitor",
@@ -444,6 +444,75 @@
   "videos": [],
   "talks": [],
   "aiCapabilities": [
+    {
+      "slug": "data-analytics",
+      "title": "Data analytics on a 279M-row ClickHouse cluster",
+      "summary": "Fourteen probe datasets over government payroll, PPP loans, federal spending, property values and IRS income data — 23 tables, ~279M rows in ClickHouse, every query under 0.3 s server-side, all findings traced to re-runnable SQL with embedded timings.",
+      "tags": [
+        "clickhouse",
+        "analytics",
+        "sql",
+        "data-engineering",
+        "dashboards",
+        "payroll"
+      ],
+      "date": "2026-10-12",
+      "capability": "Data analytics",
+      "oneLiner": "23 tables, ~279M rows, 14 probe datasets, every query under 0.3 s — government payroll, PPP loans, federal spending, QCEW employment, property values, and IRS income data in ClickHouse.",
+      "status": "shipped",
+      "stack": [
+        "ClickHouse 24.3",
+        "SQL",
+        "Python stdlib",
+        "DuckDB",
+        "JSON-RPC + SSE",
+        "vanilla JS/CSS"
+      ],
+      "howItWorks": [
+        "Model the domain across 23 tables — state payroll, municipal payroll, BLS QCEW employment, SBA PPP loans, federal awards, property parcels, IRS SOI income — with explicit grain and coverage rules per table.",
+        "Write self-documenting probe datasets — each data/*.json embeds the exact SQL, per-attempt elapsed time and row count, so findings are re-runnable and auditable.",
+        "Drive ClickHouse through a JSON-RPC/SSE MCP server — the sandbox cannot reach the HTTP port directly, so the query layer handles session-id handshakes, retry, and stale-session re-handshake.",
+        "Surface three real ClickHouse quirks (missing arbitrary() (error 46), alias-shadowing ILLEGAL_AGGREGATION (error 184), and fiscal_year stored as the string FY2026) — each diagnosed and worked around.",
+        "Catch coverage traps before they lie — QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70) and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award)."
+      ],
+      "proof": [
+        {
+          "claim": "14 self-documenting probe datasets with embedded SQL and timings",
+          "path": "/opt/data/workspace/gov-payroll-workbench/data"
+        },
+        {
+          "claim": "Single self-contained dashboard — 51-tile US map, dual-axis SVG trends, SQL provenance section",
+          "path": "/opt/data/workspace/gov-payroll-workbench/dashboard"
+        },
+        {
+          "claim": "Query client with JSON-RPC/SSE, session-id handshake, retry, re-handshake",
+          "path": "/opt/data/workspace/gov-payroll-workbench/ch_client.py"
+        },
+        {
+          "claim": "Three ClickHouse quirks diagnosed and worked around",
+          "path": "/opt/data/workspace/gov-payroll-workbench/probe_run.log"
+        },
+        {
+          "claim": "Coverage traps documented (QCEW agglvl_code filtering and federal award dedup)",
+          "path": "/opt/data/workspace/gov-payroll-workbench/README.md"
+        }
+      ],
+      "limits": [
+        "The sandbox cannot reach the ClickHouse HTTP port directly — all queries go through the MCP server over JSON-RPC/SSE.",
+        "QCEW data covers 2021-2024 only; state payroll covers 2009-2026; municipal covers FY2011-FY2027.",
+        "Federal awards are deduped to final obligation per award — raw counts overstate by ~12x if not deduped.",
+        "The dashboard opens over file:// with zero network requests — no live ClickHouse connection in the artifact."
+      ],
+      "relatedPosts": [
+        "agent-proof-your-data-layer",
+        "duckdb-for-agent-workflows"
+      ],
+      "relatedProjects": [
+        "gov-payroll-workbench",
+        "duckdb-mcp"
+      ],
+      "html": "<p>A 23-table, ~279M-row ClickHouse database covering Massachusetts government\npayroll, SBA PPP loans, federal spending, QCEW employment, property values,\nand IRS income data. The interesting problems are not the queries — they are\nthe coverage traps, the alias-shadowing errors, and the grain mismatches that\nmake naive analysis lie.</p>\n<h2 id=\"what-the-data-covers\">What the data covers</h2>\n<p>The cluster holds <strong>23 tables</strong> across <strong>~279M rows</strong> spanning six data\ndomains:</p>\n<table>\n<thead><tr><th>Domain</th><th>Tables</th><th>Coverage</th><th>Rows</th></tr></thead>\n<tbody>\n<tr><td>MA state payroll</td><td><code>ma_state_payroll</code></td><td>2009–2026</td><td>~137K employees/year</td></tr>\n<tr><td>MA municipal payroll</td><td><code>municipal_payroll</code></td><td>FY2011–FY2027</td><td>4 cities, growing</td></tr>\n<tr><td>BLS QCEW employment</td><td><code>bls_qcew_ma</code></td><td>2021–2024</td><td>14 counties</td></tr>\n<tr><td>SBA PPP loans</td><td><code>sba_ppp_loans</code></td><td>2020–2021</td><td>11.5M loans, $797B</td></tr>\n<tr><td>Federal awards</td><td><code>usaspending</code></td><td>FY2025–FY2026</td><td>Deduped to final obligation</td></tr>\n<tr><td>Property parcels</td><td><code>property_data</code></td><td>All years</td><td>1.59M parcels, $1.57T</td></tr>\n<tr><td>IRS SOI income</td><td><code>irs_soi_zip</code></td><td>2018–2022</td><td>6.9M returns/year</td></tr>\n</tbody>\n</table>\n<h2 id=\"findings\">Findings</h2>\n<p>Each finding is traced to its probe dataset (re-runnable SQL with embedded\ntimings in <code>/opt/data/workspace/gov-payroll-workbench/data/</code>).</p>\n<h3 id=\"state-payroll-20092026\">State payroll (2009–2026)</h3>\n<p>Latest year (2026): <strong>136,415 employees</strong> across <strong>158 departments</strong>, total\nwages <strong>$5.59B</strong>, average wage <strong>$40,994</strong>. The 2009 data has only 1\ndepartment (partial coverage) vs 155+ in later years — coverage varies\nsignificantly across the time series.</p>\n<p>Top departments by headcount (latest year): University of Massachusetts\nSystem (23,399 employees, $918M wages), MBTA (8,796 employees, $506M wages).</p>\n<h3 id=\"sba-ppp-loans-20202021\">SBA PPP loans (2020–2021)</h3>\n<p><strong>11.5M loans</strong> totaling <strong>$797B</strong> across 60 states/territories. California\nleads with 1.27M loans ($104B), Texas second with 939K loans ($63B).</p>\n<h3 id=\"property-values-all-years\">Property values (all years)</h3>\n<p><strong>1.59M parcels</strong> totaling <strong>$1.57T</strong> in assessed value. Boston leads with\n180K parcels ($265B), Cambridge second with 29K parcels ($93B) — Cambridge's\nper-parcel value ($3.2M) is more than double Boston's ($1.5M).</p>\n<h3 id=\"bls-qcew-employment-20212024\">BLS QCEW employment (2021–2024)</h3>\n<p>Middlesex County leads with <strong>930K employed</strong> and <strong>$26.3B</strong> in Q4 wages.\nSuffolk County second with <strong>717K employed</strong> and <strong>$24.2B</strong> in wages.</p>\n<h3 id=\"the-coverage-traps\">The coverage traps</h3>\n<p>Two traps that would make naive analysis lie:</p>\n<ol>\n<li><p><strong>QCEW aggregation levels</strong>: the raw table carries <strong>9 aggregation levels\nper county</strong>. Without filtering to <code>agglvl_code = 70</code> (the county level),\nemployment is overstated ~9x. Diagnosed by noticing the numbers didn't\nmatch known county populations.</p></li>\n<li><p><strong>Federal award modifications</strong>: <code>usaspending</code> stores <strong>cumulative\nmodifications</strong> per award — each amendment adds a new row with the FULL\nobligated amount, not a delta. Without deduplicating to the final\nobligation per award_id, spending is overstated ~12x. Diagnosed by\ncross-checking against published USASpending totals.</p></li>\n</ol>\n<h2 id=\"the-pipeline\">The pipeline</h2>\n<p>The sandbox cannot reach the ClickHouse HTTP port directly. The query layer\ndrives the <code>clickhouse-mcp</code> server over <strong>JSON-RPC with SSE responses</strong>,\nhandling session-id handshakes, retry with backoff, and stale-session\nre-handshake. Three real ClickHouse quirks were diagnosed and worked around:</p>\n<ul>\n<li><p>Missing <code>arbitrary()</code> aggregate (error 46) — replaced with <code>any()</code></p></li>\n<li><p>Alias-shadowing <code>ILLEGAL_AGGREGATION</code> (error 184) — CTE restructure</p></li>\n<li><p><code>fiscal_year</code> stored as string <code>FY2026</code> — parsed to integer in SQL\nThe dashboard is a single self-contained HTML file — 51-tile US map, dual-axis\nSVG trends, and a full SQL provenance section exposing every query, elapsed\ntime, and row count. Opens over <code>file://</code> with zero network requests.</p></li>\n</ul>"
+    },
     {
       "slug": "local-inference",
       "title": "Local LLM inference",
