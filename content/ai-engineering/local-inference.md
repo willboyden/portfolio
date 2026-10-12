@@ -9,7 +9,7 @@ summary: >-
   Spark (GB10) nodes, and an RTX 5090 workstation — through an
   OpenAI-compatible broker with a failure taxonomy that refuses to call a
   listed model healthy.
-capability: Local LLM inference
+capability: Local LLM Inference
 oneLiner: >-
   A heterogeneous GPU cluster — Threadripper Pro head node, dual RTX Pro
   6000s, four DGX Spark (GB10) nodes, and an RTX 5090 workstation — serving
