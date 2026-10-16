@@ -80,6 +80,14 @@ export interface AiCapability {
   limits: string[];
   relatedPosts?: string[];
   status: 'offered' | 'in-progress' | 'shipped';
+  /** R10: head-to-head comparison tables (expandable). */
+  comparisons?: AiComparisonEntry[];
+}
+
+/** R10: one expandable comparison — first row is the header row. */
+export interface AiComparisonEntry {
+  title: string;
+  rows: string[][];
 }
 
 /**
@@ -810,6 +818,81 @@ export function AiCapabilityDetail({
           </small>
         </p>
       </Block>
+
+      {/* R10: head-to-head comparisons — expandable tables, collapsed by
+       * default (same pattern as the Talks page details). First row is the
+       * header row. */}
+      {capability.comparisons !== undefined && capability.comparisons.length > 0 && (
+        <Block aria-labelledby="comparisons-title">
+          <BlockTitle id="comparisons-title">Comparisons</BlockTitle>
+          {capability.comparisons.map((comparison) => (
+            <details
+              key={comparison.title}
+              data-testid="ai-comparison"
+              style={{
+                border: `1px solid ${theme.color.border}`,
+                borderRadius: theme.radius.md,
+                margin: `0 0 ${theme.space[3]}`,
+                padding: `${theme.space[2]} ${theme.space[3]}`,
+              }}
+            >
+              <summary
+                style={{
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  color: theme.color.text,
+                }}
+              >
+                {comparison.title}
+              </summary>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  margin: `${theme.space[2]} 0 0`,
+                  fontSize: theme.font.sizes.sm,
+                }}
+              >
+                <thead>
+                  <tr>
+                    {(comparison.rows[0] ?? []).map((header, hi) => (
+                      <th
+                        key={hi}
+                        scope="col"
+                        style={{
+                          textAlign: 'left',
+                          borderBottom: `1px solid ${theme.color.border}`,
+                          padding: theme.space[1],
+                        }}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparison.rows.slice(1).map((row, ri) => (
+                    <tr key={ri}>
+                      {row.map((cell, ci) => (
+                        <td
+                          key={ci}
+                          style={{
+                            borderBottom: `1px solid ${theme.color.border}`,
+                            padding: theme.space[1],
+                            verticalAlign: 'top',
+                          }}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          ))}
+        </Block>
+      )}
 
       <Block aria-labelledby="limits-title">
         <BlockTitle id="limits-title">Limits</BlockTitle>
