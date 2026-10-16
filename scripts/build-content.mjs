@@ -122,6 +122,16 @@ async function loadCollection(dir, schema) {
           return p;
         });
       }
+      /* R10: comparisons arrive as a flat authoring form — the frontmatter
+       * subset can't express seq-of-mappings, so a capability uses
+       * `comparisonTitle: '...'` + `comparisonRows: [[a, b], [c, d]]`
+       * (one comparison per capability; extend to numbered keys if a
+       * second table ever lands). Expand into the schema's shape here. */
+      if (dir === 'ai-engineering' && typeof entry.comparisonTitle === 'string' && Array.isArray(entry.comparisonRows)) {
+        entry.comparisons = [{ title: entry.comparisonTitle, rows: entry.comparisonRows }];
+        delete entry.comparisonTitle;
+        delete entry.comparisonRows;
+      }
     } catch (err) {
       failures.push(`  file: ${stem}\n  error: ${err.message}`);
       continue;
