@@ -149,6 +149,19 @@ function parseScalar(text: string, lineNo: number, rawLine: string): unknown {
   if (t.startsWith("'") && t.endsWith("'") && t.length >= 2) {
     return t.slice(1, -1).replace(/''/g, "'");
   }
+  if (t.startsWith('[[')) {
+    /* R10: a table row — array of one-level arrays, e.g. [[a, b], [c, d]].
+     * Split at top-level "], [" boundaries, parse each row as an inline
+     * array. Anything deeper stays unsupported. */
+    if (!t.endsWith(']]')) fail(lineNo, rawLine, 'unterminated table array');
+    const inner = t.slice(2, -2).trim();
+    if (inner === '') return [];
+    const rows: unknown[] = [];
+    for (const rowText of inner.split(/(?:\]\s*,\s*\[)/)) {
+      rows.push(parseScalar(`[${rowText.trim()}]`, lineNo, rawLine));
+    }
+    return rows;
+  }
   if (t.startsWith('[')) {
     if (!t.endsWith(']')) fail(lineNo, rawLine, 'unterminated inline array');
     const inner = t.slice(1, -1).trim();
