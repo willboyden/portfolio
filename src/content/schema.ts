@@ -129,6 +129,16 @@ export const AiProofSchema = z
 
 export const AiCapabilityStatus = z.enum(['offered', 'in-progress', 'shipped']);
 
+/** R10: head-to-head comparison table rendered as an expandable
+ * <details>/<summary> block on the capability page. First row is the header
+ * row (rendered as <th>); remaining rows are body cells. */
+export const AiComparisonSchema = z
+  .object({
+    title: z.string().min(1),
+    rows: z.array(z.array(z.string().min(1)).min(2)).min(2),
+  })
+  .strict();
+
 export const AiCapabilitySchema = z
   .object({
     ...baseShape,
@@ -143,12 +153,15 @@ export const AiCapabilitySchema = z
     limits: z.array(z.string().min(1)).min(1),
     relatedPosts: z.array(Slug).optional(),
     relatedProjects: z.array(Slug).optional(),
+    /** R10: optional head-to-head comparisons (expandable tables). */
+    comparisons: z.array(AiComparisonSchema).optional(),
     /** Long-form body rendered from the markdown below the frontmatter. */
     html: z.string().optional(),
   })
   .strict();
 
 export type AiProof = z.infer<typeof AiProofSchema>;
+export type AiComparison = z.infer<typeof AiComparisonSchema>;
 export type AiCapability = z.infer<typeof AiCapabilitySchema>;
 
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
