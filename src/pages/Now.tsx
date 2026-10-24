@@ -118,14 +118,6 @@ const Item = styled.li`
   }
 `;
 
-/* R9B-1: the honest note under "Available for" — muted, small, one breath. */
-const PanelNote = styled.p`
-  margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textSubtle};
-`;
-
 const FullPanel = styled(Panel)`
   grid-column: 1 / -1;
 `;
@@ -148,37 +140,36 @@ interface FocusItem {
 
 const FOCUS_AREAS: readonly FocusItem[] = [
   {
-    title: 'LLM systems that survive review',
+    title: 'Local AI a team can actually operate',
     detail:
-      'Evaluation harnesses, retrieval architectures, and cost/latency ' +
-      'budgets for teams moving AI features from demo to production — where ' +
-      'the hard part is proving the answer is good enough, on purpose, ' +
-      'continuously.',
+      'A home lab of two RTX PRO 6000s, four DGX Sparks and an RTX 5090 ' +
+      'serving open-weight models (GLM-5.3-Flash, DeepSeek-V4.1-Flash, ' +
+      'Nemotron) behind one router — and open-sourcing the operator tools ' +
+      'it needed: Engine Console and GPU Tuner.',
   },
   {
-    title: 'Data platforms sized to their teams',
+    title: 'Routing coding agents across models',
     detail:
-      'Warehouses, pipelines and storage engines matched to the people who ' +
-      'will operate them. DuckDB when DuckDB is right; a warehouse when the ' +
-      'concurrency says so; always the boring, observable choice first.',
+      'A fast model answers first and an LLM judge sends the hard ' +
+      'conversations to a bigger one. The work is measuring the answers, ' +
+      'not the counters — Nemo Console watches the routing layer.',
   },
   {
-    title: 'Front-end craft as an engineering discipline',
+    title: 'Agents that stay contained and observable',
     detail:
-      'Design-token systems, SSR/prerender pipelines, and accessibility ' +
-      'treated like performance: measured, regression-tested, and owned by ' +
-      'the same engineers who ship features.',
+      'Sandboxed agents with their own keys, a private chat server they ' +
+      'reach me through, and every model call traced. Agent Hub keeps what ' +
+      'each agent knows and may do in one reviewed place.',
   },
 ];
 
 const LEARNING: readonly string[] = [
-  'Formalizing evaluation practice for retrieval systems — the gap between ' +
-    'a good demo and a statistically defensible eval is where most AI ' +
-    'projects quietly stall.',
-  'Query-engine internals (DuckDB in particular): reading the execution ' +
-    'engine makes better schema and file-layout decisions upstream.',
-  'Writing more, in the open — turning repeated consulting answers into ' +
-    'posts so the same advice is given once, properly.',
+  'Multi-node inference on DGX Spark: tensor parallelism over ConnectX-7, ' +
+    'speculative decoding, and the thermal limits of small boxes.',
+  'Judge rubrics as a product: getting a routing judge to escalate the ' +
+    'tasks the small model really cannot do, and nothing else.',
+  'Writing more, in the open — turning what the lab measured into posts ' +
+    'so the same lesson is written down once, properly.',
 ];
 
 const AVAILABLE_FOR: readonly string[] = [
@@ -213,7 +204,7 @@ export function Now(): React.ReactNode {
         <Intro>
           A standing answer to &ldquo;what are you working on these
           days?&rdquo; — published in the spirit of thenowpage.com, so you
-          know what to expect from me before you email me.
+          know what to expect from me before you get in touch.
         </Intro>
       </Section>
 
@@ -246,14 +237,6 @@ export function Now(): React.ReactNode {
                 <Item key={line}>{line}</Item>
               ))}
             </ItemList>
-            {/* R9B-1: "Check availability" led to /contact, whose email is
-                not live yet — a loop that ended in exit. One honest line so
-                the click is informed about what happens there. */}
-            <PanelNote data-testid="now-contact-note">
-              Email contact is being wired up — the case studies on the
-              projects page are the fastest proof of how this work runs in
-              practice.
-            </PanelNote>
             <ClosingRow>
               <Button as={ROUTER_LINK} to="/contact" variant="primary" data-testid="now-cta-contact">
                 Working together

@@ -94,9 +94,8 @@ export function NotFound(): React.ReactNode {
           This page doesn&rsquo;t exist — yet.
         </Heading>
         <Body>
-          A 404 here usually means one of three things: a project write-up is
-          still in review, a link outlived a refactor, or you typed something
-          creative. None of those are your problem to solve — the three links
+          A 404 here usually means a link outlived a refactor or the address
+          was mistyped. Neither is your problem to solve — the three links
           below cover almost every path through this site.
         </Body>
         <CtaRow>

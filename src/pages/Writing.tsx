@@ -22,6 +22,7 @@ import { useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
+import { withBase } from 'app/lib/seo';
 import {
   Button,
   Container,
@@ -515,7 +516,7 @@ export function Writing(): ReactNode {
               <Pagination
                 page={pageData.page}
                 total={pageData.pageCount}
-                hrefFor={(n) => (n === 1 ? '/writing' : `/writing?page=${n}`)}
+                hrefFor={(n) => withBase(n === 1 ? '/writing' : `/writing?page=${n}`)}
                 label="Writing pages"
               />
             </div>

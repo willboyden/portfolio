@@ -49,7 +49,7 @@ vi.mock('app/content', () => ({
 }));
 
 /* Import pages AFTER the mock so they bind the intercepted module. */
-const { AiEngineeringHub, AiCapabilityDetail, aiCapabilityList, aiCapabilityBySlug, splitProof, capabilityStatusTone, isCapability, AI_SECTIONS } =
+const { AiEngineeringHub, AiCapabilityDetail, aiCapabilityList, aiCapabilityBySlug, splitProof, capabilityStatusTone, isCapability, aiSections } =
   await import('./AiEngineering');
 const { LocalInference } = await import('./ai-engineering/LocalInference');
 const { VideoGeneration } = await import('./ai-engineering/VideoGeneration');
@@ -192,8 +192,9 @@ describe('ai capability helpers', () => {
     expect(`${claim} — ${repoPath}`).toBe(CAP_LOCAL.proof[0]);
   });
 
-  it('AI_SECTIONS matches the three planned slugs in nav order', () => {
-    expect(AI_SECTIONS.map((s) => s.slug)).toEqual(['local-inference', 'video-generation', 'smart-routing']);
+  it('aiSections follows the capability list (content order), so no page is unreachable', () => {
+    expect(aiSections().map((s) => s.slug)).toEqual(['local-inference', 'video-generation', 'smart-routing']);
+    expect(aiSections()[0]?.label).toBe(CAP_LOCAL.capability);
   });
 });
 

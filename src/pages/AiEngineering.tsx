@@ -38,8 +38,9 @@ import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from '@portfolio/router';
 import * as contentModule from 'app/content';
-import { getPost, type Post, type AiProof } from 'app/content';
+import { getPost, type Post } from 'app/content';
 import { formatDate, formatReadingTime } from 'app/lib/format';
+import { rebaseHtml } from 'app/lib/seo';
 import type { Tokens } from 'app/theme/tokens';
 import { NotFound } from './NotFound';
 import {
@@ -49,6 +50,7 @@ import {
   EmptyState,
   Heading,
   Icon,
+  Prose,
   Stack,
   Tag,
   type TagTone,
@@ -75,13 +77,16 @@ export interface AiCapability {
   oneLiner: string;
   stack: string[];
   howItWorks: string[];
-  /** Each bullet states a claim and traces to a repo path (rendered mono). */
-  proof: string[];
+  /** Each bullet states a claim; `url` (when present) is a public repository
+   * link. Plain strings are the legacy em-dash form. */
+  proof: (string | { claim: string; url?: string })[];
   limits: string[];
   relatedPosts?: string[];
   status: 'offered' | 'in-progress' | 'shipped';
   /** R10: head-to-head comparison tables (expandable). */
   comparisons?: AiComparisonEntry[];
+  /** Long-form body (markdown below the frontmatter), rendered at build time. */
+  html?: string;
 }
 
 /** R10: one expandable comparison — first row is the header row. */
@@ -475,6 +480,21 @@ const ProofPath = styled.code`
   overflow-wrap: anywhere;
 `;
 
+/** A proof's public repository link (GitHub), mono like the old path line. */
+const ProofLink = styled.a`
+  align-self: flex-start;
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  color: ${(p) => p.theme.color.accent};
+  overflow-wrap: anywhere;
+  text-underline-offset: 3px;
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
+  }
+`;
+
 const LimitsList = styled.ul`
   margin: 0;
   padding: 0;
@@ -557,12 +577,12 @@ const CtaRow = styled.div`
 /* Shared pieces                                                               */
 /* -------------------------------------------------------------------------- */
 
-/** The three subsection slugs, in nav/content order. */
-export const AI_SECTIONS = [
-  { slug: 'local-inference', label: 'Local inference' },
-  { slug: 'video-generation', label: 'Video generation' },
-  { slug: 'smart-routing', label: 'Smart routing' },
-] as const;
+/** The subsections, in hub order, straight from content — a capability page
+ * that exists in content can never be missing from the nav (tech-stack and
+ * data-analytics were prerendered but unreachable when this was a fixed list). */
+export function aiSections(): { slug: string; label: string }[] {
+  return aiCapabilityList().map((c) => ({ slug: c.slug, label: c.capability }));
+}
 
 export function aiSectionPath(slug: string): string {
   return `/ai-engineering/${slug}`;
@@ -575,7 +595,7 @@ function SubsectionNav({ currentPath }: { currentPath?: string }): ReactNode {
   const path = currentPath ?? location.pathname;
   return (
     <SubNav aria-label="AI engineering capabilities" data-testid="ai-subnav">
-      {AI_SECTIONS.map((section) => {
+      {aiSections().map((section) => {
         const to = aiSectionPath(section.slug);
         const current = path === to;
         return (
@@ -689,9 +709,9 @@ export function AiEngineeringHub({ currentPath }: { currentPath?: string }): Rea
           AI engineering
         </Heading>
         <Lede>
-          Three capabilities I build and operate end to end — what each one is,
-          how it works, where it has shipped, and what it costs you. The
-          subsections below are the working tour.
+          What I build and operate end to end in my own lab — what each piece
+          is, how it works, the proof, and its honest limits. Linked proof
+          points are public repositories.
         </Lede>
         <SubsectionNav currentPath={currentPath} />
       </PageHeader>
@@ -779,24 +799,39 @@ export function AiCapabilityDetail({
         )}
       </Block>
 
+      {capability.html !== undefined && capability.html !== '' && (
+        <Block aria-labelledby="in-depth-title">
+          <BlockTitle id="in-depth-title">In depth</BlockTitle>
+          <Prose data-testid="ai-in-depth">
+            {/* Build-time rendered + sanitized markdown (same pipeline as posts). */}
+            <div dangerouslySetInnerHTML={{ __html: rebaseHtml(capability.html) }} />
+          </Prose>
+        </Block>
+      )}
+
       <Block aria-labelledby="proof-title">
         <BlockTitle id="proof-title">Proof</BlockTitle>
         {capability.proof.length > 0 ? (
           <ProofGrid data-testid="ai-proof-grid">
             {capability.proof.map((entry) => {
-              /* R9: proof arrives as {claim, path} objects (the build expands
-               * `claim = path` strings); the em-dash split is the fallback for
+              /* Proof arrives as {claim, url?} objects (the build expands
+               * `claim = https://…` strings; only public URLs are allowed, never
+               * a workstation path); the em-dash split is the fallback for
                * plain-string bullets. */
               const { claim, repoPath } =
-                typeof entry === 'string'
-                  ? splitProof(entry)
-                  : { claim: (entry as AiProof).claim, repoPath: (entry as AiProof).path };
+                typeof entry === 'string' ? splitProof(entry) : { claim: entry.claim, repoPath: undefined };
+              const url = typeof entry === 'string' ? undefined : entry.url;
               return (
                 <ProofItem key={claim} data-testid="ai-proof-item">
                   <ProofClaim>
                     <Icon name="check" size={16} />
                     <span>{claim}</span>
                   </ProofClaim>
+                  {url !== undefined && (
+                    <ProofLink href={url} target="_blank" rel="noreferrer noopener" data-testid="ai-proof-link">
+                      {url.replace(/^https?:\/\//, '')}
+                    </ProofLink>
+                  )}
                   {repoPath !== undefined && (
                     <ProofPath data-testid="ai-proof-path">{repoPath}</ProofPath>
                   )}
@@ -813,8 +848,8 @@ export function AiCapabilityDetail({
         )}
         <p style={{ margin: `${theme.space[3]} 0 0` }}>
           <small style={{ color: theme.color.textSubtle }}>
-            Every claim above traces to a path in a repository I can walk you
-            through.
+            Linked items are public repositories. The rest runs in my private
+            lab, and I am happy to walk you through it.
           </small>
         </p>
       </Block>

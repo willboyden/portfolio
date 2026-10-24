@@ -530,17 +530,19 @@ describe('Footer', () => {
     expect(link).toContain('aria-label="Back to top"');
   });
 
-  it('unsupplied social handles are HIDDEN (R2-A A12), never fake URLs or @your-handle', () => {
-    /* R6-B: the whole Elsewhere column now skips when nothing is configured —
-     * the old DRAFT-comment <li> rendered a visible empty bullet. */
-    expect(html).not.toContain('data-testid="footer-social"');
-    expect(html).not.toContain('Elsewhere');
+  it('renders the owner\'s real profiles, never a placeholder handle (R2-A A12)', () => {
+    expect(html).toContain('data-testid="footer-social"');
     expect(html).not.toContain('your-handle');
     for (const entry of SOCIAL_LINKS) {
-      expect(entry.url).toBe('');
-      expect(html).not.toContain('github.com/');
-      expect(html).not.toContain('linkedin.com/');
+      expect(entry.url).toMatch(/^https:\/\//);
+      expect(html).toContain(`href="${entry.url}"`);
     }
+  });
+
+  it('an unconfigured social list skips the Elsewhere column entirely (R6-B)', () => {
+    const bare = render(<Footer now={new Date('2026-01-01T00:00:00Z')} social={[{ label: 'GitHub', url: '' }]} />);
+    expect(bare).not.toContain('data-testid="footer-social"');
+    expect(bare).not.toContain('Elsewhere');
   });
 
   it('a supplied handle renders an external link with safe rel/target', () => {
@@ -571,8 +573,6 @@ describe('Footer', () => {
     expect(filled).toContain('data-testid="footer-social"');
     expect(filled).toContain('aria-labelledby="footer-social-heading"');
     expect(filled).toContain('Elsewhere');
-    /* And the default render must NOT carry the labelled list at all. */
-    expect(html).not.toContain('footer-social-heading');
   });
 
   it('year helper survives an absurd clock', () => {

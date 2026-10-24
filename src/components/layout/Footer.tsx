@@ -27,13 +27,12 @@ export interface SocialLink {
 }
 
 /**
- * Handles are NOT known. Each entry is a slot for the site owner to fill; the
- * labels are the platforms a technical consultant typically lists.
+ * The owner's real profiles (the LinkedIn URL is the one his GitHub profile
+ * lists). No email is published — the owner's choice, 2026-10-24.
  */
 export const SOCIAL_LINKS: readonly SocialLink[] = [
-  { label: 'GitHub', url: '', handle: '@your-handle' },
-  { label: 'LinkedIn', url: '', handle: '@your-handle' },
-  { label: 'Bluesky', url: '', handle: '@your-handle' },
+  { label: 'LinkedIn', url: 'https://www.linkedin.com/in/william-boyden-88a324b6/' },
+  { label: 'GitHub', url: 'https://github.com/willboyden', handle: 'willboyden' },
 ];
 
 export const RSS_HREF = withBase('/rss.xml');
@@ -300,11 +299,6 @@ export function Footer({
                 </a>
               </LinkLine>
             )}
-            {/* DRAFT comment — greppable, not a rendered list item */}
-            <span
-              dangerouslySetInnerHTML={{ __html: '<!-- DRAFT: replace email address in src/lib/seo.ts -->' }}
-              aria-hidden="true"
-            />
           </div>
 
           {configuredSocials.length > 0 && (

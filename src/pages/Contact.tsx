@@ -1,32 +1,28 @@
 /**
- * Contact — the conversion page: one honest email CTA, the real social
- * slots, and what working together actually looks like.
+ * Contact — the conversion page: one primary route (LinkedIn), the public
+ * code (GitHub), and what working together actually looks like.
  *
- * NO FAKE FORM: there is no backend in this stack (static nginx, no server,
- * no network egress) and CONTRACT §8 forbids pretending otherwise. A form
- * that silently went nowhere would be worse than none. The deliverable is a
- * mailto: CTA — it composes in the visitor's own client, works with zero
- * infrastructure, and degrades honestly. If a real form is ever added, it
- * needs a documented form backend first.
+ * NO FAKE FORM: there is no backend in this stack (static hosting, no
+ * server) and CONTRACT §8 forbids pretending otherwise. A form that silently
+ * went nowhere would be worse than none. The owner publishes no email
+ * address (decision 2026-10-24), so the primary CTA is a LinkedIn message.
  *
- * A11Y: one h1; labelled regions; every link has a visible focus ring; the
- * email address is present as real text, not trapped inside a button label.
+ * A11Y: one h1; labelled regions; every link has a visible focus ring;
+ * external links name their destination in visible text.
  */
 import styled from '@emotion/styled';
 import { Link } from '@portfolio/router';
 import { SOCIAL_LINKS } from 'app/components/layout';
-import { SITE } from 'app/lib/seo';
 import { content } from 'app/content';
 import { Button, Heading, Icon, Section, type IconName } from 'app/components/ui';
 
 /* Cast per the ui.test.tsx polymorphic-`as` pattern — see Home.tsx. */
 const ROUTER_LINK = Link as unknown as 'a';
 
-/* DRAFT — launch blocker (R2-A A1): SITE carries no `email` field yet. Until
- * the owner sets SITE.email, the page renders an honest "set up email" state —
- * NEVER a fabricated hello@example.com, which on a hiring site reads as either
- * broken or fake. Set `email` in src/lib/seo.ts SITE to enable the mailto UI. */
-const CONTACT_EMAIL: string | null = (SITE as { email?: string }).email ?? null;
+/** The primary contact route and the public code, from the one social list
+ * the footer also renders (Footer.tsx SOCIAL_LINKS). */
+const LINKEDIN = SOCIAL_LINKS.find((link) => link.label === 'LinkedIn' && link.url !== '');
+const OTHER_PROFILES = SOCIAL_LINKS.filter((link) => link.url !== '' && link !== LINKEDIN);
 
 /* -------------------------------------------------------------------------- */
 /* Layout                                                                      */
@@ -62,7 +58,7 @@ const Panel = styled.section`
   border-radius: ${(p) => p.theme.radius.lg};
 `;
 
-const EmailPanel = styled(Panel)`
+const PrimaryPanel = styled(Panel)`
   border-color: ${(p) => p.theme.color.accentBorder};
   background: ${(p) => p.theme.color.surface};
 `;
@@ -81,29 +77,6 @@ const PanelBody = styled.p`
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.relaxed};
   color: ${(p) => p.theme.color.textMuted};
-`;
-
-const AddressLine = styled.a`
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.md};
-  color: ${(p) => p.theme.color.accent};
-  text-decoration: none;
-  border-radius: ${(p) => p.theme.radius.sm};
-  padding-block: ${(p) => p.theme.space[1]};
-
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 3px;
-  }
 `;
 
 const CtaRow = styled.div`
@@ -263,7 +236,6 @@ function socialIcon(label: string): IconName {
 /* -------------------------------------------------------------------------- */
 
 export function Contact(): React.ReactNode {
-  const contactEmail = CONTACT_EMAIL;
   return (
     <>
       <Section id="contact-intro" eyebrow="Contact" size="wide">
@@ -271,7 +243,7 @@ export function Contact(): React.ReactNode {
           Tell me what is actually broken.
         </Heading>
         <Lede>
-          The best first email is a paragraph of unpolished context: the
+          The best first message is a paragraph of unpolished context: the
           system, the constraint, the deadline you are worried about. I read
           everything myself, and a concrete &ldquo;no&rdquo; or a referral is
           a real answer — you will never be left in silence.
@@ -280,71 +252,50 @@ export function Contact(): React.ReactNode {
 
       <Section size="default" data-testid="contact-panels">
         <CardRow>
-          <EmailPanel aria-labelledby="contact-email-title">
-            <PanelTitle id="contact-email-title">Email</PanelTitle>
-            <PanelBody>
-              The fastest route for everything: engagements, architecture
-              reviews, or a hard question you want a second opinion on.
-              Include a link to context — a repo, a doc, an incident timeline
-              — and I will come prepared instead of billable for warm-up.
-            </PanelBody>
-            {contactEmail ? (
-              <>
-                <AddressLine href={`mailto:${contactEmail}`} data-testid="contact-email-link">
-                  <Icon name="mail" size={16} />
-                  {contactEmail}
-                </AddressLine>
-                <CtaRow>
-                  <Button
-                    as="a"
-                    href={`mailto:${contactEmail}`}
-                    variant="primary"
-                    size="lg"
-                    iconRight="arrow-right"
-                    data-testid="contact-cta-email"
-                  >
-                    Start the conversation
-                  </Button>
-                </CtaRow>
-              </>
-            ) : (
-              /* R2-A A1: never a fabricated mailbox. Honest state until
-               * SITE.email is set (src/lib/seo.ts). R8C-1: the state now
-               * says what IS possible instead of only what is missing. */
-              <PanelBody data-testid="contact-email-unset">
-                Email is the fastest channel and it is being wired up — not
-                live yet, and I won&rsquo;t park a dead address here. The work
-                on this site is real and current: the case studies below and
-                the <strong>Now</strong> page show exactly what I am doing
-                this quarter. {/* DRAFT: set SITE.email in src/lib/seo.ts */}
-              </PanelBody>
-            )}
-          </EmailPanel>
-
-          {/* R6-B recipe (footer Elsewhere): an unconfigured column renders
-           * nothing rather than an empty box. All socials are unset today —
-           * the panel returns the moment one has a real URL. */}
-          {SOCIAL_LINKS.some((link) => link.url) && (
-            <Panel aria-labelledby="contact-social-title">
-              <PanelTitle id="contact-social-title">Elsewhere</PanelTitle>
+          {LINKEDIN && (
+            <PrimaryPanel aria-labelledby="contact-primary-title">
+              <PanelTitle id="contact-primary-title">LinkedIn</PanelTitle>
               <PanelBody>
-                Where the work shows up before it shows up here. Slower than
-                email, better for follow-ups than for first contact.
+                The fastest route for everything: engagements, architecture
+                reviews, or a hard question you want a second opinion on.
+                Include a link to context — a repo, a doc, an incident
+                timeline — and I will come prepared.
+              </PanelBody>
+              <CtaRow>
+                <Button
+                  as="a"
+                  href={LINKEDIN.url}
+                  target="_blank"
+                  rel="me noopener noreferrer"
+                  variant="primary"
+                  size="lg"
+                  iconRight="arrow-right"
+                  data-testid="contact-cta-linkedin"
+                >
+                  Message me on LinkedIn
+                </Button>
+              </CtaRow>
+            </PrimaryPanel>
+          )}
+
+          {OTHER_PROFILES.length > 0 && (
+            <Panel aria-labelledby="contact-social-title">
+              <PanelTitle id="contact-social-title">The code</PanelTitle>
+              <PanelBody>
+                The open-source tools on this site — Engine Console, Nemo
+                Console, GPU Tuner, Agent Hub — live on GitHub with their
+                docs, tests and release notes.
               </PanelBody>
               <SocialList data-testid="contact-social-list">
-                {SOCIAL_LINKS.filter((link) => link.url).map((link) => (
+                {OTHER_PROFILES.map((link) => (
                   <SocialItem key={link.label}>
-                    <SocialAnchor href={link.url} rel="me noopener noreferrer">
+                    <SocialAnchor href={link.url} target="_blank" rel="me noopener noreferrer">
                       <Icon name={socialIcon(link.label)} size={16} />
                       {link.label}
                       {link.handle ? ` — ${link.handle}` : ''}
                     </SocialAnchor>
                   </SocialItem>
                 ))}
-                {/* R2-A A1/A12: unconfigured profiles are HIDDEN, never rendered
-                    as "@your-handle" or developer instructions — placeholder text
-                    on a hiring site reads as template/tampered. Add urls to
-                    SOCIAL_LINKS in Footer.tsx (exported) before launch. */}
               </SocialList>
             </Panel>
           )}

@@ -50,6 +50,14 @@ export function titleFor(path: string): string {
     }
     return 'Writing';
   }
+  if (seg === 'ai-engineering') {
+    const slug = path.split('/')[2];
+    if (slug) {
+      const capability = content.aiCapabilities.find((c) => c.slug === slug);
+      return capability ? `${capability.title} — AI Engineering` : 'Page not found';
+    }
+    return 'AI Engineering';
+  }
   return seg ? (pageNames[seg] ?? '') : '';
 }
 
@@ -63,16 +71,20 @@ export function descriptionFor(path: string): string {
     const post = content.posts.find((p) => p.slug === slug);
     return post?.excerpt || post?.summary || SITE_FALLBACK_DESCRIPTION;
   }
+  if (path.startsWith('/ai-engineering/')) {
+    const slug = path.split('/')[2];
+    return content.aiCapabilities.find((c) => c.slug === slug)?.summary ?? SITE_FALLBACK_DESCRIPTION;
+  }
   /* R9A-2: section pages shipped the site-wide boilerplate description — an
    * agent summarizing /writing or /ai-engineering got the same paragraph for
    * every section. Real, honest per-section descriptions. */
   const sectionDescriptions: Record<string, string> = {
     '/projects':
-      'Case studies of shipped systems — monitoring fleets, data platforms, eval harnesses — with the reasoning, the stack, and the numbers that judged them.',
+      'Open-source tools for running local AI (Engine Console, Nemo Console, GPU Tuner, Agent Hub) plus lab experiments — with the reasoning, the stack, and the numbers that judged them.',
     '/writing':
       'Engineering notes on LLM systems, data platforms and evals — written for the teammate who inherits the system.',
     '/ai-engineering':
-      'Capability briefs with proof and metrics: local inference, smart routing, data analytics, video generation.',
+      'Capability briefs with proof and limits: local inference, smart routing, video generation, data analytics, and the stack underneath.',
     '/about': 'Who William Boyden is, how he works, and the stack he ships with.',
     '/now': 'What William Boyden is working on this quarter — current focus, availability, and what changes when it changes.',
     '/contact': 'How to reach William Boyden, what working together looks like, and what to put in a first email.',

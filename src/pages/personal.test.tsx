@@ -230,23 +230,22 @@ describe('Now', () => {
 describe('Contact', () => {
   const html = render(<Contact />, '/contact');
 
-  it('renders an honest email state — never a fabricated mailbox (R2-A A1)', () => {
-    /* SITE.email unset -> honest unset note, no mailto chrome. When the owner
-     * sets SITE.email, the mailto anchor + CTA render (see personal.email.test). */
+  it('offers LinkedIn as the primary route and publishes no email (owner decision 2026-10-24)', () => {
     expect(html).not.toContain('mailto:');
     expect(html).not.toContain('example.com');
-    expect(html).toContain('data-testid="contact-email-unset"');
+    expect(html).not.toContain('being wired up');
+    const cta = tags(html, 'a').find((t) => t.includes('data-testid="contact-cta-linkedin"'));
+    expect(cta).toContain('href="https://www.linkedin.com/in/');
+    expect(cta).toContain('target="_blank"');
+    expect(cta).toContain('noopener');
   });
 
-  it('hides the Elsewhere panel entirely while every social is unconfigured (R6-B recipe)', () => {
-    /* R2-A A12: unconfigured profiles are hidden, not shown as @your-handle.
-     * R8: with zero configured socials the panel itself does not render —
-     * an empty box on the conversion page reads as "abandoned", and the
-     * footer already established the render-only-when-configured rule. */
+  it('lists the public code profile, never a placeholder handle', () => {
     expect(html).not.toContain('your-handle');
     const socialAnchors = tags(html, 'a').filter((t) => t.includes('href=""'));
     expect(socialAnchors).toHaveLength(0);
-    expect(html).not.toContain('data-testid="contact-social-list"');
+    expect(html).toContain('data-testid="contact-social-list"');
+    expect(html).toContain('href="https://github.com/willboyden"');
   });
 
   it('names what he is hired for, from the verified capabilities (R8C-2)', () => {

@@ -420,7 +420,7 @@ export function Home(): React.ReactNode {
             title="Case studies are being written up"
             description="Each engagement gets a public write-up once it is shipped and
             sanitized. In the meantime, the projects index is where they will
-            land — and email is the fastest way to ask about work in progress."
+            land — and a LinkedIn message is the fastest way to ask about work in progress."
             action={
               <Button as={ROUTER_LINK} to="/projects" variant="secondary" data-testid="home-featured-empty-cta">
                 Browse all projects

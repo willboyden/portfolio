@@ -23,6 +23,7 @@ import { Link, useParams } from '@portfolio/router';
 import { content, getProject, type Project } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
 import { formatDate, formatReadingTime } from 'app/lib/format';
+import { rebaseHtml } from 'app/lib/seo';
 import { NotFound } from './NotFound';
 import { ProjectMetrics, statusTone } from './Projects';
 import {
@@ -129,15 +130,6 @@ const BlockTitle = styled.h2`
   line-height: ${(p) => p.theme.font.leading.tight};
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
   color: ${(p) => p.theme.color.text};
-`;
-
-/* R2-D V3: body-copy block for the "write-up in review" state. */
-const PanelBody = styled.p`
-  margin: 0;
-  max-width: 65ch;
-  font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
 `;
 
 const HighlightList = styled.ul`
@@ -255,17 +247,6 @@ function relatedLinkClass(theme: Tokens): string {
 
 /* Router links take css() classes on plain <Link> — styled(Link) would drop
  * the `to` prop (vendored styled() prop allow-list, Nav.tsx precedent). */
-/** Inline prose-link skin (R6-C C6): used inside PanelBody copy. */
-function inlineLinkClass(theme: Tokens): string {
-  return css({
-    color: theme.color.accent,
-    textDecoration: 'underline',
-    textUnderlineOffset: '3px',
-    '&:hover': { color: theme.color.text },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
-  });
-}
-
 /** R6-C C1: the related-post card link (whole card is one <Link>). */
 function relatedPostCls(theme: Tokens): string {
   const t = theme;
@@ -408,24 +389,15 @@ export function ProjectDetail(): React.ReactNode {
         </Block>
       )}
 
-      {project.html ? (
+      {/* No body = no section. The old "write-up is in review" stand-in was a
+       * coming-soon on most project pages; the highlights are the content. */}
+      {project.html && (
         <Block aria-labelledby="case-study-title">
           <BlockTitle id="case-study-title">Case study</BlockTitle>
           <Prose data-testid="detail-body">
             {/* Build-time validated markdown output — see file header. */}
-            <div dangerouslySetInnerHTML={{ __html: project.html }} />
+            <div dangerouslySetInnerHTML={{ __html: rebaseHtml(project.html) }} />
           </Prose>
-        </Block>
-      ) : (
-        /* R2-D V3: an unfinished write-up renders a designed, honest state —
-         * never a silent null that leaves the flagship page looking broken. */
-        <Block aria-labelledby="case-study-title">
-          <BlockTitle id="case-study-title">Case study</BlockTitle>
-          <PanelBody data-testid="detail-body-pending">
-            The full write-up for this project is in review. The highlights
-            above are the short version; <Link to="/contact" className={inlineLinkClass(theme)}>email me</Link> for
-            the long one — I keep the design docs.
-          </PanelBody>
         </Block>
       )}
 

@@ -49,14 +49,17 @@ export function projectTagCounts(all: readonly Project[]): { tag: string; count:
 }
 
 /**
- * The grid contents for the active filter. `tag === null` shows everything;
- * output is always newest-first (date desc, title alpha as tiebreak) so the
- * grid order never depends on the input array order.
+ * The grid contents for the active filter. `tag === null` shows everything.
+ * Featured projects (the open-source tools) lead, then everything else; each
+ * group is newest-first (date desc, title alpha as tiebreak) so the grid
+ * order never depends on the input array order.
  */
 export function visibleProjects(all: readonly Project[], tag: string | null): Project[] {
   const filtered = tag === null ? [...all] : all.filter((p) => p.tags.includes(tag));
   return filtered.sort(
-    (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title)),
+    (a, b) =>
+      Number(b.featured) - Number(a.featured) ||
+      (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title)),
   );
 }
 
@@ -218,6 +221,12 @@ export function ProjectCard({ project }: { project: Project }): React.ReactNode 
         </Tag>
         <span aria-hidden="true">·</span>
         <span>{formatPeriod(project.period)}</span>
+        {project.links?.source !== undefined && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span data-testid="project-open-source">open source</span>
+          </>
+        )}
       </MetaLine>
       <CardTitle>
         <Link to={href} className={titleLinkClass(theme)} data-testid="project-card-title">
@@ -409,9 +418,10 @@ export function Projects(): React.ReactNode {
           Selected work
         </Heading>
         <Lede>
-          Systems that shipped — the reasoning behind them, the stack that
-          carried them, and the numbers that judged them. Filter by tag to cut
-          to one thread of the work.
+          Open-source tools first, each with its GitHub repository; then
+          smaller systems built and tested in my lab. Every card says what
+          shipped, the stack, and the numbers that judged it. Filter by tag to
+          cut to one thread of the work.
         </Lede>
         {all.length > 0 && (
           <FilterBar role="group" aria-label="Filter projects by tag" data-testid="tag-filter">

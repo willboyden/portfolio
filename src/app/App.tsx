@@ -4,7 +4,7 @@
  * prerendered HTML and hydrated client markup agree.
  */
 import { StrictMode, createElement, useEffect, type ComponentType, type ReactNode } from 'react';
-import { RouterProvider, Outlet, useLocation, type RouteDefinition } from '@portfolio/router';
+import { RouterProvider, Outlet, useLocation, useParams, type RouteDefinition } from '@portfolio/router';
 import { retirePrerenderedTag } from '@emotion/react';
 import { applyDocumentMeta } from 'app/lib/seo';
 import { metaFor } from 'app/lib/route-meta';
@@ -23,9 +23,12 @@ import { AiEngineeringHub, AiCapabilityDetail } from 'app/pages/AiEngineering';
 import { Contact } from 'app/pages/Contact';
 import { NotFound } from 'app/pages/NotFound';
 
-/** R9: route shims adapt the shared detail template to the router's params shape. */
-function AiDetailShim({ slug }: { slug: string }): ReactNode {
-  return <AiCapabilityDetail slug={slug} />;
+/** One route for every capability page: the slug comes from the URL, so a
+ * capability in content can never be prerendered without a route (tech-stack
+ * and data-analytics 404'd when the three slugs were hard-coded here). */
+function AiDetailRoute(): ReactNode {
+  const { slug } = useParams<{ slug: string }>();
+  return <AiCapabilityDetail slug={slug ?? ''} />;
 }
 
 export const routes: RouteDefinition[] = [
@@ -39,9 +42,7 @@ export const routes: RouteDefinition[] = [
   { path: '/videos', component: Videos },
   { path: '/talks', component: Talks },
   { path: '/ai-engineering', component: AiEngineeringHub as never },
-  { path: '/ai-engineering/local-inference', component: () => <AiDetailShim slug="local-inference" /> },
-  { path: '/ai-engineering/video-generation', component: () => <AiDetailShim slug="video-generation" /> },
-  { path: '/ai-engineering/smart-routing', component: () => <AiDetailShim slug="smart-routing" /> },
+  { path: '/ai-engineering/:slug', component: AiDetailRoute },
   { path: '/contact', component: Contact },
 ];
 

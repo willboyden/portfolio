@@ -30,6 +30,7 @@ import {
 } from 'app/components/ui';
 import { content, getPost, postsByDate } from 'app/content';
 import { formatDate, formatReadingTime } from 'app/lib/format';
+import { rebaseHtml } from 'app/lib/seo';
 import { useCopyToClipboard } from 'app/lib/hooks';
 import type { Tokens } from 'app/theme/tokens';
 import { NotFound } from './NotFound';
@@ -456,7 +457,7 @@ export function PostDetail(): ReactNode {
           {/* post.html is markdown rendered + sanitized at BUILD time by the
               pipeline (CONTRACT §5) — trusted by construction, not by network. */}
           <Prose data-testid="post-prose">
-            <div dangerouslySetInnerHTML={{ __html: post.html }} />
+            <div dangerouslySetInnerHTML={{ __html: rebaseHtml(post.html) }} />
           </Prose>
         </Body>
 

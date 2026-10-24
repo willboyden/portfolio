@@ -159,6 +159,14 @@ export function withBase(path: string): string {
   return import.meta.env.BASE_URL.replace(/\/$/, '') + path;
 }
 
+/** Root-absolute src/href values inside build-rendered markdown ("/posts/x.svg",
+ * "/writing/y") get the deploy base too — the markdown pipeline cannot know it,
+ * and without it every in-body image and link 404s under /portfolio/. */
+export function rebaseHtml(html: string): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  return base ? html.replace(/\b(src|href)="\/(?!\/)/g, `$1="${base}/`) : html;
+}
+
 /** Absolute URL for a route path; paths that are already absolute pass through. */
 export function absoluteUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;

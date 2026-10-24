@@ -37,6 +37,20 @@ export function getAiCapability(slug: string): AiCapability | undefined {
   return content.aiCapabilities.find((c) => c.slug === slug);
 }
 
+/** Hub and subsection-nav order; capabilities not listed follow, newest first. */
+const AI_CAPABILITY_ORDER = ['local-inference', 'smart-routing', 'video-generation', 'data-analytics', 'tech-stack'];
+
+/** Every capability in hub order. The hub and the subsection nav read this —
+ * it was missing, so the hub rendered its "still being written" empty state
+ * in production while the mocked tests passed. */
+export function aiCapabilitiesBySlug(): AiCapability[] {
+  const rank = (slug: string): number => {
+    const i = AI_CAPABILITY_ORDER.indexOf(slug);
+    return i === -1 ? AI_CAPABILITY_ORDER.length : i;
+  };
+  return aiCapabilitiesByDate().sort((a, b) => rank(a.slug) - rank(b.slug));
+}
+
 export function aiCapabilitiesByDate(): AiCapability[] {
   return [...content.aiCapabilities].sort((a, b) =>
     a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1,

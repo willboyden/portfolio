@@ -19,7 +19,7 @@ import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE } from '../src/lib/seo.ts';
 import { metaFor } from '../src/lib/route-meta.ts';
 import { content } from '../src/content/index.ts';
-import { NAV_ITEMS } from '../src/components/layout/Nav';
+import { availableNavItems } from '../src/components/layout/Nav';
 
 /** R7A-3: prepend BASE_URL to root-absolute paths so they resolve under
  * GitHub Pages subpaths (e.g. BASE_URL='/portfolio/' → /portfolio/rss.xml). */
@@ -125,6 +125,12 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
         .join('\n')
     : '';
 
+  /* Same items as the JS nav (empty sections stay out), base-prefixed: a bare
+   * item.to 404'd on every page when the site is served under /portfolio/. */
+  const staticNav = availableNavItems()
+    .map((item) => `<a href="${withBase(item.to)}" class="nav-link">${item.label}</a>`)
+    .join('');
+
   const html = `<!doctype html>
 <html lang="en">
   <head>
@@ -159,7 +165,7 @@ ${preloads ? preloads + '\n' : ''}    <script src="${withBase('/theme-init.js')}
 
     <!-- R7A-1: static mobile nav — revealed when JS is disabled via noscript CSS -->
     <nav class="static-mobile-nav" aria-label="Primary">
-      ${NAV_ITEMS.map((item) => `<a href="${item.to}" class="nav-link">${item.label}</a>`).join('')}
+      ${staticNav}
     </nav>
     <script type="module" src="${scriptSrc}"></script>
   </body>

@@ -34,6 +34,26 @@ describe('createApp (full tree)', () => {
     expect(html).toContain(project?.title ?? slug);
   });
 
+  it('the AI hub lists every capability from real content (no mocks)', () => {
+    /* The hub once read a content export that did not exist and always
+     * rendered "still being written"; its mocked unit tests passed. */
+    const html = app('/ai-engineering');
+    expect(html).not.toContain('still being written');
+    for (const cap of content.aiCapabilities) {
+      expect(html).toContain(`data-testid="ai-capability-link-${cap.slug}"`);
+      expect(html).toContain(`data-testid="ai-subnav-${cap.slug}"`);
+    }
+  });
+
+  it('every capability page routes to its detail view, never the 404', () => {
+    /* tech-stack and data-analytics were prerendered with no route. */
+    for (const cap of content.aiCapabilities) {
+      const html = app(`/ai-engineering/${cap.slug}`);
+      expect(html, cap.slug).not.toContain('data-testid="not-found"');
+      expect(html, cap.slug).toContain('data-testid="ai-detail-title"');
+    }
+  });
+
   it('routes an unknown path to the 404 view inside full chrome', () => {
     const html = app('/definitely-not-a-route');
     expect(html).toContain('<header');
