@@ -27,7 +27,19 @@ node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json   # typecheck
 node node_modules/vitest/vitest.mjs run                          # unit tests
 node node_modules/vite/bin/vite.js build                         # production build
 ```
-`npm run …` works too. Do not run `npm install` — it cannot succeed.
+`npm run …` works too.
+
+**Two supported environments** (R7E-02/R7G-01: this contract originally described only
+the offline sandbox; both are real now):
+
+- **Offline sandbox** (`/opt/hermes` container): `npm run deps` symlinks
+  `node_modules` from the preinstalled store. Do NOT run `npm install` — no
+  network egress, it cannot succeed there.
+- **Networked host / CI** (GitHub Actions, any dev machine): `npm install`
+  against the registry. `package-lock.json` is committed, so CI and fresh
+  clones use `npm ci`. On npm 10.9.x a bare `npm install` can hit an arborist
+  `#loadPeerSet` crash resolving the vendored `file:` deps — use
+  `npm install --legacy-peer-deps` if you see it (npm ≥11 is unaffected).
 
 ## 2. Hard rules
 

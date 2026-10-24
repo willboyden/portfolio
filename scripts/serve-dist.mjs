@@ -146,11 +146,30 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
     /* (notFound escapes — sink-side, R3-A #2) */
   });
 
+  /* R7B-01: a busy port used to hang the promise forever (no error handler)
+   * or crash the e2e run with a bare EADDRINUSE. Retry the next port with a
+   * loud diagnostic — the harness prints the RESOLVED port, and callers must
+   * use the returned `port`, never assume the requested one. */
   return new Promise((resolveListen) => {
-    server.listen(bindPort, '127.0.0.1', () => {
-      /* With port: 0 the OS picks — report the ACTUAL bound port. */
-      resolveListen({ server, port: server.address().port });
-    });
+    let attempt = bindPort;
+    const tryListen = (remaining) => {
+      server.once('error', (err) => {
+        if (err.code !== 'EADDRINUSE' || remaining <= 0) {
+          console.error(`serve-dist: could not bind 127.0.0.1:${attempt} — ${err.message}`);
+          process.exitCode = 1;
+          resolveListen({ server, port: attempt, failed: true });
+          return;
+        }
+        console.error(`serve-dist: port ${attempt} is in use (EADDRINUSE) — is another preview/e2e server running? Retrying on ${attempt + 1}.`);
+        attempt += 1;
+        tryListen(remaining - 1);
+      });
+      server.listen(attempt, '127.0.0.1', () => {
+        /* With port: 0 the OS picks — report the ACTUAL bound port. */
+        resolveListen({ server, port: server.address().port });
+      });
+    };
+    tryListen(10);
   });
 }
 

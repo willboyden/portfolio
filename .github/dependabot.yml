@@ -1,0 +1,16 @@
+# R7E-01/R7B-04: the lockfile is committed; keep it from rotting silently.
+# npm ecosystem only — there are no other dependency surfaces in this repo
+# (vendored packages under vendor/ are pinned by contract tests, not by npm).
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # Group runtime deps so one PR = one gate run (the gate is the expensive part).
+    groups:
+      runtime:
+        dependency-type: "production"
+      dev:
+        dependency-type: "development"

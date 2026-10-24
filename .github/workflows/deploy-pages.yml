@@ -47,10 +47,11 @@ jobs:
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
       # Install the same binary the sandbox uses, then point CHROME_BIN at it.
+      # R12 debug aid: on npm failure, commit the log to the ci-debug branch
+      # (heredoc-free: base64 the log, PUT via node's fetch).
       - name: Commit npm debug log to ci-debug branch (on failure)
         if: failure()
         run: |
-          # Simple, heredoc-free: base64 the log, PUT via node's fetch.
           LOGFILE=$(ls -t /home/runner/.npm/_logs/*.log 2>/dev/null | head -1)
           if [ -n "$LOGFILE" ]; then
             B64=$(base64 -w0 "$LOGFILE")
@@ -65,9 +66,12 @@ jobs:
             " || true
           fi
 
+      # R7B-03: pinned exact version — @stable is a floating supply-chain tag
+      # (a bad "stable" release would break every future deploy). Bump this
+      # deliberately, with the e2e suite as the regression gate.
       - name: Install chrome-headless-shell for e2e
         run: |
-          npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path "$HOME/.cache/chrome"
+          npx --yes @puppeteer/browsers install chrome-headless-shell@151.0.7922.34 --path "$HOME/.cache/chrome"
           CHROME_PATH=$(find "$HOME/.cache/chrome" -name "chrome-headless-shell" -type f | head -1)
           echo "CHROME_BIN=$CHROME_PATH" >> "$GITHUB_ENV"
 
@@ -82,22 +86,6 @@ jobs:
         run: node node_modules/vitest/vitest.mjs run
       - name: Build + audit
         run: node scripts/build.mjs
-      - name: DEBUG baked base in client bundle
-        run: |
-          JSFILE=$(ls dist/assets/vendor-*.js | head -1)
-          BAKED=$(grep -oP 'let n=\`[^\`]*\`' "$JSFILE" | head -1)
-          echo "::error::BAKED BASE = $BAKED (expected /portfolio/)"
-          grep -o 'let n=`[^`]*`' "$JSFILE" | head -1
-
-      - name: DEBUG emitted page hrefs
-        run: |
-          echo '::error::HOME hrefs:'
-          grep -o 'href="[^"]*"' dist/index.html | head -8 | while read -r l; do echo "::error::$l"; done
-          echo '::error::PROJECTS hrefs:'
-          grep -o 'href="[^"]*"' dist/projects/index.html | head -8 | while read -r l; do echo "::error::$l"; done
-
-      - name: E2E (CDP harness, headless Chromium)
-        run: node e2e/run.mjs
 
       # R8: VITE_BASE/SITE_URL are job-level env (set above); this rebuild
       # re-runs the FULL pipeline so BOTH bundles + prerendered pages carry
@@ -108,6 +96,13 @@ jobs:
         run: |
           node scripts/build.mjs
           node scripts/audit-dist.mjs
+
+      # R7B-02: e2e runs HERE — against the subpath-base artifact that actually
+      # ships to Pages, not only the root-base intermediate (they are not the
+      # same HTML: asset hrefs, canonical/OG and the 404 root copy differ).
+      # e2e/run.mjs serves the existing dist/ as-is.
+      - name: E2E (CDP harness, headless Chromium, Pages-base artifact)
+        run: node e2e/run.mjs
 
       - uses: actions/upload-pages-artifact@v3
         with:

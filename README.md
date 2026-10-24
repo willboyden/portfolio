@@ -12,13 +12,18 @@ content/**/*.md ──build-content──▶ src/content/generated/content.json
                                                 nginx serves dist/ read-only
 ```
 
-## Quick start (offline / this repo)
+## Quick start
 
-Dependencies are vendored or symlinked from the local package store — no network:
+Two supported environments (CONTRACT §1):
 
 ```bash
-npm run deps        # symlink node_modules from /opt/hermes/node_modules
-npm run verify      # typecheck + lint + unit + full build + e2e + dist audit
+# Networked host / CI (GitHub Actions, your dev machine):
+npm ci               # or: npm install --legacy-peer-deps on npm 10.9.x
+npm run verify       # typecheck + lint + unit + full build + e2e + dist audit
+
+# Offline sandbox (/opt/hermes container) — no network:
+npm run deps         # symlink node_modules from /opt/hermes/node_modules
+npm run verify
 ```
 
 | Command | What it does |

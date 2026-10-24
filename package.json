@@ -27,15 +27,16 @@
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:e2e && npm run audit:site"
   },
   "dependencies": {
+    "@emotion-mini/core": "file:vendor/emotion/core",
     "@emotion/react": "file:vendor/emotion/react",
     "@emotion/styled": "file:vendor/emotion/styled",
-    "@emotion-mini/core": "file:vendor/emotion/core",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
@@ -43,6 +44,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.7.0",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
     "vite": "^8.2.0",
     "vitest": "^4.1.10",
     "@types/node": "^22.0.0",

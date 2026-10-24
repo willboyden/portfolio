@@ -31,7 +31,8 @@ const specs = readdirSync(specDir)
   .sort();
 
 const served = await startServer({ dir: distDir, port: 4321 });
-const context = await startBrowser('http://127.0.0.1:4321');
+/* R7B-01: never assume 4321 — startServer retries the next port when busy. */
+const context = await startBrowser(`http://127.0.0.1:${served.port}`);
 
 let firstSpecError = null;
 for (const spec of specs) {
