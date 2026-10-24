@@ -1,5 +1,5 @@
 {
-  "contentHash": "e05e4badb6d7660d",
+  "contentHash": "a4b9fd796f53e5ea",
   "projects": [
     {
       "slug": "lab-chat",
@@ -62,6 +62,67 @@
       "relatedPost": "private-chat-server-for-ai-agents",
       "featured": false,
       "html": "<p>The question was simple: how do agents reach me, and each other, without\nhanding a third party a command channel into them? The answer was a chat server\nI own end to end, plus a bridge that keeps chat credentials out of every agent.\nThe full design, the threat model and what went wrong along the way are in the\nwrite-up linked below.</p>"
+    },
+    {
+      "slug": "nemo-console",
+      "title": "Nemo Console — one page for ten NVIDIA AI systems",
+      "summary": "A local console that monitors, configures and tests ten NVIDIA systems, from routing and serving to GPU telemetry, sandboxes, guardrails and evals. Config edits are validated, backed up and rolled back if the system comes up unhealthy.",
+      "tags": [
+        "llm-routing",
+        "nemo-switchyard",
+        "observability",
+        "security",
+        "fastapi",
+        "open-source"
+      ],
+      "date": "2026-10-24",
+      "role": "Design and implementation",
+      "status": "active",
+      "period": "Sep–Oct 2026",
+      "highlights": [
+        "Ten systems in v0.3.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, Data Designer)",
+        "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view",
+        "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets",
+        "Security checks surface as problems with one exact fix: a DCGM exporter older than 4.8.3 (CVE-2026-47483) or an open /debug/pprof, an OpenShell sandbox network that is not internal, a Guardrails server that can reach the internet",
+        "Trust files stay read-only (OpenShell's sandbox policy, Relay's plugin policy); NeMo Guardrails rails are editable, but a change that removes a rail needs an explicit marker line that lands in the diff and the audit log",
+        "Disruptive actions need confirmation: GPU diagnostics in a hardened throwaway container, AIPerf load tests, Evaluator benchmark runs, gateway start/stop",
+        "Security middleware on every call: loopback bind, Host allowlist, same-origin checks, CSRF header, hashed bearer keys with admin and viewer roles, strict CSP, and one argv-only process runner with a bare-name binary allowlist",
+        "Every claim in the docs is labelled implemented, verified-live or unverified; an independent security review of the 0.3.0 additions found no high-severity issue and every finding was fixed"
+      ],
+      "stack": [
+        "Python 3.13",
+        "FastAPI",
+        "SQLite (WAL)",
+        "SSE",
+        "Docker",
+        "systemd",
+        "Prometheus",
+        "ES modules + web components (no npm)"
+      ],
+      "links": {
+        "source": "https://github.com/willboyden/nemo-console"
+      },
+      "metrics": [
+        {
+          "label": "systems managed",
+          "value": "10 (v0.3.0, 2026-10-24)"
+        },
+        {
+          "label": "backend tests",
+          "value": "835 passed from a clean clone (876 in the deployment checkout)"
+        },
+        {
+          "label": "frontend tests",
+          "value": "121 passed"
+        },
+        {
+          "label": "latest release",
+          "value": "v0.3.0 (2026-10-24)"
+        }
+      ],
+      "relatedPost": "routing-coding-agent-two-local-models",
+      "featured": true,
+      "html": "<p>My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a\nDCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails\nserver and four NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,\nNeMo Evaluator). Each is configured differently — TOML,\nYAML, CSV, compose files, systemd units — and a bad edit to a routing file takes\nrouting down for every agent at once. Nemo Console puts them on one page: see\nwhat each system is doing, change its config with a diff and an automatic\nrollback, run its checks, and send a test request through it.</p>\n<h2 id=\"what-030-added\">What 0.3.0 added</h2>\n<p>Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,\nNeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found\nalong the way: <code>nemo-console stop</code> hung while a browser held a live event\nstream, three status caches skipped their check for the first minute after a\nreboot (a fresh CI runner caught it), and per-GPU charts were empty because a\nlabel held spaces.</p>\n<p>It was written against one deployment, and the README says so: container names\nand paths are settings or constants, and only the parts marked verified-live were\nexercised against the real systems.</p>\n<p>The write-up linked below covers what this console was first built to watch:\nrouting a coding agent between a fast model and a large one.</p>"
     },
     {
       "slug": "agent-hub",
@@ -159,60 +220,6 @@
       ],
       "relatedPost": "security-first-ingest-prompt-injection",
       "featured": false
-    },
-    {
-      "slug": "nemo-console",
-      "title": "Nemo Console — a console for NVIDIA's routing and agent stack",
-      "summary": "One local page to monitor, configure and test NeMo Switchyard, NeMo Relay, Dynamo and SkillEvaluator. Config edits are validated, backed up and rolled back automatically if the service comes up unhealthy.",
-      "tags": [
-        "llm-routing",
-        "nemo-switchyard",
-        "observability",
-        "fastapi",
-        "security",
-        "open-source"
-      ],
-      "date": "2026-10-17",
-      "role": "Design and implementation",
-      "status": "active",
-      "period": "Sep–Oct 2026",
-      "highlights": [
-        "One adapter per system plugs into a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so SkillEvaluator was added as a single adapter file",
-        "A Switchyard routes.toml editor that validates, diffs, asks for confirmation, backs up, writes atomically, recreates the container, health-checks it and rolls back on its own if the new config is unhealthy",
-        "A routing summary by route, model, tier, tokens and errors, built from Switchyard's routing log, with 15-minute, 1-hour and 24-hour history",
-        "Actions carry danger levels (safe, disruptive, destructive) with mandatory confirmation; Dynamo start has a preflight that names what else is using the GPU",
-        "Security middleware on every call: loopback bind, Host allowlist, same-origin checks, CSRF header, hashed bearer keys with admin and viewer roles, strict CSP, and an argv-only process runner limited to five binaries",
-        "Every claim in the docs is labelled implemented, verified-live or unverified, and known gaps are listed in the README"
-      ],
-      "stack": [
-        "Python 3.13",
-        "FastAPI",
-        "SQLite (WAL)",
-        "SSE",
-        "Docker",
-        "systemd",
-        "ES modules + web components (no npm)"
-      ],
-      "links": {
-        "source": "https://github.com/willboyden/nemo-console"
-      },
-      "metrics": [
-        {
-          "label": "backend tests",
-          "value": "467 passed from a clean copy (v0.2.0, 2026-10-17)"
-        },
-        {
-          "label": "frontend tests",
-          "value": "96 passed"
-        },
-        {
-          "label": "systems covered",
-          "value": "4 released + Data Designer (unreleased)"
-        }
-      ],
-      "relatedPost": "routing-coding-agent-two-local-models",
-      "featured": true,
-      "html": "<p>The routing layer in my lab is NVIDIA's NeMo Switchyard (tier routing with an\nLLM judge) plus NeMo Relay (an agent gateway that traces every call). Both are\nconfigured by editing TOML and restarting a container or a systemd unit, and a\nbad edit takes routing down for every agent at once. Nemo Console wraps that\nloop: see what each system is doing, change its config with a diff and an\nautomatic rollback, and send a test request through it, all from one page.</p>\n<p>It was written against one deployment (pinned Switchyard 0.3.0, Relay 0.9.2,\nDynamo 1.5.0, SkillEvaluator 0.5.0), and the README says so: container names\nand paths are constants in the adapters, and only the parts marked\nverified-live were exercised against the real systems.</p>\n<p>The write-up linked below covers what this console was watching: routing a\ncoding agent between a fast model and a large one, and the three bugs that\nhid behind healthy-looking counters.</p>"
     },
     {
       "slug": "crucible",
@@ -957,6 +964,9 @@
         "4× DGX Spark (GB10)",
         "RTX 5090",
         "ConnectX-7",
+        "NVIDIA DCGM",
+        "NVIDIA AIPerf",
+        "NeMo Evaluator",
         "Prometheus + Grafana",
         "rootless Docker"
       ],
@@ -964,7 +974,7 @@
         "A workstation with two 96 GB RTX PRO 6000s runs the big local model across both cards (GLM-5.3-Flash with tensor parallelism over PCIe, about a 1M-token window), picked with one script that stops whatever else is loaded and starts engines in a safe order.",
         "Four DGX Sparks join as one engine (tensor parallel across all four over ConnectX-7) for models too big for one box — DeepSeek-V4.1-Flash in NVFP4 with speculative decoding, or the Nemotron models — with weights read from the workstation over NFS.",
         "An RTX 5090 in a second machine serves the fast Nemotron Lightning model that answers first and judges routing.",
-        "Every engine sits behind the LiteLLM router as an alias, so switching models changes no client; Prometheus scrapes every engine and Grafana shows tokens, queues, KV cache and GPU temperature per machine.",
+        "Every engine sits behind the LiteLLM router as an alias, so switching models changes no client; Prometheus scrapes every engine and every machine's DCGM exporter, Grafana shows tokens, queues, KV cache and GPU temperature, and Nemo Console runs AIPerf load tests, NeMo Evaluator benchmarks and per-GPU DCGM diagnostics.",
         "Kernels are checked per GPU architecture — the RTX PRO 6000s and the 5090 share sm_120, so one NVFP4 checkpoint and the same flags run on both, while the Sparks (sm_121) need their own builds."
       ],
       "proof": [
@@ -981,6 +991,10 @@
         },
         {
           "claim": "Model share over NFS to three Sparks from about 9 to 15.3 GB/s by finding ZFS cache churn on the server, not the NIC that was first blamed"
+        },
+        {
+          "claim": "Nemo Console 0.3.0 — DCGM telemetry for all six machines, per-GPU diagnostics, AIPerf load tests and NeMo Evaluator benchmarks from one page",
+          "url": "https://github.com/willboyden/nemo-console"
         },
         {
           "claim": "A probe that sends a real completion before declaring an engine up — health endpoints stay 200 when one rank of a multi-node engine has died"
@@ -1000,6 +1014,7 @@
       "relatedProjects": [
         "engine-console",
         "gpu-tuner",
+        "nemo-console",
         "model-quality-harness"
       ],
       "html": "<p>Serving open-weight models is the easy part. Knowing what is actually up, how\nfast, and why something failed is the work, and most of it is measurement:\ncounting bytes at the NIC instead of trusting client-reported rates, profiling\nthe NFS server under real multi-client load before blaming hardware, and\nsending a real completion instead of trusting a health check.</p>\n<h3 id=\"the-machines\">The machines</h3>\n<table>\n<thead><tr><th>Machine</th><th>GPUs</th><th>Role</th></tr></thead>\n<tbody>\n<tr><td>Workstation (Threadripper PRO, 246 GB RAM)</td><td>2× RTX PRO 6000 Blackwell, 96 GB each</td><td>the main local model (tensor parallel across both), the router, observability, model storage over NFS</td></tr>\n<tr><td>Four DGX Sparks</td><td>GB10, 128 GB unified memory each</td><td>one tensor-parallel engine across all four for the largest models</td></tr>\n<tr><td>Second workstation</td><td>RTX 5090, 32 GB</td><td>the fast routing tier and judge; video rendering when idle</td></tr>\n</tbody>\n</table>\n<p>The machines share a ConnectX-7 fabric. The workstation's two cards have no\nNVLink, so tensor parallelism between them runs over PCIe peer-to-peer, which\nneeds <code>iommu=pt</code> on the kernel command line — a check script proves it after\nevery kernel or BIOS change.</p>"
@@ -1039,7 +1054,7 @@
       ],
       "proof": [
         {
-          "claim": "Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback",
+          "claim": "Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback (0.3.0 manages ten NVIDIA systems)",
           "url": "https://github.com/willboyden/nemo-console"
         },
         {
@@ -1100,6 +1115,9 @@
         "LiteLLM",
         "NeMo Switchyard",
         "NeMo Relay",
+        "NeMo Guardrails",
+        "NVIDIA OpenShell",
+        "NVIDIA DCGM",
         "OpenTelemetry",
         "Prometheus",
         "Grafana",
@@ -1114,7 +1132,7 @@
         "A routing layer in front of the models. NVIDIA NeMo Switchyard decides which tier serves a conversation, and the NeMo Relay gateway counts and traces each routed call from the coding agents.",
         "Engines chosen per model and card. vLLM, SGLang and Dynamo on the workstation and the Sparks, llama.cpp and Ollama for experiments — pinned images, rootless Docker, engines on internal networks.",
         "Observability before anything else. OpenTelemetry traces go to Tempo, Langfuse and Phoenix; Prometheus and Loki feed Grafana; alerts land in a private chat room.",
-        "Containment by default. Egress is denied unless a host is on an allowlist, each MCP server runs in its own sandbox, agents get scoped keys from brokers instead of real ones, and secrets are encrypted before they touch disk."
+        "Containment by default. Egress is denied unless a host is on an allowlist, each MCP server runs in its own sandbox, untrusted scripts run in NVIDIA OpenShell sandboxes, a NeMo Guardrails server checks prompts and answers, agents get scoped keys from brokers instead of real ones, and secrets are encrypted before they touch disk."
       ],
       "proof": [
         {
@@ -1126,7 +1144,7 @@
           "url": "https://github.com/willboyden/gpu-tuner"
         },
         {
-          "claim": "Nemo Console — the open-source console for Switchyard, Relay, Dynamo and SkillEvaluator",
+          "claim": "Nemo Console 0.3.0 — the open-source console for ten of these NVIDIA systems (Switchyard, Relay, Dynamo, DCGM, AIPerf, NeMo Guardrails, OpenShell, SkillEvaluator, NeMo Evaluator, Data Designer)",
           "url": "https://github.com/willboyden/nemo-console"
         },
         {

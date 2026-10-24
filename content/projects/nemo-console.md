@@ -1,14 +1,15 @@
 ---
-# Facts from the public README and release v0.2.0 (2026-10-17),
+# Facts from the public README, RELEASE-NOTES and release v0.3.0 (2026-10-24),
 # github.com/willboyden/nemo-console. Checked 2026-10-24.
-title: Nemo Console — a console for NVIDIA's routing and agent stack
+title: Nemo Console — one page for ten NVIDIA AI systems
 slug: nemo-console
 summary: >-
-  One local page to monitor, configure and test NeMo Switchyard, NeMo Relay,
-  Dynamo and SkillEvaluator. Config edits are validated, backed up and rolled
-  back automatically if the service comes up unhealthy.
-tags: [llm-routing, nemo-switchyard, observability, fastapi, security, open-source]
-date: 2026-10-17
+  A local console that monitors, configures and tests ten NVIDIA systems, from
+  routing and serving to GPU telemetry, sandboxes, guardrails and evals.
+  Config edits are validated, backed up and rolled back if the system comes up
+  unhealthy.
+tags: [llm-routing, nemo-switchyard, observability, security, fastapi, open-source]
+date: 2026-10-24
 role: Design and implementation
 status: active
 period: "Sep–Oct 2026"
@@ -16,32 +17,44 @@ featured: true
 relatedPost: routing-coding-agent-two-local-models
 links:
   source: "https://github.com/willboyden/nemo-console"
-stack: [Python 3.13, FastAPI, SQLite (WAL), SSE, Docker, systemd, ES modules + web components (no npm)]
+stack: [Python 3.13, FastAPI, SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
 highlights:
-  - "One adapter per system plugs into a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so SkillEvaluator was added as a single adapter file"
-  - "A Switchyard routes.toml editor that validates, diffs, asks for confirmation, backs up, writes atomically, recreates the container, health-checks it and rolls back on its own if the new config is unhealthy"
-  - "A routing summary by route, model, tier, tokens and errors, built from Switchyard's routing log, with 15-minute, 1-hour and 24-hour history"
-  - "Actions carry danger levels (safe, disruptive, destructive) with mandatory confirmation; Dynamo start has a preflight that names what else is using the GPU"
-  - "Security middleware on every call: loopback bind, Host allowlist, same-origin checks, CSRF header, hashed bearer keys with admin and viewer roles, strict CSP, and an argv-only process runner limited to five binaries"
-  - "Every claim in the docs is labelled implemented, verified-live or unverified, and known gaps are listed in the README"
+  - "Ten systems in v0.3.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, Data Designer)"
+  - "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view"
+  - "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets"
+  - "Security checks surface as problems with one exact fix: a DCGM exporter older than 4.8.3 (CVE-2026-47483) or an open /debug/pprof, an OpenShell sandbox network that is not internal, a Guardrails server that can reach the internet"
+  - "Trust files stay read-only (OpenShell's sandbox policy, Relay's plugin policy); NeMo Guardrails rails are editable, but a change that removes a rail needs an explicit marker line that lands in the diff and the audit log"
+  - "Disruptive actions need confirmation: GPU diagnostics in a hardened throwaway container, AIPerf load tests, Evaluator benchmark runs, gateway start/stop"
+  - "Security middleware on every call: loopback bind, Host allowlist, same-origin checks, CSRF header, hashed bearer keys with admin and viewer roles, strict CSP, and one argv-only process runner with a bare-name binary allowlist"
+  - "Every claim in the docs is labelled implemented, verified-live or unverified; an independent security review of the 0.3.0 additions found no high-severity issue and every finding was fixed"
 metrics:
-  - backend tests = 467 passed from a clean copy (v0.2.0, 2026-10-17)
-  - frontend tests = 96 passed
-  - systems covered = 4 released + Data Designer (unreleased)
+  - systems managed = 10 (v0.3.0, 2026-10-24)
+  - backend tests = 835 passed from a clean clone (876 in the deployment checkout)
+  - frontend tests = 121 passed
+  - latest release = v0.3.0 (2026-10-24)
 ---
 
-The routing layer in my lab is NVIDIA's NeMo Switchyard (tier routing with an
-LLM judge) plus NeMo Relay (an agent gateway that traces every call). Both are
-configured by editing TOML and restarting a container or a systemd unit, and a
-bad edit takes routing down for every agent at once. Nemo Console wraps that
-loop: see what each system is doing, change its config with a diff and an
-automatic rollback, and send a test request through it, all from one page.
+My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a
+DCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails
+server and four NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,
+NeMo Evaluator). Each is configured differently — TOML,
+YAML, CSV, compose files, systemd units — and a bad edit to a routing file takes
+routing down for every agent at once. Nemo Console puts them on one page: see
+what each system is doing, change its config with a diff and an automatic
+rollback, run its checks, and send a test request through it.
 
-It was written against one deployment (pinned Switchyard 0.3.0, Relay 0.9.2,
-Dynamo 1.5.0, SkillEvaluator 0.5.0), and the README says so: container names
-and paths are constants in the adapters, and only the parts marked
-verified-live were exercised against the real systems.
+## What 0.3.0 added
 
-The write-up linked below covers what this console was watching: routing a
-coding agent between a fast model and a large one, and the three bugs that
-hid behind healthy-looking counters.
+Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,
+NeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found
+along the way: `nemo-console stop` hung while a browser held a live event
+stream, three status caches skipped their check for the first minute after a
+reboot (a fresh CI runner caught it), and per-GPU charts were empty because a
+label held spaces.
+
+It was written against one deployment, and the README says so: container names
+and paths are settings or constants, and only the parts marked verified-live were
+exercised against the real systems.
+
+The write-up linked below covers what this console was first built to watch:
+routing a coding agent between a fast model and a large one.

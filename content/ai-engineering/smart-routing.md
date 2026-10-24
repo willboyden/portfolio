@@ -21,7 +21,7 @@ howItWorks:
   - It judges once per conversation, keyed on the first user message, so follow-up turns skip the judge — about ten times faster on repeated turns.
   - Coding agents name route ids on the NeMo Relay gateway instead of plain model names, so every routed call is counted and traced. Nemo Console and the Grafana boards show which tier served what.
 proof:
-  - Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback = https://github.com/willboyden/nemo-console
+  - Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback (0.3.0 manages ten NVIDIA systems) = https://github.com/willboyden/nemo-console
   - Five routing configurations benchmarked on the same 12 tasks; the live one keeps tasks the fast model answers correctly on the 5090 and sends the uncertain ones to GLM
   - Found why the fast tier answered empty — the Anthropic-format path dropped the "thinking off" flag — and moved it to the OpenAI format; its hard-task answers became complete and 2.5–4× faster than the big model's
   - Session affinity measured on the live route — repeat turns reused the first decision with zero judge calls (p50 82–3,887 ms down to 17–157 ms)

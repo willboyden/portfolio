@@ -152,7 +152,7 @@ const FOCUS_AREAS: readonly FocusItem[] = [
     detail:
       'A fast model answers first and an LLM judge sends the hard ' +
       'conversations to a bigger one. The work is measuring the answers, ' +
-      'not the counters — Nemo Console watches the routing layer.',
+      'not the counters — Nemo Console (ten NVIDIA systems since 0.3.0) watches the routing layer.',
   },
   {
     title: 'Agents that stay contained and observable',
