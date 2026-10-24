@@ -68,4 +68,8 @@ jobs:
 
       - name: Frontmatter parse check
         run: |
+          # R9-D final audit: this step imports zod via the schema — it needs
+          # node_modules, which PR runners don't have. Install deterministically
+          # (npm ci; loud fail on lockfile drift, same policy as the deploy).
+          npm ci --no-audit --no-fund
           node scripts/build-content.mjs
