@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="365" viewBox="0 0 880 365" font-family="Helvetica,Arial,sans-serif" font-size="13"><rect width="100%" height="100%" fill="white"/><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#212121"/></marker></defs>
+<rect x="10" y="40" width="200" height="86" rx="8" fill="#e3f2fd" stroke="#212121"/>
+<text x="22" y="62" font-weight="bold" fill="#212121">opencode (client)</text>
+<text x="22" y="82" font-size="12" fill="#455a64">model ids = route ids:</text>
+<text x="22" y="99" font-size="12" fill="#455a64">litellm/direct-glm-local</text>
+<text x="22" y="116" font-size="12" fill="#455a64">switchyard/auto-glm-aitop</text>
+<text x="22" y="133" font-size="12" fill="#455a64">own virtual key, forwarded verbatim</text>
+<rect x="260" y="40" width="240" height="150" rx="8" fill="#fff8e1" stroke="#212121"/>
+<text x="272" y="62" font-weight="bold" fill="#212121">NeMo Relay gateway :4040</text>
+<text x="272" y="82" font-size="12" fill="#455a64">Switchyard plugin (in-process)</text>
+<text x="272" y="99" font-size="12" fill="#455a64">routes.toml = the routing brain:</text>
+<text x="272" y="116" font-size="12" fill="#455a64">- passthrough routes -&gt; counted</text>
+<text x="272" y="133" font-size="12" fill="#455a64">  but never judged (~0.04 ms)</text>
+<text x="272" y="150" font-size="12" fill="#455a64">- capability judge -&gt; one call</text>
+<text x="272" y="167" font-size="12" fill="#455a64">  per conversation</text>
+<text x="272" y="184" font-size="12" fill="#455a64">- every call counted + traced</text>
+<rect x="560" y="20" width="300" height="92" rx="8" fill="#e8f5e9" stroke="#212121"/>
+<text x="572" y="42" font-weight="bold" fill="#212121">weak tier — Lightning 30B-A3B</text>
+<text x="572" y="62" font-size="12" fill="#455a64">AITop100 RTX 5090</text>
+<text x="572" y="79" font-size="12" fill="#455a64">OPENAI wire target (thinking off)</text>
+<text x="572" y="96" font-size="12" fill="#455a64">answers: correct, 2.5-4x faster</text>
+<rect x="560" y="130" width="300" height="92" rx="8" fill="#fce4ec" stroke="#212121"/>
+<text x="572" y="152" font-weight="bold" fill="#212121">strong tier — GLM-5.3-Flash</text>
+<text x="572" y="172" font-size="12" fill="#455a64">this box, 2x RTX PRO 6000, vLLM TP2</text>
+<text x="572" y="189" font-size="12" fill="#455a64">anthropic wire (thinking n/a)</text>
+<text x="572" y="206" font-size="12" fill="#455a64">answers: complete, slower</text>
+<line x1="210" y1="83" x2="258" y2="100" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="224" y="85" font-size="11" fill="#455a64">route id</text>
+<line x1="500" y1="66" x2="558" y2="66" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="519" y="60" font-size="11" fill="#455a64">p_solve &gt;= 0.7</text>
+<line x1="500" y1="130" x2="558" y2="168" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="519" y="143" font-size="11" fill="#455a64">else / fail-closed</text>
+<rect x="300" y="240" width="260" height="70" rx="8" fill="#f3e5f5" stroke="#212121"/>
+<text x="312" y="262" font-weight="bold" fill="#212121">capability judge</text>
+<text x="312" y="282" font-size="12" fill="#455a64">aitop-Lightning, thinking OFF</text>
+<text x="312" y="299" font-size="12" fill="#455a64">returns p_solve + capability boundary</text>
+<text x="312" y="316" font-size="12" fill="#455a64">affinity: first-user-message hash</text>
+<line x1="380" y1="190" x2="380" y2="238" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="370" y="208" font-size="11" fill="#455a64">judge (1x/conv)</text>
+<line x1="430" y1="275" x2="700" y2="200" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="555" y="231" font-size="11" fill="#455a64">score &lt; threshold -&gt; strong</text>
+<rect x="10" y="240" width="240" height="70" rx="8" fill="#eceff1" stroke="#212121"/>
+<text x="22" y="262" font-weight="bold" fill="#212121">LiteLLM router :4000</text>
+<text x="22" y="282" font-size="12" fill="#455a64">auth, spend, Presidio PII guard</text>
+<text x="22" y="299" font-size="12" fill="#455a64">spend + api_key_alias telemetry</text>
+<line x1="560" y1="200" x2="252" y2="262" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="396" y="225" font-size="11" fill="#455a64">tier calls</text>
+<line x1="120" y1="240" x2="120" y2="128" stroke="#212121" stroke-width="2" marker-end="url(#arr)"/><text x="110" y="178" font-size="11" fill="#455a64">upstream</text>
+<text x="12" y="345" font-size="12" fill="#78909c">Dashed = judge path. Fail-closed: an invalid judge verdict routes to the STRONG tier. Passthrough route ids bypass the judge entirely.</text></svg>

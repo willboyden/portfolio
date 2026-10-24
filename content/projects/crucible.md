@@ -1,5 +1,4 @@
 ---
-# DRAFT: no links — the source repo is local only (/opt/data/workspace/portfolio/crucible).
 title: Crucible — WASM Training-Data Refinery
 slug: crucible
 summary: >-
@@ -12,7 +11,7 @@ summary: >-
   for simple kernels, and runtime parity gates across wasmtime and Node.
 tags: [security, webassembly, rust, python, supply-chain, data-pipelines]
 date: 2026-10-16
-role: Design and implementation (solo)
+role: Design and implementation
 status: shipped
 period: "2026-10"
 featured: false

@@ -1,57 +1,58 @@
 ---
-# DRAFT-REVIEW: human review before publishing. Every proof path verified
-# on-disk 2026-10-16. Proof lines use the claim = path expansion rule.
 slug: tech-stack
 title: The stack underneath the work
 summary: >-
-  Every capability on this site runs on one physical stack — a Threadripper Pro
-  head node with dual RTX Pro 6000s, four DGX Spark (GB10) nodes, an RTX 5090
-  workstation, ConnectX-7 fabric — under a dual-broker LiteLLM/switchyard
-  topology with vLLM and SGLang serving open-weight models.
+  Every capability on this site runs on one lab: six GPU machines on a
+  ConnectX-7 fabric, one model router, and observability and containment
+  around every agent. This page is the inventory and the reasons.
 capability: Infrastructure stack
 oneLiner: >-
-  The hardware and software inventory behind every capability here — six GPU
-  nodes on ConnectX-7 fabric, a LiteLLM broker with a switchyard second group,
-  vLLM/SGLang engines, MCP orchestration, FTS5 retrieval, and a zero-dependency
-  CDP harness — with the reasoning for each choice.
-tags: [infrastructure, litellm, switchyard, vllm, sglang, dgx, threadripper, connectx-7, mcp, duckdb]
-date: 2026-10-16
+  The hardware and software behind every capability here — GPUs, engines, the
+  routing layer, tracing and the sandboxes the agents run in — with the
+  reasoning for each choice.
+tags: [infrastructure, litellm, nemo-switchyard, vllm, sglang, observability, security]
+date: 2026-10-24
 status: shipped
-stack: [LiteLLM 1.100.1, switchyard, vLLM, SGLang, MCP orchestrator, SQLite FTS5, DuckDB, React 19, Vite, TypeScript, GitHub Actions, Threadripper Pro, RTX Pro 6000, DGX Spark (GB10), RTX 5090, ConnectX-7, MikroTik CRS804]
+stack: [2× RTX PRO 6000 Blackwell, 4× DGX Spark (GB10), RTX 5090, ConnectX-7 + MikroTik CRS804, rootless Docker, vLLM, SGLang, NVIDIA Dynamo, LiteLLM, NeMo Switchyard, NeMo Relay, OpenTelemetry, Prometheus, Grafana, Loki, Tempo, Langfuse, Phoenix, Matrix (Synapse)]
 howItWorks:
-  - One OpenAI-compatible entry point — LiteLLM proxy 1.100.1 at :4000 brokers all LLM traffic across 16 model groups with per-group routing, so no client code knows where the GPUs are.
-  - A second broker group, switchyard at :4010 (declared 262144 in / 32768 out), handles specialized routing patterns alongside the primary broker — a deliberate dual-broker topology.
-  - Serving engines are vLLM and SGLang behind the broker; engine identity is verified by response forensics (system_fingerprint, weight-version metadata), never by the model name string.
-  - Orchestration is direct Python imports — nine MCP servers composed in one process instead of subprocess-per-tool, because call overhead shows up in agent loops.
-  - Retrieval is SQLite FTS5 inside DuckDB-attached storage — 100 percent recall at 0.11 ms — with real stdio handshake benchmarks keeping per-tool latency honest.
-  - The fabric is ConnectX-7 NICs into a MikroTik CRS804 switch — one inter-node network that model placement and failover both assume.
-comparisonTitle: 'LiteLLM vs Switchyard'
+  - One door for models. Every client calls a LiteLLM router; it holds the per-client keys, the output PII guardrail and the tracing, so moving a model between machines changes no client.
+  - A routing layer in front of the models. NVIDIA NeMo Switchyard decides which tier serves a conversation, and the NeMo Relay gateway counts and traces each routed call from the coding agents.
+  - Engines chosen per model and card. vLLM, SGLang and Dynamo on the workstation and the Sparks, llama.cpp and Ollama for experiments — pinned images, rootless Docker, engines on internal networks.
+  - Observability before anything else. OpenTelemetry traces go to Tempo, Langfuse and Phoenix; Prometheus and Loki feed Grafana; alerts land in a private chat room.
+  - Containment by default. Egress is denied unless a host is on an allowlist, each MCP server runs in its own sandbox, agents get scoped keys from brokers instead of real ones, and secrets are encrypted before they touch disk.
+comparisonTitle: 'LiteLLM vs Switchyard vs Relay — who does what'
 comparisonRows:
-  - [Dimension, LiteLLM, Switchyard]
-  - [Role, Primary broker — routes all LLM traffic, Second group — specialized routing subset]
-  - [Port, ':4000', ':4010']
-  - [Version, Proxy 1.100.1 (x-litellm-version header), Not version-probed through the /v1 allowlist]
-  - [Models served, 16 model groups (qwen, glm, deepseek, gpt-oss, llama, switchyard...), Specialized subset — one group in the same broker listing]
-  - [Declared limits, Per-group (e.g. 262144 in / 32768 out), 262144 in / 32768 out]
-  - [Caching, Full-body response cache (~0.02s replay, cache-lab 50-probe experiment), Not evaluated]
-  - [Failover, Engine-level with per-group routing, Per-group routing rules — own ENGINE-DOWN signature in the repair runbook]
-  - [Used because, Battle-tested OpenAI-compatible proxy with broad model support, Complements LiteLLM for specific routing patterns]
-  - [Proof, /opt/data/workspace/broker-tools/nvfp4-findings.md, /opt/data/workspace/broker-tools/repair-runbook.md]
+  - [Dimension, LiteLLM router, NeMo Switchyard server, NeMo Relay gateway]
+  - [Role, The one door for every model call, Tier routing with an LLM judge, Agent gateway; its Switchyard plugin routes the coding agents]
+  - [Version, 1.102.1, 0.3.0, 0.9.2]
+  - [Runs as, Container on the shared lab network, Container, Host binary as a systemd user unit]
+  - [Called by, Every client and both routing layers, Clients that only speak to the router, Coding agents (opencode and others) by route id]
+  - [Decides, Which engine an alias points at, Fast tier or capable tier per conversation, Same tiers; counts and traces every routed call]
+  - [Observability, Per-key spend and OTel traces, Prometheus metrics and a routing log, OTLP metrics and traces plus ATIF trajectories]
 proof:
-  - Broker forensics — LiteLLM 1.100.1 version header, 16-group model listing with per-group limits = /opt/data/workspace/broker-tools/nvfp4-findings.md
-  - Fleet health tooling — pulse, bench, repair runbook with ENGINE-DOWN signatures (switchyard included) = /opt/data/workspace/broker-tools
-  - Controlled 50-probe experiment proving full-body response caching at ~0.02 s replay = /opt/data/workspace/cache-lab
-  - mcp-bench — real stdio MCP handshake benchmarks, per-tool p50/p95 = /opt/data/workspace/portfolio/mcp-bench
-  - Multi-MCP orchestrator — one CLI composing servers via direct Python import = /opt/data/workspace/orchestrator
+  - Engine Console — the open-source control plane for the engines = https://github.com/willboyden/engine-console
+  - GPU Tuner — the open-source power, fan and clock tool for the GPUs = https://github.com/willboyden/gpu-tuner
+  - Nemo Console — the open-source console for Switchyard, Relay, Dynamo and SkillEvaluator = https://github.com/willboyden/nemo-console
+  - Agent Hub — the open-source control plane for what each agent knows and may do = https://github.com/willboyden/agent-hub
+  - This site — React 19, Vite and TypeScript, prerendered to static HTML and deployed by GitHub Actions = https://github.com/willboyden/portfolio
 limits:
-  - Single-tenant, one operator — no multi-user auth story on the broker beyond the /v1-only allowlist.
-  - Model placement across the six nodes is manual; one large model resident per GPU at a time, nothing schedules it.
-  - The tooling container is offline from the GPU host — engine restarts are operator work by runbook.
-  - No auto-scaling anywhere — the fleet is a fixed inventory; capacity planning is done by benchmark.
-relatedPosts: [eval-harness-silent-regressions, mcp-production-lessons]
-relatedProjects: [model-quality-harness, orchestrator]
+  - Single operator, single tenant — built for my agents and apps, not a team.
+  - Model placement is manual — one big model on the workstation at a time and one lane on the Sparks at a time.
+  - Rootless Docker cannot reach host-published ports from a container, so services talk over a shared Docker network, and tools that need real root (GPU power limits) run on the host.
+  - No autoscaling or high availability anywhere.
+  - Host-level security templates (auditd, AppArmor, nftables) are opt-in and applied by hand, never automatically.
+relatedPosts: [private-chat-server-for-ai-agents, routing-coding-agent-two-local-models]
+relatedProjects: [engine-console, gpu-tuner, nemo-console, agent-hub]
 ---
 
-Every capability page on this site describes work done on one physical stack.
-This page is the inventory underneath all of them — and the reasoning for why
-each piece is there.
+Every capability page on this site describes work done on one physical lab.
+This page is the inventory underneath all of them.
+
+### Agents that use the lab
+
+Claude Code (also in a bubblewrap-sandboxed variant that runs on local
+models), opencode, Codex, Hermes Agent, Turnstone and Open WebUI all reach the
+models through the router with their own keys. Agent Hub keeps their skills,
+instructions and permissions in one reviewed git repository, and lab-chat — a
+private Matrix server — is how they notify me, ask for approval and hand work
+to each other.

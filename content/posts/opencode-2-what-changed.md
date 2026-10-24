@@ -1,9 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All facts verified against
-# the opencode repo via GitHub API on 2026-10-16 (CHANGELOG.md at v2.0.32,
-# tags, package trees at v2.0.0/v2.0.32/v1.19.3, packages/cli/src/config/migrate.ts).
-# opencode.ai itself was not reachable from the sandbox (egress allowlist) —
-# everything below traces to the public repository, PR numbers included.
 slug: opencode-2-what-changed
 title: 'OpenCode 2.0 — reading the changelog of a five-week rewrite'
 summary: >-

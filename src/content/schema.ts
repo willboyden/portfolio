@@ -119,13 +119,13 @@ export const TalkSchema = z
   })
   .strict();
 
-/** R9 (AI Engineering section): one evidence bullet. `path` cites the build
- * workstation's workspace — rendered as monospace citation text, never a
- * hyperlink (no public URL). */
+/** R9 (AI Engineering section): one evidence bullet. `url`, when present,
+ * must be a public http(s) page (a GitHub repository) — workstation file
+ * paths were published here once and must never come back. */
 export const AiProofSchema = z
   .object({
     claim: z.string().min(1),
-    path: z.string().min(1),
+    url: SafeUrl.refine((u) => /^https:/i.test(u), 'proof links must be public https URLs').optional(),
   })
   .strict();
 

@@ -1,7 +1,4 @@
 ---
-# DRAFT: links.source is a plausible GitHub URL, not a verified remote — the
-# DRAFT: repos live at /opt/data/workspace/<repo>. Confirm the real org/repo
-# DRAFT: before launch. period/date = last verified run (2026-08-16 re-run).
 title: Model Quality Harness
 slug: model-quality-harness
 summary: >-
@@ -11,10 +8,10 @@ summary: >-
   real results.
 tags: [evals, llm, testing, python, dashboards]
 date: 2026-08-16
-role: Design and implementation (solo)
+role: Design and implementation
 status: shipped
 period: "2026-08"
-featured: true
+featured: false
 relatedPost: eval-harness-silent-regressions
 stack: [Python 3.13, stdlib only, LiteLLM broker, OpenAI-compatible API, vanilla JS/CSS]
 highlights:

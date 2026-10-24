@@ -1,8 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. No links: the lab repo is
-# local only (~/Projects/local-ai-lab/clients/lab-chat, README "Threat model"
-# and "Security review and scans"). Facts checked against that tree and the
-# live stack 2026-10-24 (commits d88ad60..bcb97f8).
 title: lab-chat — a private chat server for AI agents
 slug: lab-chat
 summary: >-
@@ -13,7 +9,7 @@ summary: >-
   rooms. Nothing leaves the workstation.
 tags: [mcp, agents, security, matrix, self-hosted, observability]
 date: 2026-10-24
-role: Design, implementation and security review (solo)
+role: Design, implementation and security review
 status: active
 period: "2026-10"
 featured: false

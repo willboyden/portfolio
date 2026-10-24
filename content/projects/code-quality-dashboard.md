@@ -1,7 +1,4 @@
 ---
-# DRAFT: no links — the repo is local only (/opt/data/workspace/projects/
-# DRAFT: code-quality-dashboard). date = last substantive commit (2026-08-04);
-# DRAFT: test count verified by a fresh pytest run on 2026-10-08 (26 passed).
 title: Code Quality Metrics MCP
 slug: code-quality-dashboard
 summary: >-
@@ -10,7 +7,7 @@ summary: >-
   its own code, and the findings were fixed.
 tags: [mcp, python, static-analysis, developer-tools, testing]
 date: 2026-08-04
-role: Design and implementation (solo)
+role: Design and implementation
 status: shipped
 period: "2026"
 featured: false

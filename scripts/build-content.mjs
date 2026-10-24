@@ -110,17 +110,18 @@ async function loadCollection(dir, schema) {
       } else if (dir === 'ai-engineering' && body.trim() !== '') {
         entry.html = renderMarkdown(body);
       }
-      /* R9: capability proof bullets arrive as `claim = path` strings (the
-       * frontmatter subset can't express arrays-of-objects) — same expansion
-       * pattern as metrics above. Authoring rule: claim text must not
-       * contain '='. */
+      /* Capability proof bullets arrive as `claim = https://…` or a bare
+       * `claim` string (the frontmatter subset can't express
+       * arrays-of-objects) — same expansion pattern as metrics above. The
+       * right-hand side must be a public URL; the schema rejects anything
+       * else, so a workstation path can't be published again. Authoring
+       * rule: claim text must not contain '='. */
       if (dir === 'ai-engineering' && Array.isArray(entry.proof)) {
         entry.proof = entry.proof.map((p) => {
-          if (typeof p === 'string' && p.includes('=')) {
-            const i = p.indexOf('=');
-            return { claim: p.slice(0, i).trim(), path: p.slice(i + 1).trim() };
-          }
-          return p;
+          if (typeof p !== 'string') return p;
+          if (!p.includes('=')) return { claim: p.trim() };
+          const i = p.indexOf('=');
+          return { claim: p.slice(0, i).trim(), url: p.slice(i + 1).trim() };
         });
       }
       /* R10: comparisons arrive as a flat authoring form — the frontmatter
@@ -222,6 +223,22 @@ async function main() {
         process.exit(1);
       }
     }
+  }
+  // Workstation paths never ship: an agent once published its sandbox paths
+  // (/opt/data/workspace/...) as "proof". Rendered fields only; frontmatter
+  // comments never reach content.json.
+  const LOCAL_PATH = /\/opt\/data\b|\/home\/[a-z]|\/fast\/|~\/Projects\b/;
+  const pathFailures = [];
+  for (const [kind, collection] of Object.entries(out)) {
+    if (!Array.isArray(collection)) continue;
+    for (const item of collection) {
+      const hit = LOCAL_PATH.exec(JSON.stringify(item));
+      if (hit) pathFailures.push(`  ${kind}/${item.slug}: contains a workstation path ("${hit[0]}…")`);
+    }
+  }
+  if (pathFailures.length > 0) {
+    process.stderr.write(`build-content: local file paths must not be published:\n${pathFailures.join('\n')}\n`);
+    process.exit(1);
   }
   // R7H-01: markdown images fail closed. This site ships zero external URLs
   // (rot policy), so a remote src is an error too, not just a missing file.

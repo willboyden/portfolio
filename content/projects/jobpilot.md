@@ -1,35 +1,28 @@
 ---
-# DRAFT: no links — the repo is local only (/opt/data/workspace/portfolio/jobpilot).
-# DRAFT: date = last verified git state (v1.5 SHIPPED 2026-10-10; v1.6–v1.8
-# DRAFT: backend landed 2026-10-16 with 322 pytest green per commit 618c494 and
-# DRAFT: 217 vitest per commit 1604f81).
-title: Jobpilot — AI Job-Hunting Copilot
+title: Jobpilot — AI job-search copilot
 slug: jobpilot
 summary: >-
-  An agentic job-search copilot that treats the hunt itself as a managed
-  pipeline — postings ingested from multiple sources pass a security-first
-  screen (sanitize → allow/redact/block, raw bytes vaulted, 40+-payload
-  adversarial matrix), a deterministic 0–100 matcher explains every score
-  factor-by-factor, and plan-act agents turn matches into tailored resumes,
-  cover letters and interview prep as version-controlled artifacts with a full
-  application-tracking backend behind them.
+  A local job-search copilot: postings are screened for prompt injection,
+  scored by an explainable matcher, and turned into tailored resumes and cover
+  letters that fail the run if they invent a year or a number.
 tags: [ai-agents, llm, security, python, react]
-date: 2026-10-16
-role: Design and implementation (solo)
+date: 2026-10-17
+role: Design and implementation
 status: active
 period: "2026-10"
 featured: false
-stack: [Python 3.13 stdlib, FastAPI + SSE, SQLite (WAL), React 19 + vendored Emotion, vitest + CDP e2e]
+relatedPost: security-first-ingest-prompt-injection
+stack: [Python 3.13, FastAPI + SSE, SQLite (WAL), React 19 + Emotion, vitest + CDP e2e, local models through the lab's LiteLLM router]
 highlights:
-  - "Security-first ingest as a first-class threat model — untrusted posting content is attacker input flowing into LLM prompts, so ingest always vaults raw bytes (never rendered or model-sent), sanitizes HTML, screens for prompt-injection / secret-leak / exfiltration and routes allow/redact/block with every decision logged to security_events plus a JSONL mirror"
-  - "Explainable deterministic scoring, not LLM-scored — reproducible 0–100 fit over 4 factors (skills/keywords/seniority/location) with per-factor reasons and hand-computed known-answer tests; preference learning folds 👍/👎 rankings back into scores, clamped ±15"
-  - "Git-for-your-resume artifacts — every tailor/cover-letter/interview-prep run produces a new artifact version (parent chain, seq numbers) with a rendered diff view, grounded in top-3 prior material and reusing existing artifacts when inputs are unchanged"
-  - "Dual-model runtime with audit on every call — separate interactive and background lanes with per-call override in a ModelRouter, deterministic MockModelClient by default (golden-replay agent tests), any OpenAI-compatible endpoint behind JOBPILOT_LIVE=1, and llm_usage logging model/lane/task/tokens/latency/status"
-  - "Full application-tracking backend (v1.7–v1.8) — one application per posting with stage/applied_at/notes/follow_up_at (schema v5), a followups-due route, CoverLetterAgent + InterviewPrepAgent on a threaded executor, and a v1.6 TalentScout sweep (ingest → evaluate → gate-shortlist → digest) on user search-parameter gates"
-  - "Test discipline across the stack — 322 pytest green (v1.6–v1.8 backend, per commit 618c494), 217 vitest (v16 UI, per commit 1604f81), CDP e2e specs in real headless chrome, ruff clean and mypy --strict zero errors; make verify is the single gate"
+  - "Security-first ingest — posting text is attacker input on its way into a prompt, so raw bytes are vaulted (never rendered or sent to a model), HTML is sanitized, and every posting is screened for prompt injection, secret leaks and exfiltration, then allowed, redacted or blocked with the decision logged"
+  - "Explainable deterministic scoring, not LLM scoring — a reproducible 0–100 fit over skills, keywords, seniority and location with a reason per factor; 👍/👎 rankings adjust scores by at most ±15"
+  - "Grounded tailoring — resumes and cover letters are written from your own saved resume under a no-new-facts prompt, then checked: a year or number that is not in your material fails the run after one correction pass, and new names are listed for review"
+  - "Git for your resume — every tailoring run produces a new version with a parent chain and a rendered diff"
+  - "Application tracking — stages, notes, follow-up dates and an overdue banner, plus interview prep from your resume and documents"
+  - "Runs on the lab's local models through the router under its own key; a deterministic mock model is the default for tests"
+  - "1.9.0 security pass — loopback-only API (DNS-rebinding guard), CSRF refusal, strict CSP, upload size caps and generic error pages"
 metrics:
-  - backend tests = 322 pytest green (v1.6–v1.8, 2026-10-16)
-  - security tests = 78, including a 40+-payload adversarial matrix
-  - frontend = 217 vitest + 11/11 CDP e2e specs
-  - live feed = 300+ jobs/night from a GitHub-hosted source
+  - backend tests = 438 passed (v1.9.0, run 2026-10-24)
+  - adversarial ingest payloads = 40+
+  - latest version = 1.9.0 (2026-10-17)
 ---

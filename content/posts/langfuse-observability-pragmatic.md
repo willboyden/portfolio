@@ -1,13 +1,10 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All facts trace to
-# /opt/data/workspace/langfuse-dashboard (README + fetch_traces.py +
-# build_dashboard.py + data/).
 title: Pragmatic LLM observability with Langfuse
 slug: langfuse-observability-pragmatic
 summary: >-
-  An air-gapped Langfuse dashboard needs three daily numbers, a fetch
-  pipeline that survives a hostile broker, and an empty state that tells
-  the truth about a 403.
+  An air-gapped Langfuse dashboard needs three daily numbers and a fetch
+  pipeline that survives a locked-down broker. When the data reads come back
+  403, the empty state says so.
 tags: [llm, observability, langfuse, python, dashboards]
 date: 2026-10-02
 series: AI engineering notes

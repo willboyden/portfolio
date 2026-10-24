@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="260" viewBox="0 0 760 260" font-family="Helvetica,Arial,sans-serif" font-size="13"><rect width="100%" height="100%" fill="white"/><text x="10" y="24" font-weight="bold">p50 latency per call by configuration (ms, 12 tasks, same session)</text>
+<text x="10" y="64" font-size="12">live: packaged rubric</text>
+<rect x="170" y="50" width="33" height="18" fill="#4477aa"/>
+<text x="209" y="64" font-size="12" fill="#37474f">110</text>
+<text x="10" y="98" font-size="12">escalation mode</text>
+<rect x="170" y="84" width="96" height="18" fill="#4477aa"/>
+<text x="272" y="98" font-size="12" fill="#37474f">318</text>
+<text x="10" y="132" font-size="12">strict rubric</text>
+<rect x="170" y="118" width="119" height="18" fill="#4477aa"/>
+<text x="295" y="132" font-size="12" fill="#37474f">393</text>
+<text x="10" y="166" font-size="12">simple rubric</text>
+<rect x="170" y="152" width="108" height="18" fill="#4477aa"/>
+<text x="284" y="166" font-size="12" fill="#37474f">358</text>
+<text x="10" y="200" font-size="12">GLM as judge</text>
+<rect x="170" y="186" width="509" height="18" fill="#4477aa"/>
+<text x="685" y="200" font-size="12" fill="#37474f">1679</text>
+<text x="10" y="230" font-size="11" fill="#78909c">Escalation adds a weak call + judge call to every unlatched turn; the GLM judge is latency-disqualified. Live config is the fastest.</text></svg>

@@ -1,7 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. Every number below traces to
-# /opt/data/workspace/duckdb-mcp (wiki/index.md: 9 best practices + benchmark
-# suite). Dates and hardware context to be confirmed by the author.
 title: DuckDB is the analytics database your agent workflows needed
 slug: duckdb-for-agent-workflows
 summary: >-

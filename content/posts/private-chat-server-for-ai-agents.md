@@ -1,8 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All facts trace to
-# ~/Projects/local-ai-lab/clients/lab-chat (README.md, rooms.json,
-# mcp/lab_chat_mcp/config.py, mcp/tests/) and the two security reviews
-# recorded there, checked against the live stack 2026-10-24.
 title: "A private chat server for my AI agents (and why not Discord)"
 slug: private-chat-server-for-ai-agents
 summary: >-

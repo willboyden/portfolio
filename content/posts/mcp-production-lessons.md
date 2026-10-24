@@ -1,7 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. Facts trace to
-# /opt/data/workspace/duckdb-mcp (src/ + wiki) and
-# /opt/data/workspace/orchestrator (cli.py + wiki).
 title: "MCP in production: what the spec doesn't tell you"
 slug: mcp-production-lessons
 summary: >-

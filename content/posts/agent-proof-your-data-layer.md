@@ -1,6 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All facts trace to
-# /opt/data/workspace/gov-payroll-workbench (README + probe.py + data/*.json).
 title: Agent-proof your data layer
 slug: agent-proof-your-data-layer
 summary: >-

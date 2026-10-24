@@ -1,8 +1,4 @@
 ---
-# DRAFT: no links — the repo is local only (/opt/data/workspace/ds_core).
-# DRAFT: metrics verified by a fresh pytest run (2026-10-08) — 294 passed,
-# DRAFT: 1 flaky (test_sample's ±tolerance on a seeded fractional sample);
-# DRAFT: the flake is disclosed in highlights rather than hidden.
 title: ds_core Data Science Toolkit
 slug: ds-core
 summary: >-
@@ -11,10 +7,10 @@ summary: >-
   (5 critical); every one fixed and verified.
 tags: [data-science, duckdb, python, ml, testing]
 date: 2026-08-16
-role: Design, implementation and adversarial audit (solo)
+role: Design, implementation and adversarial audit
 status: shipped
 period: "2026"
-featured: true
+featured: false
 stack: [Python 3.11+, DuckDB CLI subprocess, stdlib only, pytest]
 highlights:
   - "38 modules, all running on stdlib + subprocess calls to the duckdb binary — genuine Lloyd's k-means, power-iteration PCA, Lee & Seung NMF, logistic-loss gradient boosting, bootstrap random forests, all hand-rolled and audit-verified"

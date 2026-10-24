@@ -22,30 +22,21 @@ def load_content():
 
 
 def check_proof_paths(content, failures, notes=None):
-    """R9C-1: repo-relative proof paths must exist on disk (a broken pointer
-    is a broken claim). Absolute paths OUTSIDE the repo (e.g. the owner's
-    /opt/data workspace, /usr/bin/ffmpeg) are environment-specific evidence
-    pointers — they can never exist on a CI runner, so they are recorded as
-    notes, not failures; the owner verifies them on the machine that has
-    them. This keeps the PR gate meaningful instead of permanently red."""
+    """Proof bullets carry a claim and, optionally, a public https URL (a
+    GitHub repository). Workstation paths were published here once; a proof
+    that still carries a `path`, or a URL that is not https, fails the gate."""
     if notes is None:
         notes = []
     for cap in content.get("aiCapabilities", []):
         for proof in cap.get("proof", []):
-            path = proof.get("path", "") if isinstance(proof, dict) else str(proof)
-            if not path:
+            if not isinstance(proof, dict):
+                failures.append(f"ai-engineering/{cap['slug']}: proof is not an object: {proof!r}")
                 continue
-            candidate = Path(path)
-            if candidate.is_absolute() and REPO not in candidate.parents and candidate != REPO / path.lstrip("/"):
-                notes.append(f"ai-engineering/{cap['slug']}: off-repo proof pointer (owner verifies locally): {path}")
-                continue
-            if not os.path.exists(path):
-                failures.append(
-                    f"ai-engineering/{cap['slug']}: proof path missing on disk: {path}"
-                )
-    for proj in content.get("projects", []):
-        for highlight in proj.get("highlights", []):
-            pass  # highlights are prose; proof discipline lives in ai-engineering
+            if "path" in proof:
+                failures.append(f"ai-engineering/{cap['slug']}: proof carries a file path: {proof['path']}")
+            url = proof.get("url")
+            if url is not None and not str(url).startswith("https://"):
+                failures.append(f"ai-engineering/{cap['slug']}: proof URL is not public https: {url}")
 
 
 def check_related_slugs(content, failures):
@@ -84,8 +75,10 @@ def check_numeric_claims(content, failures, warnings):
     num_re = re.compile(r"\b(\d+(?:\.\d+)?)\s(%|ms|kB|MB|GB|TB)\b|\b(\d+(?:\.\d+)?)\s(rows?|tables?|pages?)\b")
     for cap in content.get("aiCapabilities", []):
         text = cap.get("summary", "") + " " + cap.get("oneLiner", "")
-        paths = [p.get("path", "") for p in cap.get("proof", []) if isinstance(p, dict)]
-        existing = [p for p in paths if p and os.path.exists(p)]
+        # Proofs no longer cite local files (public URLs only), so there is
+        # nothing on disk to grep; the numeric check is a no-op until a proof
+        # source format that can be checked offline exists again.
+        existing = []
         for m in num_re.finditer(text):
             value = m.group(1) or m.group(3)
             unit = m.group(2) or m.group(4)

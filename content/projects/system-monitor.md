@@ -1,7 +1,4 @@
 ---
-# DRAFT: no links — the repo is local only (/opt/data/workspace/projects/
-# DRAFT: system-monitor). Metrics verified by a fresh pytest run on 2026-10-08
-# DRAFT: (61 passed). date = last commit touching the project (2026-10-07).
 title: System Monitor MCP Fleet
 slug: system-monitor
 summary: >-
@@ -9,7 +6,7 @@ summary: >-
   an alerting server, and a dashboard, all built on Python's standard library.
 tags: [mcp, fastapi, python, monitoring, testing]
 date: 2026-10-07
-role: Design and implementation (solo)
+role: Design and implementation
 status: shipped
 period: "2026"
 featured: false

@@ -1,7 +1,4 @@
 ---
-# DRAFT: links.source is a plausible GitHub URL, not a verified remote (real
-# DRAFT: path: /opt/data/workspace/langfuse-dashboard). Status is honest:
-# DRAFT: shipped code, blocked data plane — see summary.
 title: Langfuse Observability Dashboard
 slug: langfuse-dashboard
 summary: >-
@@ -10,7 +7,7 @@ summary: >-
   ships an honest empty state with the 403 recorded verbatim.
 tags: [llm, observability, langfuse, python, dashboards]
 date: 2026-08-16
-role: Design and implementation (solo)
+role: Design and implementation
 status: active
 period: "2026-08"
 featured: false

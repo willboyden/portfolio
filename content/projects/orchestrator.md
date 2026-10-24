@@ -1,7 +1,4 @@
 ---
-# DRAFT: links.source is a plausible GitHub URL, not a verified remote (real
-# DRAFT: path: /opt/data/workspace/orchestrator). date/period are last-known
-# DRAFT: activity estimates — confirm before launch.
 title: Multi-MCP Orchestrator
 slug: orchestrator
 summary: >-
@@ -10,7 +7,7 @@ summary: >-
   DuckDB trend queries. Plus a sandbox-wide wiki engine.
 tags: [mcp, cli, python, orchestration, duckdb]
 date: 2026-06-20
-role: Design and implementation (solo)
+role: Design and implementation
 status: shipped
 period: "2026"
 featured: false

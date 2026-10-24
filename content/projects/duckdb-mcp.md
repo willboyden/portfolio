@@ -1,7 +1,4 @@
 ---
-# DRAFT: links.source is a plausible GitHub URL, not a verified remote (real
-# DRAFT: path: /opt/data/workspace/duckdb-mcp). date/period are last-known
-# DRAFT: activity estimates — confirm from git history before launch.
 title: DuckDB MCP Server
 slug: duckdb-mcp
 summary: >-
@@ -10,10 +7,10 @@ summary: >-
   CLI binary via subprocess and encodes 9 benchmark-proven best practices.
 tags: [mcp, duckdb, analytics, python, agents]
 date: 2026-07-15
-role: Design and implementation (solo)
+role: Design and implementation
 status: shipped
 period: "2026"
-featured: true
+featured: false
 relatedPost: duckdb-for-agent-workflows
 stack: [Python 3.11+, mcp SDK, DuckDB CLI 1.5.4+, stdio JSON-RPC, pytest]
 highlights:

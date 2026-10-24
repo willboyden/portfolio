@@ -1,13 +1,10 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All facts trace to
-# /opt/data/workspace/broker-tools (nvfp4-findings.md + repair-runbook.md).
 title: "What the broker knows: forensics on a local LLM fleet from /v1 alone"
 slug: broker-forensics-nvfp4
 summary: >-
-  Fingerprinting a LiteLLM 1.100.1 broker and its vLLM fleet with zero admin
-  access: header archaeology, deployment-name evidence for NVFP4 quantization,
-  two model-groups on one upstream endpoint, stub-field quirks, and a failure
-  taxonomy turned into a repair runbook.
+  Fingerprinting my own LiteLLM broker and vLLM fleet the way any client sees
+  them — no admin access, /v1 only, by choice. Header archaeology, quantization
+  evidence in deployment names, and a failure taxonomy turned into a runbook.
 tags: [llm-inference, litellm, vllm, quantization, observability]
 date: 2026-10-16
 series: AI engineering notes

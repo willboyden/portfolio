@@ -1,5 +1,5 @@
 {
-  "contentHash": "270cc7d0345ec3aa",
+  "contentHash": "e05e4badb6d7660d",
   "projects": [
     {
       "slug": "lab-chat",
@@ -14,7 +14,7 @@
         "observability"
       ],
       "date": "2026-10-24",
-      "role": "Design, implementation and security review (solo)",
+      "role": "Design, implementation and security review",
       "status": "active",
       "period": "2026-10",
       "highlights": [
@@ -64,6 +64,157 @@
       "html": "<p>The question was simple: how do agents reach me, and each other, without\nhanding a third party a command channel into them? The answer was a chat server\nI own end to end, plus a bridge that keeps chat credentials out of every agent.\nThe full design, the threat model and what went wrong along the way are in the\nwrite-up linked below.</p>"
     },
     {
+      "slug": "agent-hub",
+      "title": "Agent Hub — one place for what your coding agents know and may do",
+      "summary": "Shared instructions, skills, subagents, MCP servers, permissions and egress for Claude Code, opencode, Hermes Agent and Turnstone. Edit, commit, plan, apply — with a policy floor content can only make stricter.",
+      "tags": [
+        "ai-agents",
+        "mcp",
+        "security",
+        "developer-tools",
+        "fastapi",
+        "open-source"
+      ],
+      "date": "2026-10-18",
+      "role": "Design and implementation",
+      "status": "active",
+      "period": "2026-10",
+      "highlights": [
+        "A git repository of declarative files is the source of truth; the hub compiles it into each client's native format (.claude/skills, .opencode/agent, AGENTS.md, Hermes and Turnstone stages) instead of being a service the agents query",
+        "Edit, commit, plan, apply: a plan renders the committed tree per client and shows the diff; apply writes only from that plan, only after confirmation, and refuses if anything moved since",
+        "A policy floor outside the content repo — credential paths denied, egress deny-by-default, no unscanned MCP server, no catch-all shell allow — that content can only tighten",
+        "Import first: it reads what each client already has, and a file edited outside the hub becomes a conflict that is skipped, never silently overwritten; every overwritten file is backed up and rollback restores the last apply",
+        "Optional skill evaluation before import with NVIDIA SkillEvaluator, and an import gate that can require a clean static security scan",
+        "New clients without code: a declarative YAML spec validated live in the add-client wizard"
+      ],
+      "stack": [
+        "Python 3.13",
+        "FastAPI",
+        "git",
+        "SQLite",
+        "LanceDB + Qdrant (knowledge plane)",
+        "ES modules + web components (no npm)"
+      ],
+      "links": {
+        "source": "https://github.com/willboyden/agent-hub"
+      },
+      "metrics": [
+        {
+          "label": "client adapters",
+          "value": "4 + a generic YAML adapter"
+        },
+        {
+          "label": "loopback trust",
+          "value": "off by default (bearer key everywhere)"
+        }
+      ],
+      "featured": true,
+      "html": "<p>Each coding agent keeps its instructions, skills, subagents, MCP servers and\npermissions in a different format and place. In my lab that is Claude Code,\nopencode, Hermes Agent and Turnstone, and shared content drifted between them\nwith nothing showing what any one of them was allowed to do. Agent Hub treats\nthat configuration like infrastructure code: reviewed in git, planned, applied\nwith a diff, and checked against a floor of rules that content cannot loosen.</p>\n<p>The README names the limit plainly: the hub cannot protect you from an\nunsandboxed client that runs as your own user. <code>hubctl doctor</code> reports what is\nexposed on the host.</p>"
+    },
+    {
+      "slug": "jobpilot",
+      "title": "Jobpilot — AI job-search copilot",
+      "summary": "A local job-search copilot: postings are screened for prompt injection, scored by an explainable matcher, and turned into tailored resumes and cover letters that fail the run if they invent a year or a number.",
+      "tags": [
+        "ai-agents",
+        "llm",
+        "security",
+        "python",
+        "react"
+      ],
+      "date": "2026-10-17",
+      "role": "Design and implementation",
+      "status": "active",
+      "period": "2026-10",
+      "highlights": [
+        "Security-first ingest — posting text is attacker input on its way into a prompt, so raw bytes are vaulted (never rendered or sent to a model), HTML is sanitized, and every posting is screened for prompt injection, secret leaks and exfiltration, then allowed, redacted or blocked with the decision logged",
+        "Explainable deterministic scoring, not LLM scoring — a reproducible 0–100 fit over skills, keywords, seniority and location with a reason per factor; 👍/👎 rankings adjust scores by at most ±15",
+        "Grounded tailoring — resumes and cover letters are written from your own saved resume under a no-new-facts prompt, then checked: a year or number that is not in your material fails the run after one correction pass, and new names are listed for review",
+        "Git for your resume — every tailoring run produces a new version with a parent chain and a rendered diff",
+        "Application tracking — stages, notes, follow-up dates and an overdue banner, plus interview prep from your resume and documents",
+        "Runs on the lab's local models through the router under its own key; a deterministic mock model is the default for tests",
+        "1.9.0 security pass — loopback-only API (DNS-rebinding guard), CSRF refusal, strict CSP, upload size caps and generic error pages"
+      ],
+      "stack": [
+        "Python 3.13",
+        "FastAPI + SSE",
+        "SQLite (WAL)",
+        "React 19 + Emotion",
+        "vitest + CDP e2e",
+        "local models through the lab's LiteLLM router"
+      ],
+      "metrics": [
+        {
+          "label": "backend tests",
+          "value": "438 passed (v1.9.0, run 2026-10-24)"
+        },
+        {
+          "label": "adversarial ingest payloads",
+          "value": "40+"
+        },
+        {
+          "label": "latest version",
+          "value": "1.9.0 (2026-10-17)"
+        }
+      ],
+      "relatedPost": "security-first-ingest-prompt-injection",
+      "featured": false
+    },
+    {
+      "slug": "nemo-console",
+      "title": "Nemo Console — a console for NVIDIA's routing and agent stack",
+      "summary": "One local page to monitor, configure and test NeMo Switchyard, NeMo Relay, Dynamo and SkillEvaluator. Config edits are validated, backed up and rolled back automatically if the service comes up unhealthy.",
+      "tags": [
+        "llm-routing",
+        "nemo-switchyard",
+        "observability",
+        "fastapi",
+        "security",
+        "open-source"
+      ],
+      "date": "2026-10-17",
+      "role": "Design and implementation",
+      "status": "active",
+      "period": "Sep–Oct 2026",
+      "highlights": [
+        "One adapter per system plugs into a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so SkillEvaluator was added as a single adapter file",
+        "A Switchyard routes.toml editor that validates, diffs, asks for confirmation, backs up, writes atomically, recreates the container, health-checks it and rolls back on its own if the new config is unhealthy",
+        "A routing summary by route, model, tier, tokens and errors, built from Switchyard's routing log, with 15-minute, 1-hour and 24-hour history",
+        "Actions carry danger levels (safe, disruptive, destructive) with mandatory confirmation; Dynamo start has a preflight that names what else is using the GPU",
+        "Security middleware on every call: loopback bind, Host allowlist, same-origin checks, CSRF header, hashed bearer keys with admin and viewer roles, strict CSP, and an argv-only process runner limited to five binaries",
+        "Every claim in the docs is labelled implemented, verified-live or unverified, and known gaps are listed in the README"
+      ],
+      "stack": [
+        "Python 3.13",
+        "FastAPI",
+        "SQLite (WAL)",
+        "SSE",
+        "Docker",
+        "systemd",
+        "ES modules + web components (no npm)"
+      ],
+      "links": {
+        "source": "https://github.com/willboyden/nemo-console"
+      },
+      "metrics": [
+        {
+          "label": "backend tests",
+          "value": "467 passed from a clean copy (v0.2.0, 2026-10-17)"
+        },
+        {
+          "label": "frontend tests",
+          "value": "96 passed"
+        },
+        {
+          "label": "systems covered",
+          "value": "4 released + Data Designer (unreleased)"
+        }
+      ],
+      "relatedPost": "routing-coding-agent-two-local-models",
+      "featured": true,
+      "html": "<p>The routing layer in my lab is NVIDIA's NeMo Switchyard (tier routing with an\nLLM judge) plus NeMo Relay (an agent gateway that traces every call). Both are\nconfigured by editing TOML and restarting a container or a systemd unit, and a\nbad edit takes routing down for every agent at once. Nemo Console wraps that\nloop: see what each system is doing, change its config with a diff and an\nautomatic rollback, and send a test request through it, all from one page.</p>\n<p>It was written against one deployment (pinned Switchyard 0.3.0, Relay 0.9.2,\nDynamo 1.5.0, SkillEvaluator 0.5.0), and the README says so: container names\nand paths are constants in the adapters, and only the parts marked\nverified-live were exercised against the real systems.</p>\n<p>The write-up linked below covers what this console was watching: routing a\ncoding agent between a fast model and a large one, and the three bugs that\nhid behind healthy-looking counters.</p>"
+    },
+    {
       "slug": "crucible",
       "title": "Crucible — WASM Training-Data Refinery",
       "summary": "Security-first multimodal training-data refinery that treats every inbound byte as hostile: content is inspected exclusively inside import-free WebAssembly kernels (wasmtime), never on the host. Deterministic CLEAN/QUARANTINE/REJECT verdicts, a sha256-chained tamper-evident audit log, a sha-addressed content store, and a real cross-language kernel story — Rust compiled std-only to wasm32 under a blocked crates.io, hand-written WAT for simple kernels, and runtime parity gates across wasmtime and Node.",
@@ -76,7 +227,7 @@
         "data-pipelines"
       ],
       "date": "2026-10-16",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026-10",
       "highlights": [
@@ -110,54 +261,60 @@
       "featured": false
     },
     {
-      "slug": "jobpilot",
-      "title": "Jobpilot — AI Job-Hunting Copilot",
-      "summary": "An agentic job-search copilot that treats the hunt itself as a managed pipeline — postings ingested from multiple sources pass a security-first screen (sanitize → allow/redact/block, raw bytes vaulted, 40+-payload adversarial matrix), a deterministic 0–100 matcher explains every score factor-by-factor, and plan-act agents turn matches into tailored resumes, cover letters and interview prep as version-controlled artifacts with a full application-tracking backend behind them.",
+      "slug": "engine-console",
+      "title": "Engine Console — one page for GPU inference engines",
+      "summary": "A control plane for vLLM, SGLang, TensorRT-LLM, llama.cpp and Ollama across one or several machines. Each machine's own policy file decides whether the console may only watch it or also change it.",
       "tags": [
-        "ai-agents",
-        "llm",
+        "llm-inference",
+        "vllm",
+        "sglang",
+        "gpu",
+        "fastapi",
         "security",
-        "python",
-        "react"
+        "open-source"
       ],
-      "date": "2026-10-16",
-      "role": "Design and implementation (solo)",
+      "date": "2026-10-15",
+      "role": "Design and implementation",
       "status": "active",
-      "period": "2026-10",
+      "period": "Sep–Oct 2026",
       "highlights": [
-        "Security-first ingest as a first-class threat model — untrusted posting content is attacker input flowing into LLM prompts, so ingest always vaults raw bytes (never rendered or model-sent), sanitizes HTML, screens for prompt-injection / secret-leak / exfiltration and routes allow/redact/block with every decision logged to security_events plus a JSONL mirror",
-        "Explainable deterministic scoring, not LLM-scored — reproducible 0–100 fit over 4 factors (skills/keywords/seniority/location) with per-factor reasons and hand-computed known-answer tests; preference learning folds 👍/👎 rankings back into scores, clamped ±15",
-        "Git-for-your-resume artifacts — every tailor/cover-letter/interview-prep run produces a new artifact version (parent chain, seq numbers) with a rendered diff view, grounded in top-3 prior material and reusing existing artifacts when inputs are unchanged",
-        "Dual-model runtime with audit on every call — separate interactive and background lanes with per-call override in a ModelRouter, deterministic MockModelClient by default (golden-replay agent tests), any OpenAI-compatible endpoint behind JOBPILOT_LIVE=1, and llm_usage logging model/lane/task/tokens/latency/status",
-        "Full application-tracking backend (v1.7–v1.8) — one application per posting with stage/applied_at/notes/follow_up_at (schema v5), a followups-due route, CoverLetterAgent + InterviewPrepAgent on a threaded executor, and a v1.6 TalentScout sweep (ingest → evaluate → gate-shortlist → digest) on user search-parameter gates",
-        "Test discipline across the stack — 322 pytest green (v1.6–v1.8 backend, per commit 618c494), 217 vitest (v16 UI, per commit 1604f81), CDP e2e specs in real headless chrome, ruff clean and mypy --strict zero errors; make verify is the single gate"
+        "A hub talks to a small agent on every machine (ecnode) over a restricted ssh key; the node does all Docker, GPU and file work and obeys a local policy file, so a bug in the hub can do at most what each machine's policy allows",
+        "Five engines behind one adapter port, each with a pinned image — vLLM 0.27.1, SGLang 0.5.20, TensorRT-LLM 1.2.1, llama.cpp b10156 by digest, Ollama 0.30.11 — and launch forms generated from each adapter's parameter catalog",
+        "Engines run on an internal Docker network with no ports and all capabilities dropped, reachable only through a per-instance loopback gateway",
+        "A cross-machine model library: Hugging Face search and download, copies between machines, and a VRAM fit estimate that says \"unknown\" instead of guessing",
+        "Engines started by your own scripts are discovered read-only and shown beside managed ones, so the console never bypasses an existing start-up script",
+        "Learn mode: every setting carries a plain-language explanation, with a beginner wizard and a glossary",
+        "Honest status: the README lists what was verified live (one workstation, two GPUs) and what has only run against fakes (remote machines, launches of engines other than vLLM)"
       ],
       "stack": [
-        "Python 3.13 stdlib",
-        "FastAPI + SSE",
+        "Python 3.13",
+        "FastAPI",
         "SQLite (WAL)",
-        "React 19 + vendored Emotion",
-        "vitest + CDP e2e"
+        "SSE",
+        "Prometheus + OTLP",
+        "rootless Docker",
+        "NVML",
+        "ES modules + web components (no npm)"
       ],
+      "links": {
+        "source": "https://github.com/willboyden/engine-console"
+      },
       "metrics": [
         {
-          "label": "backend tests",
-          "value": "322 pytest green (v1.6–v1.8, 2026-10-16)"
+          "label": "engines",
+          "value": "5"
         },
         {
-          "label": "security tests",
-          "value": "78, including a 40+-payload adversarial matrix"
+          "label": "architecture decisions recorded",
+          "value": "21 ADRs"
         },
         {
-          "label": "frontend",
-          "value": "217 vitest + 11/11 CDP e2e specs"
-        },
-        {
-          "label": "live feed",
-          "value": "300+ jobs/night from a GitHub-hosted source"
+          "label": "latest release",
+          "value": "v0.4.0 (2026-10-15)"
         }
       ],
-      "featured": false
+      "featured": true,
+      "html": "<p>I run several inference engines on a workstation with two RTX PRO 6000s,\nnext to a second GPU machine and four DGX Sparks. Every engine had its\nown start script, its own flags and its own way of reporting memory. Engine\nConsole puts them on one page without taking over: it watches by default, and\neach machine decides for itself, in a root-owned policy file, whether the\nconsole may start, stop, download or delete anything there.</p>\n<h2 id=\"how-it-is-built\">How it is built</h2>\n<ul>\n<li><strong>Hub and node.</strong> The hub is a FastAPI app on loopback with a zero-build\nbrowser UI. It never runs Docker or reads <code>/proc</code> itself. Every machine,\nincluding its own, is reached through <code>ecnode</code>, a standard-library Python\nagent, over stdio locally and over ssh with a key restricted to that one\ncommand elsewhere.</li>\n<li><strong>Policy as the hard boundary.</strong> <code>monitor</code> or <code>manage</code> mode, allowed images,\nmodel roots and scripts are set per machine. The node re-reads its policy\nwithin seconds; the hub cannot edit it.</li>\n<li><strong>Engine isolation.</strong> Engines are labelled sibling containers on an\n<code>--internal</code> network with <code>--cap-drop ALL</code>, <code>no-new-privileges</code> and a pids\nlimit. The hub reaches an engine's API only through its node.</li>\n<li><strong>Security posture.</strong> Loopback is not trusted (API key, Host, Origin and\nCSRF checks on every call), secrets are stored as <code>[set]</code> markers or 0600\nfiles, and model files are confined to the policy's roots.</li>\n</ul>\n<h2 id=\"what-is-not-done-yet\">What is not done yet</h2>\n<p>The README is explicit: remote machines over ssh, copies between real\nmachines, multi-GPU launches and launches of any engine but vLLM have run only\nagainst fakes. No penetration test or independent review has been done.</p>"
     },
     {
       "slug": "system-monitor",
@@ -171,7 +328,7 @@
         "testing"
       ],
       "date": "2026-10-07",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026",
       "highlights": [
@@ -205,6 +362,58 @@
       "featured": false
     },
     {
+      "slug": "gpu-tuner",
+      "title": "GPU Tuner — power caps, fan curves and clock caps with a GUI",
+      "summary": "A local web page that shows every NVIDIA GPU live and changes the three settings that are safe on any card. It manages several machines over ssh, and each machine's root daemon enforces its own limits.",
+      "tags": [
+        "gpu",
+        "nvidia",
+        "python",
+        "security",
+        "linux",
+        "open-source"
+      ],
+      "date": "2026-10-04",
+      "role": "Design and implementation",
+      "status": "shipped",
+      "period": "Sep–Oct 2026",
+      "highlights": [
+        "Power limit, fan curve and core clock cap per card, plus a combined power budget per machine; going over the budget is a confirmed soft limit, never past the card's own hardware range",
+        "Every write is validated by a root daemon against a root-owned safety module, never by the page; the page runs as the desktop user and talks to the daemon over a Unix socket that checks the caller's uid",
+        "Fan safety floor rescaled per card from that card's own slowdown threshold (85 °C on the lab's RTX PRO 6000s); fans are handed back to the driver on exit, crash or watchdog kill",
+        "One page for several machines: a fleet strip plus a tab per machine, reached over ssh with the page's own key restricted to one command and one source address",
+        "Measured on four DGX Sparks: NVML exposes no power limit, fans or clock list there, so Sparks join as monitor-only nodes and the page says why",
+        "Deliberately not containerized: rootless Docker maps container root to the desktop user, verified to get \"Insufficient Permissions\" on power writes even with --privileged"
+      ],
+      "stack": [
+        "Python (stdlib)",
+        "NVML (pynvml)",
+        "systemd (Type=notify + watchdog)",
+        "Unix sockets with SO_PEERCRED",
+        "ssh",
+        "vanilla JS (strict CSP)"
+      ],
+      "links": {
+        "source": "https://github.com/willboyden/gpu-tuner"
+      },
+      "metrics": [
+        {
+          "label": "knobs per card",
+          "value": "3 (power, fan, clock cap)"
+        },
+        {
+          "label": "machines in the lab fleet",
+          "value": "6 (2 with controls, 4 Sparks monitor-only)"
+        },
+        {
+          "label": "latest release",
+          "value": "v1.1.2 (2026-10-04)"
+        }
+      ],
+      "featured": true,
+      "html": "<p>Two RTX PRO 6000s in one workstation need power caps and a fan curve that\nsurvive reboots, driver resets and suspend. The lab first had\ntwo systemd services with numbers baked in. GPU Tuner replaces them with a page\nthat shows what each card is doing and why its clock is limited, and lets you\nchange only what is safe, with the root daemon as the single authority.</p>\n<h2 id=\"the-safety-model\">The safety model</h2>\n<ul>\n<li><strong>Power:</strong> each card's own NVML range, narrowed by a measured profile where\none exists, then the machine's combined budget. Lowering is always allowed.</li>\n<li><strong>Fans:</strong> any curve is evaluated as <code>max(requested, floor(temperature))</code>, with\nhysteresis (up at once, down only after 2 °C of cooling) and the floor\nre-asserted every 30 seconds.</li>\n<li><strong>Clocks:</strong> a cap can only slow the card down.</li>\n<li><strong>Left out on purpose:</strong> clock offsets, thermal targets and toggling ECC, MIG\nor compute mode — no range is known to be stable across arbitrary hardware.</li>\n</ul>\n<p>The installer has a <code>--dry-run</code> that prints every privileged command, rolls\nback on any failure, and <code>--uninstall</code> restores the services it replaced.</p>"
+    },
+    {
       "slug": "ds-core",
       "title": "ds_core Data Science Toolkit",
       "summary": "Pure-Python data science toolkit on the DuckDB CLI subprocess — 38 modules, no numpy, no duckdb binding. A five-reviewer audit confirmed 26 bugs (5 critical); every one fixed and verified.",
@@ -216,7 +425,7 @@
         "testing"
       ],
       "date": "2026-08-16",
-      "role": "Design, implementation and adversarial audit (solo)",
+      "role": "Design, implementation and adversarial audit",
       "status": "shipped",
       "period": "2026",
       "highlights": [
@@ -246,7 +455,7 @@
           "value": "295 tests"
         }
       ],
-      "featured": true
+      "featured": false
     },
     {
       "slug": "gov-payroll-workbench",
@@ -260,11 +469,11 @@
         "dashboards"
       ],
       "date": "2026-08-16",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026-08",
       "highlights": [
-        "The sandbox cannot reach the ClickHouse HTTP port directly — the query layer drives the clickhouse-mcp server over JSON-RPC with SSE responses, session-id handshakes, retry and stale-session re-handshake",
+        "The agent doing the analysis has no database port by design — the query layer drives the clickhouse-mcp server over JSON-RPC with SSE responses, session-id handshakes, retry and stale-session re-handshake",
         "Every dataset is self-documenting — each data/*.json embeds the exact SQL, per-attempt elapsed time and row count, and the dashboard ships a provenance section exposing all of it",
         "Three real ClickHouse quirks diagnosed and worked around — missing arbitrary() (error 46), alias-shadowing ILLEGAL_AGGREGATION (error 184), and non-uniform column names like fiscal_year stored as the string FY2026",
         "Two coverage traps caught before they lied — QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70) and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award)",
@@ -305,7 +514,7 @@
         "dashboards"
       ],
       "date": "2026-08-16",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "active",
       "period": "2026-08",
       "highlights": [
@@ -336,7 +545,7 @@
         "dashboards"
       ],
       "date": "2026-08-16",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026-08",
       "highlights": [
@@ -364,7 +573,7 @@
         }
       ],
       "relatedPost": "eval-harness-silent-regressions",
-      "featured": true
+      "featured": false
     },
     {
       "slug": "code-quality-dashboard",
@@ -378,7 +587,7 @@
         "testing"
       ],
       "date": "2026-08-04",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026",
       "highlights": [
@@ -422,7 +631,7 @@
         "agents"
       ],
       "date": "2026-07-15",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026",
       "highlights": [
@@ -454,7 +663,7 @@
         }
       ],
       "relatedPost": "duckdb-for-agent-workflows",
-      "featured": true
+      "featured": false
     },
     {
       "slug": "orchestrator",
@@ -468,7 +677,7 @@
         "duckdb"
       ],
       "date": "2026-06-20",
-      "role": "Design and implementation (solo)",
+      "role": "Design and implementation",
       "status": "shipped",
       "period": "2026",
       "highlights": [
@@ -528,9 +737,28 @@
       "excerpt": "I review my own work constantly, which is exactly the problem. The same brain that wrote the code reads it back with the same blind spots …"
     },
     {
+      "slug": "routing-coding-agent-two-local-models",
+      "title": "Routing a coding agent across two local models — what actually worked",
+      "summary": "A fast model on an RTX 5090 answers first, GLM-5.3-Flash on two RTX PRO 6000s takes the hard turns, and an LLM judge decides per conversation. Three bugs hid behind healthy-looking counters; here is how they were found.",
+      "tags": [
+        "llm-routing",
+        "nemo-switchyard",
+        "litellm",
+        "grafana",
+        "benchmarking",
+        "local-llm"
+      ],
+      "date": "2026-10-24",
+      "readingMinutes": 10,
+      "series": "AI engineering notes",
+      "relatedProject": "nemo-console",
+      "html": "<p>My workstation runs a coding agent (opencode) on local models: a fast\n30B-class model — Nemotron Lightning on an RTX 5090 — answers first, and a\nbigger GLM-5.3-Flash spanning two RTX PRO 6000s takes the turns the fast\nmodel can't. Between the agent and the engines sits a routing layer that\ndecides, per request, which model serves. This post is the full account of\ngetting that layer right: the architecture, the three bugs it hid, the\nexperiments I ran to choose between five routing configurations, and the\nbenchmark numbers behind every claim.</p>\n<h2 id=\"the-three-surfaces\">The three surfaces</h2>\n<p>The lab routes through three layers, each with a distinct job:</p>\n<ol>\n<li><strong>LiteLLM</strong> (<code>:4000</code>) — the mandatory chokepoint. Auth, per-key spend\ntracking, a PII guardrail on outputs, and telemetry. Every call from\nevery client passes through it; every model is an alias in its config.</li>\n<li><strong>Switchyard server</strong> (<code>:4010</code>) — NVIDIA's routing server as a standalone\ncontainer. It owns tier routing for clients that opt in via router-model\naliases, and it exports rich Prometheus metrics.</li>\n<li><strong>NeMo Relay gateway</strong> (<code>:4040</code>) — a host service whose in-process\nSwitchyard <em>plugin</em> does the routing for opencode. The plugin emits its\nown OTLP metrics and traces, and — the property that matters — <strong>it can\ncount and trace every call</strong> if the client names a route id instead of a\nplain model name. A plain name passes through uncounted by design: &quot;this\ncannot capture traffic it was not configured for.&quot;</li>\n</ol>\n<p>The two tiers on the routing layer:</p>\n<table>\n<thead><tr><th>tier</th><th>model</th><th>hardware</th><th>wire</th></tr></thead>\n<tbody>\n<tr><td>weak / efficient</td><td>Nemotron Lightning 30B-A3B</td><td>RTX 5090 (second box)</td><td>OpenAI</td></tr>\n<tr><td>strong / capable</td><td>GLM-5.3-Flash</td><td>2× RTX PRO 6000, vLLM TP2 (this box)</td><td>Anthropic</td></tr>\n</tbody>\n</table>\n<p><img src=\"/posts/local-model-routing/routing-architecture.svg\" alt=\"Routing architecture: client → Relay gateway → capability judge → weak or strong tier → LiteLLM → engines\" /></p>\n<h2 id=\"what-a-routed-request-actually-walks-through\">What a routed request actually walks through</h2>\n<p>There are two shapes of route, and the difference is the whole story:</p>\n<p><strong>A passthrough route</strong> (<code>direct-glm-local</code>, <code>direct-aitop-lightning</code>, …)\nmaps a route id to one model. No decision is made. Cost: ~0.04 ms measured.\nThe only thing it buys is that the gateway counts and traces the call —\nwhich is exactly why my agent's default model is <code>litellm/direct-glm-local</code>\nrather than the plain alias.</p>\n<p><strong>A capability route</strong> (<code>llm_classifier</code>, <code>mode = &quot;capability&quot;</code>) runs an LLM\njudge that estimates <code>p_solve</code> — the probability that the <em>weak</em> model\ncompletes the task — plus a capability boundary (supported / uncertain /\nunmatched). The policy is deterministic: <code>p_solve ≥ threshold</code> → weak tier;\notherwise strong. And it fails <strong>closed</strong>: an invalid or unparseable verdict\nroutes to the <em>strong</em> tier.</p>\n<pre><code>opencode ──&gt; :4040 Relay plugin ──&gt; capability judge (once per conversation)\n                                     |  p_solve &gt;= 0.7 -&gt; Lightning\n                                     |  else, or bad verdict -&gt; GLM\n                                     v\n                    weak: Lightning (5090)   strong: GLM (2x PRO 6000)\n                                     └──────────&gt; LiteLLM :4000 ──&gt; engine\n</code></pre>\n<p>The judge's frequency is itself configurable (<code>classify_trigger</code>): every\nrequest, every user turn, or once per session. With <code>message_hash_fallback</code>\nenabled, the session key is the <em>first user message's text</em> — so a normal\nconversation gets exactly one judge call and one tier decision for its whole\nlifetime, with no client-side session headers.</p>\n<h2 id=\"bug-1-the-dashboard-that-lied-by-being-old\">Bug 1: the dashboard that lied by being old</h2>\n<p>The first symptom was cosmetic: the Switchyard Grafana board read\n<strong>&quot;Escalations: 0&quot;</strong> while Prometheus clearly showed 100+ answers served by\nthe capable tier. Nothing was broken — the dashboard's JSON was <em>generated</em>\nfrom the route config at generation time, and a route added that morning\n(<code>auto-glm-aitop</code>) postdated the last generation. The per-route tier panels\nread their tier pairs from <code>routes.toml</code> when the generator runs; a route\nadded without re-running the generator is invisible to them.</p>\n<p>Lesson one, and it generalizes: <strong>any artifact compiled from configuration\nhas a staleness clock.</strong> The fix was mechanical (re-run the generator), but\nthe failure mode — a dashboard confidently reporting a wrong zero — is the\nkind that gets built into decisions. The drift check now catches it.</p>\n<h2 id=\"bug-2-the-efficient-tier-that-answered-empty\">Bug 2: the efficient tier that answered empty</h2>\n<p>This one was expensive because everything <em>looked</em> healthy. Tier counters\nsaid the efficient tier served its share of requests. Latency looked fine.\nThen I captured the actual answers, and <strong>every hard-task answer from\nLightning was empty</strong> — all 500 completion tokens were thinking, zero\ncharacters of content.</p>\n<p>The root cause chain:</p>\n<ol>\n<li>The gateway's answer targets spoke the <strong>Anthropic wire</strong>\n(<code>anthropic_messages</code>), because they were originally built for a\nClaude-Code-shaped client.</li>\n<li>LiteLLM's <code>/v1/messages</code> translation **drops <code>chat_template_kwargs</code>** —\nso the <code>enable_thinking=false</code> flag never reached the vLLM engine.</li>\n<li>Lightning thought with its default budget: ~220 tokens burned on &quot;list\nthree colors&quot;, the <em>entire</em> 500-token budget consumed on &quot;write a\nfibonacci function&quot; — thinking, no answer.</li>\n</ol>\n<p>The fix was the same trick the routing judge already used: declare the same\nmodel id on an <strong>OpenAI-wire client</strong> (where the thinking flag survives) and\npoint the route's weak tier at it. Before/after, measured on the same four\nhard tasks:</p>\n<p><img src=\"/posts/local-model-routing/wire-fix-before-after.svg\" alt=\"Wire bug: visible answer characters per hard task, before (0) vs after the OpenAI-wire target\" /></p>\n<p>After the fix: 843–1960 characters of correct content per hard task\n(the fibonacci answer is correct; the code review catches the same\n<code>NameError</code> the big model catches), at 750–1100 ms — 2.5–4×\nfaster than the big model. The efficient tier went from &quot;answers empty&quot; to\n&quot;answers correctly, faster.&quot;</p>\n<p>The general lesson: <strong>the wire format is behavior.</strong> The same model, same\nprompt, same flags — routed through a different provider API — thinks\ninstead of answering. If you benchmark a tier, benchmark its <em>answers</em>,\nnot its counters.</p>\n<h2 id=\"bug-3-the-judge-with-backwards-polarity\">Bug 3: the judge with backwards polarity</h2>\n<p>With the wire fixed, the judge's conservative behavior stopped being\ndangerous — but it was still weird. Across every configuration, the judge\nescalated <strong>trivial one-liners</strong> (&quot;What is 42?&quot; went to GLM, deterministically,\nin every run) and kept <strong>all four hard tasks</strong> on Lightning.</p>\n<p>The docs explain why: the packaged judge is a <em>capability forecaster</em>, not a\ndifficulty scorer. It estimates whether the weak model can do the task,\nguided by a packaged capability-card rubric. For my stack that rubric is\nsimply mismatched — and the proof is that swapping in a two-sentence custom\nrubric moved the escalation profile from 3/12 tasks to 7/12. The rubric is\nthe product; the judge model is a commodity. (More on that in the\nexperiments below.)</p>\n<h2 id=\"the-experiment-matrix\">The experiment matrix</h2>\n<p>Once both bugs were fixed, I benchmarked five routing configurations on the\nsame 12-task set (8 trivial, 4 hard), each task scored for which tier served\nit and how long it took. All non-live configurations ran on a throwaway\ngateway with probe routes — the live config was never touched mid-experiment.</p>\n<p><img src=\"/posts/local-model-routing/escalation-profiles.svg\" alt=\"Which tasks each configuration sent to the capable tier\" /></p>\n<table>\n<thead><tr><th>configuration</th><th>capable / 12</th><th>tasks escalated to GLM</th><th>p50 latency</th></tr></thead>\n<tbody>\n<tr><td><strong>live</strong>: capability, packaged rubric, threshold 0.7</td><td>5</td><td>ok, 42, reply-ok, year, snippet review</td><td>196 / 56 ms</td></tr>\n<tr><td>escalation mode (answer-first, confirmations=1)</td><td><strong>0</strong></td><td><em>none</em></td><td>318 ms</td></tr>\n<tr><td>capability + strict-completeness rubric</td><td>6</td><td>ok, 42, haiku, reply-ok, <strong>email, snippet</strong></td><td>310 / 421 ms</td></tr>\n<tr><td>capability + neutral-simple rubric</td><td>8</td><td>ok, 42, summarize, colors, year, <strong>gpu-fib, bash</strong>, snippet</td><td>282 / 374 ms</td></tr>\n<tr><td>capability + GLM as the judge</td><td>2</td><td>reply-ok, year</td><td><strong>1602</strong> / 2974 ms</td></tr>\n</tbody>\n</table>\n<p><img src=\"/posts/local-model-routing/latency-by-config.svg\" alt=\"p50 latency by configuration\" /></p>\n<p>Four findings worth the price of admission:</p>\n<p><strong>Escalation mode — answer-first — escalated nothing.</strong> The trajectory judge\nreads the <em>completed</em> weak answer and rules on whether the run is in\ntrouble. Lightning's post-fix answers are good, so it declined all twelve\nturns. As routing that's a 200+ ms tax for zero tier changes — reject. As\n<em>information</em> it's a free, independent quality audit: a second judge reading\nactual outputs confirms the efficient tier's work.</p>\n<p><strong>A stronger judge did not fix the inversion.</strong> GLM-5.3-Flash as the judge\nescalated <em>trivial</em> prompts and kept the code tasks — same backwards profile,\nat 1.7 s per judge call. The defect is in the packaged rubric, not the judge\nmodel's intelligence.</p>\n<p><strong>The rubric moves the profile, crudely.</strong> A strict-completeness rubric\n(&quot;multi-part requests, code that must run correctly, long structured output\nlower the estimate&quot;) was the first configuration to escalate hard tasks to\nthe capable tier — at the cost of three wasted trivial escalations. The\nrubric is a <em>prompt</em>, so this knob is a prompt-engineering exercise with\nmeasurable consequences.</p>\n<p><strong>The judge is not deterministic run-to-run.</strong> The baseline's escalated-task\nset differed between morning and evening runs on borderline prompts. Any\nA/B conclusion smaller than ~2 tasks of difference is noise.</p>\n<h2 id=\"the-thing-i-refused-to-believe-and-the-data-that-settled-it\">The thing I refused to believe — and the data that settled it</h2>\n<p>Every capability route I had seen judged <strong>every request</strong>. For an agentic\nworkload where tool continuations pour in, that means judging the same\nopening task twenty times. I was sure this was wrong, and the v0.3.0 docs\nagreed: <code>classify_trigger = &quot;new_session&quot;</code> judges once and reuses the\ndecision, and <code>message_hash_fallback</code> keys the session from the first user\nmessage when the client sends no session identity.</p>\n<p>Measured on the live configuration — same twelve tasks, same opening texts,\ntwo repetitions:</p>\n<p><img src=\"/posts/local-model-routing/affinity-speedup.svg\" alt=\"Rep 1 (judge fires) vs rep 2 (affinity, judge skipped)\" /></p>\n<p>Rep 2 reused rep 1's tier decisions with <strong>zero judge calls</strong>: p50 dropped\nfrom 82–3887 ms to 17–157 ms across the board (roughly 10×), with identical\noutputs. One judge call per conversation. That number is the difference\nbetween &quot;routing as a feature&quot; and &quot;routing as a toll booth.&quot;</p>\n<h2 id=\"what-shipped\">What shipped</h2>\n<p>The live configuration after all of this:</p>\n<ul>\n<li>Route type <code>llm_classifier</code>, <code>mode = &quot;capability&quot;</code> — the judge estimates\nwhether the fast model can do the task, with fail-closed semantics.</li>\n<li><code>base_threshold = 0.7</code>, <code>threshold_step = 0.15</code> — <strong>quality-optimal</strong>:\nsupported tasks need p_solve ≥ 0.7 to stay on the fast tier; uncertain\ntasks need ≥ 0.85; unmatched effectively always go to GLM. Concretely, the\ncode-review-class task now escalates to GLM (its p_solve sits in the band\nthe old 0.5 threshold let through), while the tasks Lightning provably\nanswers correctly stay on the 5090.</li>\n<li><code>message_hash_fallback = true</code> + <code>classify_trigger = &quot;new_session&quot;</code> —\none judge call per conversation.</li>\n<li>The weak tier on the <strong>OpenAI wire</strong> — the fix that made its answers real.</li>\n</ul>\n<p>End-to-end on the live route: once a conversation's decision is cached,\ntrivial prompts come back in 17–70 ms; hard tasks that stay on Lightning\ncomplete in 1.0–1.5 s with full answers; the uncertain ones go to GLM. Every call counted, every call\ntraced, spend attributed per client key.</p>\n<h2 id=\"the-ledger-i-keep-now\">The ledger I keep now</h2>\n<p>One more practice came out of this arc, and it is the least glamorous: a\n<strong>data-integrity ledger</strong>. Two of the benchmark runs happened while bugs were\nlive, and their numbers had to be audited afterward — which measurements were\ncontaminated (latency absolutes from the empty-answer era), which survived\n(judge decision profiles — the judge's own wire was healthy), and which\nartifacts were re-labeled as <em>evidence</em> rather than data. The dirty runs were\ndeleted; the ledger in the notes says why, artifact by artifact. Debugging\narchives are not benchmarks.</p>\n<h2 id=\"what-i-would-tell-myself-a-week-ago\">What I would tell myself a week ago</h2>\n<ol>\n<li><strong>Generated artifacts have staleness clocks.</strong> If a dashboard is compiled\nfrom config, a config change silently orphans it until regeneration.</li>\n<li><strong>The wire format is behavior.</strong> Thinking flags, reasoning budgets, and\neven whether the model answers at all depend on which provider API the\nproxy speaks upstream. Verify with real answers, not counters.</li>\n<li><strong>Tier counters measure routing, not quality.</strong> &quot;Efficient tier served the\nrequest&quot; is true even when the answer is empty. Capture and grade content.</li>\n<li><strong>Fail-closed judges change your cost curve.</strong> A judge that routes\nunparseable verdicts to the strong tier converts judge flakiness into\nspend. Bound it with <code>timeout_ms</code>.</li>\n<li><strong>The rubric is the product.</strong> The judge model is interchangeable; the\npackaged capability-card rubric is where the routing policy actually\nlives. Treat it like a prompt you own, with its own eval set.</li>\n<li><strong>Per-request judging is a choice, not a law.</strong> One judge call per\nconversation via session affinity — 10× on repeat turns — with a documented\nbest-effort caveat: two sessions sharing an opening prompt share a\ndecision.</li>\n</ol>\n<p>The lab notes, the benchmark harness, the CSVs and the full data-integrity\nledger live in my private lab repository, and every number above comes from\nthose files. The console I watch this routing layer with is public:\n<a href=\"https://github.com/willboyden/nemo-console\">Nemo Console</a>.</p>",
+      "excerpt": "My workstation runs a coding agent (opencode) on local models: a fast 30B-class model — Nemotron Lightning on an RTX 5090 — answers first …"
+    },
+    {
       "slug": "broker-forensics-nvfp4",
       "title": "What the broker knows: forensics on a local LLM fleet from /v1 alone",
-      "summary": "Fingerprinting a LiteLLM 1.100.1 broker and its vLLM fleet with zero admin access: header archaeology, deployment-name evidence for NVFP4 quantization, two model-groups on one upstream endpoint, stub-field quirks, and a failure taxonomy turned into a repair runbook.",
+      "summary": "Fingerprinting my own LiteLLM broker and vLLM fleet the way any client sees them — no admin access, /v1 only, by choice. Header archaeology, quantization evidence in deployment names, and a failure taxonomy turned into a runbook.",
       "tags": [
         "llm-inference",
         "litellm",
@@ -630,7 +858,7 @@
     {
       "slug": "langfuse-observability-pragmatic",
       "title": "Pragmatic LLM observability with Langfuse",
-      "summary": "An air-gapped Langfuse dashboard needs three daily numbers, a fetch pipeline that survives a hostile broker, and an empty state that tells the truth about a 403.",
+      "summary": "An air-gapped Langfuse dashboard needs three daily numbers and a fetch pipeline that survives a locked-down broker. When the data reads come back 403, the empty state says so.",
       "tags": [
         "llm",
         "observability",
@@ -703,157 +931,341 @@
   "talks": [],
   "aiCapabilities": [
     {
-      "slug": "tech-stack",
-      "title": "The stack underneath the work",
-      "summary": "Every capability on this site runs on one physical stack — a Threadripper Pro head node with dual RTX Pro 6000s, four DGX Spark (GB10) nodes, an RTX 5090 workstation, ConnectX-7 fabric — under a dual-broker LiteLLM/switchyard topology with vLLM and SGLang serving open-weight models.",
+      "slug": "local-inference",
+      "title": "Local LLM inference on a six-machine GPU lab",
+      "summary": "Open-weight models served on my own hardware: two RTX PRO 6000s, four DGX Sparks and an RTX 5090. Every model sits behind one router, and every engine is measured before it is trusted.",
       "tags": [
-        "infrastructure",
-        "litellm",
-        "switchyard",
+        "llm-inference",
         "vllm",
         "sglang",
-        "dgx",
-        "threadripper",
-        "connectx-7",
-        "mcp",
-        "duckdb"
+        "dgx-spark",
+        "blackwell",
+        "observability"
       ],
-      "date": "2026-10-16",
-      "capability": "Infrastructure stack",
-      "oneLiner": "The hardware and software inventory behind every capability here — six GPU nodes on ConnectX-7 fabric, a LiteLLM broker with a switchyard second group, vLLM/SGLang engines, MCP orchestration, FTS5 retrieval, and a zero-dependency CDP harness — with the reasoning for each choice.",
+      "date": "2026-10-24",
+      "capability": "Local LLM inference",
+      "oneLiner": "GLM-5.3-Flash, DeepSeek-V4.1-Flash, Qwen and Nemotron models on vLLM, SGLang and Dynamo across a heterogeneous GPU lab — with the operator tools I needed released as open source.",
       "status": "shipped",
       "stack": [
-        "LiteLLM 1.100.1",
-        "switchyard",
-        "vLLM",
-        "SGLang",
-        "MCP orchestrator",
-        "SQLite FTS5",
-        "DuckDB",
-        "React 19",
-        "Vite",
-        "TypeScript",
-        "GitHub Actions",
-        "Threadripper Pro",
-        "RTX Pro 6000",
-        "DGX Spark (GB10)",
+        "vLLM 0.27",
+        "SGLang 0.5.20",
+        "NVIDIA Dynamo 1.5.0",
+        "llama.cpp",
+        "Ollama",
+        "LiteLLM",
+        "2× RTX PRO 6000 Blackwell",
+        "4× DGX Spark (GB10)",
         "RTX 5090",
         "ConnectX-7",
-        "MikroTik CRS804"
+        "Prometheus + Grafana",
+        "rootless Docker"
       ],
       "howItWorks": [
-        "One OpenAI-compatible entry point — LiteLLM proxy 1.100.1 at :4000 brokers all LLM traffic across 16 model groups with per-group routing, so no client code knows where the GPUs are.",
-        "A second broker group, switchyard at :4010 (declared 262144 in / 32768 out), handles specialized routing patterns alongside the primary broker — a deliberate dual-broker topology.",
-        "Serving engines are vLLM and SGLang behind the broker; engine identity is verified by response forensics (system_fingerprint, weight-version metadata), never by the model name string.",
-        "Orchestration is direct Python imports — nine MCP servers composed in one process instead of subprocess-per-tool, because call overhead shows up in agent loops.",
-        "Retrieval is SQLite FTS5 inside DuckDB-attached storage — 100 percent recall at 0.11 ms — with real stdio handshake benchmarks keeping per-tool latency honest.",
-        "The fabric is ConnectX-7 NICs into a MikroTik CRS804 switch — one inter-node network that model placement and failover both assume."
+        "A workstation with two 96 GB RTX PRO 6000s runs the big local model across both cards (GLM-5.3-Flash with tensor parallelism over PCIe, about a 1M-token window), picked with one script that stops whatever else is loaded and starts engines in a safe order.",
+        "Four DGX Sparks join as one engine (tensor parallel across all four over ConnectX-7) for models too big for one box — DeepSeek-V4.1-Flash in NVFP4 with speculative decoding, or the Nemotron models — with weights read from the workstation over NFS.",
+        "An RTX 5090 in a second machine serves the fast Nemotron Lightning model that answers first and judges routing.",
+        "Every engine sits behind the LiteLLM router as an alias, so switching models changes no client; Prometheus scrapes every engine and Grafana shows tokens, queues, KV cache and GPU temperature per machine.",
+        "Kernels are checked per GPU architecture — the RTX PRO 6000s and the 5090 share sm_120, so one NVFP4 checkpoint and the same flags run on both, while the Sparks (sm_121) need their own builds."
       ],
       "proof": [
         {
-          "claim": "Broker forensics — LiteLLM 1.100.1 version header, 16-group model listing with per-group limits",
-          "path": "/opt/data/workspace/broker-tools/nvfp4-findings.md"
+          "claim": "Engine Console — open-source control plane for vLLM, SGLang, TensorRT-LLM, llama.cpp and Ollama across machines",
+          "url": "https://github.com/willboyden/engine-console"
         },
         {
-          "claim": "Fleet health tooling — pulse, bench, repair runbook with ENGINE-DOWN signatures (switchyard included)",
-          "path": "/opt/data/workspace/broker-tools"
+          "claim": "GPU Tuner — open-source power caps, fan curves and clock caps for the lab's GPUs, with per-card safety limits",
+          "url": "https://github.com/willboyden/gpu-tuner"
         },
         {
-          "claim": "Controlled 50-probe experiment proving full-body response caching at ~0.02 s replay",
-          "path": "/opt/data/workspace/cache-lab"
+          "claim": "DeepSeek-V4.1-Flash on four Sparks at about 67 tokens/s single-stream for code; moving its lookup tables to 16K records on NFS roughly halved prefill time (100K-token prompt 36 s to 20 s)"
         },
         {
-          "claim": "mcp-bench — real stdio MCP handshake benchmarks, per-tool p50/p95",
-          "path": "/opt/data/workspace/portfolio/mcp-bench"
+          "claim": "Model share over NFS to three Sparks from about 9 to 15.3 GB/s by finding ZFS cache churn on the server, not the NIC that was first blamed"
         },
         {
-          "claim": "Multi-MCP orchestrator — one CLI composing servers via direct Python import",
-          "path": "/opt/data/workspace/orchestrator"
+          "claim": "A probe that sends a real completion before declaring an engine up — health endpoints stay 200 when one rank of a multi-node engine has died"
         }
       ],
       "limits": [
-        "Single-tenant, one operator — no multi-user auth story on the broker beyond the /v1-only allowlist.",
-        "Model placement across the six nodes is manual; one large model resident per GPU at a time, nothing schedules it.",
-        "The tooling container is offline from the GPU host — engine restarts are operator work by runbook.",
-        "No auto-scaling anywhere — the fleet is a fixed inventory; capacity planning is done by benchmark."
+        "One big model at a time on the workstation; switching takes minutes of loading, and nothing schedules it automatically.",
+        "The Sparks run one lane at a time (GLM, Nemotron or DeepSeek), and the hottest node needs long benchmarks paused at 82 °C GPU or 90 °C SoC.",
+        "Single-tenant — it serves my agents and apps, not a team, and there is no autoscaling or high availability.",
+        "There is no cloud fallback — when every engine a route can use is down, the route fails."
       ],
       "relatedPosts": [
+        "broker-forensics-nvfp4",
         "eval-harness-silent-regressions",
-        "mcp-production-lessons"
+        "routing-coding-agent-two-local-models"
       ],
       "relatedProjects": [
-        "model-quality-harness",
-        "orchestrator"
+        "engine-console",
+        "gpu-tuner",
+        "model-quality-harness"
+      ],
+      "html": "<p>Serving open-weight models is the easy part. Knowing what is actually up, how\nfast, and why something failed is the work, and most of it is measurement:\ncounting bytes at the NIC instead of trusting client-reported rates, profiling\nthe NFS server under real multi-client load before blaming hardware, and\nsending a real completion instead of trusting a health check.</p>\n<h3 id=\"the-machines\">The machines</h3>\n<table>\n<thead><tr><th>Machine</th><th>GPUs</th><th>Role</th></tr></thead>\n<tbody>\n<tr><td>Workstation (Threadripper PRO, 246 GB RAM)</td><td>2× RTX PRO 6000 Blackwell, 96 GB each</td><td>the main local model (tensor parallel across both), the router, observability, model storage over NFS</td></tr>\n<tr><td>Four DGX Sparks</td><td>GB10, 128 GB unified memory each</td><td>one tensor-parallel engine across all four for the largest models</td></tr>\n<tr><td>Second workstation</td><td>RTX 5090, 32 GB</td><td>the fast routing tier and judge; video rendering when idle</td></tr>\n</tbody>\n</table>\n<p>The machines share a ConnectX-7 fabric. The workstation's two cards have no\nNVLink, so tensor parallelism between them runs over PCIe peer-to-peer, which\nneeds <code>iommu=pt</code> on the kernel command line — a check script proves it after\nevery kernel or BIOS change.</p>"
+    },
+    {
+      "slug": "smart-routing",
+      "title": "Smart routing — a fast model first, a judge, every call traced",
+      "summary": "Every agent and app in my lab reaches models through one router. A fast model answers first, and an LLM judge sends the hard conversations to a bigger one.",
+      "tags": [
+        "llm-routing",
+        "nemo-switchyard",
+        "litellm",
+        "agents",
+        "observability"
+      ],
+      "date": "2026-10-24",
+      "capability": "Smart routing",
+      "oneLiner": "One router for every client, tier routing with an LLM judge (NVIDIA NeMo Switchyard), and a gateway that counts and traces each routed call — tuned by reading the answers, not the counters.",
+      "status": "shipped",
+      "stack": [
+        "LiteLLM 1.102.1",
+        "NVIDIA NeMo Switchyard 0.3.0",
+        "NVIDIA NeMo Relay 0.9.2",
+        "Nemotron 3.5 Lightning (judge)",
+        "Presidio",
+        "OpenTelemetry",
+        "Langfuse",
+        "Grafana Tempo",
+        "Prometheus"
+      ],
+      "howItWorks": [
+        "Every client — coding agents, the chat UI, the eval harness, the job-search app — calls only a LiteLLM router. It holds each client's own key, masks personal data in model output, and traces every call. Models are aliases, so no client knows which GPU serves it.",
+        "Tier routes put a fast model in front. Nemotron Lightning on an RTX 5090 answers first; GLM-5.3-Flash on two RTX PRO 6000s takes the conversations the judge scores as too hard. A second route escalates to DeepSeek-V4.1-Flash on four DGX Sparks.",
+        "The judge (Switchyard's classifier in capability mode) estimates the chance that the fast model can finish the task. Below 0.7 the conversation goes to the big model, and a verdict that fails to parse also goes to the big model.",
+        "It judges once per conversation, keyed on the first user message, so follow-up turns skip the judge — about ten times faster on repeated turns.",
+        "Coding agents name route ids on the NeMo Relay gateway instead of plain model names, so every routed call is counted and traced. Nemo Console and the Grafana boards show which tier served what."
+      ],
+      "proof": [
+        {
+          "claim": "Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback",
+          "url": "https://github.com/willboyden/nemo-console"
+        },
+        {
+          "claim": "Five routing configurations benchmarked on the same 12 tasks; the live one keeps tasks the fast model answers correctly on the 5090 and sends the uncertain ones to GLM"
+        },
+        {
+          "claim": "Found why the fast tier answered empty — the Anthropic-format path dropped the \"thinking off\" flag — and moved it to the OpenAI format; its hard-task answers became complete and 2.5–4× faster than the big model's"
+        },
+        {
+          "claim": "Session affinity measured on the live route — repeat turns reused the first decision with zero judge calls (p50 82–3,887 ms down to 17–157 ms)"
+        },
+        {
+          "claim": "Per-client router keys, so spend and traffic are attributed to each agent in Grafana and Langfuse"
+        }
+      ],
+      "limits": [
+        "The judge's packaged rubric does not describe this stack well — it sends some trivial one-liners (\"What is 42?\") to the big model. A custom rubric moves the profile, but crudely.",
+        "The judge is not fully deterministic; borderline verdicts flip between runs, so a difference of under about two tasks in twelve is noise.",
+        "Affinity keys on the first user message, so two conversations with the same opening share one routing decision.",
+        "On Switchyard 0.3.0 a judged route fails while its judge is down; it does not fall back to a single model.",
+        "Answers were checked by reading them, not by a graded quality score — 12 tasks are a sanity check, not an eval."
+      ],
+      "relatedPosts": [
+        "routing-coding-agent-two-local-models",
+        "broker-forensics-nvfp4"
+      ],
+      "relatedProjects": [
+        "nemo-console"
+      ],
+      "html": "<h3 id=\"three-layers-three-jobs\">Three layers, three jobs</h3>\n<table>\n<thead><tr><th>Layer</th><th>Job</th></tr></thead>\n<tbody>\n<tr><td><strong>LiteLLM router</strong> (<code>:4000</code>)</td><td>The one door. Per-client keys and spend, a PII guardrail on output, OpenTelemetry traces to Langfuse and Tempo. Every model is an alias here.</td></tr>\n<tr><td><strong>Switchyard server</strong> (<code>:4010</code>)</td><td>NVIDIA's routing server as a container: tier routes for clients that only speak to the router.</td></tr>\n<tr><td><strong>NeMo Relay gateway</strong> (<code>:4040</code>)</td><td>A host service whose built-in Switchyard plugin routes the coding agents. Naming a route id instead of a plain model is what makes it count and trace the call.</td></tr>\n</tbody>\n</table>\n<h3 id=\"what-i-learned-getting-it-right\">What I learned getting it right</h3>\n<ul>\n<li><strong>Benchmark answers, not tier counters.</strong> The counters said the fast tier was\nserving its share. The captured answers were empty: all 500 tokens went to\nhidden reasoning.</li>\n<li><strong>The wire format is behavior.</strong> The same model with the same flags thought\ninstead of answering when the request went through the Anthropic-format\ntranslation, because that path dropped the flag that turns thinking off.</li>\n<li><strong>The rubric is the product.</strong> Swapping the judge for a much larger model\nkept the same backwards profile, and changing a two-sentence rubric moved it.\nThe judge model is a commodity; the rubric is where the policy lives.</li>\n<li><strong>Judge once per conversation.</strong> Judging every request of an agent loop\nre-judges the same task twenty times.</li>\n</ul>\n<p>The full account, with the benchmark tables, is in the write-up below.</p>"
+    },
+    {
+      "slug": "tech-stack",
+      "title": "The stack underneath the work",
+      "summary": "Every capability on this site runs on one lab: six GPU machines on a ConnectX-7 fabric, one model router, and observability and containment around every agent. This page is the inventory and the reasons.",
+      "tags": [
+        "infrastructure",
+        "litellm",
+        "nemo-switchyard",
+        "vllm",
+        "sglang",
+        "observability",
+        "security"
+      ],
+      "date": "2026-10-24",
+      "capability": "Infrastructure stack",
+      "oneLiner": "The hardware and software behind every capability here — GPUs, engines, the routing layer, tracing and the sandboxes the agents run in — with the reasoning for each choice.",
+      "status": "shipped",
+      "stack": [
+        "2× RTX PRO 6000 Blackwell",
+        "4× DGX Spark (GB10)",
+        "RTX 5090",
+        "ConnectX-7 + MikroTik CRS804",
+        "rootless Docker",
+        "vLLM",
+        "SGLang",
+        "NVIDIA Dynamo",
+        "LiteLLM",
+        "NeMo Switchyard",
+        "NeMo Relay",
+        "OpenTelemetry",
+        "Prometheus",
+        "Grafana",
+        "Loki",
+        "Tempo",
+        "Langfuse",
+        "Phoenix",
+        "Matrix (Synapse)"
+      ],
+      "howItWorks": [
+        "One door for models. Every client calls a LiteLLM router; it holds the per-client keys, the output PII guardrail and the tracing, so moving a model between machines changes no client.",
+        "A routing layer in front of the models. NVIDIA NeMo Switchyard decides which tier serves a conversation, and the NeMo Relay gateway counts and traces each routed call from the coding agents.",
+        "Engines chosen per model and card. vLLM, SGLang and Dynamo on the workstation and the Sparks, llama.cpp and Ollama for experiments — pinned images, rootless Docker, engines on internal networks.",
+        "Observability before anything else. OpenTelemetry traces go to Tempo, Langfuse and Phoenix; Prometheus and Loki feed Grafana; alerts land in a private chat room.",
+        "Containment by default. Egress is denied unless a host is on an allowlist, each MCP server runs in its own sandbox, agents get scoped keys from brokers instead of real ones, and secrets are encrypted before they touch disk."
+      ],
+      "proof": [
+        {
+          "claim": "Engine Console — the open-source control plane for the engines",
+          "url": "https://github.com/willboyden/engine-console"
+        },
+        {
+          "claim": "GPU Tuner — the open-source power, fan and clock tool for the GPUs",
+          "url": "https://github.com/willboyden/gpu-tuner"
+        },
+        {
+          "claim": "Nemo Console — the open-source console for Switchyard, Relay, Dynamo and SkillEvaluator",
+          "url": "https://github.com/willboyden/nemo-console"
+        },
+        {
+          "claim": "Agent Hub — the open-source control plane for what each agent knows and may do",
+          "url": "https://github.com/willboyden/agent-hub"
+        },
+        {
+          "claim": "This site — React 19, Vite and TypeScript, prerendered to static HTML and deployed by GitHub Actions",
+          "url": "https://github.com/willboyden/portfolio"
+        }
+      ],
+      "limits": [
+        "Single operator, single tenant — built for my agents and apps, not a team.",
+        "Model placement is manual — one big model on the workstation at a time and one lane on the Sparks at a time.",
+        "Rootless Docker cannot reach host-published ports from a container, so services talk over a shared Docker network, and tools that need real root (GPU power limits) run on the host.",
+        "No autoscaling or high availability anywhere.",
+        "Host-level security templates (auditd, AppArmor, nftables) are opt-in and applied by hand, never automatically."
+      ],
+      "relatedPosts": [
+        "private-chat-server-for-ai-agents",
+        "routing-coding-agent-two-local-models"
+      ],
+      "relatedProjects": [
+        "engine-console",
+        "gpu-tuner",
+        "nemo-console",
+        "agent-hub"
       ],
       "comparisons": [
         {
-          "title": "LiteLLM vs Switchyard",
+          "title": "LiteLLM vs Switchyard vs Relay — who does what",
           "rows": [
             [
               "Dimension",
-              "LiteLLM",
-              "Switchyard"
+              "LiteLLM router",
+              "NeMo Switchyard server",
+              "NeMo Relay gateway"
             ],
             [
               "Role",
-              "Primary broker — routes all LLM traffic",
-              "Second group — specialized routing subset"
-            ],
-            [
-              "Port",
-              ":4000",
-              ":4010"
+              "The one door for every model call",
+              "Tier routing with an LLM judge",
+              "Agent gateway; its Switchyard plugin routes the coding agents"
             ],
             [
               "Version",
-              "Proxy 1.100.1 (x-litellm-version header)",
-              "Not version-probed through the /v1 allowlist"
+              "1.102.1",
+              "0.3.0",
+              "0.9.2"
             ],
             [
-              "Models served",
-              "16 model groups (qwen",
-              "glm",
-              "deepseek",
-              "gpt-oss",
-              "llama",
-              "switchyard...)",
-              "Specialized subset — one group in the same broker listing"
+              "Runs as",
+              "Container on the shared lab network",
+              "Container",
+              "Host binary as a systemd user unit"
             ],
             [
-              "Declared limits",
-              "Per-group (e.g. 262144 in / 32768 out)",
-              "262144 in / 32768 out"
+              "Called by",
+              "Every client and both routing layers",
+              "Clients that only speak to the router",
+              "Coding agents (opencode and others) by route id"
             ],
             [
-              "Caching",
-              "Full-body response cache (~0.02s replay",
-              "cache-lab 50-probe experiment)",
-              "Not evaluated"
+              "Decides",
+              "Which engine an alias points at",
+              "Fast tier or capable tier per conversation",
+              "Same tiers; counts and traces every routed call"
             ],
             [
-              "Failover",
-              "Engine-level with per-group routing",
-              "Per-group routing rules — own ENGINE-DOWN signature in the repair runbook"
-            ],
-            [
-              "Used because",
-              "Battle-tested OpenAI-compatible proxy with broad model support",
-              "Complements LiteLLM for specific routing patterns"
-            ],
-            [
-              "Proof",
-              "/opt/data/workspace/broker-tools/nvfp4-findings.md",
-              "/opt/data/workspace/broker-tools/repair-runbook.md"
+              "Observability",
+              "Per-key spend and OTel traces",
+              "Prometheus metrics and a routing log",
+              "OTLP metrics and traces plus ATIF trajectories"
             ]
           ]
         }
       ],
-      "html": "<p>Every capability page on this site describes work done on one physical stack.\nThis page is the inventory underneath all of them — and the reasoning for why\neach piece is there.</p>"
+      "html": "<p>Every capability page on this site describes work done on one physical lab.\nThis page is the inventory underneath all of them.</p>\n<h3 id=\"agents-that-use-the-lab\">Agents that use the lab</h3>\n<p>Claude Code (also in a bubblewrap-sandboxed variant that runs on local\nmodels), opencode, Codex, Hermes Agent, Turnstone and Open WebUI all reach the\nmodels through the router with their own keys. Agent Hub keeps their skills,\ninstructions and permissions in one reviewed git repository, and lab-chat — a\nprivate Matrix server — is how they notify me, ask for approval and hand work\nto each other.</p>"
+    },
+    {
+      "slug": "video-generation",
+      "title": "Video generation with LTX-2.5 on local GPUs",
+      "summary": "Short films with synchronized speech, rendered by LTX-2.5 on three local GPUs and driven by an agent. Faces come from a reference image and voices from reference audio, and every clip is checked before it ships.",
+      "tags": [
+        "video",
+        "comfyui",
+        "ltx-video",
+        "agents",
+        "gpu"
+      ],
+      "date": "2026-10-17",
+      "capability": "Video generation",
+      "oneLiner": "LTX-2.5 (22B, NVFP4) on ComfyUI across two RTX PRO 6000s and an RTX 5090 — native speech and lip sync, a multi-shot film pipeline, and per-clip checks for speech, voice and silence.",
+      "status": "shipped",
+      "stack": [
+        "LTX-2.5 22B distilled (NVFP4)",
+        "ComfyUI",
+        "Gemma-4-12B text encoder",
+        "faster-whisper",
+        "ffmpeg",
+        "Python",
+        "Turnstone agent harness",
+        "rootless Docker"
+      ],
+      "howItWorks": [
+        "Three ComfyUI render workers — one per RTX PRO 6000 on the main workstation and one on the RTX 5090 in a second machine — load the same NVFP4 weights from one NFS share; all three cards are sm_120, so the same image and kernels run everywhere.",
+        "A shot list becomes one generation per shot, pulled off a shared queue so the faster card takes more shots; two to four connected shots can be rendered in a single generation when one character must hold across cuts.",
+        "LTX-2.5 generates speech and lip sync natively from the prompt. The face is anchored by a reference image and the voice by a reference audio clip — the two are independent and compose.",
+        "Prompts are written as prose, the way the model's guide asks — shot, scene, action, character, camera and audio in one paragraph, spoken lines in quotes, a beat of stillness before speech.",
+        "Every clip is verified, not sampled — transcribed with Whisper to catch wrong or repeated lines, compared against the reference voice, and checked for unwanted speech in cutaways.",
+        "An agent drives it — the video skills run in Turnstone (moved from a Hermes Agent setup), reaching ComfyUI and the GPUs only through brokers, and finished films are exported from its sandbox."
+      ],
+      "proof": [
+        {
+          "claim": "A text-to-video render on the RTX 5090 completes in 70–80 s, including the first load of the 18.7 GB transformer over NFS"
+        },
+        {
+          "claim": "Across five film builds, 22 of 24 shots passed their checks on the first try; the two failures were prompt-bound and passed after rewording"
+        },
+        {
+          "claim": "Native multi-shot generation held the voice within a 12.1 Hz pitch spread, against 41–68 Hz for every stitching scheme tried"
+        },
+        {
+          "claim": "Cutaways with no people in frame stayed silent in 18 of 19 renders; a person on screen talks even when told not to"
+        }
+      ],
+      "limits": [
+        "The renders stay in the lab; there are no public samples yet.",
+        "Voice consistency is measured with a pitch proxy, not a speaker-embedding model, and its threshold has not been calibrated against listening tests.",
+        "The GPUs are shared with the language models — the 5090 runs either the routing tier or ComfyUI, and the workstation cards render only when the big model leaves room.",
+        "On the 5090 (32 GB) the model, text encoder and VAEs do not fit at once; the text encoder is evicted to host RAM between steps.",
+        "Chained continuations decay past about eight clips and can repeat a quoted line, so long scenes are cut into one generation per shot."
+      ],
+      "html": "<p>The first conclusion here was wrong, and it is worth recording: I decided the\nmodel could not do dialogue without a separate text-to-speech stage, from\nreading node descriptions. One render with a quoted line in the prompt showed\nsynchronized speech. Test the capability before declaring it missing.</p>\n<h3 id=\"measurement-mistakes-that-cost-four-rebuilds\">Measurement mistakes that cost four rebuilds</h3>\n<ul>\n<li><strong>A visual fix judged with an audio metric.</strong> Seeding each shot from a\nreference image was scored on voice pitch, called worse, and dropped. It was\nthe right fix for the face all along. Match the measure to the mechanism.</li>\n<li><strong>Sampling hid half a defect.</strong> Checking only the first clip of each speaking\nshot showed five clean matches while half the dialogue clips were broken.</li>\n<li><strong>The metric became the target.</strong> Making &quot;no speech&quot; the pass condition for\ncutaways produced dead air. Asking for specific background sound fixed it.</li>\n</ul>\n<p>Watching the output caught what four rounds of instrumentation missed.</p>"
     },
     {
       "slug": "data-analytics",
-      "title": "Data analytics on a 279M-row ClickHouse cluster",
-      "summary": "Fourteen probe datasets over government payroll, PPP loans, federal spending, property values and IRS income data — 23 tables, ~279M rows in ClickHouse, every query under 0.3 s server-side, all findings traced to re-runnable SQL with embedded timings.",
+      "title": "Data analytics on a 279M-row ClickHouse database",
+      "summary": "Fourteen re-runnable probe datasets over Massachusetts payroll, PPP loans, federal spending, employment, property and income data in ClickHouse. Each embeds its own SQL and timings, and two traps that inflate totals 9–12× were caught before they reached a chart.",
       "tags": [
         "clickhouse",
         "analytics",
@@ -864,50 +1276,41 @@
       ],
       "date": "2026-10-12",
       "capability": "Data analytics",
-      "oneLiner": "23 tables, ~279M rows, 14 probe datasets, every query under 0.3 s — government payroll, PPP loans, federal spending, QCEW employment, property values, and IRS income data in ClickHouse.",
+      "oneLiner": "23 tables and ~279M rows in ClickHouse, reached by an agent only through an MCP server; 14 self-documenting datasets, every query under 0.3 s, and one dashboard file that needs no network.",
       "status": "shipped",
       "stack": [
         "ClickHouse 24.3",
         "SQL",
         "Python stdlib",
-        "DuckDB",
-        "JSON-RPC + SSE",
+        "MCP (JSON-RPC + SSE)",
         "vanilla JS/CSS"
       ],
       "howItWorks": [
-        "Model the domain across 23 tables — state payroll, municipal payroll, BLS QCEW employment, SBA PPP loans, federal awards, property parcels, IRS SOI income — with explicit grain and coverage rules per table.",
-        "Write self-documenting probe datasets — each data/*.json embeds the exact SQL, per-attempt elapsed time and row count, so findings are re-runnable and auditable.",
-        "Drive ClickHouse through a JSON-RPC/SSE MCP server — the sandbox cannot reach the HTTP port directly, so the query layer handles session-id handshakes, retry, and stale-session re-handshake.",
-        "Surface three real ClickHouse quirks (missing arbitrary() (error 46), alias-shadowing ILLEGAL_AGGREGATION (error 184), and fiscal_year stored as the string FY2026) — each diagnosed and worked around.",
-        "Catch coverage traps before they lie — QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70) and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award)."
+        "Map each table's grain and coverage before querying — state payroll, municipal payroll, BLS QCEW employment, SBA PPP loans, federal awards, property parcels and IRS income by ZIP code.",
+        "Write self-documenting probe datasets — each output file embeds the exact SQL, the elapsed time of every attempt and the row count, so any number can be re-run and audited.",
+        "Reach the database only through an MCP server, by design — the agent doing the analysis has no database port, so the query layer handles the session handshake, retries and a fresh session when one goes stale.",
+        "Diagnose ClickHouse quirks instead of guessing — a missing arbitrary() aggregate (error 46), alias shadowing that raises ILLEGAL_AGGREGATION (error 184), and fiscal years stored as the string \"FY2026\".",
+        "Check totals against known figures before charting — QCEW and federal awards both overstated by an order of magnitude until filtered and deduplicated."
       ],
       "proof": [
         {
-          "claim": "14 self-documenting probe datasets with embedded SQL and timings",
-          "path": "/opt/data/workspace/gov-payroll-workbench/data"
+          "claim": "14 probe datasets, each with its SQL, per-attempt timing and row count embedded"
         },
         {
-          "claim": "Single self-contained dashboard — 51-tile US map, dual-axis SVG trends, SQL provenance section",
-          "path": "/opt/data/workspace/gov-payroll-workbench/dashboard"
+          "claim": "A single self-contained dashboard — a 51-tile US map, dual-axis trends and a provenance section listing every query"
         },
         {
-          "claim": "Query client with JSON-RPC/SSE, session-id handshake, retry, re-handshake",
-          "path": "/opt/data/workspace/gov-payroll-workbench/ch_client.py"
+          "claim": "A query client for the MCP server with session handshake, retry and re-handshake"
         },
         {
-          "claim": "Three ClickHouse quirks diagnosed and worked around",
-          "path": "/opt/data/workspace/gov-payroll-workbench/probe_run.log"
-        },
-        {
-          "claim": "Coverage traps documented (QCEW agglvl_code filtering and federal award dedup)",
-          "path": "/opt/data/workspace/gov-payroll-workbench/README.md"
+          "claim": "Two coverage traps documented with their fixes (QCEW aggregation levels and federal award modifications)"
         }
       ],
       "limits": [
-        "The sandbox cannot reach the ClickHouse HTTP port directly — all queries go through the MCP server over JSON-RPC/SSE.",
-        "QCEW data covers 2021-2024 only; state payroll covers 2009-2026; municipal covers FY2011-FY2027.",
-        "Federal awards are deduped to final obligation per award — raw counts overstate by ~12x if not deduped.",
-        "The dashboard opens over file:// with zero network requests — no live ClickHouse connection in the artifact."
+        "The agent never touches the database directly; every query goes through the MCP server, which adds a hop.",
+        "Coverage is uneven — QCEW covers 2021–2024, state payroll 2009–2026, municipal payroll FY2011–FY2027 for at most four cities.",
+        "About 216M of the 279M rows are FEC campaign-finance tables that this work deliberately left out.",
+        "The dashboard is a snapshot (data embedded in one HTML file), not a live connection."
       ],
       "relatedPosts": [
         "agent-proof-your-data-layer",
@@ -917,212 +1320,7 @@
         "gov-payroll-workbench",
         "duckdb-mcp"
       ],
-      "html": "<p>A 23-table, ~279M-row ClickHouse database covering Massachusetts government\npayroll, SBA PPP loans, federal spending, QCEW employment, property values,\nand IRS income data. The interesting problems are not the queries — they are\nthe coverage traps, the alias-shadowing errors, and the grain mismatches that\nmake naive analysis lie.</p>\n<h2 id=\"what-the-data-covers\">What the data covers</h2>\n<p>The cluster holds <strong>23 tables</strong> across <strong>~279M rows</strong> spanning six data\ndomains:</p>\n<table>\n<thead><tr><th>Domain</th><th>Tables</th><th>Coverage</th><th>Rows</th></tr></thead>\n<tbody>\n<tr><td>MA state payroll</td><td><code>ma_state_payroll</code></td><td>2009–2026</td><td>~137K employees/year</td></tr>\n<tr><td>MA municipal payroll</td><td><code>municipal_payroll</code></td><td>FY2011–FY2027</td><td>4 cities, growing</td></tr>\n<tr><td>BLS QCEW employment</td><td><code>bls_qcew_ma</code></td><td>2021–2024</td><td>14 counties</td></tr>\n<tr><td>SBA PPP loans</td><td><code>sba_ppp_loans</code></td><td>2020–2021</td><td>11.5M loans, $797B</td></tr>\n<tr><td>Federal awards</td><td><code>usaspending</code></td><td>FY2025–FY2026</td><td>Deduped to final obligation</td></tr>\n<tr><td>Property parcels</td><td><code>property_data</code></td><td>All years</td><td>1.59M parcels, $1.57T</td></tr>\n<tr><td>IRS SOI income</td><td><code>irs_soi_zip</code></td><td>2018–2022</td><td>6.9M returns/year</td></tr>\n</tbody>\n</table>\n<h2 id=\"findings\">Findings</h2>\n<p>Each finding is traced to its probe dataset (re-runnable SQL with embedded\ntimings in <code>/opt/data/workspace/gov-payroll-workbench/data/</code>).</p>\n<h3 id=\"state-payroll-20092026\">State payroll (2009–2026)</h3>\n<p>Latest year (2026): <strong>136,415 employees</strong> across <strong>158 departments</strong>, total\nwages <strong>$5.59B</strong>, average wage <strong>$40,994</strong>. The 2009 data has only 1\ndepartment (partial coverage) vs 155+ in later years — coverage varies\nsignificantly across the time series.</p>\n<p>Top departments by headcount (latest year): University of Massachusetts\nSystem (23,399 employees, $918M wages), MBTA (8,796 employees, $506M wages).</p>\n<h3 id=\"sba-ppp-loans-20202021\">SBA PPP loans (2020–2021)</h3>\n<p><strong>11.5M loans</strong> totaling <strong>$797B</strong> across 60 states/territories. California\nleads with 1.27M loans ($104B), Texas second with 939K loans ($63B).</p>\n<h3 id=\"property-values-all-years\">Property values (all years)</h3>\n<p><strong>1.59M parcels</strong> totaling <strong>$1.57T</strong> in assessed value. Boston leads with\n180K parcels ($265B), Cambridge second with 29K parcels ($93B) — Cambridge's\nper-parcel value ($3.2M) is more than double Boston's ($1.5M).</p>\n<h3 id=\"bls-qcew-employment-20212024\">BLS QCEW employment (2021–2024)</h3>\n<p>Middlesex County leads with <strong>930K employed</strong> and <strong>$26.3B</strong> in Q4 wages.\nSuffolk County second with <strong>717K employed</strong> and <strong>$24.2B</strong> in wages.</p>\n<h3 id=\"the-coverage-traps\">The coverage traps</h3>\n<p>Two traps that would make naive analysis lie:</p>\n<ol>\n<li><p><strong>QCEW aggregation levels</strong>: the raw table carries <strong>9 aggregation levels\nper county</strong>. Without filtering to <code>agglvl_code = 70</code> (the county level),\nemployment is overstated ~9x. Diagnosed by noticing the numbers didn't\nmatch known county populations.</p></li>\n<li><p><strong>Federal award modifications</strong>: <code>usaspending</code> stores <strong>cumulative\nmodifications</strong> per award — each amendment adds a new row with the FULL\nobligated amount, not a delta. Without deduplicating to the final\nobligation per award_id, spending is overstated ~12x. Diagnosed by\ncross-checking against published USASpending totals.</p></li>\n</ol>\n<h2 id=\"the-pipeline\">The pipeline</h2>\n<p>The sandbox cannot reach the ClickHouse HTTP port directly. The query layer\ndrives the <code>clickhouse-mcp</code> server over <strong>JSON-RPC with SSE responses</strong>,\nhandling session-id handshakes, retry with backoff, and stale-session\nre-handshake. Three real ClickHouse quirks were diagnosed and worked around:</p>\n<ul>\n<li>Missing <code>arbitrary()</code> aggregate (error 46) — replaced with <code>any()</code></li>\n<li>Alias-shadowing <code>ILLEGAL_AGGREGATION</code> (error 184) — CTE restructure</li>\n<li><code>fiscal_year</code> stored as string <code>FY2026</code> — parsed to integer in SQL</li>\n</ul>\n<p>The dashboard is a single self-contained HTML file — 51-tile US map, dual-axis\nSVG trends, and a full SQL provenance section exposing every query, elapsed\ntime, and row count. Opens over <code>file://</code> with zero network requests.</p>"
-    },
-    {
-      "slug": "local-inference",
-      "title": "Local LLM inference",
-      "summary": "Serve, probe, and benchmark open-weight models across a multi-node GPU cluster — Threadripper Pro head node with dual RTX Pro 6000s, four DGX Spark (GB10) nodes, and an RTX 5090 workstation — through an OpenAI-compatible broker with a failure taxonomy that refuses to call a listed model healthy.",
-      "tags": [
-        "llm",
-        "vllm",
-        "sglang",
-        "benchmark",
-        "litellm",
-        "multi-node",
-        "dgx"
-      ],
-      "date": "2026-10-10",
-      "capability": "Local LLM Inference",
-      "oneLiner": "A heterogeneous GPU cluster — Threadripper Pro head node, dual RTX Pro 6000s, four DGX Spark (GB10) nodes, and an RTX 5090 workstation — serving open-weight models through an OpenAI-compatible broker with probes, benchmarks, and runbooks that keep the fleet honest.",
-      "status": "shipped",
-      "stack": [
-        "LiteLLM broker",
-        "vLLM",
-        "SGLang",
-        "DGX Spark (GB10)",
-        "RTX Pro 6000",
-        "RTX 5090",
-        "ConnectX-7",
-        "MikroTik CRS804",
-        "Python stdlib",
-        "DuckDB"
-      ],
-      "howItWorks": [
-        "List model groups from GET /models, then health-probe each one — a listed group is not a healthy group.",
-        "Classify every failure by latency and response body (engine down vs bad upstream name vs GPU contention) before calling anything dead.",
-        "Benchmark sequentially with cache-busting (unique user field plus prompt nonce), logging finish_reason and reasoning burn per turn.",
-        "Re-test any surprising throughput claim adversarially (ascending and descending concurrency ladder) before believing it.",
-        "Convert persistent DOWN groups into an operator-ready repair runbook instead of narrating failures."
-      ],
-      "proof": [
-        {
-          "claim": "Broker playbook — failure taxonomy, probe scripts, engine forensics",
-          "path": "/opt/data/skills/mlops/local-llm-broker/SKILL.md"
-        },
-        {
-          "claim": "Tested fleet tooling — pulse, bench, runbook generator, 18-test suite",
-          "path": "/opt/data/workspace/broker-tools"
-        },
-        {
-          "claim": "Controlled 50-probe cache experiment proving full-body response caching",
-          "path": "/opt/data/workspace/cache-lab"
-        },
-        {
-          "claim": "Adversarial replay ruling out order-drift in a throughput-collapse claim",
-          "path": "/opt/data/workspace/adversarial"
-        },
-        {
-          "claim": "Deterministic tool-call scoring harness with dashboard",
-          "path": "/opt/data/workspace/model-quality-harness"
-        }
-      ],
-      "limits": [
-        "One large model is resident per GPU at a time; model placement across the cluster is manual, not scheduled.",
-        "Engines can only be restarted by the operator — the tooling container has no GPU access and a /v1-only broker allowlist.",
-        "Identical request bodies hit the broker cache in ~0.02 s; latency numbers without cache busting are fiction.",
-        "GET /models 200 does not mean inference works — probe a chat completion before relying on a group."
-      ],
-      "relatedPosts": [
-        "eval-harness-silent-regressions",
-        "langfuse-observability-pragmatic"
-      ],
-      "relatedProjects": [
-        "model-quality-harness"
-      ],
-      "html": "<p>Serving open-weight models across a heterogeneous GPU cluster is the easy\npart. Knowing what is actually up, how fast, and why something failed is the\nwork.</p>"
-    },
-    {
-      "slug": "smart-routing",
-      "title": "Smart routing — RAG, MCP & A2A",
-      "summary": "Making a fleet of MCP servers actually usable: deterministic NL-to-tool planning with guardrails, measured per-tool latency, same-process orchestration, FTS5 retrieval, and agent-to-agent fleet discipline.",
-      "tags": [
-        "mcp",
-        "routing",
-        "rag",
-        "agents",
-        "orchestrator"
-      ],
-      "date": "2026-10-10",
-      "capability": "Smart routing",
-      "oneLiner": "Guardrail-first tool routing with golden tests, real-latency benchmarks, an in-process MCP orchestrator, FTS5 retrieval, and fleet patterns that survived overnight runs.",
-      "status": "shipped",
-      "stack": [
-        "FastMCP",
-        "SQLite FTS5",
-        "Python stdlib",
-        "DuckDB",
-        "kanban fleet"
-      ],
-      "howItWorks": [
-        "Catalog every MCP server's tools with capability classes, then score natural-language goals against name and description signals into a ranked routing table.",
-        "Enforce policy before execution — deny-rules veto destructive candidates (duckdb_drop_table is DENIED in read-only mode); plans are dry-runnable.",
-        "Replay plans against golden fixtures so routing changes are testable — no LLM in the loop keeps decisions reproducible and auditable.",
-        "Measure the fleet with real stdio handshakes — p50/p95 per tool, cold start, error rate — because agent loops hang on the slowest tool.",
-        "Compose, don't concatenate — same-process import for zero-overhead calls, FTS5 stores for retrieval, pooled worker fleets for parallel execution."
-      ],
-      "proof": [
-        {
-          "claim": "mcp-router — deterministic NL-to-tool planner with deny-rules and dry-run traces, 13 of 13 golden goals, SHIPPED v0.2.0",
-          "path": "/opt/data/workspace/portfolio/mcp-router"
-        },
-        {
-          "claim": "mcp-bench — real stdio MCP handshake benchmarks, per-tool p50/p95, cold-start ms, 85 tests",
-          "path": "/opt/data/workspace/portfolio/mcp-bench"
-        },
-        {
-          "claim": "Multi-MCP orchestrator — one CLI over six imported MCP servers, chained pipeline mode",
-          "path": "/opt/data/workspace/orchestrator"
-        },
-        {
-          "claim": "wiki-search — FastMCP server over a SQLite FTS5 search engine",
-          "path": "/opt/data/workspace/projects/wiki-search"
-        },
-        {
-          "claim": "hwdocs RAG store — chunked FTS5 store, 100 percent recall at 0.11 ms vs grep 88 percent at 1.63 ms",
-          "path": "/opt/data/workspace/hwdocs"
-        },
-        {
-          "claim": "Agent-to-agent fleet runner — pooled kanban workers, dispatcher-exact spawn, overnight runbooks",
-          "path": "/opt/data/skills/kanban-fleet-runner/SKILL.md"
-        }
-      ],
-      "limits": [
-        "No LLM in the router loop is a feature and a limit — deterministic and golden-testable, but it plans on lexical signals, not semantics.",
-        "hwdocs retrieval is lexical FTS5 only; the fleet has an embedding model, but no embedding store is built yet — semantic recall is future work.",
-        "Worker fleets cap at about 8 concurrent sessions — a 15-worker dispatcher run crashed the box on RLIMIT_NPROC, documented not folklore.",
-        "Kanban workers cannot complete cards under an uncompleted parent umbrella — orchestrators must verify and force-close."
-      ],
-      "relatedPosts": [
-        "mcp-production-lessons",
-        "agent-proof-your-data-layer",
-        "duckdb-for-agent-workflows",
-        "private-chat-server-for-ai-agents"
-      ],
-      "relatedProjects": [
-        "orchestrator",
-        "duckdb-mcp",
-        "lab-chat"
-      ],
-      "html": "<p>A fleet of MCP servers is only as good as the layer that routes, measures, and\ncomposes it. Guardrails beat scores; golden tests beat vibes.</p>"
-    },
-    {
-      "slug": "video-generation",
-      "title": "Programmatic video generation",
-      "summary": "Code-first video pipelines that run where diffusion stacks can't — a Manim CE MCP server plus a zero-dependency Pillow+ffmpeg frame pipeline — with the diffusion lane honestly declared not yet exercised here.",
-      "tags": [
-        "video",
-        "manim",
-        "ffmpeg",
-        "pillow",
-        "mcp"
-      ],
-      "date": "2026-10-10",
-      "capability": "Video generation",
-      "oneLiner": "Scenes as code: Manim CE via an MCP server, Pillow frame pipelines through ffmpeg — seven shipped explainer videos, web-ready and moov-safe.",
-      "status": "in-progress",
-      "stack": [
-        "Manim CE",
-        "Pillow",
-        "ffmpeg",
-        "MCP",
-        "Python stdlib"
-      ],
-      "howItWorks": [
-        "Author scenes as code — Manim CE Scene classes, or Pillow section functions drawing frame-by-frame with progress t in the 0-1 range.",
-        "Render frames headlessly — manim CLI via the MCP server, or Pillow PNG sequences at 24 to 30 fps.",
-        "Stitch with ffmpeg — libx264, yuv420p chroma for player compatibility.",
-        "Ship web-ready — re-mux with +faststart so the moov atom leads; scan bytes to verify before calling an MP4 browser-playable."
-      ],
-      "proof": [
-        {
-          "claim": "MCP server for Manim rendering — stdlib JSON-RPC over stdio, scene tools, 12 tests",
-          "path": "/opt/data/workspace/projects/animated-explainer/explainer_mcp.py"
-        },
-        {
-          "claim": "Seven rendered videos on disk — 1280x720 h264, 23.5 s, moov at file start",
-          "path": "/opt/data/workspace/projects/animated-explainer/project_videos"
-        },
-        {
-          "claim": "First-party Pillow+ffmpeg pipeline skill — section-function template, faststart pitfall documented",
-          "path": "/opt/data/skills/creative/animated-videos"
-        },
-        {
-          "claim": "Manim CE authoring playbooks — explainer scenes and math/algorithm patterns",
-          "path": "/opt/data/skills/creative/manim-explainer"
-        },
-        {
-          "claim": "Runnable in this container — ffmpeg 7.1.5 and Pillow 12.3.0 verified installed",
-          "path": "/usr/bin/ffmpeg"
-        }
-      ],
-      "limits": [
-        "No GPU diffusion stack in this container — no comfy binary, no weights, no ComfyUI workspace; the diffusion lane is offered, not yet exercised locally.",
-        "Manim is not currently importable in the container; renders above date from 2026-07-10. Regeneration needs the environment reinstalled.",
-        "Typography constrained to installed fonts (DejaVu/Liberation/Noto) — the same font reality as this site.",
-        "Frame pipelines are CPU-bound — hundreds of MB of transient disk per render; frames are always cleaned up after stitching."
-      ],
-      "html": "<p>When diffusion is not an option, video is still a code problem: scenes authored\nas functions, frames rendered deterministically, bytes verified before shipping.</p>"
+      "html": "<p>A 23-table ClickHouse database covering Massachusetts government payroll, SBA\nPPP loans, federal spending, QCEW employment, property values and IRS income\ndata. The interesting problems are not the queries — they are the coverage\ntraps, the alias-shadowing errors and the grain mismatches that make naive\nanalysis lie.</p>\n<h3 id=\"what-the-data-covers\">What the data covers</h3>\n<table>\n<thead><tr><th>Domain</th><th>Table</th><th>Coverage</th><th>Scale</th></tr></thead>\n<tbody>\n<tr><td>MA state payroll</td><td><code>ma_state_payroll</code></td><td>2009–2026</td><td>~137K employees a year</td></tr>\n<tr><td>MA municipal payroll</td><td><code>municipal_payroll</code></td><td>FY2011–FY2027</td><td>at most 4 cities</td></tr>\n<tr><td>BLS QCEW employment</td><td><code>bls_qcew_ma</code></td><td>2021–2024</td><td>14 counties</td></tr>\n<tr><td>SBA PPP loans</td><td><code>sba_ppp_loans</code></td><td>2020–2021</td><td>11.5M loans, $797B</td></tr>\n<tr><td>Federal awards</td><td><code>usaspending</code></td><td>FY2025–FY2026</td><td>deduplicated to the final obligation</td></tr>\n<tr><td>Property parcels</td><td><code>ma_property_parcels</code></td><td>—</td><td>2.56M rows</td></tr>\n<tr><td>IRS income</td><td><code>irs_soi_zip</code></td><td>2018–2022</td><td>by ZIP code</td></tr>\n</tbody>\n</table>\n<h3 id=\"findings\">Findings</h3>\n<p>Each figure comes from one probe dataset with its SQL embedded.</p>\n<ul>\n<li><strong>State payroll, 2026:</strong> 136,415 employees in 158 departments, $5.59B in\nwages. The 2009 data has a single department, so coverage varies a lot\nacross the series. Largest employers: the University of Massachusetts system\n(23,399 employees, $918M) and the MBTA (8,796 employees, $506M).</li>\n<li><strong>PPP loans:</strong> 11.5M loans totalling $797B across 60 states and territories.\nCalifornia leads with 1.27M loans ($104B), Texas follows with 939K ($63B).</li>\n<li><strong>Property:</strong> the 100 highest-value towns hold 1.59M parcels worth $1.57T.\nBoston has 180K parcels ($265B); Cambridge has 29K ($93B), so its value per\nparcel ($3.2M) is more than double Boston's ($1.5M).</li>\n<li><strong>Employment (QCEW, Q4 of the latest year):</strong> Middlesex County employs 930K\npeople with $26.3B in quarterly wages; Suffolk follows with 717K and $24.2B.</li>\n</ul>\n<h3 id=\"the-two-traps\">The two traps</h3>\n<ol>\n<li><strong>QCEW aggregation levels.</strong> The raw table carries nine aggregation levels\nper county. Without filtering to <code>agglvl_code = 70</code> (county totals),\nemployment comes out about nine times too high. It showed up because the\nnumbers did not match known county populations.</li>\n<li><strong>Federal award modifications.</strong> <code>usaspending</code> adds a row for every\namendment with the full obligated amount, not the change. Without keeping\nonly the final obligation per award, spending comes out about twelve times\ntoo high. It showed up when cross-checked against published totals.</li>\n</ol>\n<h3 id=\"the-pipeline\">The pipeline</h3>\n<p>The query layer drives a <code>clickhouse-mcp</code> server over JSON-RPC with\nserver-sent-event responses. The dashboard is one HTML file with the data\nembedded — a 51-tile US map, dual-axis trends and a provenance section that\nlists every query, its elapsed time and its row count. It makes no network\nrequests.</p>"
     }
   ]
 }

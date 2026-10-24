@@ -1,6 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All facts below trace to
-# /opt/data/workspace/model-quality-harness (README + results/).
 title: Building an eval harness that catches silent model regressions
 slug: eval-harness-silent-regressions
 summary: >-

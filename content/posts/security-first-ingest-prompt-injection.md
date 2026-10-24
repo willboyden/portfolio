@@ -1,7 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. All mechanisms and payloads
-# below trace to /opt/data/workspace/portfolio/jobpilot (jobpilot/security.py,
-# jobpilot/audit.py, tests/test_security.py, examples/fixtures-adversarial.json).
 title: 'Security-first ingest — screening job postings for prompt injection before the model sees them'
 slug: security-first-ingest-prompt-injection
 summary: >-

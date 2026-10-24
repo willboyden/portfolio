@@ -1,8 +1,4 @@
 ---
-# DRAFT-REVIEW: human review before publishing. Site facts trace to
-# /opt/data/workspace/projects/professional-portfolio (vitest.config.ts,
-# src/**/*.test.*, scripts/build-content.mjs, e2e/); eval facts trace to
-# /opt/data/workspace/model-quality-harness (harness/ + README + results/).
 title: Testing when half your system is a prompt
 slug: testing-half-your-system-is-a-prompt
 summary: >-
