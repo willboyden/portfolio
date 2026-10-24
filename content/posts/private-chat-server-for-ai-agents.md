@@ -197,9 +197,10 @@ is pending.
   resolution followed.
 - The server's containers were tested for no DNS and no outbound
   connections.
-- Not yet proven: a model inside Hermes or Turnstone actually choosing to call
-  the tools. Both connect and list the six tools; no suitable model was loaded
-  to drive them.
+- A real model drives it: with GLM-5.3-Flash loaded, Hermes and Turnstone
+  were each asked to call `list_rooms` once. Each reported back its own
+  contained account and exactly its two rooms, and the bridge's audit log
+  shows one call from each.
 
 ## What's next
 
