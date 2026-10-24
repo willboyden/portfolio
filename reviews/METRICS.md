@@ -28,7 +28,7 @@ concatenating filter chips and metric rows into pseudo-sentences; the prose meet
 
 | Round | Reviewer | Lens | Score at review | Score at re-review |
 |---|---|---|---|---|
-| 7 | R7-A | zero-JS / graceful degradation | 7/10 | — |
-| 7 | R7-B | cross-browser / platform quirks | 7/10 | — |
-| 7 | R7-C | cognitive accessibility & plain language | 7/10 | — |
-| 7 | R7-D | maintenance / content rot | 5/10 | — |
+| 7 | R7-A | zero-JS / graceful degradation | 7/10 | 8/10 |
+| 7 | R7-B | cross-browser / platform quirks | 7/10 | 8/10 |
+| 7 | R7-C | cognitive accessibility & plain language | 7/10 | 7/10 (all 8 findings FIXED; aspiration targets bounded by scorer noise, not copy) |
+| 7 | R7-D | maintenance / content rot | 5/10 | 8.5/10 |
