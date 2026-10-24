@@ -72,7 +72,7 @@ export function recipesByDate(): Recipe[] {
 }
 
 /** Hub and subsection-nav order; capabilities not listed follow, newest first. */
-const AI_CAPABILITY_ORDER = ['local-inference', 'smart-routing', 'video-generation', 'data-analytics', 'tech-stack'];
+const AI_CAPABILITY_ORDER = ['local-inference', 'smart-routing', 'agent-harness-engineering', 'video-generation', 'data-analytics', 'tech-stack'];
 
 /** Every capability in hub order. The hub and the subsection nav read this —
  * it was missing, so the hub rendered its "still being written" empty state

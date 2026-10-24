@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="532" viewBox="0 0 640 532" font-family="Helvetica,Arial,sans-serif" font-size="14" role="img" aria-labelledby="t d"><title id="t">Who decides what when an AI agent drives harness2 through MCP</title><desc id="d">The model chooses which tool to call and with which arguments, but cannot write profiles, read secrets, or touch tokens or the audit log, accept host-isolation risk for a person, or exceed its token's role. The MCP server adds one rule of its own, refusing acknowledge_risks unless the person who started it allowed that, and it labels results as untrusted, caps output and bounds waits. The Workbench server decides everything else: each token's role on every call, audited refusals, isolation, validation, limits and budgets.</desc><rect width="100%" height="100%" fill="white"/><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#212121"/></marker></defs>
+<rect x="10" y="10" width="620" height="140" rx="8" fill="#e3f2fd" stroke="#212121"/>
+<text x="26" y="36" font-size="15" font-weight="bold" fill="#212121">The model chooses</text>
+<text x="26" y="62" font-size="13" fill="#455a64">which of 42 tools to call</text>
+<text x="26" y="84" font-size="13" fill="#455a64">the arguments, budget_usd too</text>
+<text x="26" y="106" font-size="13" fill="#455a64">when to wait and when to stop</text>
+<text x="330" y="36" font-size="15" font-weight="bold" fill="#b71c1c">It cannot</text>
+<text x="330" y="62" font-size="13" fill="#455a64">write profiles, read secrets, or touch</text>
+<text x="330" y="84" font-size="13" fill="#455a64">tokens or the audit log: no tool for it</text>
+<text x="330" y="106" font-size="13" fill="#455a64">accept host-isolation risk for you</text>
+<text x="330" y="128" font-size="13" fill="#455a64">do more than its token's role allows</text>
+<line x1="320" y1="150" x2="320" y2="182" stroke="#212121" marker-end="url(#arr)"/>
+<rect x="10" y="186" width="620" height="150" rx="8" fill="#fff8e1" stroke="#212121"/>
+<text x="26" y="212" font-size="15" font-weight="bold" fill="#212121">h2workbench-mcp adds one rule</text>
+<text x="26" y="238" font-size="13" fill="#212121">acknowledge_risks=true is refused unless the person who started it</text>
+<text x="26" y="258" font-size="13" fill="#212121">passed --allow-risk-acknowledgement</text>
+<text x="26" y="284" font-size="13" fill="#455a64">and it labels results as untrusted data, caps output near 100 KB, bounds</text>
+<text x="26" y="304" font-size="13" fill="#455a64">waits at 600 s, guards its HTTP endpoint and keeps no state</text>
+<text x="26" y="326" font-size="13" font-style="italic" fill="#455a64">every call forwards the caller's own token</text>
+<line x1="320" y1="336" x2="320" y2="368" stroke="#212121" marker-end="url(#arr)"/>
+<rect x="10" y="372" width="620" height="124" rx="8" fill="#e8f5e9" stroke="#212121"/>
+<text x="26" y="398" font-size="15" font-weight="bold" fill="#212121">The Workbench server decides</text>
+<text x="26" y="424" font-size="13" fill="#455a64">each token's role on every call: viewer &lt; operator &lt; admin</text>
+<text x="26" y="446" font-size="13" fill="#455a64">refusals, audited at most 10 a minute per token (the rest counted)</text>
+<text x="26" y="468" font-size="13" fill="#455a64">isolation, job validation, limits and budgets</text>
+<text x="26" y="488" font-size="13" font-style="italic" fill="#455a64">the same rules as for a person</text>
+<text x="10" y="522" font-size="13" fill="#455a64">Tokens for agents: viewer by default, operator only to start jobs, never admin.</text>
+</svg>

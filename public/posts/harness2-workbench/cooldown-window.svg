@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="262" viewBox="0 0 640 262" font-family="Helvetica,Arial,sans-serif" font-size="14" role="img" aria-labelledby="t d"><title id="t">Two Dependabot proposals against the 14-day cooldown</title><desc id="d">A timeline of October 2026. Versions published after October 10 were inside the 14-day window on October 24. uv 0.12.24, the pinned version, was published on October 8; Dependabot proposed uv 0.13.5, published on October 22. A pull request titled uuid 1.28.0, published on October 10, changed the lockfile to uuid 1.29.0, published on October 23.</desc><rect width="100%" height="100%" fill="white"/>
+<text x="10" y="24" font-size="15" font-weight="bold" fill="#212121">October 2026, against the 14-day window on the 24th</text>
+<rect x="267" y="38" width="353" height="170" fill="#ffebee"/>
+<line x1="267" y1="38" x2="267" y2="208" stroke="#b71c1c" stroke-dasharray="4 3"/>
+<text x="276" y="58" font-size="13" font-weight="bold" fill="#b71c1c">younger than 14 days</text>
+<text x="10" y="104" font-weight="bold" fill="#212121">uv</text>
+<line x1="40" y1="100" x2="620" y2="100" stroke="#cfd8dc"/>
+<circle cx="216" cy="100" r="7" fill="#2e7d32"/>
+<text x="60" y="86" font-size="13" fill="#2e7d32">0.12.24 pinned (Oct 8)</text>
+<circle cx="569" cy="100" r="7" fill="#b71c1c"/>
+<text x="404" y="86" font-size="13" fill="#b71c1c">0.13.5 proposed (Oct 22)</text>
+<text x="440" y="122" font-size="12" fill="#455a64">ghcr.io gave no date</text>
+<text x="10" y="164" font-weight="bold" fill="#212121">uuid</text>
+<line x1="40" y1="160" x2="620" y2="160" stroke="#cfd8dc"/>
+<circle cx="267" cy="160" r="7" fill="#2e7d32"/>
+<text x="64" y="146" font-size="13" fill="#2e7d32">1.28.0 in the title (Oct 10)</text>
+<circle cx="594" cy="160" r="7" fill="#b71c1c"/>
+<text x="392" y="146" font-size="13" fill="#b71c1c">1.29.0 in the lockfile (Oct 23)</text>
+<text x="402" y="182" font-size="12" fill="#455a64">caught by cargo xtask cooldown</text>
+<line x1="40" y1="208" x2="620" y2="208" stroke="#212121"/>
+<line x1="40" y1="204" x2="40" y2="212" stroke="#212121"/><text x="28" y="230" font-size="12" fill="#455a64">Oct 1</text>
+<line x1="216" y1="204" x2="216" y2="212" stroke="#212121"/><text x="204" y="230" font-size="12" fill="#455a64">Oct 8</text>
+<line x1="393" y1="204" x2="393" y2="212" stroke="#212121"/><text x="378" y="230" font-size="12" fill="#455a64">Oct 15</text>
+<line x1="569" y1="204" x2="569" y2="212" stroke="#212121"/><text x="553" y="230" font-size="12" fill="#455a64">Oct 22</text>
+<text x="240" y="252" font-size="12" fill="#b71c1c">cutoff: Oct 10</text>
+</svg>

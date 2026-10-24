@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="236" viewBox="0 0 640 236" font-family="Helvetica,Arial,sans-serif" font-size="14" role="img" aria-labelledby="t d"><title id="t">What /proc/PID/environ returns while a child process execs</title><desc id="d">A timeline of one exec. Right after a vfork-style spawn returns, a read can still see the parent's environment. After the new address space is mapped, a child of a non-dumpable process is unreadable until the exec marks it dumpable. The process then gets its new name, but its environment reads empty until the kernel fills in the environment pointers; only then does the read show the job marker.</desc><rect width="100%" height="100%" fill="white"/>
+<text x="10" y="24" font-size="15" font-weight="bold" fill="#212121">One exec, as a reader of /proc/PID/environ sees it</text>
+<text x="14" y="52" font-size="13" fill="#455a64">spawn()</text><text x="14" y="68" font-size="13" fill="#455a64">returns</text>
+<text x="159" y="52" font-size="13" fill="#455a64">new address</text><text x="159" y="68" font-size="13" fill="#455a64">space</text>
+<text x="294" y="52" font-size="13" fill="#455a64">made dumpable,</text><text x="294" y="68" font-size="13" fill="#455a64">then renamed</text>
+<text x="494" y="52" font-size="13" fill="#455a64">environment</text><text x="494" y="68" font-size="13" fill="#455a64">filled in</text>
+<rect x="10" y="80" width="145" height="46" fill="#ffebee" stroke="#212121"/>
+<rect x="155" y="80" width="135" height="46" fill="#fff3e0" stroke="#212121"/>
+<rect x="290" y="80" width="200" height="46" fill="#fff8e1" stroke="#212121"/>
+<rect x="490" y="80" width="140" height="46" fill="#e8f5e9" stroke="#212121"/>
+<text x="18" y="108" font-weight="bold" fill="#b71c1c">A: parent's env</text>
+<text x="163" y="108" font-weight="bold" fill="#ef6c00">B: denied</text>
+<text x="298" y="100" font-weight="bold" fill="#8d6e00">C: empty</text>
+<text x="298" y="118" font-size="13" fill="#8d6e00">already named "sleep"</text>
+<text x="498" y="108" font-weight="bold" fill="#2e7d32">marker present</text>
+<text x="10" y="158" font-size="13" fill="#212121"><tspan font-weight="bold">A</tspan>  right after a vfork-style spawn: the parent's environment (never seen directly)</text>
+<text x="10" y="182" font-size="13" fill="#212121"><tspan font-weight="bold">B</tspan>  a child of a non-dumpable process: EACCES (5 of 2,000 probes)</text>
+<text x="10" y="206" font-size="13" fill="#212121"><tspan font-weight="bold">C</tspan>  the new name comes first: empty for 0.018 ms (median), 0.139 ms (max)</text>
+<text x="10" y="228" font-size="12" fill="#455a64">Measured on Linux 7.0. The fix reads again on empty or denied, with pauses doubling from 1 ms.</text>
+</svg>
