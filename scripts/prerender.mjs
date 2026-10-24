@@ -85,7 +85,7 @@ function applyLimit(paths) {
 }
 
 async function writeArtifacts(mod) {
-  const { siteMeta, feedItems, sitemapPaths } = mod;
+  const { siteMeta, feedItems, sitemapPaths, sitemapDates } = mod;
   /* R2C-1: origin comes from the app's own SITE.url (via siteMeta) — never a
    * divergent env default. URL FORM matches canonicals exactly (no forced
    * trailing slash): '/' stays '/', '/writing' stays '/writing'. */
@@ -114,9 +114,13 @@ async function writeArtifacts(mod) {
   } catch {
     /* keep floor date */
   }
-  const urls = sitemapPaths.map(
-    (p) => `  <url><loc>${ORIGIN}${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod></url>`,
-  );
+  /* R8A-3: per-URL lastmod — the entry's own content date when the route has
+   * one (sitemapDates), else the git-derived global lastmod (unchanged F5
+   * behavior: never build wall-clock). */
+  const urls = sitemapPaths.map((p) => {
+    const lastmodFor = sitemapDates?.[p] ?? lastmod;
+    return `  <url><loc>${ORIGIN}${p === '/' ? '/' : p}</loc><lastmod>${lastmodFor}</lastmod></url>`;
+  });
   writeFileSync(
     join(DIST, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`,

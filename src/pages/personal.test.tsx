@@ -13,6 +13,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { content } from 'app/content';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
@@ -232,12 +233,23 @@ describe('Contact', () => {
     expect(html).toContain('data-testid="contact-email-unset"');
   });
 
-  it('lists the SOCIAL_LINKS platforms from the shared layout constant', () => {
-    /* R2-A A12: unconfigured profiles are hidden, not shown as @your-handle. */
+  it('hides the Elsewhere panel entirely while every social is unconfigured (R6-B recipe)', () => {
+    /* R2-A A12: unconfigured profiles are hidden, not shown as @your-handle.
+     * R8: with zero configured socials the panel itself does not render —
+     * an empty box on the conversion page reads as "abandoned", and the
+     * footer already established the render-only-when-configured rule. */
     expect(html).not.toContain('your-handle');
     const socialAnchors = tags(html, 'a').filter((t) => t.includes('href=""'));
     expect(socialAnchors).toHaveLength(0);
-    expect(html).toContain('data-testid="contact-social-list"');
+    expect(html).not.toContain('data-testid="contact-social-list"');
+  });
+
+  it('names what he is hired for, from the verified capabilities (R8C-2)', () => {
+    expect(html).toContain('data-testid="contact-hired-for"');
+    for (const cap of content.aiCapabilities) {
+      expect(html).toContain(`data-testid="contact-hired-${cap.slug}"`);
+    }
+    expect(html).toContain('data-testid="contact-hired-projects"');
   });
 
   it('does not ship a fake form: no <form> element anywhere', () => {

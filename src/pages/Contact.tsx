@@ -16,6 +16,7 @@ import styled from '@emotion/styled';
 import { Link } from '@portfolio/router';
 import { SOCIAL_LINKS } from 'app/components/layout';
 import { SITE } from 'app/lib/seo';
+import { content } from 'app/content';
 import { Button, Heading, Icon, Section, type IconName } from 'app/components/ui';
 
 /* Cast per the ui.test.tsx polymorphic-`as` pattern — see Home.tsx. */
@@ -184,6 +185,57 @@ const ExpectBody = styled.dd`
   color: ${(p) => p.theme.color.textMuted};
 `;
 
+/* R8C-2: a buyer could not tell what to actually hire him FOR — skills were
+ * implicit. This grid names the service areas using the site's own verified
+ * content (the AI-engineering capabilities), never invented offerings. */
+const HiredList = styled.ul`
+  list-style: none;
+  margin: ${(p) => p.theme.space[2]} 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: ${(p) => p.theme.space[4]};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const HiredItem = styled.li`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[1]};
+  padding: ${(p) => p.theme.space[4]};
+  background: ${(p) => p.theme.color.bgElevated};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.md};
+`;
+
+const HiredLink = styled.a`
+  font-size: ${(p) => p.theme.font.sizes.md};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+  text-decoration: none;
+  border-radius: ${(p) => p.theme.radius.sm};
+
+  &:hover {
+    color: ${(p) => p.theme.color.accent};
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
+  }
+`;
+
+const HiredBody = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
 /* Map platform labels to the icon set we actually ship. */
 function socialIcon(label: string): IconName {
   if (label.toLowerCase().includes('github')) return 'github';
@@ -242,38 +294,77 @@ export function Contact(): React.ReactNode {
               </>
             ) : (
               /* R2-A A1: never a fabricated mailbox. Honest state until
-               * SITE.email is set (src/lib/seo.ts). */
+               * SITE.email is set (src/lib/seo.ts). R8C-1: the state now
+               * says what IS possible instead of only what is missing. */
               <PanelBody data-testid="contact-email-unset">
-                Email contact is being set up. In the meantime, the work on
-                this site is real — start from the projects.
-                {/* DRAFT: set SITE.email in src/lib/seo.ts */}
+                Email is the fastest channel and it is being wired up — not
+                live yet, and I won&rsquo;t park a dead address here. The work
+                on this site is real and current: the case studies below and
+                the <strong>Now</strong> page show exactly what I am doing
+                this quarter. {/* DRAFT: set SITE.email in src/lib/seo.ts */}
               </PanelBody>
             )}
           </EmailPanel>
 
-          <Panel aria-labelledby="contact-social-title">
-            <PanelTitle id="contact-social-title">Elsewhere</PanelTitle>
-            <PanelBody>
-              Where the work shows up before it shows up here. Slower than
-              email, better for follow-ups than for first contact.
-            </PanelBody>
-            <SocialList data-testid="contact-social-list">
-              {SOCIAL_LINKS.filter((link) => link.url).map((link) => (
-                <SocialItem key={link.label}>
-                  <SocialAnchor href={link.url} rel="me noopener noreferrer">
-                    <Icon name={socialIcon(link.label)} size={16} />
-                    {link.label}
-                    {link.handle ? ` — ${link.handle}` : ''}
-                  </SocialAnchor>
-                </SocialItem>
-              ))}
-              {/* R2-A A1/A12: unconfigured profiles are HIDDEN, never rendered
-                  as "@your-handle" or developer instructions — placeholder text
-                  on a hiring site reads as template/tampered. Add urls to
-                  SOCIAL_LINKS in Footer.tsx (exported) before launch. */}
-            </SocialList>
-          </Panel>
+          {/* R6-B recipe (footer Elsewhere): an unconfigured column renders
+           * nothing rather than an empty box. All socials are unset today —
+           * the panel returns the moment one has a real URL. */}
+          {SOCIAL_LINKS.some((link) => link.url) && (
+            <Panel aria-labelledby="contact-social-title">
+              <PanelTitle id="contact-social-title">Elsewhere</PanelTitle>
+              <PanelBody>
+                Where the work shows up before it shows up here. Slower than
+                email, better for follow-ups than for first contact.
+              </PanelBody>
+              <SocialList data-testid="contact-social-list">
+                {SOCIAL_LINKS.filter((link) => link.url).map((link) => (
+                  <SocialItem key={link.label}>
+                    <SocialAnchor href={link.url} rel="me noopener noreferrer">
+                      <Icon name={socialIcon(link.label)} size={16} />
+                      {link.label}
+                      {link.handle ? ` — ${link.handle}` : ''}
+                    </SocialAnchor>
+                  </SocialItem>
+                ))}
+                {/* R2-A A1/A12: unconfigured profiles are HIDDEN, never rendered
+                    as "@your-handle" or developer instructions — placeholder text
+                    on a hiring site reads as template/tampered. Add urls to
+                    SOCIAL_LINKS in Footer.tsx (exported) before launch. */}
+              </SocialList>
+            </Panel>
+          )}
         </CardRow>
+      </Section>
+
+      <Section
+        id="hired-for"
+        eyebrow="Services"
+        title="What I'm hired for"
+        description="The engagement shapes behind the case studies — each one links to the work that proves it."
+      >
+        <HiredList data-testid="contact-hired-for">
+          {content.aiCapabilities.map((cap) => (
+            <HiredItem key={cap.slug}>
+              <HiredLink
+                as={ROUTER_LINK}
+                to={`/ai-engineering/${cap.slug}`}
+                data-testid={`contact-hired-${cap.slug}`}
+              >
+                {cap.title}
+              </HiredLink>
+              <HiredBody>{cap.summary}</HiredBody>
+            </HiredItem>
+          ))}
+          <HiredItem>
+            <HiredLink as={ROUTER_LINK} to="/projects" data-testid="contact-hired-projects">
+              Full-stack builds &amp; data platforms
+            </HiredLink>
+            <HiredBody>
+              Design, build and handover of the systems around the models —
+              the case studies on the projects page are the evidence.
+            </HiredBody>
+          </HiredItem>
+        </HiredList>
       </Section>
 
       <Section

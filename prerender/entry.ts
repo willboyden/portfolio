@@ -54,6 +54,16 @@ export function prerenderPaths(): string[] {
  * sitemap entry, noindex via PageMeta below. */
 export const sitemapPaths = prerenderPaths().filter((p) => p !== '/404');
 
+/* R8A-3: per-URL lastmod from the entry's own content date — one global
+ * lastmod told crawlers every page changed whenever any content did. Routes
+ * without a single content item (home, about, now, contact, section indexes)
+ * fall back to the prerender script's git-derived global lastmod. */
+export const sitemapDates: Record<string, string> = {
+  ...Object.fromEntries(content.projects.map((p) => [`/projects/${p.slug}`, p.date])),
+  ...Object.fromEntries(content.posts.map((p) => [`/writing/${p.slug}`, p.date])),
+  ...Object.fromEntries(content.aiCapabilities.map((c) => [`/ai-engineering/${c.slug}`, c.date])),
+};
+
 export const siteMeta = {
   title: SITE.title,
   description: SITE.description,

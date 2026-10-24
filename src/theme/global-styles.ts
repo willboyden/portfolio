@@ -154,6 +154,33 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
         scrollBehavior: 'auto !important',
       },
     },
+
+    /* R8D-2: printing a dark-theme page produced a ~blank sheet — browsers
+     * strip backgrounds, and the dark palette's near-white ink on white paper
+     * is invisible. Force the LIGHT palette's concrete variables inside the
+     * print media, whatever the visitor's live theme; hide interactive
+     * chrome; keep headings with their content; reveal external link
+     * destinations (R8D-8). */
+    '@media print': {
+      ':root': themeToCssVars(lightTheme) as Record<string, StyleLeaf>,
+      '[data-theme]': themeToCssVars(lightTheme) as Record<string, StyleLeaf>,
+      '[data-testid="menu-button"], [data-testid="back-to-top"], [data-testid="theme-toggle"], [data-testid="skip-link"]':
+        {
+          display: 'none',
+        },
+      'h1, h2, h3': {
+        breakAfter: 'avoid-page',
+      },
+      'p, li': {
+        orphans: 3,
+        widows: 3,
+      },
+      'a[href^="http"]::after': {
+        content: '" (" attr(href) ")"',
+        fontSize: '0.85em',
+        color: theme.color.textSubtle,
+      },
+    },
   };
 }
 

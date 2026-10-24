@@ -242,7 +242,7 @@ export function Header({
             data-testid="wordmark"
             aria-label={`${name} — home`}
           >
-            <WordmarkMark aria-hidden="true">WB</WordmarkMark>
+            <WordmarkMark aria-hidden="true">WB</WordmarkMark>{' '}
             {name}
           </Link>
 

@@ -27,7 +27,11 @@ import { truncateAtWordBoundary } from './format';
 
 export const SITE = {
   name: 'William Boyden',
-  url: 'https://alexrivera.dev',
+  /* R8D-1: overridable at build time (vite `define` bakes import.meta.env.
+   * SITE_URL from the env — CI sets it to the real Pages origin). The
+   * placeholder domain is the owner's deliberate fallback until a real
+   * domain exists; CI builds therefore never ship it in head tags. */
+  url: import.meta.env.SITE_URL || 'https://alexrivera.dev',
   title: 'William Boyden — AI Engineering & Technical Consulting',
   /** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
   shortTitle: 'William Boyden',
@@ -290,6 +294,11 @@ export function buildHead(meta: MetaResult): string[] {
   tags.push(`<meta property="og:description" content="${escapeHtml(meta.description)}">`);
   tags.push(`<meta property="og:url" content="${escapeHtml(meta.canonical)}">`);
   tags.push(`<meta property="og:image" content="${escapeHtml(meta.image)}">`);
+  /* R8D-5: dimensions so fetchers don't download to measure; alt because the
+   * card is content. All site OG art is 1200x630 (gen_media.py contract). */
+  tags.push(`<meta property="og:image:width" content="1200">`);
+  tags.push(`<meta property="og:image:height" content="630">`);
+  tags.push(`<meta property="og:image:alt" content="${escapeHtml(`${SITE.name} — ${meta.titlePlain}`)}">`);
   tags.push(`<meta property="og:locale" content="${escapeHtml(meta.lang)}">`);
   if (meta.publishedTime) {
     tags.push(`<meta property="article:published_time" content="${escapeHtml(meta.publishedTime)}">`);

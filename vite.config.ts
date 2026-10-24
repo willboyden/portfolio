@@ -13,6 +13,11 @@ export default defineConfig({
   /* R8: base from env so CI (and any host) can build for sub-path
    * hosting without CLI flags; defaults to '/' for nginx root. */
   base: process.env.VITE_BASE ?? '/',
+  /* R8D-1: bake the real origin into head tags (canonical/og:url/og:image/
+   * JSON-LD) at build time; empty in dev/local builds → SITE.url fallback. */
+  define: {
+    'import.meta.env.SITE_URL': JSON.stringify(process.env.SITE_URL ?? ''),
+  },
   plugins: [react()],
   resolve: {
     alias: [

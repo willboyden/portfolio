@@ -67,10 +67,13 @@ export function descriptionFor(path: string): string {
 }
 
 /* R2C-8: section cards get their own generated OG art (files ship in
- * public/og/; only ones that exist are referenced). */
+ * public/og/; only ones that exist are referenced). R8D-4: ai-engineering
+ * joined (its pages fell back to the generic card despite being the newest,
+ * most-shared section). */
 const SECTION_OG: Record<string, string> = {
   projects: '/og/projects.png',
   writing: '/og/writing.png',
+  'ai-engineering': '/og/ai-engineering.png',
 };
 export function ogImageFor(path: string): string | undefined {
   const seg = path.split('/')[1];

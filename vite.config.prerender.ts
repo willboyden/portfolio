@@ -18,6 +18,12 @@ export default defineConfig({
    * GitHub Pages. */
   define: {
     'import.meta.env.BASE_URL': JSON.stringify(process.env.VITE_BASE ?? '/'),
+    /* R8D-1: SITE.url was hardcoded to the placeholder domain, so every
+     * og:url/canonical/og:image/JSON-LD id shipped pointing at a domain that
+     * does not resolve (broken share cards, wrong crawl origin) — the
+     * workflow's SITE_URL only reached the feeds, not the head tags. Inject
+     * the same job-level SITE_URL here so BOTH bundles bake the real origin. */
+    'import.meta.env.SITE_URL': JSON.stringify(process.env.SITE_URL ?? ''),
   },
   plugins: [react()],
   resolve: {

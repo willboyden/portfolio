@@ -53,6 +53,15 @@ for (const page of pages) {
 
   if (!/<link rel="canonical" href="https?:\/\//.test(html)) fail(`${rel}: missing canonical`);
 
+  /* R8D-1: when the build ran with a real origin (SITE_URL — CI always sets
+   * it), the placeholder domain must not survive ANYWHERE in the shipped
+   * HTML: canonical/og:url/og:image/JSON-LD would point shares and crawlers
+   * at a domain that does not resolve. Local builds without SITE_URL
+   * legitimately keep the fallback and skip this check. */
+  if (process.env.SITE_URL && html.includes('alexrivera.dev')) {
+    fail(`${rel}: placeholder domain alexrivera.dev survived a SITE_URL build (head tag not baked from env)`);
+  }
+
   /* Visible-interpolation bugs. Strip <script> blocks first: JSON-LD legitimately
    * contains braces, and hydration data is not visible text. */
   const visible = html.replace(/<script[\s\S]*?<\/script>/g, '');
