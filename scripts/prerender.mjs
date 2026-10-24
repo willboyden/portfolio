@@ -155,6 +155,7 @@ async function writeArtifacts(mod) {
     `- [Projects](${ORIGIN}/projects/) — case studies with metrics.`,
     `- [Writing](${ORIGIN}/writing/) — engineering notes.`,
     `- [AI Engineering](${ORIGIN}/ai-engineering/) — capability briefs with proof.`,
+    `- [Local recipes](${ORIGIN}/ai-engineering/local-recipes/) — exact, measured setups for running open models on my own hardware.`,
     `- [About](${ORIGIN}/about/) — background and way of working.`,
     `- [Now](${ORIGIN}/now/) — current focus and availability (dated).`,
     `- [Contact](${ORIGIN}/contact/) — how to work together.`,
@@ -174,6 +175,12 @@ async function writeArtifacts(mod) {
     ...contentJson.aiCapabilities.map(
       (c) =>
         `- [${c.title}](${ORIGIN}/ai-engineering/${c.slug}/) — ${c.summary} (status: ${c.status ?? 'n/a'})`,
+    ),
+    '',
+    '## Local recipes',
+    ...(contentJson.recipes ?? []).map(
+      (r) =>
+        `- [${r.title}](${ORIGIN}/ai-engineering/local-recipes/${r.slug}/) — ${r.summary} (${r.date}; hardware: ${r.hardware}; tags: ${r.tags.join(', ')})`,
     ),
   ]);
   writeFileSync(join(DIST, 'llms.txt'), llms, 'utf8');

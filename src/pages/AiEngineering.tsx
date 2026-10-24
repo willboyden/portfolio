@@ -104,8 +104,43 @@ export interface AiComparisonEntry {
 interface AiContentApi {
   getAiCapability: unknown;
   aiCapabilitiesBySlug: unknown;
+  recipesByDate: unknown;
 }
 const ai = contentModule as typeof contentModule & AiContentApi;
+
+/** AI Engineering › Local recipes — the subsection's index route. */
+export const LOCAL_RECIPES_PATH = '/ai-engineering/local-recipes';
+
+/** The few recipe fields the hub block shows, narrowed like isCapability. */
+export interface RecipeTeaser {
+  slug: string;
+  title: string;
+  summary: string;
+}
+
+function isRecipeTeaser(value: unknown): value is RecipeTeaser {
+  if (value === null || typeof value !== 'object') return false;
+  const r = value as Record<string, unknown>;
+  return typeof r.slug === 'string' && typeof r.title === 'string' && typeof r.summary === 'string';
+}
+
+/** The recipes API, or undefined when the content module lacks it. The read
+ * itself is guarded: a strict module mock (vitest) throws on an export it does
+ * not define, and the hub must still render its capabilities then. */
+function recipesApi(): unknown {
+  try {
+    return ai.recipesByDate;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Recipes for the hub block, newest first; an absent API yields []. */
+export function aiRecipeList(raw: unknown = recipesApi()): RecipeTeaser[] {
+  if (typeof raw !== 'function') return [];
+  const out = (raw as () => unknown)();
+  return Array.isArray(out) ? out.filter(isRecipeTeaser) : [];
+}
 
 /** Light structural guard: a half-wired pipeline degrades to empty states
  * instead of rendering garbage. */
@@ -177,8 +212,8 @@ export function splitProof(entry: string): { claim: string; repoPath: string | u
 /* Links (css() classes on plain <Link> — styled(Link) drops `to`)             */
 /* -------------------------------------------------------------------------- */
 
-/** Hub card title link — the card's real affordance. */
-function cardLinkClass(theme: Tokens): string {
+/** Hub card title link — the card's real affordance (also the recipe cards). */
+export function cardLinkClass(theme: Tokens): string {
   return css({
     color: theme.color.text,
     textDecoration: 'none',
@@ -198,7 +233,7 @@ function cardLinkClass(theme: Tokens): string {
 }
 
 /** Detail crumb — standalone block-level nav link, 44px at phone widths. */
-function crumbClass(theme: Tokens): string {
+export function crumbClass(theme: Tokens): string {
   return css({
     display: 'inline-flex',
     alignItems: 'center',
@@ -588,13 +623,22 @@ export function aiSectionPath(slug: string): string {
   return `/ai-engineering/${slug}`;
 }
 
-/** aria-current="page" on the subsection matching the current path. */
-function SubsectionNav({ currentPath }: { currentPath?: string }): ReactNode {
+/** aria-current="page" on the subsection matching the current path. The
+ * capabilities come from content; "Local recipes" is a fixed last entry (its
+ * index and every recipe page count as current: the recipe is inside it). */
+export function SubsectionNav({ currentPath }: { currentPath?: string }): ReactNode {
   const theme = useTheme() as Tokens;
   const location = useLocation();
   const path = currentPath ?? location.pathname;
+  const inRecipes = path === LOCAL_RECIPES_PATH || path.startsWith(`${LOCAL_RECIPES_PATH}/`);
+  /* The active class only re-colours: it must be ADDED to the pill class, not
+   * replace it, or the current item loses its padding, border and 44px height
+   * (first visible on the Local recipes index, the first page whose own entry
+   * is in this nav). */
+  const pill = (current: boolean): string =>
+    current ? `${subnavClass(theme)} ${subnavActiveClass(theme)}` : subnavClass(theme);
   return (
-    <SubNav aria-label="AI engineering capabilities" data-testid="ai-subnav">
+    <SubNav aria-label="AI engineering sections" data-testid="ai-subnav">
       {aiSections().map((section) => {
         const to = aiSectionPath(section.slug);
         const current = path === to;
@@ -602,7 +646,7 @@ function SubsectionNav({ currentPath }: { currentPath?: string }): ReactNode {
           <Link
             key={section.slug}
             to={to}
-            className={current ? subnavActiveClass(theme) : subnavClass(theme)}
+            className={pill(current)}
             aria-current={current ? 'page' : undefined}
             data-testid={`ai-subnav-${section.slug}`}
           >
@@ -610,6 +654,14 @@ function SubsectionNav({ currentPath }: { currentPath?: string }): ReactNode {
           </Link>
         );
       })}
+      <Link
+        to={LOCAL_RECIPES_PATH}
+        className={pill(inRecipes)}
+        aria-current={path === LOCAL_RECIPES_PATH ? 'page' : inRecipes ? 'location' : undefined}
+        data-testid="ai-subnav-local-recipes"
+      >
+        Local recipes
+      </Link>
     </SubNav>
   );
 }
@@ -699,6 +751,60 @@ export function AiCapabilityCard({ capability }: { capability: AiCapability }): 
   );
 }
 
+/** Hub block listing the Local recipes subsection (newest first). */
+const RecipeTeaserList = styled.ul`
+  margin: 0 0 ${(p) => p.theme.space[4]};
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[4]};
+`;
+
+const RecipeTeaserItem = styled.li`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[1]};
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+`;
+
+const RecipeTeaserSummary = styled.span`
+  font-size: ${(p) => p.theme.font.sizes.md};
+  font-weight: ${(p) => p.theme.font.weights.normal};
+  line-height: ${(p) => p.theme.font.leading.normal};
+  color: ${(p) => p.theme.color.textMuted};
+  max-width: 70ch;
+`;
+
+function HubRecipes(): ReactNode {
+  const theme = useTheme() as Tokens;
+  const recipes = aiRecipeList();
+  if (recipes.length === 0) return null;
+  return (
+    <Block aria-labelledby="ai-hub-recipes-title" data-testid="ai-hub-recipes">
+      <BlockTitle id="ai-hub-recipes-title">Local recipes</BlockTitle>
+      <RecipeTeaserList>
+        {recipes.map((recipe) => (
+          <RecipeTeaserItem key={recipe.slug}>
+            <Link
+              to={`${LOCAL_RECIPES_PATH}/${recipe.slug}`}
+              className={cardLinkClass(theme)}
+              data-testid={`ai-hub-recipe-${recipe.slug}`}
+            >
+              {recipe.title}
+            </Link>
+            <RecipeTeaserSummary>{recipe.summary}</RecipeTeaserSummary>
+          </RecipeTeaserItem>
+        ))}
+      </RecipeTeaserList>
+      <Link to={LOCAL_RECIPES_PATH} className={crumbClass(theme)} data-testid="ai-hub-recipes-all">
+        All local recipes <span aria-hidden="true">→</span>
+      </Link>
+    </Block>
+  );
+}
+
 export function AiEngineeringHub({ currentPath }: { currentPath?: string }): ReactNode {
   const capabilities = aiCapabilityList();
 
@@ -734,6 +840,8 @@ export function AiEngineeringHub({ currentPath }: { currentPath?: string }): Rea
           }
         />
       )}
+
+      <HubRecipes />
     </Container>
   );
 }

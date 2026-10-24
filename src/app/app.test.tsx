@@ -59,6 +59,27 @@ describe('createApp (full tree)', () => {
     expect(html).toContain('<header');
     expect(html).toContain('data-testid="not-found"');
   });
+
+  it('Local recipes: the index beats /ai-engineering/:slug, every recipe routes, unknown slugs 404', () => {
+    const index = app('/ai-engineering/local-recipes');
+    expect(index).not.toContain('data-testid="not-found"');
+    expect(index).toContain('data-testid="recipes-title"');
+    for (const recipe of content.recipes) {
+      expect(index, recipe.slug).toContain(`data-testid="recipe-link-${recipe.slug}"`);
+      const html = app(`/ai-engineering/local-recipes/${recipe.slug}`);
+      expect(html, recipe.slug).not.toContain('data-testid="not-found"');
+      expect(html, recipe.slug).toContain('data-testid="recipe-title"');
+    }
+    expect(app('/ai-engineering/local-recipes/no-such-recipe')).toContain('data-testid="not-found"');
+  });
+
+  it('the AI hub links the Local recipes subsection and each recipe (real content)', () => {
+    const html = app('/ai-engineering');
+    expect(html).toContain('data-testid="ai-subnav-local-recipes"');
+    for (const recipe of content.recipes) {
+      expect(html, recipe.slug).toContain(`data-testid="ai-hub-recipe-${recipe.slug}"`);
+    }
+  });
 });
 
 describe('route-meta (shared prerender/SPA source, R2C-3)', () => {
@@ -77,6 +98,8 @@ describe('route-meta (shared prerender/SPA source, R2C-3)', () => {
       '/', '/about', '/now', '/projects', '/writing', '/videos', '/talks', '/contact', '/404',
       ...content.projects.map((p) => `/projects/${p.slug}`),
       ...content.posts.map((p) => `/writing/${p.slug}`),
+      '/ai-engineering/local-recipes',
+      ...content.recipes.map((r) => `/ai-engineering/local-recipes/${r.slug}`),
     ];
     const titles = paths.map((p) => metaFor(p).titlePlain);
     expect(new Set(titles).size).toBe(titles.length);
@@ -108,5 +131,19 @@ describe('route-meta (shared prerender/SPA source, R2C-3)', () => {
     const m = metaFor(`/writing/${post.slug}`);
     expect(m.type).toBe('article');
     expect(m.publishedTime).toBe(post.date);
+  });
+
+  it('Local recipes meta: section title and description, recipes are dated articles, unknown slug is a 404 title', () => {
+    expect(titleFor('/ai-engineering/local-recipes')).toBe('Local recipes — AI Engineering');
+    expect(descriptionFor('/ai-engineering/local-recipes').length).toBeGreaterThan(20);
+    expect(titleFor('/ai-engineering/local-recipes/no-such-recipe')).toBe('Page not found');
+    const recipe = content.recipes[0];
+    if (!recipe) return;
+    const path = `/ai-engineering/local-recipes/${recipe.slug}`;
+    expect(titleFor(path)).toBe(`${recipe.title} — Local recipes`);
+    expect(descriptionFor(path)).toBe(recipe.summary);
+    const m = metaFor(path);
+    expect(m.type).toBe('article');
+    expect(m.publishedTime).toBe(recipe.date);
   });
 });

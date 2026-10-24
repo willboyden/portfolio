@@ -47,6 +47,10 @@ export function prerenderPaths(): string[] {
     ...content.posts.map((p) => `/writing/${p.slug}`),
     /* R9: capability detail pages (hub + per-capability). */
     ...content.aiCapabilities.map((c) => `/ai-engineering/${c.slug}`),
+    /* AI Engineering › Local recipes: the index (always, it has an empty
+     * state) and one page per recipe. */
+    '/ai-engineering/local-recipes',
+    ...content.recipes.map((r) => `/ai-engineering/local-recipes/${r.slug}`),
   ];
 }
 
@@ -72,6 +76,11 @@ export const sitemapDates: Record<string, string> = {
   ...Object.fromEntries(content.projects.map((p) => [`/projects/${p.slug}`, p.date])),
   ...Object.fromEntries(content.posts.map((p) => [`/writing/${p.slug}`, p.date])),
   ...Object.fromEntries(content.aiCapabilities.map((c) => [`/ai-engineering/${c.slug}`, c.date])),
+  ...Object.fromEntries(content.recipes.map((r) => [`/ai-engineering/local-recipes/${r.slug}`, r.date])),
+  /* The recipes index changes when its newest recipe does. */
+  ...(content.recipes.length > 0
+    ? { '/ai-engineering/local-recipes': content.recipes.map((r) => r.date).sort().at(-1) as string }
+    : {}),
 };
 
 export const siteMeta = {

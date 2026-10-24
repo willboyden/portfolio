@@ -8,11 +8,22 @@
  */
 import raw from './generated/content.json';
 import { SiteContentSchema } from './schema';
-import type { Project, Post, SiteContent, AiCapability } from './schema';
+import type { Project, Post, SiteContent, AiCapability, Recipe } from './schema';
 
-export type { Project, Post, Video, Talk, ProjectLinks, ProjectMetric, AiCapability, AiProof } from './schema';
+export type {
+  Project,
+  Post,
+  Video,
+  Talk,
+  ProjectLinks,
+  ProjectMetric,
+  AiCapability,
+  AiProof,
+  Recipe,
+  RecipeResult,
+} from './schema';
 export type { SiteContent };
-export { ProjectSchema, PostSchema, VideoSchema, TalkSchema, AiCapabilitySchema } from './schema';
+export { ProjectSchema, PostSchema, VideoSchema, TalkSchema, AiCapabilitySchema, RecipeSchema } from './schema';
 
 function validate(): SiteContent {
   const parsed = SiteContentSchema.safeParse(raw);
@@ -35,6 +46,18 @@ export const content: SiteContent = validate();
 /** R9: the AI Engineering capability API the section pages code against. */
 export function getAiCapability(slug: string): AiCapability | undefined {
   return content.aiCapabilities.find((c) => c.slug === slug);
+}
+
+/** AI Engineering › Local recipes: one recipe by slug (undefined = 404). */
+export function getRecipe(slug: string): Recipe | undefined {
+  return content.recipes.find((r) => r.slug === slug);
+}
+
+/** Every recipe, newest first; date-identical entries keep stable slug order. */
+export function recipesByDate(): Recipe[] {
+  return [...content.recipes].sort((a, b) =>
+    a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1,
+  );
 }
 
 /** Hub and subsection-nav order; capabilities not listed follow, newest first. */

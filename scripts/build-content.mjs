@@ -21,7 +21,14 @@ import {
   readingMinutes,
   plainText,
 } from '../vendor/markdown/src/index.ts';
-import { ProjectSchema, PostSchema, VideoSchema, TalkSchema, AiCapabilitySchema } from '../src/content/schema.ts';
+import {
+  ProjectSchema,
+  PostSchema,
+  VideoSchema,
+  TalkSchema,
+  AiCapabilitySchema,
+  RecipeSchema,
+} from '../src/content/schema.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = join(ROOT, 'content');
@@ -35,6 +42,8 @@ const COLLECTIONS = [
   { dir: 'videos', schema: VideoSchema },
   { dir: 'talks', schema: TalkSchema },
   { dir: 'ai-engineering', key: 'aiCapabilities', schema: AiCapabilitySchema },
+  /* AI Engineering › Local recipes (rendered under /ai-engineering/local-recipes). */
+  { dir: 'recipes', schema: RecipeSchema },
 ];
 
 const byDateDesc = (a, b) =>
@@ -90,10 +99,11 @@ async function loadCollection(dir, schema) {
       const { data, body } = parseFrontmatter(await readFile(file, 'utf8'));
       entry = { ...data, slug };
       // The frontmatter YAML subset cannot express arrays-of-objects, so
-      // `metrics` entries are written as `- label = value` strings and
-      // expanded here before zod validation.
-      if (Array.isArray(entry.metrics)) {
-        entry.metrics = entry.metrics.map((m) => {
+      // `metrics` (projects) and `results` (recipes) entries are written as
+      // `- label = value` strings and expanded here before zod validation.
+      for (const key of ['metrics', 'results']) {
+        if (!Array.isArray(entry[key])) continue;
+        entry[key] = entry[key].map((m) => {
           if (typeof m === 'string' && m.includes('=')) {
             const i = m.indexOf('=');
             return { label: m.slice(0, i).trim(), value: m.slice(i + 1).trim() };
@@ -105,6 +115,10 @@ async function loadCollection(dir, schema) {
         entry.html = renderMarkdown(body);
         entry.readingMinutes = readingMinutes(body);
         entry.excerpt = makeExcerpt(body);
+      } else if (dir === 'recipes') {
+        /* The body IS the recipe: required, so an empty one fails the schema. */
+        if (body.trim() !== '') entry.html = renderMarkdown(body);
+        entry.readingMinutes = readingMinutes(body);
       } else if (dir === 'projects' && body.trim() !== '') {
         entry.html = renderMarkdown(body);
       } else if (dir === 'ai-engineering' && body.trim() !== '') {
@@ -155,7 +169,7 @@ async function loadCollection(dir, schema) {
 }
 
 async function main() {
-  const out = { contentHash: '', projects: [], posts: [], videos: [], talks: [], aiCapabilities: [] };
+  const out = { contentHash: '', projects: [], posts: [], videos: [], talks: [], aiCapabilities: [], recipes: [] };
   const failures = [];
   for (const { dir, schema, key } of COLLECTIONS) {
     const { items, failures: f } = await loadCollection(dir, schema);
@@ -270,6 +284,7 @@ async function main() {
   collect(out.videos, 'videos');
   collect(out.talks, 'talks');
   collect(out.aiCapabilities, 'ai-engineering');
+  collect(out.recipes, 'recipes');
   if (imageFailures.length > 0) {
     process.stderr.write(
       `build-content: ${imageFailures.length} broken image reference(s):\n${imageFailures.join('\n')}\n`,
@@ -295,6 +310,7 @@ async function main() {
   checkSummary(out.projects, 'projects');
   checkSummary(out.posts, 'posts');
   checkSummary(out.aiCapabilities, 'ai-engineering');
+  checkSummary(out.recipes, 'recipes');
   await mkdir(dirname(OUT_FILE), { recursive: true });
   /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
    * generatedAt made every rebuild dirty git and made "byte-stable output"
@@ -303,13 +319,20 @@ async function main() {
   /* Hash the payload WITHOUT the hash field (self-reference would be circular):
    * build the body explicitly — a destructured throwaway would be an unused
    * var (lint gate; R4-C F1). */
-  const body = { projects: out.projects, posts: out.posts, videos: out.videos, talks: out.talks, aiCapabilities: out.aiCapabilities };
+  const body = {
+    projects: out.projects,
+    posts: out.posts,
+    videos: out.videos,
+    talks: out.talks,
+    aiCapabilities: out.aiCapabilities,
+    recipes: out.recipes,
+  };
   out.contentHash = createHash('sha256')
     .update(JSON.stringify(body, null, 2))
     .digest('hex')
     .slice(0, 16);
   await writeFile(OUT_FILE, JSON.stringify(out, null, 2) + '\n', 'utf8');
-  const counts = ['projects', 'posts', 'videos', 'talks']
+  const counts = ['projects', 'posts', 'videos', 'talks', 'recipes']
     .map((k) => `${out[k].length} ${k}`)
     .join(', ');
   process.stdout.write(`build-content: wrote ${relative(ROOT, OUT_FILE)} (${counts})\n`);

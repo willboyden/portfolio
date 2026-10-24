@@ -20,6 +20,7 @@ import { PostDetail } from 'app/pages/PostDetail';
 import { Videos } from 'app/pages/Videos';
 import { Talks } from 'app/pages/Talks';
 import { AiEngineeringHub, AiCapabilityDetail } from 'app/pages/AiEngineering';
+import { LocalRecipesIndex, RecipeDetail } from 'app/pages/LocalRecipes';
 import { Contact } from 'app/pages/Contact';
 import { NotFound } from 'app/pages/NotFound';
 
@@ -43,6 +44,10 @@ export const routes: RouteDefinition[] = [
   { path: '/talks', component: Talks },
   { path: '/ai-engineering', component: AiEngineeringHub as never },
   { path: '/ai-engineering/:slug', component: AiDetailRoute },
+  /* AI Engineering › Local recipes. The router ranks static segments above
+   * params, so this index wins over /ai-engineering/:slug. */
+  { path: '/ai-engineering/local-recipes', component: LocalRecipesIndex as never },
+  { path: '/ai-engineering/local-recipes/:slug', component: RecipeDetail },
   { path: '/contact', component: Contact },
 ];
 

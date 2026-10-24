@@ -52,6 +52,12 @@ export function titleFor(path: string): string {
   }
   if (seg === 'ai-engineering') {
     const slug = path.split('/')[2];
+    /* AI Engineering › Local recipes: the index, then one recipe. */
+    if (slug === RECIPES_SEGMENT) {
+      const recipe = recipeFor(path);
+      if (path.split('/')[3]) return recipe ? `${recipe.title} — Local recipes` : 'Page not found';
+      return 'Local recipes — AI Engineering';
+    }
     if (slug) {
       const capability = content.aiCapabilities.find((c) => c.slug === slug);
       return capability ? `${capability.title} — AI Engineering` : 'Page not found';
@@ -60,6 +66,24 @@ export function titleFor(path: string): string {
   }
   return seg ? (pageNames[seg] ?? '') : '';
 }
+
+/** /ai-engineering/<RECIPES_SEGMENT>/<slug> is one recipe; the segment alone is the index. */
+const RECIPES_SEGMENT = 'local-recipes';
+
+function isRecipesPath(path: string): boolean {
+  const parts = path.split('/');
+  return parts[1] === 'ai-engineering' && parts[2] === RECIPES_SEGMENT;
+}
+
+/** The recipe a path names, if any (undefined for the index and unknown slugs). */
+function recipeFor(path: string): (typeof content.recipes)[number] | undefined {
+  if (!isRecipesPath(path)) return undefined;
+  const slug = path.split('/')[3];
+  return slug ? content.recipes.find((r) => r.slug === slug) : undefined;
+}
+
+const RECIPES_DESCRIPTION =
+  'Exact, measured setups for running open models on my own hardware — every flag, the tests behind each number, and how each one was found.';
 
 export function descriptionFor(path: string): string {
   if (path.startsWith('/projects/')) {
@@ -70,6 +94,10 @@ export function descriptionFor(path: string): string {
     const slug = path.split('/')[2];
     const post = content.posts.find((p) => p.slug === slug);
     return post?.excerpt || post?.summary || SITE_FALLBACK_DESCRIPTION;
+  }
+  if (isRecipesPath(path)) {
+    if (!path.split('/')[3]) return RECIPES_DESCRIPTION;
+    return recipeFor(path)?.summary ?? SITE_FALLBACK_DESCRIPTION;
   }
   if (path.startsWith('/ai-engineering/')) {
     const slug = path.split('/')[2];
@@ -117,6 +145,8 @@ export function metaFor(path: string): MetaResult {
   const post = path.startsWith('/writing/')
     ? content.posts.find((p) => p.slug === path.split('/')[2])
     : undefined;
+  /* A recipe is an article too: dated, tagged, shareable on its own. */
+  const recipe = recipeFor(path);
   /* R9A-1: the home Person node's knowsAbout comes from the site's own tag
    * corpus (top tags by real usage), not a hardcoded skills list. */
   const knowsAbout = path === '/' ? allTagsByUse().slice(0, 8).map((t) => t.tag) : undefined;
@@ -134,6 +164,7 @@ export function metaFor(path: string): MetaResult {
     /* R2C-4: the 404 exists only as nginx's error page — keep it out of indexes. */
     ...(path === '/404' ? { robots: ['noindex', 'nofollow'] as const } : {}),
     ...(post ? { publishedTime: post.date, type: 'article' as const, keywords: post.tags } : {}),
+    ...(recipe ? { publishedTime: recipe.date, type: 'article' as const, keywords: recipe.tags } : {}),
     ...(path === '/contact' ? { jsonLdKind: 'contact' as const } : {}),
     ...(knowsAbout ? { knowsAbout } : {}),
     ...(dateModified ? { dateModified } : {}),

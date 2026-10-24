@@ -166,6 +166,37 @@ export type AiProof = z.infer<typeof AiProofSchema>;
 export type AiComparison = z.infer<typeof AiComparisonSchema>;
 export type AiCapability = z.infer<typeof AiCapabilitySchema>;
 
+/** One measured number on a recipe card: "Decode step" = "~61 ms". */
+export const RecipeResultSchema = z
+  .object({
+    label: z.string().min(1),
+    value: z.string().min(1),
+  })
+  .strict();
+
+/** AI Engineering › Local recipes: one exact, measured setup for running a
+ * model on my own hardware. The body is the recipe itself (every flag, the
+ * tests behind each number, how it was found); the frontmatter is what the
+ * index card and the "at a glance" block show. `results` are measured
+ * numbers only — a recipe states their conditions in its body. */
+export const RecipeSchema = z
+  .object({
+    ...baseShape,
+    hardware: z.string().min(1),
+    model: z.string().min(1),
+    engine: z.string().min(1),
+    status: z.enum(['in-use', 'retired']),
+    results: z.array(RecipeResultSchema).min(1).max(6),
+    /** Computed by the pipeline from the body. */
+    readingMinutes: z.number().int().positive(),
+    /** Sanitized rendered markdown — the build pipeline's output. */
+    html: z.string().min(1),
+  })
+  .strict();
+
+export type RecipeResult = z.infer<typeof RecipeResultSchema>;
+export type Recipe = z.infer<typeof RecipeSchema>;
+
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
 export const SiteContentSchema = z
   .object({
@@ -175,6 +206,7 @@ export const SiteContentSchema = z
     videos: z.array(VideoSchema),
     talks: z.array(TalkSchema),
     aiCapabilities: z.array(AiCapabilitySchema),
+    recipes: z.array(RecipeSchema),
   })
   .strict();
 
@@ -191,4 +223,5 @@ export interface SiteContent {
   videos: Video[];
   talks: Talk[];
   aiCapabilities: AiCapability[];
+  recipes: Recipe[];
 }
