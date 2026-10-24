@@ -256,7 +256,7 @@ export function Now(): React.ReactNode {
             </PanelNote>
             <ClosingRow>
               <Button as={ROUTER_LINK} to="/contact" variant="primary" data-testid="now-cta-contact">
-                Check availability
+                Working together
               </Button>
               <Button as={ROUTER_LINK} to="/about" variant="ghost" data-testid="now-cta-about">
                 Why this mix of work

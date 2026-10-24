@@ -58,7 +58,17 @@ export const sitemapPaths = prerenderPaths().filter((p) => p !== '/404');
  * lastmod told crawlers every page changed whenever any content did. Routes
  * without a single content item (home, about, now, contact, section indexes)
  * fall back to the prerender script's git-derived global lastmod. */
+/* R9A-3: per-URL lastmod from the entry's own content date — one global
+ * lastmod told crawlers every page changed whenever any content did.
+ * R9A-11: /now gets the newest content date too (it must not be coarser
+ * than the dateModified the page itself ships). */
+const newestContentDateForSitemap = [...content.projects, ...content.posts]
+  .map((i) => i.date)
+  .sort()
+  .at(-1);
+
 export const sitemapDates: Record<string, string> = {
+  '/now': newestContentDateForSitemap ?? '2026-01-01',
   ...Object.fromEntries(content.projects.map((p) => [`/projects/${p.slug}`, p.date])),
   ...Object.fromEntries(content.posts.map((p) => [`/writing/${p.slug}`, p.date])),
   ...Object.fromEntries(content.aiCapabilities.map((c) => [`/ai-engineering/${c.slug}`, c.date])),

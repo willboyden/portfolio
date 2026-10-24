@@ -551,3 +551,18 @@ lenses by measured impact: R7-D (+3.5) and R8-B (+3).
 
 **Battery:** tsc 0 / lint 0 / unit 526/526 / e2e 57/57 / AUDIT OK 34 pages / 179 kB gz /
 npm ci clean (first deterministic install).
+
+### Round 9 re-review (same three lenses, live-verified)
+
+R9-A **6→9** — all machine-consumability fixes verified LIVE (Person binding on deep
+pages, content-derived knowsAbout, clean headlines, six real section descriptions,
+<time>/dateModified on /now, Article keywords, ContactPage, live llms.txt). Residual
+LOWs taken immediately: llms.txt project tags, /now sitemap lastmod = newest content
+date (was global), CTA relabeled "Working together" (was "Check availability" — a
+promise /contact couldn't keep). Backlog: llms-full.txt, 404 JSON-LD name.
+R9-B **8→8.5** — task 4 (contact) 40s dead-end loop → 25s, no loop, stranger continues
+to /projects; all other tasks unchanged-success. Remaining stalls owner-gated (live
+channel, status line) or backlog (R9B-2 marker, R9B-4 ?tag=).
+R9-C **6→8** — all HIGHs closed except owner-gated branch protection; the R12
+truthfulness gate runs again (verified by the re-reviewer via CI runs); npm ci is now
+the deterministic primary path.

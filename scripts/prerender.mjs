@@ -162,7 +162,7 @@ async function writeArtifacts(mod) {
     '## Projects',
     ...contentJson.projects.map(
       (p) =>
-        `- [${p.title}](${ORIGIN}/projects/${p.slug}/) — ${p.summary} (${p.date}; status: ${p.status})`,
+        `- [${p.title}](${ORIGIN}/projects/${p.slug}/) — ${p.summary} (${p.date}; status: ${p.status}; tags: ${(p.tags ?? []).join(', ')})`,
     ),
     '',
     '## Writing',
