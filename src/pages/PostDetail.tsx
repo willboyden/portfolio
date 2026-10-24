@@ -1,10 +1,12 @@
 /**
  * PostDetail — a single essay.
  *
- * Renders the build-time validated markdown (`post.html` is produced by
+ * Renders the build-time validated markdown (produced by
  * scripts/build-content.mjs through the vetted vendor/markdown engine — the
  * one place dangerouslySetInnerHTML is honest, CONTRACT §5) inside <Prose>,
- * which owns the article typography.
+ * which owns the article typography. The body is not in the JS bundle:
+ * PostBody takes it from app/content/post-bodies (the prerendered copy, or
+ * public/post-bodies/<slug>.json fetched once).
  *
  * Semantics:
  *  - back link to /writing (real router Link, keeps section nav active);
@@ -17,7 +19,7 @@
  *    falls back to execCommand; SSR renders the idle state).
  */
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link, useParams } from '@portfolio/router';
@@ -29,8 +31,9 @@ import {
   Prose,
 } from 'app/components/ui';
 import { content, getPost, postsByDate } from 'app/content';
+import { cachedPostBody, loadPostBody } from 'app/content/post-bodies';
 import { formatDate, formatReadingTime } from 'app/lib/format';
-import { rebaseHtml } from 'app/lib/seo';
+import { withBase } from 'app/lib/seo';
 import { useCopyToClipboard } from 'app/lib/hooks';
 import type { Tokens } from 'app/theme/tokens';
 import { NotFound } from './NotFound';
@@ -338,6 +341,39 @@ function linkSkin(theme: Tokens, opts: { size: 'back' | 'pager' }) {
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
+/** The post itself. Shown at once when this page already has it (the
+ * prerender, or the first load's adopted copy); otherwise fetched once. */
+export function PostBody({ slug, bodyHash }: { slug: string; bodyHash: string }): ReactNode {
+  const [html, setHtml] = useState<string | null>(() => cachedPostBody(slug) ?? null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (html !== null) return undefined;
+    let live = true;
+    loadPostBody(slug, bodyHash).then(
+      (loaded) => {
+        if (live) setHtml(loaded);
+      },
+      () => {
+        if (live) setFailed(true);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [slug, bodyHash, html]);
+  if (failed) {
+    return (
+      <p data-testid="post-body-error">
+        This post did not load. <a href={withBase(`/writing/${slug}`)}>Reload the page</a> to try again.
+      </p>
+    );
+  }
+  if (html === null) return <p data-testid="post-body-loading">Loading the post…</p>;
+  /* Markdown rendered and sanitized at BUILD time by the pipeline (CONTRACT
+   * §5), served from this site's own origin: trusted by construction. */
+  return <div data-post-body={slug} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export function PostDetail(): ReactNode {
   const theme = useTheme() as Tokens;
   const { slug } = useParams<{ slug: string }>();
@@ -454,10 +490,9 @@ export function PostDetail(): ReactNode {
         </HeaderRow>
 
         <Body>
-          {/* post.html is markdown rendered + sanitized at BUILD time by the
-              pipeline (CONTRACT §5) — trusted by construction, not by network. */}
           <Prose data-testid="post-prose">
-            <div dangerouslySetInnerHTML={{ __html: rebaseHtml(post.html) }} />
+            {/* key: a visit to another post starts from that post's own state. */}
+            <PostBody key={post.slug} slug={post.slug} bodyHash={post.bodyHash} />
           </Prose>
         </Body>
 

@@ -31,6 +31,8 @@ import {
   RecipeSchema,
   RecipeSourceSchema,
   RecipeBodySchema,
+  PostSourceSchema,
+  PostBodySchema,
 } from '../src/content/schema.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -38,12 +40,15 @@ const CONTENT_DIR = join(ROOT, 'content');
 const OUT_FILE = join(ROOT, 'src', 'content', 'generated', 'content.json');
 /** One <slug>.json per recipe body; public/ so the dev server and the build serve them. */
 const RECIPE_BODY_DIR = join(ROOT, 'public', 'recipe-bodies');
+/** One <slug>.json per post body, the same way. */
+const POST_BODY_DIR = join(ROOT, 'public', 'post-bodies');
 
 /** Collection = a subdirectory of content/ + its schema. Root-level .md files
  *  (about/now) are static pages, not entries in the generated bundle. */
 const COLLECTIONS = [
   { dir: 'projects', schema: ProjectSchema },
-  { dir: 'posts', schema: PostSchema },
+  /* Validated with the body; main() moves the body to its own file. */
+  { dir: 'posts', schema: PostSourceSchema },
   { dir: 'videos', schema: VideoSchema },
   { dir: 'talks', schema: TalkSchema },
   { dir: 'ai-engineering', key: 'aiCapabilities', schema: AiCapabilitySchema },
@@ -339,6 +344,27 @@ async function main() {
   for (const file of await readdir(RECIPE_BODY_DIR)) {
     if (file.endsWith('.json') && !bodyFiles.has(file)) await rm(join(RECIPE_BODY_DIR, file));
   }
+  /* Posts, the same way: every post body used to ship in the bundle every page
+   * loads, and posts were most of it (2026-10-24: content.json 77 kB gzipped
+   * with twelve posts, 106 kB once a six-post series was added, against the
+   * 220 kB JS budget). The page loads a body only when someone opens the post
+   * (src/content/post-bodies.ts); the excerpt, summary and reading time that
+   * the lists, search, RSS and llms.txt use stay in the bundle. */
+  await mkdir(POST_BODY_DIR, { recursive: true });
+  const postBodyFiles = new Set();
+  out.posts = await Promise.all(
+    out.posts.map(async ({ html, ...post }) => {
+      const file = `${post.slug}.json`;
+      const bodyJson = JSON.stringify(PostBodySchema.parse({ slug: post.slug, html }), null, 2);
+      await writeFile(join(POST_BODY_DIR, file), bodyJson + '\n', 'utf8');
+      postBodyFiles.add(file);
+      const bodyHash = createHash('sha256').update(html).digest('hex').slice(0, 12);
+      return PostSchema.parse({ ...post, bodyHash });
+    }),
+  );
+  for (const file of await readdir(POST_BODY_DIR)) {
+    if (file.endsWith('.json') && !postBodyFiles.has(file)) await rm(join(POST_BODY_DIR, file));
+  }
   await mkdir(dirname(OUT_FILE), { recursive: true });
   /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
    * generatedAt made every rebuild dirty git and made "byte-stable output"
@@ -365,6 +391,9 @@ async function main() {
   process.stdout.write(`build-content: wrote ${relative(ROOT, OUT_FILE)} (${counts})\n`);
   process.stdout.write(
     `build-content: wrote ${bodyFiles.size} recipe bod${bodyFiles.size === 1 ? 'y' : 'ies'} to ${relative(ROOT, RECIPE_BODY_DIR)}/\n`,
+  );
+  process.stdout.write(
+    `build-content: wrote ${postBodyFiles.size} post bod${postBodyFiles.size === 1 ? 'y' : 'ies'} to ${relative(ROOT, POST_BODY_DIR)}/\n`,
   );
 }
 

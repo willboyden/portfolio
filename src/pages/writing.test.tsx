@@ -40,6 +40,7 @@ vi.mock('app/content', () => ({
  * the ordering is for the reader, the factory closes over `store`). */
 const { Writing, filterPosts, paginate, tagsFromPosts, POSTS_PER_PAGE } = await import('./Writing');
 const { PostDetail, neighboursByDate, shareUrl } = await import('./PostDetail');
+const { primePostBody } = await import('app/content/post-bodies');
 
 /* -------------------------------------------------------------------------- */
 /* Fixtures + render helpers (style copied from layout.test.tsx)               */
@@ -51,7 +52,7 @@ const makePost = (over: Partial<Post> & { slug: string; title: string }): Post =
   tags: [],
   date: '2026-01-01',
   readingMinutes: 5,
-  html: `<p>Body of ${over.title}</p>`,
+  bodyHash: '0123456789ab',
   ...over,
 });
 
@@ -298,6 +299,8 @@ describe('PostDetail (SSR)', () => {
   });
 
   it('renders back link, h1, meta row, and the build-validated HTML in Prose', () => {
+    /* As the prerender does: the body file's HTML is primed before rendering. */
+    primePostBody('rag-scale', '<p>Body of RAG at Scale</p>');
     const html = render(<PostDetail />, '/writing/rag-scale');
     const back = tags(html, 'a').find((t) => t.includes('back-to-writing'));
     expect(back).toContain('href="/writing"');
@@ -315,6 +318,17 @@ describe('PostDetail (SSR)', () => {
     const bodyStart = html.indexOf('Body of RAG at Scale');
     const proseStart = html.indexOf('data-prose');
     expect(bodyStart).toBeGreaterThan(proseStart);
+    expect(html).toContain('<div data-post-body="rag-scale"><p>Body of RAG at Scale</p></div>');
+    expect(html).not.toContain('data-testid="post-body-loading"');
+  });
+
+  it('a post whose body this page does not have yet shows a loading line, never an empty article', () => {
+    /* A client-side visit: nothing primed, so PostBody fetches after mount
+     * (an effect, which SSR does not run) and shows the placeholder first. */
+    const html = render(<PostDetail />, '/writing/duckdb-io');
+    expect(html).toContain('data-testid="post-body-loading"');
+    expect(html).toContain('Loading the post…');
+    expect(html).not.toContain('data-post-body=');
   });
 
   it('prev/next navigate by date order with real hrefs', () => {

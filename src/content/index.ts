@@ -22,6 +22,7 @@ export type {
   Recipe,
   RecipeResult,
   RecipeBody,
+  PostBody,
 } from './schema';
 export type { SiteContent };
 export {
@@ -32,6 +33,7 @@ export {
   AiCapabilitySchema,
   RecipeSchema,
   RecipeBodySchema,
+  PostBodySchema,
 } from './schema';
 
 function validate(): SiteContent {

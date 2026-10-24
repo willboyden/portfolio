@@ -20,8 +20,9 @@ import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE } from '../src/lib/seo.ts';
 import { metaFor } from '../src/lib/route-meta.ts';
 import { content } from '../src/content/index.ts';
-import { RecipeBodySchema } from '../src/content/schema.ts';
+import { PostBodySchema, RecipeBodySchema } from '../src/content/schema.ts';
 import { primeRecipeBody } from '../src/content/recipe-bodies.ts';
+import { primePostBody } from '../src/content/post-bodies.ts';
 import { availableNavItems } from '../src/components/layout/Nav';
 
 /* Local recipes: a recipe's body is not in the client bundle
@@ -38,6 +39,18 @@ for (const recipe of content.recipes) {
     throw new Error(`${where} does not match content.json — run node scripts/build-content.mjs`);
   }
   primeRecipeBody(recipe.slug, body.html);
+}
+
+/* Posts, the same way (src/content/post-bodies.ts): every post page carries
+ * its body, and a missing, foreign or stale body file fails the build. */
+for (const post of content.posts) {
+  const where = `public/post-bodies/${post.slug}.json`;
+  const body = PostBodySchema.parse(JSON.parse(readFileSync(new URL(`../${where}`, import.meta.url), 'utf8')));
+  const hash = createHash('sha256').update(body.html).digest('hex').slice(0, 12);
+  if (body.slug !== post.slug || hash !== post.bodyHash) {
+    throw new Error(`${where} does not match content.json — run node scripts/build-content.mjs`);
+  }
+  primePostBody(post.slug, body.html);
 }
 
 /** R7A-3: prepend BASE_URL to root-absolute paths so they resolve under

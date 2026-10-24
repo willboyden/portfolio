@@ -85,11 +85,32 @@ export const PostSchema = z
      * dead link. */
     relatedProject: Slug.optional(),
     relatedPosts: z.array(Slug).optional(),
-    /** Sanitized rendered markdown — the build pipeline's output. */
-    html: z.string().min(1),
+    /** First 12 hex characters of the body's sha256. The body is NOT in this
+     * bundle: scripts/build-content.mjs writes it to public/post-bodies/<slug>.json
+     * and the page loads it from there (src/content/post-bodies.ts), as recipe
+     * bodies are. The hash versions the body file's URL across deploys. */
+    bodyHash: z.string().regex(/^[0-9a-f]{12}$/, 'expected 12 lowercase hex characters'),
     excerpt: z.string().min(1),
   })
   .strict();
+
+/** A post as build-content validates it, before the body is split out. */
+export const PostSourceSchema = PostSchema.omit({ bodyHash: true })
+  .extend({
+    /** Sanitized rendered markdown — the build pipeline's output. */
+    html: z.string().min(1),
+  })
+  .strict();
+
+/** public/post-bodies/<slug>.json — one post's body, written by the build. */
+export const PostBodySchema = z
+  .object({
+    slug: Slug,
+    html: z.string().min(1),
+  })
+  .strict();
+
+export type PostBody = z.infer<typeof PostBodySchema>;
 
 export const VideoSchema = z
   .object({

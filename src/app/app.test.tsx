@@ -10,7 +10,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { __resetSheet } from '@emotion-mini/core';
 import { createApp } from './App';
 import { titleFor, descriptionFor, ogImageFor, metaFor } from 'app/lib/route-meta';
-import { content, RecipeBodySchema } from 'app/content';
+import { content, PostBodySchema, RecipeBodySchema } from 'app/content';
+import { primePostBody } from 'app/content/post-bodies';
 
 const app = (path: string): string => {
   __resetSheet();
@@ -95,6 +96,31 @@ describe('createApp (full tree)', () => {
       expect(body.slug).toBe(recipe.slug);
       expect(createHash('sha256').update(body.html).digest('hex').slice(0, 12), recipe.slug).toBe(recipe.bodyHash);
     }
+  });
+
+  it('post bodies stay out of the bundle: one committed body file per post, matching its bodyHash', () => {
+    /* Same rule as recipes: a post committed without its public/post-bodies
+     * file (or with a stale one) would ship an empty or outdated essay. */
+    const dir = new URL('../../public/post-bodies/', import.meta.url);
+    const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
+    expect(files).toEqual(content.posts.map((p) => `${p.slug}.json`).sort());
+    for (const post of content.posts) {
+      expect(post, post.slug).not.toHaveProperty('html');
+      const body = PostBodySchema.parse(JSON.parse(readFileSync(new URL(`${post.slug}.json`, dir), 'utf8')));
+      expect(body.slug).toBe(post.slug);
+      expect(createHash('sha256').update(body.html).digest('hex').slice(0, 12), post.slug).toBe(post.bodyHash);
+    }
+  });
+
+  it('a primed post page renders the essay itself, not the loading placeholder', () => {
+    /* What the prerender does for every post (prerender/entry.ts), for one. */
+    const post = content.posts[0];
+    if (!post) throw new Error('the site has no posts');
+    const file = new URL(`../../public/post-bodies/${post.slug}.json`, import.meta.url);
+    primePostBody(post.slug, PostBodySchema.parse(JSON.parse(readFileSync(file, 'utf8'))).html);
+    const html = app(`/writing/${post.slug}`);
+    expect(html).toContain(`<div data-post-body="${post.slug}">`);
+    expect(html).not.toContain('data-testid="post-body-loading"');
   });
 });
 

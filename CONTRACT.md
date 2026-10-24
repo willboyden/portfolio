@@ -115,7 +115,7 @@ export interface SiteContent {
 ```
 Every entry carries: `slug`, `title`, `summary`, `tags: string[]`, `date` (`YYYY-MM-DD`), plus type-specific fields:
 - Project: `role`, `status: 'shipped'|'active'|'archived'`, `period`, `highlights: string[]`, `stack: string[]`, `links: {source?,demo?,paper?}`, `metrics?: {label,value}[]`, `featured: boolean`, `accent?: string`
-- Post: `readingMinutes`, `series?`, `html` (sanitized rendered markdown), `excerpt`
+- Post: `readingMinutes`, `series?`, `bodyHash` (the sanitized rendered markdown lives in `public/post-bodies/<slug>.json`, loaded by `src/content/post-bodies.ts`), `excerpt`
 - Video: `url`, `embedId?`, `provider: 'youtube'|'vimeo'|'other'`, `duration`, `speakers?`, `event?`
 - Talk: `event`, `date`, `location`, `slidesUrl?`, `videoUrl?`, `abstract`
 

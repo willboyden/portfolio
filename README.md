@@ -76,12 +76,14 @@ Schema (enforced by `scripts/build-content.mjs`, fail-closed with line numbers):
 `src/content/schema.ts`. Build fails loudly on bad dates, duplicate slugs,
 missing required fields, or unknown frontmatter keys.
 
-Local recipes (`content/recipes/*.md`) are the one exception to "everything is
-in content.json": a recipe's body is written to `public/recipe-bodies/<slug>.json`
-and content.json keeps only the card fields plus a `bodyHash`, so recipe bodies
-never count against the JS budget. Commit the body file with the recipe and
+Posts (`content/posts/*.md`) and local recipes (`content/recipes/*.md`) are the
+exceptions to "everything is in content.json": each body is written to
+`public/post-bodies/<slug>.json` or `public/recipe-bodies/<slug>.json`, and
+content.json keeps only the card fields plus a `bodyHash`, so bodies never count
+against the JS budget. Commit the body file with the post or recipe and
 content.json. The prerender inlines it, the first load reuses that copy, and a
-client-side visit fetches it once (`src/content/recipe-bodies.ts`).
+client-side visit fetches it once (`src/content/post-bodies.ts`,
+`src/content/recipe-bodies.ts`).
 
 ## Architecture notes
 

@@ -7,10 +7,13 @@
  * loudly if it is stale or malformed.
  */
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import raw from './generated/content.json';
 import {
   ProjectSchema,
+  PostBodySchema,
   PostSchema,
+  PostSourceSchema,
   VideoSchema,
   TalkSchema,
   SiteContentSchema,
@@ -25,6 +28,12 @@ import {
 } from './index';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A post's rendered body, from the file the build wrote beside the bundle. */
+function postBody(slug: string): string {
+  const file = new URL(`../../public/post-bodies/${slug}.json`, import.meta.url);
+  return PostBodySchema.parse(JSON.parse(readFileSync(file, 'utf8'))).html;
+}
 
 describe('generated bundle shape', () => {
   it('satisfies SiteContentSchema (contentHash + 4 typed collections)', () => {
@@ -56,10 +65,10 @@ describe('generated bundle shape', () => {
   });
 
   it('renders non-empty HTML bodies for every post', () => {
-    const withHtml = content.posts.filter((p) => p.html.length > 0);
+    const withHtml = content.posts.filter((p) => postBody(p.slug).length > 0);
     expect(withHtml.length).toBeGreaterThanOrEqual(3);
     for (const p of content.posts) {
-      expect(p.html, p.slug).toContain('<p>');
+      expect(postBody(p.slug), p.slug).toContain('<p>');
       expect(p.excerpt.length, p.slug).toBeGreaterThan(0);
       expect(p.excerpt.length, p.slug).toBeLessThanOrEqual(141); // 140 + ellipsis char
       expect(Number.isInteger(p.readingMinutes), p.slug).toBe(true);
@@ -69,8 +78,8 @@ describe('generated bundle shape', () => {
 
   it('post html never contains raw unescaped script tags', () => {
     for (const p of content.posts) {
-      expect(p.html).not.toMatch(/<script/i);
-      expect(p.html).not.toMatch(/href="javascript:/i);
+      expect(postBody(p.slug)).not.toMatch(/<script/i);
+      expect(postBody(p.slug)).not.toMatch(/href="javascript:/i);
     }
   });
 
@@ -122,17 +131,21 @@ describe('schema behaviour (contract §4)', () => {
     expect(ProjectSchema.safeParse({ ...project, bogus: 1 }).success).toBe(false);
   });
 
-  it('PostSchema requires html + excerpt + positive readingMinutes', () => {
+  it('PostSchema requires bodyHash + excerpt + positive readingMinutes, and no body', () => {
     expect(PostSchema.safeParse(base).success).toBe(false);
-    const ok = PostSchema.safeParse({
-      ...base,
-      html: '<p>x</p>',
-      excerpt: 'e',
-      readingMinutes: 2,
-      series: 's',
-    });
-    expect(ok.success).toBe(true);
-    expect(PostSchema.safeParse({ ...base, html: '<p>x</p>', excerpt: 'e', readingMinutes: 0 }).success).toBe(false);
+    const post = { ...base, bodyHash: '0123456789ab', excerpt: 'e', readingMinutes: 2, series: 's' };
+    expect(PostSchema.safeParse(post).success).toBe(true);
+    expect(PostSchema.safeParse({ ...post, readingMinutes: 0 }).success).toBe(false);
+    expect(PostSchema.safeParse({ ...post, bodyHash: 'ABCDEF012345' }).success).toBe(false);
+    /* The body lives in public/post-bodies/<slug>.json, never in the bundle. */
+    expect(PostSchema.safeParse({ ...post, html: '<p>x</p>' }).success).toBe(false);
+  });
+
+  it('PostSourceSchema (the build input) carries the body instead of its hash', () => {
+    const source = { ...base, html: '<p>x</p>', excerpt: 'e', readingMinutes: 2 };
+    expect(PostSourceSchema.safeParse(source).success).toBe(true);
+    expect(PostSourceSchema.safeParse({ ...source, html: '' }).success).toBe(false);
+    expect(PostSourceSchema.safeParse({ ...source, bodyHash: '0123456789ab' }).success).toBe(false);
   });
 
   it('VideoSchema constrains provider; TalkSchema requires event/location/abstract', () => {

@@ -65,6 +65,27 @@ describe('content', () => {
     }
   });
 
+  /* Post bodies left the JS bundle the same way (src/content/post-bodies.ts). */
+  test('post body: fetched once on a client-side visit, never on a first load', async ({ goto, page }) => {
+    const bodyFetches = `return performance.getEntriesByType('resource').map(e => e.name).filter(n => n.includes('/post-bodies/'))`;
+    await goto('/writing');
+    const href = await page.evaluate(
+      `return document.querySelector('a[data-testid^="post-link-"]')?.getAttribute('href') ?? null`,
+    );
+    if (!href) throw new Error('no post link on /writing');
+    await page.click(`a[href="${href}"]`);
+    await page.waitForSelector('[data-post-body] p');
+    const fetched = await page.evaluate(bodyFetches);
+    if (fetched.length !== 1) throw new Error(`client visit fetched ${fetched.length} body files: ${fetched.join(', ')}`);
+    await goto(href.replace(/\/$/, ''));
+    await page.waitForSelector('[data-post-body] p');
+    const refetched = await page.evaluate(bodyFetches);
+    if (refetched.length !== 0) throw new Error(`first load fetched the body it already had: ${refetched.join(', ')}`);
+    if (await page.evaluate(`return !!document.querySelector('[data-testid="post-body-loading"], [data-testid="post-body-error"]')`)) {
+      throw new Error('the loading or error state is on screen after the body arrived');
+    }
+  });
+
   test('rss.xml items match published posts and link to real pages', async ({ baseUrl }) => {
     const rss = await (await fetch(`${baseUrl}/rss.xml`)).text();
     const items = [...rss.matchAll(/<item>([\s\S]*?)<\/item>/g)];

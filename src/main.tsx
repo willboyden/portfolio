@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { adoptPrerenderedStyleSheet } from '@emotion/react';
 import { createApp } from './app/App';
 import { adoptPrerenderedRecipeBody } from './content/recipe-bodies';
+import { adoptPrerenderedPostBody } from './content/post-bodies';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('missing #root mount element');
@@ -11,10 +12,12 @@ if (!container) throw new Error('missing #root mount element');
  * the full stylesheet twice. */
 adoptPrerenderedStyleSheet();
 
-/* A recipe's body is not in the JS bundle (src/content/recipe-bodies.ts). Keep
- * the prerendered copy before the replace-render below discards the server
- * markup, so the page neither flashes empty nor fetches what it already has. */
+/* Neither a recipe's body nor a post's is in the JS bundle
+ * (src/content/recipe-bodies.ts, src/content/post-bodies.ts). Keep the
+ * prerendered copy before the replace-render below discards the server markup,
+ * so the page neither flashes empty nor fetches what it already has. */
 adoptPrerenderedRecipeBody(document);
+adoptPrerenderedPostBody(document);
 
 /*
  * We intentionally render (not hydrate): the prerendered HTML exists for SEO,
