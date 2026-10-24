@@ -1,5 +1,5 @@
 ---
-# Facts from the public README, RELEASE-NOTES and release v0.3.0 (2026-10-24),
+# Facts from the public README, CHANGELOG, RELEASE-NOTES and release v0.3.1 (2026-10-24),
 # github.com/willboyden/nemo-console. Checked 2026-10-24.
 title: Nemo Console — one page for ten NVIDIA AI systems
 slug: nemo-console
@@ -27,11 +27,13 @@ highlights:
   - "Disruptive actions need confirmation: GPU diagnostics in a hardened throwaway container, AIPerf load tests, Evaluator benchmark runs, gateway start/stop"
   - "Security middleware on every call: loopback bind, Host allowlist, same-origin checks, CSRF header, hashed bearer keys with admin and viewer roles, strict CSP, and one argv-only process runner with a bare-name binary allowlist"
   - "Every claim in the docs is labelled implemented, verified-live or unverified; an independent security review of the 0.3.0 additions found no high-severity issue and every finding was fixed"
+  - "A browser end-to-end test (the real backend and a headless Chrome, every page and tab) runs in CI and in a pre-push hook that refuses code it has not passed"
 metrics:
-  - systems managed = 10 (v0.3.0, 2026-10-24)
-  - backend tests = 835 passed from a clean clone (876 in the deployment checkout)
+  - systems managed = 10 (since v0.3.0)
+  - backend tests = 837 passed from a clean clone (878 in the deployment checkout)
   - frontend tests = 121 passed
-  - latest release = v0.3.0 (2026-10-24)
+  - browser end-to-end = every page and tab (46 views) in headless Chrome, gating every push
+  - latest release = v0.3.1 (2026-10-24)
 ---
 
 My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a
@@ -42,6 +44,23 @@ YAML, CSV, compose files, systemd units — and a bad edit to a routing file tak
 routing down for every agent at once. Nemo Console puts them on one page: see
 what each system is doing, change its config with a diff and an automatic
 rollback, run its checks, and send a test request through it.
+
+## What 0.3.1 fixed
+
+After the 0.3.0 update, the five newest pages showed "Something went wrong" in a
+browser that had used an older version. The console served its files with no
+caching instructions, so the browser kept an old shared module and paired it
+with the new pages; one missing function was enough to stop all five from
+loading. Every file is now checked with the server on each load.
+
+Unit tests could not have seen that, so 0.3.1 adds a browser test: it starts the
+real backend, signs in with a fresh key, and opens every page and tab in a
+headless Chrome, failing on any error screen, script error, server error or
+file served without that header. It runs in CI and in a pre-push hook that
+refuses to push code it has not passed. Its first run from a fresh clone, with
+no lab next to it, found two more bugs: a Dynamo parameter preview that crashed
+with a server error and Config tabs that reported "Something went wrong" for
+systems that are simply not deployed.
 
 ## What 0.3.0 added
 

@@ -25,7 +25,7 @@ proof:
   - GPU Tuner — open-source power caps, fan curves and clock caps for the lab's GPUs, with per-card safety limits = https://github.com/willboyden/gpu-tuner
   - DeepSeek-V4.1-Flash on four Sparks at about 67 tokens/s single-stream for code; moving its lookup tables to 16K records on NFS roughly halved prefill time (100K-token prompt 36 s to 20 s)
   - Model share over NFS to three Sparks from about 9 to 15.3 GB/s by finding ZFS cache churn on the server, not the NIC that was first blamed
-  - Nemo Console 0.3.0 — DCGM telemetry for all six machines, per-GPU diagnostics, AIPerf load tests and NeMo Evaluator benchmarks from one page = https://github.com/willboyden/nemo-console
+  - Nemo Console 0.3.1 — DCGM telemetry for all six machines, per-GPU diagnostics, AIPerf load tests and NeMo Evaluator benchmarks from one page = https://github.com/willboyden/nemo-console
   - A probe that sends a real completion before declaring an engine up — health endpoints stay 200 when one rank of a multi-node engine has died
 limits:
   - One big model at a time on the workstation; switching takes minutes of loading, and nothing schedules it automatically.

@@ -32,7 +32,7 @@ comparisonRows:
 proof:
   - Engine Console — the open-source control plane for the engines = https://github.com/willboyden/engine-console
   - GPU Tuner — the open-source power, fan and clock tool for the GPUs = https://github.com/willboyden/gpu-tuner
-  - Nemo Console 0.3.0 — the open-source console for ten of these NVIDIA systems (Switchyard, Relay, Dynamo, DCGM, AIPerf, NeMo Guardrails, OpenShell, SkillEvaluator, NeMo Evaluator, Data Designer) = https://github.com/willboyden/nemo-console
+  - Nemo Console 0.3.1 — the open-source console for ten of these NVIDIA systems (Switchyard, Relay, Dynamo, DCGM, AIPerf, NeMo Guardrails, OpenShell, SkillEvaluator, NeMo Evaluator, Data Designer) = https://github.com/willboyden/nemo-console
   - Agent Hub — the open-source control plane for what each agent knows and may do = https://github.com/willboyden/agent-hub
   - This site — React 19, Vite and TypeScript, prerendered to static HTML and deployed by GitHub Actions = https://github.com/willboyden/portfolio
 limits:
