@@ -15,8 +15,9 @@ import type { ReactNode } from 'react';
 import { Link } from '@portfolio/router';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
+import { withBase } from 'app/lib/seo';
 import { availableNavItems, normalizePath } from './Nav';
-import { useThemeTokens, scrollBehaviorFor, usePrefersReducedMotion } from './ThemePreference';
+import { useThemeTokens } from './ThemePreference';
 
 export interface SocialLink {
   label: string;
@@ -35,7 +36,7 @@ export const SOCIAL_LINKS: readonly SocialLink[] = [
   { label: 'Bluesky', url: '', handle: '@your-handle' },
 ];
 
-export const RSS_HREF = '/rss.xml';
+export const RSS_HREF = withBase('/rss.xml');
 
 const Shell = styled.footer`
   border-top: 1px solid ${(p) => p.theme.color.border};
@@ -129,7 +130,10 @@ const Copy = styled.p`
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
-const TopButton = styled.button`
+/* R7A-6: was a <button onClick={toTop}> — dead without JS. Now a real anchor
+ * to #main that works with and without JS. Same visual recipe as the old
+ * button, and the 44px min-height is load-bearing (touch-target e2e gate). */
+const TopLink = styled.a`
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
@@ -142,7 +146,7 @@ const TopButton = styled.button`
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.medium};
-  cursor: pointer;
+  text-decoration: none;
 
   &:hover {
     color: ${(p) => p.theme.color.text};
@@ -152,6 +156,10 @@ const TopButton = styled.button`
   &:focus-visible {
     outline: 2px solid ${(p) => p.theme.color.focus};
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 
@@ -226,14 +234,8 @@ export function Footer({
   email = '',
 }: FooterProps): ReactNode {
   const tokens = useThemeTokens();
-  const reduced = usePrefersReducedMotion();
   const year = currentYear(now ?? new Date());
   const classes = linkClass(tokens);
-
-  const toTop = () => {
-    if (typeof window === 'undefined') return;
-    window.scrollTo({ top: 0, behavior: scrollBehaviorFor(reduced) });
-  };
 
   /* R6-B: configured socials only. Unconfigured entries are DRAFT comment
    * markers (owner gate); rendering their <li> produced a visible empty
@@ -278,31 +280,31 @@ export function Footer({
                   data-testid="footer-rss"
                 >
                   RSS feed
-                  <ExternalNote aria-hidden="true">/rss.xml</ExternalNote>
+                  <ExternalNote aria-hidden="true">{withBase('/rss.xml')}</ExternalNote>
                 </a>
               </LinkLine>
               <LinkLine>
-                <a href="/sitemap.xml" className={classes} data-testid="footer-sitemap-link">
+                <a href={withBase('/sitemap.xml')} className={classes} data-testid="footer-sitemap-link">
                   Sitemap
                 </a>
               </LinkLine>
-              <LinkLine>
-                {email ? (
-                  <a
-                    href={`mailto:${email}`}
-                    className={classes}
-                    data-testid="footer-email"
-                  >
-                    Email
-                  </a>
-                ) : (
-                  /* R2-A A1: no visible "Email — add address" on a hiring
-                   * site. The DRAFT stays as an HTML comment — invisible to
-                   * visitors, still greppable in dist/ by the owner. */
-                  <span dangerouslySetInnerHTML={{ __html: '<!-- DRAFT: replace email address in src/lib/seo.ts -->' }} />
-                )}
-              </LinkLine>
             </ul>
+            {email && (
+              <LinkLine>
+                <a
+                  href={`mailto:${email}`}
+                  className={classes}
+                  data-testid="footer-email"
+                >
+                  Email
+                </a>
+              </LinkLine>
+            )}
+            {/* DRAFT comment — greppable, not a rendered list item */}
+            <span
+              dangerouslySetInnerHTML={{ __html: '<!-- DRAFT: replace email address in src/lib/seo.ts -->' }}
+              aria-hidden="true"
+            />
           </div>
 
           {configuredSocials.length > 0 && (
@@ -333,7 +335,7 @@ export function Footer({
 
       <BottomRow>
         <Copy data-testid="footer-copyright">{copyrightLine(name, year)}</Copy>
-        <TopButton type="button" onClick={toTop} data-testid="back-to-top" aria-label="Back to top">
+        <TopLink href="#main" data-testid="back-to-top" aria-label="Back to top">
           <svg
             viewBox="0 0 24 24"
             width="16"
@@ -349,7 +351,7 @@ export function Footer({
             <path d="M12 19V5M5 12l7-7 7 7" />
           </svg>
           Back to top
-        </TopButton>
+        </TopLink>
       </BottomRow>
     </Shell>
   );

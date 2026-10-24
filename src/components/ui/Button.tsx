@@ -78,6 +78,10 @@ function buttonStyles(theme: Tokens, variant: ButtonVariant, size: ButtonSize) {
     letterSpacing: t.font.tracking.normal,
     textDecoration: 'none',
     cursor: 'pointer',
+    /* R7B-6: WebKit required the -webkit- prefix until Safari 16.4 — without
+     * it the declaration is dropped and button labels stay long-press-
+     * selectable on iOS (the vendored emotion does no autoprefixing). */
+    WebkitUserSelect: 'none' as const,
     userSelect: 'none' as const,
     borderRadius: t.radius.md,
     border: `1px solid ${tone.borderColor}`,

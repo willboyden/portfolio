@@ -39,7 +39,7 @@ const Bar = styled.header`
   border-bottom: 1px solid ${(p) => p.theme.color.border};
   font-family: ${(p) => p.theme.font.sans};
 
-  @supports (backdrop-filter: blur(12px)) {
+  @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
     backdrop-filter: blur(12px) saturate(140%);
     -webkit-backdrop-filter: blur(12px) saturate(140%);
     /* R1-B F7: at 72% opacity the header composites to ~rgb(79,81,86) over
@@ -242,7 +242,7 @@ export function Header({
             data-testid="wordmark"
             aria-label={`${name} — home`}
           >
-            <WordmarkMark aria-hidden="true">AR</WordmarkMark>
+            <WordmarkMark aria-hidden="true">WB</WordmarkMark>
             {name}
           </Link>
 

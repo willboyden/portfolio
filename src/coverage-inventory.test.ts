@@ -105,7 +105,7 @@ const reachable = new Set<string>();
 }
 
 /** Modules exercised by the build+e2e pipeline, not unit tests. Exact list. */
-const PIPELINE_ONLY = new Set([join(SRC, 'main.tsx')]);
+const PIPELINE_ONLY = new Set([join(SRC, 'main.tsx'), join(SRC, 'vite-env.d.ts')]);
 
 describe('coverage inventory — every src/ module is exercised by tests', () => {
   const srcModules = SOURCE_FILES.filter((f) => f.startsWith(SRC_PREFIX));

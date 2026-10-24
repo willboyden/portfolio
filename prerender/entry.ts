@@ -8,6 +8,9 @@
  *
  * The app shell (src/app/App.tsx) exports `createApp(path)` so the same tree
  * renders on both sides of the build.
+ *
+ * R7A-3: root-absolute URLs are made base-path-aware via withBase().
+ * import.meta.env.BASE_URL is set by Vite at build time (e.g. /portfolio/ or /).
  */
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -16,6 +19,15 @@ import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE } from '../src/lib/seo.ts';
 import { metaFor } from '../src/lib/route-meta.ts';
 import { content } from '../src/content/index.ts';
+import { NAV_ITEMS } from '../src/components/layout/Nav';
+
+/** R7A-3: prepend BASE_URL to root-absolute paths so they resolve under
+ * GitHub Pages subpaths (e.g. BASE_URL='/portfolio/' → /portfolio/rss.xml). */
+function withBase(path: string): string {
+  // $FlowFixMe $TSIgnoreMe — import.meta.env available at runtime via Vite build.
+  const base = (import.meta.env as Record<string, unknown>).BASE_URL ?? '/';
+  return base.replace(/\/$/, '') + path;
+}
 
 export function prerenderPaths(): string[] {
   return [
@@ -98,20 +110,37 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- R3D-04: browser-chrome color must track the palette the page will
-         actually paint; media-matched pairs cover both palettes without JS. -->
+    <!-- R7A-8: Without JS the page defaults dark (the :root tokens);
+         theme-init.js resolves the light/dark palette at runtime. The
+         theme-color media pairs cover browser chrome only, not the page
+         background — an accepted trade-off (R7A-8 disposition: accept). -->
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6" />
 ${head}
-    <link rel="icon" href="${import.meta.env.BASE_URL ?? '/'}favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="${import.meta.env.BASE_URL ?? '/'}apple-touch-icon.png" />
-    <link rel="manifest" href="${import.meta.env.BASE_URL ?? '/'}site.webmanifest" />
-${preloads ? preloads + '\n' : ''}    <script src="${import.meta.env.BASE_URL ?? '/'}theme-init.js"></script>
-    <script src="${import.meta.env.BASE_URL ?? '/'}spa-gate.js"></script>
+    <link rel="icon" href="${withBase('/favicon.svg')}" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="${withBase('/apple-touch-icon.png')}" />
+    <link rel="manifest" href="${withBase('/site.webmanifest')}" />
+${preloads ? preloads + '\n' : ''}    <script src="${withBase('/theme-init.js')}"></script>
+    <script src="${withBase('/spa-gate.js')}"></script>
     <style id="emotion-prerender">${css}</style>
+    <!-- R7A-1/R7A-2: without JS the menu button, search form and tag chips
+         are inert controls — hide them and reveal the static mobile nav so
+         handheld no-JS users keep full navigation. -->
+    <noscript><style>
+      [data-testid="menu-button"] { display: none !important; }
+      [data-testid="post-search-form"] { display: none !important; }
+      [data-testid="tag-filters"] { display: none !important; }
+      [data-testid="tag-filter"] { display: none !important; }
+      .static-mobile-nav { display: block !important; }
+    </style></noscript>
   </head>
   <body>
     <div id="root">${body}</div>
+
+    <!-- R7A-1: static mobile nav — revealed when JS is disabled via noscript CSS -->
+    <nav class="static-mobile-nav" aria-label="Primary">
+      ${NAV_ITEMS.map((item) => `<a href="${item.to}" class="nav-link">${item.label}</a>`).join('')}
+    </nav>
     <script type="module" src="${scriptSrc}"></script>
   </body>
 </html>`;

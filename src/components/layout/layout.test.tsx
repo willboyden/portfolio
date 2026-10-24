@@ -524,10 +524,10 @@ describe('Footer', () => {
     expect(html).toContain('2026');
   });
 
-  it('back-to-top is a real button with a label', () => {
-    const button = tags(html, 'button').find((t) => t.includes('data-testid="back-to-top"'));
-    expect(button).toContain('type="button"');
-    expect(button).toContain('aria-label="Back to top"');
+  it('back-to-top link is present and points to #main', () => {
+    const link = tags(html, 'a').find((t) => t.includes('data-testid="back-to-top"'));
+    expect(link).toContain('href="#main"');
+    expect(link).toContain('aria-label="Back to top"');
   });
 
   it('unsupplied social handles are HIDDEN (R2-A A12), never fake URLs or @your-handle', () => {
@@ -661,7 +661,7 @@ describe('styling resolves from tokens in both themes', () => {
   it('backdrop blur is @supports-gated with an opaque fallback first', () => {
     render(<Layout currentPath="/" />, darkTheme);
     const sheet = __sheetCss();
-    expect(sheet).toContain('@supports (backdrop-filter: blur(12px))');
+    expect(sheet).toContain('@supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)))');
     /* Opaque background first, translucent one second: browsers without
        color-mix/backdrop-filter keep the opaque value. */
     expect(sheet).toMatch(/background: #0b0e14; background: color-mix/);

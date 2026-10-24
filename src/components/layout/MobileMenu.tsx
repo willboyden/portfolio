@@ -123,8 +123,15 @@ const Panel = styled.div`
   position: fixed;
   inset: 0 0 auto 0;
   z-index: ${(p) => p.theme.z.overlay + 1};
+  /* R7B-5: 100vh fallback BEFORE 100dvh — dvh needs Safari 15.4+/Firefox 101+;
+   * on older engines the dvh line is invalid and dropped, and without the
+   * fallback a tall menu has NO viewport cap (same pattern as Layout.tsx). */
+  max-height: 100vh;
   max-height: 100dvh;
   overflow-y: auto;
+  /* R7B-4: overscroll behavior containment — prevents page scroll/rubber-band
+   * behind the open menu on iOS Safari. */
+  overscroll-behavior: contain;
   /* Extreme-mobile (M4): safe-area insets both ends — top for standalone/
    * fullscreen notches, bottom for home-indicator devices. */
   padding: calc(${(p) => p.theme.space[5]} + env(safe-area-inset-top))

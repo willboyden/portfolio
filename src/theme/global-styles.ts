@@ -128,6 +128,18 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
       transform: 'translateY(1px)',
     },
 
+    /* R7B-3: remove default mobile tap highlight color on rounded cards */
+    'a, button, [role="button"]': {
+      WebkitTapHighlightColor: 'transparent',
+    },
+
+    /* R7A-1: the prerenderer emits a static nav for no-JS visitors; it is
+     * revealed ONLY by the <noscript> style block in the prerendered head.
+     * JS users get the interactive nav — never a double nav. */
+    '.static-mobile-nav': {
+      display: 'none',
+    },
+
     /* Reduced motion: global guard (contract §5). Components should still
      * honour useReducedMotion() for behaviour; this backstops CSS animation.
      * !important is load-bearing (R1-B L1, live-Chromium probe): component

@@ -46,6 +46,9 @@ const Glyph = styled.p`
   line-height: ${(p) => p.theme.font.leading.none};
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
   color: ${(p) => p.theme.color.accentSoft};
+  /* R7B-6: -webkit- prefix for Safari ≤16.3 */
+  -webkit-user-select: none;
+  user-select: none;
   /* The glyph is decoration; the h1 carries the meaning. Contrast rules are
    * for text that communicates — this color is deliberately background-grade. */
   user-select: none;

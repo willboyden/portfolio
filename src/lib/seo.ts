@@ -135,6 +135,18 @@ export function joinUrl(base: string, ...segments: string[]): string {
   return tail.length === 0 ? `${baseTrim}/` : `${baseTrim}/${tail}`;
 }
 
+/**
+ * R7A-3: prepend the Vite build base to a root-absolute path.
+ *
+ * `import.meta.env.BASE_URL` is statically replaced at build time by the
+ * `--base` flag (deploy-pages.yml rebuilds with `--base="/portfolio/"` for
+ * GitHub Pages project sites). With base `/` the path passes through
+ * unchanged, so local/nginx-root builds are untouched.
+ */
+export function withBase(path: string): string {
+  return import.meta.env.BASE_URL.replace(/\/$/, '') + path;
+}
+
 /** Absolute URL for a route path; paths that are already absolute pass through. */
 export function absoluteUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;

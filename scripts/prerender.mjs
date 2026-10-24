@@ -9,7 +9,7 @@
  * Usage: node scripts/prerender.mjs            (full run after vite build)
  *        PRERENDER_LIMIT=5 node scripts/prerender.mjs  (debug subset)
  */
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -66,6 +66,15 @@ async function main() {
     written += 1;
   }
   process.stderr.write(`${written} page(s)\n`);
+
+  /* R7A-4: GitHub Pages serves the branded 404 from /404.html at the site
+   * root. The copy lives HERE (not in build.mjs) so the root page always
+   * matches the base path this prerender pass used — the Pages CI rebuilds
+   * with the subpath base and would otherwise ship a stale root-base 404. */
+  const notFoundRoute = join(DIST, '404', 'index.html');
+  if (existsSync(notFoundRoute)) {
+    copyFileSync(notFoundRoute, join(DIST, '404.html'));
+  }
 
   await writeArtifacts(mod);
 }

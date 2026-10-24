@@ -34,7 +34,8 @@ function headingCss(theme: Tokens, size: HeadingSize): string {
      * (`langfuse-observability-pragmatic`, `ILLEGAL_AGGREGATION`); at 320px a
      * fixed 48px h1 measured 341px and pushed the whole page sideways.
      * Headings may break anywhere; body prose keeps its rhythm. */
-    'overflow-wrap': 'anywhere',
+    'overflow-wrap': 'break-word',
+    overflowWrap: 'anywhere',
   });
 }
 

@@ -91,7 +91,11 @@ function proseCss(theme: Tokens): string {
        * (`_tool_manager._tools`, `traces/observations/sessions/scores`) —
        * at 492px wide with whiteSpace:pre it overflowed 320px viewports.
        * Block `pre code` below keeps pre semantics. */
-      'overflow-wrap': 'anywhere',
+      /* R7B-8: overflow-wrap break-word fallback before anywhere -- modern engines
+     * preferentially lay out content with `anywhere`; on Firefox \n\n     * ≤120 / Safari ≤15.3 the value is invalid and dropped, reintroducing unconstrained overflow for
+     * long tokens in headings and prose. */
+     'overflow-wrap': 'break-word',
+     overflowWrap: 'anywhere',
     },
     'pre': {
       margin: `${t.space[5]} 0`,
