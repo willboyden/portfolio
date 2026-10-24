@@ -15,7 +15,10 @@ import {
 
 describe('SITE constants', () => {
   it('pinned values', () => {
-    expect(SITE.url).toBe('https://alexrivera.dev');
+    /* R8D-1: SITE.url is build-time overridable (CI bakes SITE_URL, which on
+     * Pages includes the /portfolio/ subpath), so tests assert the CONTRACT
+     * (https origin-or-origin+subpath, no trailing slash), not a literal. */
+    expect(SITE.url).toMatch(/^https:\/\/\S+[^/]$/);
     expect(SITE.lang).toBe('en');
     expect(SITE.name.length).toBeGreaterThan(0);
     expect(SITE.author.length).toBeGreaterThan(0);
@@ -48,7 +51,7 @@ describe('joinUrl', () => {
   });
   it('absoluteUrl passes absolute URLs through', () => {
     expect(absoluteUrl('https://cdn.example/img.png')).toBe('https://cdn.example/img.png');
-    expect(absoluteUrl('/x')).toBe('https://alexrivera.dev/x');
+    expect(absoluteUrl('/x')).toBe(`${SITE.url}/x`);
   });
 });
 
@@ -58,7 +61,7 @@ describe('pageMeta — home page', () => {
   it('falls back to SITE title/description when empty', () => {
     expect(home.titlePlain).toBe(SITE.title);
     expect(home.description).toBe(SITE.description);
-    expect(home.canonical).toBe('https://alexrivera.dev/');
+    expect(home.canonical).toBe(`${SITE.url}/`);
   });
 
   it('JSON-LD is a Person on the home page', () => {
@@ -83,7 +86,7 @@ describe('pageMeta — post (article)', () => {
 
   it('normalizes path + canonical with no double slashes', () => {
     expect(post.path).toBe('/writing/rag-at-scale');
-    expect(post.canonical).toBe('https://alexrivera.dev/writing/rag-at-scale');
+    expect(post.canonical).toBe(`${SITE.url}/writing/rag-at-scale`);
     expect(post.canonical).not.toMatch(/[^:]\/\//);
   });
 
@@ -102,7 +105,7 @@ describe('pageMeta — post (article)', () => {
 
   it('image flips twitter card to summary_large_image', () => {
     expect(post.twitterCard).toBe('summary_large_image');
-    expect(post.image).toBe('https://alexrivera.dev/og/rag.png');
+    expect(post.image).toBe(`${SITE.url}/og/rag.png`);
   });
 });
 
@@ -206,7 +209,7 @@ describe('buildHead', () => {
     }
     /* Explicit: the canonical tag itself. */
     const canonical = tags.find((t) => t.includes('rel="canonical"')) ?? '';
-    expect(canonical).toContain('href="https://alexrivera.dev/writing/rag"');
+    expect(canonical).toContain(`href="${SITE.url}/writing/rag"`);
   });
 
   it('article pages include article:published_time; website pages do not', () => {
