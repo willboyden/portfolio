@@ -37,6 +37,7 @@ const pages = [];
 if (pages.length === 0) fail('no index.html pages found in dist/');
 if (!existsSync(join(DIST, 'index.html'))) fail('dist/index.html missing');
 if (!existsSync(join(DIST, '404.html'))) fail('dist/404.html missing');
+if (!existsSync(join(DIST, 'llms.txt'))) fail('dist/llms.txt missing (R9A-6: agent discovery)');
 
 const budgets = { totalJsGzipKb: 220, perHtmlKbWarn: 80 };
 let totalJsGzip = 0;

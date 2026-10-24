@@ -9,7 +9,7 @@
  * Usage: node scripts/prerender.mjs            (full run after vite build)
  *        PRERENDER_LIMIT=5 node scripts/prerender.mjs  (debug subset)
  */
-import { copyFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -95,7 +95,14 @@ async function writeArtifacts(mod) {
     process.exit(1);
   }
 
-  writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`, 'utf8');
+  writeFileSync(
+    join(DIST, 'robots.txt'),
+    /* R9A-8: the blanket Allow includes AI crawlers (GPTBot, ClaudeBot,
+     * CCBot, …) — deliberate for a public portfolio that wants discovery;
+     * the comment documents it as policy, not oversight. */
+    `# robots.txt — everything is crawlable, AI crawlers included (deliberate: a public portfolio wants discovery).\nUser-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`,
+    'utf8',
+  );
 
   /* F5 (R4-C): lastmod must NOT be build wall-clock — mass churn on every
    * rebuild with unchanged content is disfavored by crawlers and made the
@@ -126,6 +133,50 @@ async function writeArtifacts(mod) {
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`,
     'utf8',
   );
+
+  /* R9A-6: llms.txt — the emerging agent-discovery convention. Machines
+   * (LLM agents, retrieval) get a curated map of the site in plain markdown
+   * instead of scraping every page. Generated from the same content bundle
+   * that renders the site, so it can never drift from what ships. */
+  const contentJson = JSON.parse(
+    readFileSync(join(ROOT, 'src', 'content', 'generated', 'content.json'), 'utf8'),
+  );
+  const md = (lines) => lines.filter(Boolean).join('\n') + '\n';
+  const llms = md([
+    `# ${siteMeta.title}`,
+    '',
+    `> ${siteMeta.description}`,
+    '',
+    `Owner: William Boyden — AI engineer & technical consultant. Language: en. Canonical origin: ${ORIGIN}.`,
+    'Contact: email is not published yet (being wired up); the case studies below are the primary evidence surface.',
+    '',
+    '## Sections',
+    `- [Home](${ORIGIN}/) — value proposition, featured work, latest writing.`,
+    `- [Projects](${ORIGIN}/projects/) — case studies with metrics.`,
+    `- [Writing](${ORIGIN}/writing/) — engineering notes.`,
+    `- [AI Engineering](${ORIGIN}/ai-engineering/) — capability briefs with proof.`,
+    `- [About](${ORIGIN}/about/) — background and way of working.`,
+    `- [Now](${ORIGIN}/now/) — current focus and availability (dated).`,
+    `- [Contact](${ORIGIN}/contact/) — how to work together.`,
+    '',
+    '## Projects',
+    ...contentJson.projects.map(
+      (p) =>
+        `- [${p.title}](${ORIGIN}/projects/${p.slug}/) — ${p.summary} (${p.date}; status: ${p.status})`,
+    ),
+    '',
+    '## Writing',
+    ...contentJson.posts.map(
+      (p) => `- [${p.title}](${ORIGIN}/writing/${p.slug}/) — ${p.excerpt} (${p.date}; tags: ${p.tags.join(', ')})`,
+    ),
+    '',
+    '## AI engineering capabilities',
+    ...contentJson.aiCapabilities.map(
+      (c) =>
+        `- [${c.title}](${ORIGIN}/ai-engineering/${c.slug}/) — ${c.summary} (status: ${c.status ?? 'n/a'})`,
+    ),
+  ]);
+  writeFileSync(join(DIST, 'llms.txt'), llms, 'utf8');
 
   const items = feedItems.map((item) => {
     /* R2C-10: guid = the canonical absolute URL (permalink) — validators flag

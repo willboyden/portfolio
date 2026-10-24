@@ -197,10 +197,15 @@ describe('About', () => {
 describe('Now', () => {
   const html = render(<Now />, '/now');
 
-  it('h1 is the now-page date stamp', () => {
+  it('h1 is the now-page date stamp, machine-readable (R9A-3)', () => {
     const h1 = tags(html, 'h1')[0] ?? '';
     expect(h1).toBeDefined();
-    expect(html).toContain('Last updated October 2026');
+    /* R9A-3: the as-of date is a real <time dateTime=…> element so agents
+     * parse freshness from the attribute, not prose. Month/year stay
+     * content-derived (formatMonthYear), so pin the shape, not the literal.
+     * (tags() returns only the opening tag — assert the body via `html`.) */
+    expect(h1).toContain('data-testid="now-title"');
+    expect(html).toMatch(/<time dateTime="\d{4}-\d{2}-\d{2}">[A-Z][a-z]+ \d{4}<\/time>/);
   });
 
   it('renders the three panels: focused areas, currently learning, available for', () => {

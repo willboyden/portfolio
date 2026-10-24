@@ -24,6 +24,7 @@ jobs:
           FAIL=0
           for f in $CHANGED; do
             [ -f "$f" ] || continue
+            # R9C-7: quote the path — unquoted loop vars break on spaces.
             if grep -nE 'github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z]+ PRIVATE KEY-----' "$f"; then
               echo "::error::secret pattern found in $f"
               FAIL=1

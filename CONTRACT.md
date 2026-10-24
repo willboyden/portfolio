@@ -41,6 +41,15 @@ the offline sandbox; both are real now):
   `#loadPeerSet` crash resolving the vendored `file:` deps — use
   `npm install --legacy-peer-deps` if you see it (npm ≥11 is unaffected).
 
+**Supply-chain trust boundary (R9C-6):** `vendor/` is trusted BY COMMIT — the
+code is reviewed in PRs like any other source, and CI builds from the repo, so
+a malicious edit to `vendor/` ships exactly when a reviewed commit ships. The
+vendored subsets carry no npm integrity hashes because they are not installed
+from the registry; upstream notices live in `THIRD-PARTY-NOTICES.md`. Registry
+dependencies (`react`, `zod`, dev tooling) are pinned by the committed
+lockfile + Dependabot; CI installs with `npm ci` and FAILS LOUDLY on
+lockfile drift (R9C-3) rather than silently re-resolving.
+
 ## 2. Hard rules
 
 1. **Emotion only** for styling (`@emotion/styled` template literals). No CSS files, no Tailwind, no inline `style` prop except for genuinely dynamic values.

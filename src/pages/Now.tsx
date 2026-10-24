@@ -118,6 +118,14 @@ const Item = styled.li`
   }
 `;
 
+/* R9B-1: the honest note under "Available for" — muted, small, one breath. */
+const PanelNote = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+
 const FullPanel = styled(Panel)`
   grid-column: 1 / -1;
 `;
@@ -193,7 +201,10 @@ export function Now(): React.ReactNode {
     <>
       <Section id="now-intro" eyebrow="Now" size="wide">
         <Heading level={1} data-testid="now-title" size="4xl">
-          Last updated {NOW_UPDATED}
+          Last updated{' '}
+          {/* R9A-3: machine-parseable freshness — agents get the as-of date
+              from the datetime attribute, not prose. */}
+          <time dateTime={newestContentDate ?? undefined}>{NOW_UPDATED}</time>
         </Heading>
         <Stamp data-testid="now-stamp">
           <Dot aria-hidden="true" />
@@ -235,6 +246,14 @@ export function Now(): React.ReactNode {
                 <Item key={line}>{line}</Item>
               ))}
             </ItemList>
+            {/* R9B-1: "Check availability" led to /contact, whose email is
+                not live yet — a loop that ended in exit. One honest line so
+                the click is informed about what happens there. */}
+            <PanelNote data-testid="now-contact-note">
+              Email contact is being wired up — the case studies on the
+              projects page are the fastest proof of how this work runs in
+              practice.
+            </PanelNote>
             <ClosingRow>
               <Button as={ROUTER_LINK} to="/contact" variant="primary" data-testid="now-cta-contact">
                 Check availability

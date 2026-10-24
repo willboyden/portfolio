@@ -514,3 +514,40 @@ is readable text; misread as blank).
 **Battery:** tsc 0 / lint 0 / unit 526/526 / e2e 57/57 / AUDIT OK 34 pages /
 178 kB gz. Live deploy pending push (with R8D-1 the live canonical/OG fix
 finally ships).
+
+## Round 9 — four fresh lenses (machines, strangers, supply chain, meta)
+
+**Fleet:** R9-A LLM/agent consumability (6→?) · R9-B cold-stranger task walkthrough (8/10,
+5/6 tasks ≤2 clicks) · R9-C supply-chain/CI (6→?) · R9-D meta-verifier (independent
+cross-round measurement). Reports + disposition: `reviews/round9/`.
+
+**R9-D verified at HEAD before this round's fixes:** 526/526 unit · 57/57 e2e · AUDIT OK
+34 pages · 179 kB gz; all round-7/8 claimed fixes confirmed LIVE (canonical origin,
+per-URL lastmod, print CSS, noscript nav, branded 404, contact services). Strongest
+lenses by measured impact: R7-D (+3.5) and R8-B (+3).
+
+**Substantive wins (this round):**
+- **R9C-1 HIGH**: truthfulness_check.py's hardcoded /opt/data path broke the R12 gate on
+  every CI run. Repo-relative now; off-repo proof pointers = owner-verify notes.
+- **R9C-3 HIGH + R9C-4**: the `npm ci || npm install` fallback had been silently
+  swallowing REAL lockfile drift (dup devDeps entries → lockfile said ^26, effective
+  package.json said ^22 → every green CI run was a silent fresh install). Deduped,
+  lockfile regenerated, `npm ci` passes clean; fallback now fails LOUD.
+- **R9C-5/R9C-7**: public-branch npm-log auto-commit removed; secret-scan loop var quoted.
+- **R9A-1/2/5/7**: machine consumability — Person entity bound on every page with
+  content-derived knowsAbout; JSON-LD names de-chromed; six real section descriptions;
+  Article keywords from post tags; ContactPage type; llms.txt generated at prerender
+  (+audit gate); robots.txt documents the deliberate AI-crawler allowance.
+- **R9A-3**: /now freshness machine-readable (<time dateTime> + dateModified).
+- **R9B-1**: the /now → /contact availability loop gets an honest expectation line.
+- **R8D-9**: og:image:alt no longer double-prefixes the name.
+
+**Owner actions surfaced (cannot be done by an agent):**
+1. Set SITE.email / socials / resume in src/lib/seo.ts (R8C-1/R8D-3/R9C-blocker chain —
+   the single biggest conversion and agent-actionability gap on the site).
+2. Branch protection on main (R9C-2 HIGH): the exact gh api command is in
+   reviews/round9/DISPOSITION.md — an agent must not change repo protection unilaterally.
+3. Verify off-repo proof pointers on the machine that has them (truthfulness notes).
+
+**Battery:** tsc 0 / lint 0 / unit 526/526 / e2e 57/57 / AUDIT OK 34 pages / 179 kB gz /
+npm ci clean (first deterministic install).

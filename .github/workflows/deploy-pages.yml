@@ -41,31 +41,22 @@ jobs:
             # peer ranges in this graph), producing a complete lockfile.
             npm install --package-lock-only --no-audit --no-fund --legacy-peer-deps
           fi
-          # ci installs from the lockfile WITHOUT re-resolving (arborist
-          # skip) — deterministic regardless of the file: graph.
-          npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
+          # ci installs from the lockfile WITHOUT re-resolving (arborist skip).
+          # R9C-3: npm ci is the primary path now that the lockfile is
+          # committed and proven — a lockfile/application mismatch must FAIL
+          # LOUDLY (annotation + exit 1), not silently reinstall fresh
+          # resolution (that was the drift-swallowing `|| npm install`).
+          npm ci --no-audit --no-fund || {
+            echo "::error::npm ci failed — package-lock.json is out of sync with package.json. Run 'npm install --legacy-peer-deps' locally and commit the updated lockfile; do NOT paper over it with a fresh install."
+            exit 1
+          }
 
       # The e2e harness drives chrome-headless-shell over raw CDP (zero-dep).
       # Install the same binary the sandbox uses, then point CHROME_BIN at it.
-      # R12 debug aid: on npm failure, commit the log to the ci-debug branch
-      # (heredoc-free: base64 the log, PUT via node's fetch).
-      - name: Commit npm debug log to ci-debug branch (on failure)
-        if: failure()
-        run: |
-          LOGFILE=$(ls -t /home/runner/.npm/_logs/*.log 2>/dev/null | head -1)
-          if [ -n "$LOGFILE" ]; then
-            B64=$(base64 -w0 "$LOGFILE")
-            node -e "
-              const b64 = process.env.NPM_LOG_B64;
-              const body = {message: 'npm debug log from failed run', content: b64, branch: 'ci-debug'};
-              fetch('https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/contents/ci-debug/npm-log.txt', {
-                method: 'PUT',
-                headers: {Authorization: 'Bearer ' + process.env.GITHUB_TOKEN, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json'},
-                body: JSON.stringify(body)
-              }).then(async r => console.log('log commit:', r.status)).catch(e => console.log('log commit failed:', e.message));
-            " || true
-          fi
-
+      # R9C-5: the R12 debug aid (auto-commit npm logs to a public branch on
+      # failure) was REMOVED — npm debug logs can carry env/URL fragments and
+      # the install is now deterministic (pinned chrome, npm ci). If installs
+      # fail again, re-add temporarily with redaction, don't leave it armed.
       # R7B-03: pinned exact version — @stable is a floating supply-chain tag
       # (a bad "stable" release would break every future deploy). Bump this
       # deliberately, with the e2e suite as the regression gate.

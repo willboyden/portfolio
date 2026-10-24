@@ -63,7 +63,21 @@ export function descriptionFor(path: string): string {
     const post = content.posts.find((p) => p.slug === slug);
     return post?.excerpt || post?.summary || SITE_FALLBACK_DESCRIPTION;
   }
-  return SITE_FALLBACK_DESCRIPTION;
+  /* R9A-2: section pages shipped the site-wide boilerplate description — an
+   * agent summarizing /writing or /ai-engineering got the same paragraph for
+   * every section. Real, honest per-section descriptions. */
+  const sectionDescriptions: Record<string, string> = {
+    '/projects':
+      'Case studies of shipped systems — monitoring fleets, data platforms, eval harnesses — with the reasoning, the stack, and the numbers that judged them.',
+    '/writing':
+      'Engineering notes on LLM systems, data platforms and evals — written for the teammate who inherits the system.',
+    '/ai-engineering':
+      'Capability briefs with proof and metrics: local inference, smart routing, data analytics, video generation.',
+    '/about': 'Who William Boyden is, how he works, and the stack he ships with.',
+    '/now': 'What William Boyden is working on this quarter — current focus, availability, and what changes when it changes.',
+    '/contact': 'How to reach William Boyden, what working together looks like, and what to put in a first email.',
+  };
+  return sectionDescriptions[path] ?? SITE_FALLBACK_DESCRIPTION;
 }
 
 /* R2C-8: section cards get their own generated OG art (files ship in
@@ -88,6 +102,18 @@ export function publishedFor(path: string): { publishedTime?: string; type: 'art
 
 /** Full MetaResult for a route — identical at build time and in the browser. */
 export function metaFor(path: string): MetaResult {
+  const post = path.startsWith('/writing/')
+    ? content.posts.find((p) => p.slug === path.split('/')[2])
+    : undefined;
+  /* R9A-1: the home Person node's knowsAbout comes from the site's own tag
+   * corpus (top tags by real usage), not a hardcoded skills list. */
+  const knowsAbout = path === '/' ? allTagsByUse().slice(0, 8).map((t) => t.tag) : undefined;
+  /* R9A-3: /now's freshness is machine-readable — the newest shipped content
+   * date (the same value the page's "Last updated" stamp renders). */
+  const dateModified =
+    path === '/now'
+      ? [...content.projects, ...content.posts].map((i) => i.date).sort().at(-1)
+      : undefined;
   return pageMeta({
     title: titleFor(path),
     description: descriptionFor(path),
@@ -95,6 +121,22 @@ export function metaFor(path: string): MetaResult {
     ...(ogImageFor(path) ? { image: ogImageFor(path) } : {}),
     /* R2C-4: the 404 exists only as nginx's error page — keep it out of indexes. */
     ...(path === '/404' ? { robots: ['noindex', 'nofollow'] as const } : {}),
-    ...(path.startsWith('/writing/') ? publishedFor(path) : {}),
+    ...(post ? { publishedTime: post.date, type: 'article' as const, keywords: post.tags } : {}),
+    ...(path === '/contact' ? { jsonLdKind: 'contact' as const } : {}),
+    ...(knowsAbout ? { knowsAbout } : {}),
+    ...(dateModified ? { dateModified } : {}),
   });
+}
+
+/* R9A-1: top tags across the whole corpus (projects + posts). Local copy of
+ * content.allTags() ordering to keep this module's imports one-directional
+ * (content is already imported above — this just reuses it). */
+function allTagsByUse(): { tag: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const item of [...content.projects, ...content.posts]) {
+    for (const tag of item.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }

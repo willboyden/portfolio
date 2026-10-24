@@ -82,9 +82,15 @@ export interface PageMetaOptions {
   /** OG type for indexes/collections (defaults to og:type). */
   ogType?: string;
   /** Structured-data shape; defaults: Person (home) / Article (article) / CollectionPage (indexes). */
-  jsonLdKind?: 'person' | 'article' | 'collection';
+  jsonLdKind?: 'person' | 'article' | 'collection' | 'contact';
   /** Default: index,follow. Use noindex for drafts/404. */
   robots?: readonly RobotsDirective[];
+  /** R9A-5: topic keywords (post tags) — Article JSON-LD `keywords`. */
+  keywords?: readonly string[];
+  /** R9A-3: CollectionPage `dateModified` (ISO) — machine-readable freshness. */
+  dateModified?: string;
+  /** R9A-1: Person `knowsAbout` — route-meta derives real tags from content. */
+  knowsAbout?: readonly string[];
 }
 
 export interface JsonLdObject {
@@ -187,41 +193,78 @@ function capTitle(rawTitle: string, cap = 60): string {
   return `${truncateAtWordBoundary(title, budget)}${suffix}`;
 }
 
-function buildJsonLd(opts: PageMetaOptions, kind: 'person' | 'article' | 'collection', canonical: string): JsonLdObject {
+/** R9A-2: JSON-LD headline/name must be the BARE entity name — titleFor
+ * composes " — Projects"-style segments for tab titles, and leaking that
+ * chrome into schema.org fields makes machines quote "My Post — Writing" as
+ * the work's name. */
+function entityName(rawTitle: string): string {
+  return rawTitle.replace(/ — (Projects|Writing|AI Engineering|Videos|Talks|About|Now|Contact)$/, '').trim();
+}
+
+function buildJsonLd(opts: PageMetaOptions, kind: 'person' | 'article' | 'collection' | 'contact', canonical: string): JsonLdObject {
+  /* R9A-1: every non-home page binds the Person entity so agents can answer
+   * "who made this?" from ANY deep link, not just the homepage. */
+  const personRef = {
+    '@type': 'Person',
+    '@id': `${SITE.url}/#person`,
+    name: SITE.author,
+    url: SITE.url,
+  };
   if (kind === 'person') {
     return {
       '@context': 'https://schema.org',
       '@type': 'Person',
+      '@id': `${SITE.url}/#person`,
       name: SITE.author,
       url: SITE.url,
       description: opts.description.trim() || SITE.description,
       jobTitle: 'AI Engineer & Technical Consultant',
-      knowsAbout: ['LLM systems', 'data platforms', 'full-stack engineering'],
+      knowsAbout: opts.knowsAbout ?? ['LLM systems', 'data platforms', 'full-stack engineering'],
     };
   }
   if (kind === 'article') {
     return {
       '@context': 'https://schema.org',
       '@type': 'Article',
-      headline: opts.title.trim(),
+      headline: entityName(opts.title),
       description: opts.description.trim(),
       inLanguage: SITE.lang,
-      author: { '@type': 'Person', name: SITE.author },
+      author: personRef,
       publisher: { '@type': 'Person', name: SITE.author },
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
       /* R2C-8: Google's Article rich results expect an image. */
       image: absoluteUrl(opts.image ?? SITE.defaultImagePath),
+      /* R9A-5: frontmatter tags are machine-visible topic keywords. */
+      ...(opts.keywords && opts.keywords.length > 0 ? { keywords: [...opts.keywords] } : {}),
       ...(opts.publishedTime ? { datePublished: opts.publishedTime } : {}),
+    };
+  }
+  if (kind === 'contact') {
+    /* R9A-7: /contact shipped a generic CollectionPage — an agent could not
+     * bind "how do I reach this person" to a structured type. contactPoint
+     * appears only when SITE.email is set (hide-don't-fabricate). */
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ContactPage',
+      name: entityName(opts.title),
+      description: opts.description.trim(),
+      url: canonical,
+      inLanguage: SITE.lang,
+      isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+      about: personRef,
     };
   }
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: opts.title.trim(),
+    name: entityName(opts.title),
     description: opts.description.trim(),
     url: canonical,
     inLanguage: SITE.lang,
     isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+    about: personRef,
+    /* R9A-3: machine-readable freshness for living pages (/now). */
+    ...(opts.dateModified ? { dateModified: opts.dateModified } : {}),
   };
 }
 
@@ -300,7 +343,7 @@ export function buildHead(meta: MetaResult): string[] {
    * card is content. All site OG art is 1200x630 (gen_media.py contract). */
   tags.push(`<meta property="og:image:width" content="1200">`);
   tags.push(`<meta property="og:image:height" content="630">`);
-  tags.push(`<meta property="og:image:alt" content="${escapeHtml(`${SITE.name} — ${meta.titlePlain}`)}">`);
+  tags.push(`<meta property="og:image:alt" content="${escapeHtml(meta.titlePlain)}">`);
   tags.push(`<meta property="og:locale" content="${escapeHtml(meta.lang)}">`);
   if (meta.publishedTime) {
     tags.push(`<meta property="article:published_time" content="${escapeHtml(meta.publishedTime)}">`);
