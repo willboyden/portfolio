@@ -7,9 +7,8 @@ title: Testing when half your system is a prompt
 slug: testing-half-your-system-is-a-prompt
 summary: >-
   You cannot unit-test a prompt, so stop trying. Deterministic boundaries,
-  a build that fails on a typo, golden output validated as an artifact, and
-  statistical assertions with reps — the four patterns behind 503 unit tests
-  and 53 browser checks on a site whose content pipeline eats markdown.
+  a build that fails on a typo, golden output as an artifact, statistical
+  assertions — behind 503 unit tests and 53 browser checks.
 tags: [testing, llm, evals, typescript, python]
 date: 2026-10-06
 series: AI engineering notes

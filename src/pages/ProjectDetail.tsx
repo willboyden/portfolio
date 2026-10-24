@@ -177,6 +177,15 @@ const RelatedGrid = styled.div`
   }
 `;
 
+/* R7C-8: the heading alone made the reader guess the relationship; one
+ * plain sentence states it (shared methods/tooling, tag-overlap ranking). */
+const RelatedHint = styled.p`
+  margin: 0 0 ${(p) => p.theme.space[3]};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
 /* R6-C C1: "Related writing" card — mirrors PostDetail's related-project
  * block so the two directions read as one design system. */
 const RelatedPostCard = styled.div`
@@ -450,6 +459,7 @@ export function ProjectDetail(): React.ReactNode {
       {related.length > 0 && (
         <Block aria-labelledby="related-title">
           <BlockTitle id="related-title">Related projects</BlockTitle>
+          <RelatedHint>Other projects that share methods or tooling with this one.</RelatedHint>
           <RelatedGrid data-testid="related-grid">
             {related.map((item) => (
               <div key={item.slug}>

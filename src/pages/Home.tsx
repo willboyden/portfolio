@@ -370,10 +370,9 @@ export function Home(): React.ReactNode {
           </Tagline>
         </Heading>
         <Lede>
-          I advise teams on the hard middle of technical work: where a
-          data-science result has to become a maintained service, and
-          &ldquo;it runs on my machine&rdquo; has to become &ldquo;it runs, and
-          we know why.&rdquo;
+          I help teams turn data-science results into services that survive
+          production. That means making "it runs on my machine" become "it runs,
+          and we know why."
         </Lede>
         <CtaRow>
           {/* William Boyden: size md at extreme mobile — the lg button's 56px

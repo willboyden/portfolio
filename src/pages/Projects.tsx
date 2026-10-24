@@ -267,6 +267,54 @@ const FilterBar = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${(p) => p.theme.space[2]};
+  align-items: center;
+`;
+
+/* R7C-4: 22 controls for 8 projects was choice overload (14 chips filtered
+ * to exactly one project). Primary chips = tags used by ≥2 projects; the
+ * single-project long tail folds behind a native <details> disclosure that
+ * works without JS (same no-JS contract as the rest of the site). */
+const MoreTags = styled.details`
+  display: inline-block;
+  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
+
+  &[open] > summary {
+    color: ${(p) => p.theme.color.text};
+    border-color: ${(p) => p.theme.color.borderStrong};
+  }
+`;
+
+const MoreTagsSummary = styled.summary`
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
+  padding: ${(p) => `${p.theme.space['1']} ${p.theme.space[3]}`};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  font-weight: ${(p) => p.theme.font.weights.medium};
+  line-height: ${(p) => p.theme.font.leading.none};
+  border-radius: ${(p) => p.theme.radius.full};
+  border: 1px solid ${(p) => p.theme.color.border};
+  color: ${(p) => p.theme.color.textMuted};
+  background: ${(p) => p.theme.color.bgElevated};
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
+  }
+`;
+
+const MoreTagsBody = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${(p) => p.theme.space[2]};
+  margin-top: ${(p) => p.theme.space[2]};
 `;
 
 /* 44px hit area via token sums (Button 'sm' recipe: space5+space4+space1). */
@@ -348,6 +396,10 @@ export function Projects(): React.ReactNode {
   const [tag, setTag] = useState<string | null>(null);
   const all = content.projects;
   const tagCounts = projectTagCounts(all);
+  /* R7C-4: chips with real navigation value (≥2 projects) stay in the bar;
+   * single-project tags fold into the disclosure. */
+  const primaryTags = tagCounts.filter((entry) => entry.count >= 2);
+  const tailTags = tagCounts.filter((entry) => entry.count < 2);
   const visible = visibleProjects(all, tag);
 
   return (
@@ -371,7 +423,7 @@ export function Projects(): React.ReactNode {
             >
               All <ChipCount>{all.length}</ChipCount>
             </Chip>
-            {tagCounts.map((entry) => (
+            {primaryTags.map((entry) => (
               <Chip
                 key={entry.tag}
                 type="button"
@@ -383,6 +435,25 @@ export function Projects(): React.ReactNode {
                 {entry.tag} <ChipCount>{entry.count}</ChipCount>
               </Chip>
             ))}
+            {tailTags.length > 0 && (
+              <MoreTags data-testid="more-tags">
+                <MoreTagsSummary>More tags ({tailTags.length})</MoreTagsSummary>
+                <MoreTagsBody>
+                  {tailTags.map((entry) => (
+                    <Chip
+                      key={entry.tag}
+                      type="button"
+                      $active={tag === entry.tag}
+                      aria-pressed={tag === entry.tag}
+                      aria-label={`Filter by ${entry.tag}, ${pluralize(entry.count, 'project')}`}
+                      onClick={() => setTag(tag === entry.tag ? null : entry.tag)}
+                    >
+                      {entry.tag} <ChipCount>{entry.count}</ChipCount>
+                    </Chip>
+                  ))}
+                </MoreTagsBody>
+              </MoreTags>
+            )}
           </FilterBar>
         )}
         {all.length > 0 && (

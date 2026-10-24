@@ -6,9 +6,9 @@ title: Model Quality Harness
 slug: model-quality-harness
 summary: >-
   Deterministic tool-calling reliability benchmark for local LLMs behind an
-  OpenAI-compatible LiteLLM broker: a fixed 8-scenario suite, simulated tool
-  execution, rule-by-rule scoring with no LLM judge, and a standalone HTML
-  dashboard rendered from the real results JSON.
+  OpenAI-compatible LiteLLM broker. Eight fixed scenarios, simulated tool
+  execution, rule-by-rule scoring with no LLM judge — and a dashboard from
+  real results.
 tags: [evals, llm, testing, python, dashboards]
 date: 2026-08-16
 role: Design and implementation (solo)

@@ -6,8 +6,9 @@ title: "MCP in production: what the spec doesn't tell you"
 slug: mcp-production-lessons
 summary: >-
   Field notes from shipping a 15-tool DuckDB MCP server and a six-server
-  orchestrator: stdio lifecycle quirks, argument-length walls, JSON type
-  erosion, return-shape chaos, and why direct imports beat JSON-RPC in-process.
+  orchestrator. The lessons: stdio lifecycle quirks, argument-length
+  walls, JSON type erosion, return-shape chaos, and why direct imports
+  beat JSON-RPC in-process.
 tags: [mcp, agents, python, duckdb, architecture]
 date: 2026-09-02
 series: AI engineering notes

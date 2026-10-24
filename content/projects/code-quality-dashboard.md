@@ -5,11 +5,9 @@
 title: Code Quality Metrics MCP
 slug: code-quality-dashboard
 summary: >-
-  FastMCP server computing AST-based Python code-quality metrics with only the
-  stdlib ast module — line classification, cyclomatic complexity per function,
-  import inventory and static detection of bare excepts, print calls and
-  oversized parameter lists, exposed as four scan/query/compare/alert tools.
-  Its own scanner flagged its own code, and the findings were fixed.
+  AST-based Python code-quality metrics over FastMCP — complexity, imports,
+  bare excepts and parameter lists, stdlib-only. Its own scanner flagged
+  its own code, and the findings were fixed.
 tags: [mcp, python, static-analysis, developer-tools, testing]
 date: 2026-08-04
 role: Design and implementation (solo)

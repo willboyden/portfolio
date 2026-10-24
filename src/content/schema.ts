@@ -76,7 +76,9 @@ export const PostSchema = z
     ...baseShape,
     readingMinutes: z.number().int().positive(),
     series: z.string().min(1).optional(),
-    heroImage: z.string().min(1).optional(),
+    /* R7D-01: heroImage removed — it was accepted by the schema but rendered
+     * by no component (silent no-op surface). Unknown keys stay build errors
+     * via .strict(), so re-adding a field requires wiring its renderer too. */
     /** R6-C C1: optional hand-curated cross-links. Slugs are validated
      * against their collection at build time (build-content checks
      * existence), so a typo here fails the build instead of rendering a

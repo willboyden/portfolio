@@ -5,9 +5,9 @@
 title: DuckDB is the analytics database your agent workflows needed
 slug: duckdb-for-agent-workflows
 summary: >-
-  What a 14-benchmark suite says about wiring agents to DuckDB: 100K inserts
-  in 27 ms, cross-database joins in 8 ms, Parquet at a quarter of CSV's size
-  — and the DDL shapes that fail loudly when you least expect it.
+  What 14 benchmarks say about wiring agents to DuckDB: 100K inserts in
+  27 ms, cross-database joins in 8 ms, Parquet a quarter of CSV's size.
+  Plus the DDL shapes that fail loudly.
 tags: [duckdb, analytics, agents, python, performance]
 date: 2026-09-15
 series: AI engineering notes

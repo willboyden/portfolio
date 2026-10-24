@@ -9,6 +9,18 @@
 import styled from '@emotion/styled';
 import { Link } from '@portfolio/router';
 import { Button, Heading, Section } from 'app/components/ui';
+import { content } from 'app/content';
+import { formatMonthYear } from 'app/lib/format';
+
+/* R7I-01: the /now stamp is derived from the newest shipped content date, so
+ * it can only move when content actually moves — "updated when the picture
+ * changes" becomes a build invariant instead of a manual promise. Falls back
+ * to the literal below if the bundle somehow has no dated entries. */
+const newestContentDate = [...content.projects, ...content.posts]
+  .map((item) => item.date)
+  .sort()
+  .at(-1);
+const NOW_UPDATED = formatMonthYear(newestContentDate ?? '') || 'October 2026';
 
 /* Cast per the ui.test.tsx polymorphic-`as` pattern — see Home.tsx. */
 const ROUTER_LINK = Link as unknown as 'a';
@@ -181,7 +193,7 @@ export function Now(): React.ReactNode {
     <>
       <Section id="now-intro" eyebrow="Now" size="wide">
         <Heading level={1} data-testid="now-title" size="4xl">
-          Last updated October 2026
+          Last updated {NOW_UPDATED}
         </Heading>
         <Stamp data-testid="now-stamp">
           <Dot aria-hidden="true" />

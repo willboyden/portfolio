@@ -98,6 +98,20 @@ export function formatDate(iso: string, options: FormatDateOptions = {}): string
 }
 
 /**
+ * R7I-01: `2026-10-07` → `October 2026` (UTC-pinned, long month). Returns ''
+ * for unparseable input — callers fall back rather than render "Invalid Date".
+ * Used by /now so the "Last updated" stamp is derived from the newest shipped
+ * content instead of a hardcoded literal that rots.
+ */
+export function formatMonthYear(iso: string): string {
+  const date = parseIsoUtc(iso);
+  if (!date) return '';
+  const month = LONG_MONTHS[date.getUTCMonth()];
+  if (month === undefined) return '';
+  return `${month} ${date.getUTCFullYear()}`;
+}
+
+/**
  * R6-B: project `period` frontmatter is free-form ("2026", "2026-08") and was
  * rendered verbatim — "SHIPPED · 2026" next to "SHIPPED · 2026-08" read as
  * two different granularities side by side. Normalize: YYYY-MM → "Mon YYYY",

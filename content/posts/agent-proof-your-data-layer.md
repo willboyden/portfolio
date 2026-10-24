@@ -4,9 +4,9 @@
 title: Agent-proof your data layer
 slug: agent-proof-your-data-layer
 summary: >-
-  Lessons from a 279M-row payroll ETL that an agent could query safely: the
-  aggregation traps that overstate numbers 9x and 12x, why every dataset
-  carries its own SQL, and what idempotency buys you when the re-run is free.
+  Lessons from a 279M-row payroll ETL. Aggregation traps that overstate
+  numbers 9x and 12x, per-dataset SQL, and what idempotency buys when
+  re-runs are free.
 tags: [data-engineering, clickhouse, etl, agents, python]
 date: 2026-10-04
 series: AI engineering notes

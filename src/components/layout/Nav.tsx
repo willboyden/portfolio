@@ -25,6 +25,9 @@ export interface NavItem {
   to: string;
   /** Match only the exact path (`/` must not swallow every route). */
   exact?: boolean;
+  /** Optional accessible title/aria-label override (e.g. for "Now"). */
+  title?: string;
+  'aria-label'?: string;
 }
 
 /** ROUTES from CONTRACT §3. Detail templates (`/projects/:slug`,
@@ -37,7 +40,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Writing', to: '/writing' },
   { label: 'Videos', to: '/videos' },
   { label: 'Talks', to: '/talks' },
-  { label: 'Now', to: '/now' },
+  { label: 'Now', to: '/now', title: 'What I\'m working on now', 'aria-label': 'What I\'m working on now' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
 ];
@@ -201,6 +204,8 @@ export function Nav({
             data-testid={`nav-link-${item.label.toLowerCase()}`}
             data-active={item.active ? 'true' : 'false'}
             onNavigate={onNavigate}
+            title={item.title}
+            aria-label={item['aria-label']}
           >
             {item.label}
           </Link>

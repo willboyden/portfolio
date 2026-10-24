@@ -5,12 +5,9 @@
 title: Langfuse Observability Dashboard
 slug: langfuse-dashboard
 summary: >-
-  Air-gapped observability dashboard for Langfuse traces: a re-runnable fetch
-  pipeline (traces, observations, sessions, scores) plus a single-file,
-  dark-theme dashboard with KPIs, time-series, model breakdown and a trace
-  drill-down. The ingestion broker's whitelist blocks data-plane reads (403),
-  so the shipped build honestly renders a "no data — read blocked at broker"
-  state with the 403 evidence recorded verbatim in the fetched JSON.
+  Air-gapped dashboard for Langfuse traces: a re-runnable fetch pipeline,
+  KPIs and a trace drill-down. Its broker blocks data reads (403), so it
+  ships an honest empty state with the 403 recorded verbatim.
 tags: [llm, observability, langfuse, python, dashboards]
 date: 2026-08-16
 role: Design and implementation (solo)

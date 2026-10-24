@@ -5,10 +5,9 @@
 title: Multi-MCP Orchestrator
 slug: orchestrator
 summary: >-
-  Unified CLI over six imported MCP servers — code-quality metrics, tasks,
-  system telemetry, static-site, wiki search, DuckDB analytics — plus a
-  sandbox-wide wiki engine, exposed as ten subcommands with a chained
-  pipeline mode and DuckDB-backed trend queries.
+  One CLI over six imported MCP servers — telemetry, tasks, wiki search,
+  DuckDB analytics — as ten subcommands with chained pipelines and
+  DuckDB trend queries. Plus a sandbox-wide wiki engine.
 tags: [mcp, cli, python, orchestration, duckdb]
 date: 2026-06-20
 role: Design and implementation (solo)

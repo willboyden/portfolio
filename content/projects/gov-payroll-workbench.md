@@ -5,11 +5,9 @@
 title: Gov Payroll Analytics Workbench
 slug: gov-payroll-workbench
 summary: >-
-  End-to-end analytics pipeline over a 23-table, ~279M-row ClickHouse database
-  of government payroll, PPP loans and federal spending: a JSON-RPC/SSE query
-  client, 14 re-runnable probe datasets that embed their own SQL and timings,
-  and a single self-contained dark-theme dashboard with a 51-tile US map,
-  dual-axis SVG trends and a full SQL provenance section.
+  Analytics pipeline over a 23-table, ~279M-row ClickHouse database of
+  government payroll and federal spending: 14 re-runnable probe datasets
+  that embed their own SQL, plus a self-contained dashboard.
 tags: [data-viz, clickhouse, python, analytics, dashboards]
 date: 2026-08-16
 role: Design and implementation (solo)

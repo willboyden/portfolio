@@ -170,10 +170,7 @@ const SKILL_AREAS: readonly SkillArea[] = [
   {
     area: 'Languages',
     detail:
-      'Python and TypeScript carry most of my production work; SQL is a first ' +
-      'language, not an afterthought. Comfortable adding whatever the problem ' +
-      'actually needs — Go for services, R for statistics, shell when it is ' +
-      'honestly the right tool.',
+      'I write most of my production code in Python and TypeScript, and I use SQL every day — not as an afterthought. Comfortable adding whatever the problem actually needs — Go for services, R for statistics, shell when it is honestly the right tool.',
   },
   {
     area: 'Frontend',

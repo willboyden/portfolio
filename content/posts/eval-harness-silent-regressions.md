@@ -4,9 +4,9 @@
 title: Building an eval harness that catches silent model regressions
 slug: eval-harness-silent-regressions
 summary: >-
-  How a deterministic, no-LLM-judge harness for tool-calling reliability
-  instruments three classes of failure HTTP 200 hides — and the first run
-  caught two of them outright.
+  A deterministic, no-LLM-judge harness for tool-calling reliability that
+  catches the three failure classes an HTTP 200 hides. The first run
+  caught two outright.
 tags: [evals, llm, testing, python]
 date: 2026-08-20
 series: AI engineering notes

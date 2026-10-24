@@ -5,9 +5,9 @@
 title: Pragmatic LLM observability with Langfuse
 slug: langfuse-observability-pragmatic
 summary: >-
-  What an air-gapped Langfuse dashboard actually needs: the three numbers
-  you check daily, a fetch pipeline that survives a hostile broker, and a
-  shipped empty state that tells the truth about a 403.
+  An air-gapped Langfuse dashboard needs three daily numbers, a fetch
+  pipeline that survives a hostile broker, and an empty state that tells
+  the truth about a 403.
 tags: [llm, observability, langfuse, python, dashboards]
 date: 2026-10-02
 series: AI engineering notes

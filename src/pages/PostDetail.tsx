@@ -138,6 +138,14 @@ const MetaRow = styled.div`
   color: ${(p) => p.theme.color.textMuted};
 `;
 
+const Standfirst = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  line-height: ${(p) => p.theme.font.leading.relaxed};
+  color: ${(p) => p.theme.color.textMuted};
+  max-width: 60ch;
+`;
+
 const Sep = styled.span`
   color: ${(p) => p.theme.color.textSubtle};
 `;
@@ -222,7 +230,11 @@ function seriesCls(theme: Tokens): string {
     '&:hover': { color: t.color.accent, textDecoration: 'underline', textUnderlineOffset: '2px' },
     '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '2px' },
     /* R3D-01: series names are content — break rather than overflow. */
-    'overflow-wrap': 'anywhere',
+    /* R7B-8: overflow-wrap break-word fallback before anywhere -- modern engines
+     * preferentially lay out content with `anywhere`; on Firefox \n\n     * ≤120 / Safari ≤15.3 the value is invalid and dropped, reintroducing unconstrained overflow for
+     * long tokens in headings and prose. */
+     'overflow-wrap': 'break-word',
+     overflowWrap: 'anywhere',
   });
 }
 
@@ -417,6 +429,9 @@ export function PostDetail(): ReactNode {
                 </>
               )}
             </MetaRow>
+            <Standfirst data-testid="post-standfirst">
+              {post.summary}
+            </Standfirst>
           </TitleBlock>
 
           <ShareWrap>

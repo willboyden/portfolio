@@ -5,11 +5,8 @@
 title: System Monitor MCP Fleet
 slug: system-monitor
 summary: >-
-  Three local monitoring services built on pure-stdlib /proc readers — a
-  FastMCP query server with 8 telemetry tools, a sqlite-backed threshold
-  alerting server with a CLI exit-code contract, and a unified FastAPI
-  dashboard rendering Rich-styled gauges, tasks and violations across four
-  routes. 61 tests, all load-independent via known-answer fixtures.
+  Three monitoring services, zero runtime dependencies — an MCP query server,
+  an alerting server, and a dashboard, all built on Python's standard library.
 tags: [mcp, fastapi, python, monitoring, testing]
 date: 2026-10-07
 role: Design and implementation (solo)

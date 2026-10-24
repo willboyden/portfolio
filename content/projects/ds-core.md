@@ -6,12 +6,9 @@
 title: ds_core Data Science Toolkit
 slug: ds-core
 summary: >-
-  Pure-Python data science toolkit backed by the DuckDB CLI subprocess —
-  38 modules covering a DuckDB DataFrame, statistics, clustering, dimensionality
-  reduction, ensembles, calibration and conformal prediction intervals, with no
-  Python duckdb binding and no numpy at runtime. Survived a five-reviewer,
-  module-by-module audit that confirmed 26 bugs (5 critical) — every one fixed
-  and verified against a concrete reproduction.
+  Pure-Python data science toolkit on the DuckDB CLI subprocess — 38 modules,
+  no numpy, no duckdb binding. A five-reviewer audit confirmed 26 bugs
+  (5 critical); every one fixed and verified.
 tags: [data-science, duckdb, python, ml, testing]
 date: 2026-08-16
 role: Design, implementation and adversarial audit (solo)

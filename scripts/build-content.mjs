@@ -11,6 +11,7 @@
  * and reuses the vendored markdown engine — no new dependencies.
  */
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -222,6 +223,61 @@ async function main() {
       }
     }
   }
+  // R7H-01: markdown images fail closed. This site ships zero external URLs
+  // (rot policy), so a remote src is an error too, not just a missing file.
+  const PUBLIC_DIR = join(ROOT, 'public');
+  const imgRe = /<img\b[^>]*\ssrc="([^"]+)"/g;
+  const imageFailures = [];
+  const collect = (collection, kind) => {
+    for (const item of collection) {
+      if (typeof item.html !== 'string') continue; // html is optional on some schemas
+      for (const match of item.html.matchAll(imgRe)) {
+        const src = match[1];
+        if (/^(https?:)?\/\/|^data:/i.test(src)) {
+          imageFailures.push(
+            `  file: ${kind}/${item.slug}.md\n  error: image src "${src}" is remote — this site ships zero external URLs; commit the image under public/ and reference it locally`,
+          );
+          continue;
+        }
+        const rel = src.replace(/^\//, '').split(/[?#]/)[0];
+        if (!existsSync(join(PUBLIC_DIR, rel))) {
+          imageFailures.push(
+            `  file: ${kind}/${item.slug}.md\n  error: image src "${src}" does not exist (looked for public/${rel})`,
+          );
+        }
+      }
+    }
+  };
+  collect(out.projects, 'projects');
+  collect(out.posts, 'posts');
+  collect(out.videos, 'videos');
+  collect(out.talks, 'talks');
+  collect(out.aiCapabilities, 'ai-engineering');
+  if (imageFailures.length > 0) {
+    process.stderr.write(
+      `build-content: ${imageFailures.length} broken image reference(s):\n${imageFailures.join('\n')}\n`,
+    );
+    process.exit(1);
+  }
+  // R7C-1 guardrail: summaries are skim copy. Warn (never fail) when one is
+  // a single long sentence or exceeds ~30 words — the grid pages measure
+  // this (reviews/round7/R7C-cognitive-language.md).
+  const summaryWarnings = [];
+  const checkSummary = (collection, kind) => {
+    for (const item of collection) {
+      if (typeof item.summary !== 'string') continue;
+      const words = item.summary.trim().split(/\s+/).length;
+      const sentences = item.summary.split(/[.!?]+\s/).filter(Boolean).length;
+      if (words > 30 || sentences < 2) {
+        summaryWarnings.push(
+          `  ${kind}/${item.slug}.md: summary is ${words} words / ${sentences} sentence(s) — skim copy should be ≤2 short sentences, outcome first`,
+        );
+      }
+    }
+  };
+  checkSummary(out.projects, 'projects');
+  checkSummary(out.posts, 'posts');
+  checkSummary(out.aiCapabilities, 'ai-engineering');
   await mkdir(dirname(OUT_FILE), { recursive: true });
   /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
    * generatedAt made every rebuild dirty git and made "byte-stable output"

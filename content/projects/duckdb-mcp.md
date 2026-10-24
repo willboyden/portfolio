@@ -5,11 +5,9 @@
 title: DuckDB MCP Server
 slug: duckdb-mcp
 summary: >-
-  Model Context Protocol server exposing 15 DuckDB database tools — query,
-  schema, import/export, profiling, cross-database operations — over stdio
-  JSON-RPC. Drives the DuckDB CLI binary via subprocess (no Python duckdb
-  binding), and encodes 9 benchmark-proven best practices as tested utilities
-  and SQL recipes.
+  MCP server exposing 15 DuckDB tools — query, schema, import/export,
+  profiling, cross-database — over stdio JSON-RPC. It drives the DuckDB
+  CLI binary via subprocess and encodes 9 benchmark-proven best practices.
 tags: [mcp, duckdb, analytics, python, agents]
 date: 2026-07-15
 role: Design and implementation (solo)
