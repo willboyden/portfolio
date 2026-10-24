@@ -30,8 +30,10 @@ export const SITE = {
   /* R8D-1: overridable at build time (vite `define` bakes import.meta.env.
    * SITE_URL from the env — CI sets it to the real Pages origin). The
    * placeholder domain is the owner's deliberate fallback until a real
-   * domain exists; CI builds therefore never ship it in head tags. */
-  url: import.meta.env.SITE_URL || 'https://alexrivera.dev',
+   * domain exists; CI builds therefore never ship it in head tags. The
+   * trailing-slash strip makes joinUrl templates and raw `${SITE.url}/…`
+   * compositions agree (CI's env value carries a trailing slash). */
+  url: (import.meta.env.SITE_URL || 'https://alexrivera.dev').replace(/\/+$/, ''),
   title: 'William Boyden — AI Engineering & Technical Consulting',
   /** Short name for OG cards / manifest (R1-C #10: was referenced before it existed). */
   shortTitle: 'William Boyden',
