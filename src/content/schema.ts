@@ -178,7 +178,12 @@ export const RecipeResultSchema = z
  * model on my own hardware. The body is the recipe itself (every flag, the
  * tests behind each number, how it was found); the frontmatter is what the
  * index card and the "at a glance" block show. `results` are measured
- * numbers only — a recipe states their conditions in its body. */
+ * numbers only — a recipe states their conditions in its body.
+ *
+ * The body is NOT in this bundle: scripts/build-content.mjs writes it to
+ * public/recipe-bodies/<slug>.json and the page loads it from there
+ * (src/content/recipe-bodies.ts). Every recipe body used to count against the
+ * site's JS budget — one recipe was 12.8 kB of the 220 kB, gzipped (2026-10-24). */
 export const RecipeSchema = z
   .object({
     ...baseShape,
@@ -189,13 +194,31 @@ export const RecipeSchema = z
     results: z.array(RecipeResultSchema).min(1).max(6),
     /** Computed by the pipeline from the body. */
     readingMinutes: z.number().int().positive(),
+    /** First 12 hex characters of the body's sha256. It versions the body
+     * file's URL, so a new deploy is never answered from a cached old body. */
+    bodyHash: z.string().regex(/^[0-9a-f]{12}$/, 'expected 12 lowercase hex characters'),
+  })
+  .strict();
+
+/** A recipe as build-content validates it, before the body is split out. */
+export const RecipeSourceSchema = RecipeSchema.omit({ bodyHash: true })
+  .extend({
     /** Sanitized rendered markdown — the build pipeline's output. */
+    html: z.string().min(1),
+  })
+  .strict();
+
+/** public/recipe-bodies/<slug>.json — one recipe's body, written by the build. */
+export const RecipeBodySchema = z
+  .object({
+    slug: Slug,
     html: z.string().min(1),
   })
   .strict();
 
 export type RecipeResult = z.infer<typeof RecipeResultSchema>;
 export type Recipe = z.infer<typeof RecipeSchema>;
+export type RecipeBody = z.infer<typeof RecipeBodySchema>;
 
 /** Whole generated bundle — what `src/content/generated/content.json` must satisfy. */
 export const SiteContentSchema = z

@@ -42,6 +42,29 @@ describe('content', () => {
     if (!hasStructure) throw new Error('article has no rendered markdown structure (h2/h3/p/ul)');
   });
 
+  /* A recipe's body is not in the JS bundle (src/content/recipe-bodies.ts): a
+   * client-side visit must fetch its file exactly once, under the site base and
+   * the CSP; a first load must show the prerendered body and fetch nothing. */
+  test('recipe body: fetched once on a client-side visit, never on a first load', async ({ goto, page }) => {
+    const bodyFetches = `return performance.getEntriesByType('resource').map(e => e.name).filter(n => n.includes('/recipe-bodies/'))`;
+    await goto('/ai-engineering/local-recipes');
+    const href = await page.evaluate(
+      `return document.querySelector('a[data-testid^="recipe-link-"]')?.getAttribute('href') ?? null`,
+    );
+    if (!href) throw new Error('no recipe link on /ai-engineering/local-recipes');
+    await page.click(`a[href="${href}"]`);
+    await page.waitForSelector('[data-recipe-body] h2');
+    const fetched = await page.evaluate(bodyFetches);
+    if (fetched.length !== 1) throw new Error(`client visit fetched ${fetched.length} body files: ${fetched.join(', ')}`);
+    await goto(href.replace(/\/$/, ''));
+    await page.waitForSelector('[data-recipe-body] h2');
+    const refetched = await page.evaluate(bodyFetches);
+    if (refetched.length !== 0) throw new Error(`first load fetched the body it already had: ${refetched.join(', ')}`);
+    if (await page.evaluate(`return !!document.querySelector('[data-testid="recipe-body-loading"], [data-testid="recipe-body-error"]')`)) {
+      throw new Error('the loading or error state is on screen after the body arrived');
+    }
+  });
+
   test('rss.xml items match published posts and link to real pages', async ({ baseUrl }) => {
     const rss = await (await fetch(`${baseUrl}/rss.xml`)).text();
     const items = [...rss.matchAll(/<item>([\s\S]*?)<\/item>/g)];

@@ -13,13 +13,32 @@
  * import.meta.env.BASE_URL is set by Vite at build time (e.g. /portfolio/ or /).
  */
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createApp } from '../src/app/App.tsx';
 import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE } from '../src/lib/seo.ts';
 import { metaFor } from '../src/lib/route-meta.ts';
 import { content } from '../src/content/index.ts';
+import { RecipeBodySchema } from '../src/content/schema.ts';
+import { primeRecipeBody } from '../src/content/recipe-bodies.ts';
 import { availableNavItems } from '../src/components/layout/Nav';
+
+/* Local recipes: a recipe's body is not in the client bundle
+ * (src/content/recipe-bodies.ts), but its prerendered page carries it — for
+ * no-JS readers, crawlers, and the client's first render, which adopts it.
+ * Read every body file the content build wrote; a missing, foreign or stale
+ * file (its hash differs from content.json's bodyHash) fails the build here
+ * instead of shipping an empty or outdated recipe. */
+for (const recipe of content.recipes) {
+  const where = `public/recipe-bodies/${recipe.slug}.json`;
+  const body = RecipeBodySchema.parse(JSON.parse(readFileSync(new URL(`../${where}`, import.meta.url), 'utf8')));
+  const hash = createHash('sha256').update(body.html).digest('hex').slice(0, 12);
+  if (body.slug !== recipe.slug || hash !== recipe.bodyHash) {
+    throw new Error(`${where} does not match content.json — run node scripts/build-content.mjs`);
+  }
+  primeRecipeBody(recipe.slug, body.html);
+}
 
 /** R7A-3: prepend BASE_URL to root-absolute paths so they resolve under
  * GitHub Pages subpaths (e.g. BASE_URL='/portfolio/' → /portfolio/rss.xml). */

@@ -30,6 +30,9 @@ vi.mock('app/content', () => ({
 
 const { LocalRecipesIndex, RecipeDetailView, recipePath, recipeStatusLabel } = await import('./LocalRecipes');
 const { AiEngineeringHub, aiRecipeList, LOCAL_RECIPES_PATH } = await import('./AiEngineering');
+const { primeRecipeBody } = await import('app/content/recipe-bodies');
+
+const BODY = '<h2 id="what-runs">What runs</h2>\n<p>Body of the recipe.</p>';
 
 const makeRecipe = (over: Partial<Recipe> & { slug: string; title: string }): Recipe => ({
   summary: `Summary of ${over.title}. Measured.`,
@@ -44,7 +47,7 @@ const makeRecipe = (over: Partial<Recipe> & { slug: string; title: string }): Re
     { label: 'Agent loop', value: '71 tok/s' },
   ],
   readingMinutes: 18,
-  html: '<h2 id="what-runs">What runs</h2>\n<p>Body of the recipe.</p>',
+  bodyHash: '0123456789ab',
   ...over,
 });
 
@@ -127,6 +130,8 @@ describe('RecipeDetailView', () => {
 
   it('renders title, crumbs, meta, glance block and the build-time body', () => {
     H.store.recipes = [makeRecipe({ slug: 'one', title: 'One recipe' })];
+    /* What the prerender does before it renders a recipe page. */
+    primeRecipeBody('one', BODY);
     const html = render(<RecipeDetailView slug="one" />, `${LOCAL_RECIPES_PATH}/one`);
     expect(count(html, '<h1')).toBe(1);
     expect(html).toContain('One recipe');
@@ -138,8 +143,19 @@ describe('RecipeDetailView', () => {
     for (const value of ['4 × GB10', 'Some model, NVFP4', 'vLLM nightly', '~61 ms', '71 tok/s']) {
       expect(html, value).toContain(value);
     }
-    expect(html).toContain('<h2 id="what-runs">What runs</h2>');
+    expect(html).toContain('<div data-recipe-body="one"><h2 id="what-runs">What runs</h2>');
+    expect(html).not.toContain('data-testid="recipe-body-loading"');
     expect(html).toContain('data-testid="recipe-back"');
+  });
+
+  it('a body this page does not have yet renders the loading state, not an empty recipe', () => {
+    /* A client-side visit: nothing primed, so RecipeBody fetches after mount
+     * (effects do not run in this SSR pass, so nothing is fetched here). */
+    H.store.recipes = [makeRecipe({ slug: 'not-primed', title: 'Not primed' })];
+    const html = render(<RecipeDetailView slug="not-primed" />, `${LOCAL_RECIPES_PATH}/not-primed`);
+    expect(html).toContain('Not primed');
+    expect(html).toContain('data-testid="recipe-body-loading"');
+    expect(html).not.toContain('data-recipe-body=');
   });
 });
 

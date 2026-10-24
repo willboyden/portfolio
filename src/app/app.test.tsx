@@ -4,11 +4,13 @@
  * src/lib/route-meta.ts (the prerender/SPA single source of truth, R2C-3).
  */
 import { describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { __resetSheet } from '@emotion-mini/core';
 import { createApp } from './App';
 import { titleFor, descriptionFor, ogImageFor, metaFor } from 'app/lib/route-meta';
-import { content } from 'app/content';
+import { content, RecipeBodySchema } from 'app/content';
 
 const app = (path: string): string => {
   __resetSheet();
@@ -78,6 +80,20 @@ describe('createApp (full tree)', () => {
     expect(html).toContain('data-testid="ai-subnav-local-recipes"');
     for (const recipe of content.recipes) {
       expect(html, recipe.slug).toContain(`data-testid="ai-hub-recipe-${recipe.slug}"`);
+    }
+  });
+
+  it('recipe bodies stay out of the bundle: one committed body file per recipe, matching its bodyHash', () => {
+    /* A recipe committed without its public/recipe-bodies file (or with a stale
+     * one) would ship an empty or outdated page; the prerender refuses that too. */
+    const dir = new URL('../../public/recipe-bodies/', import.meta.url);
+    const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
+    expect(files).toEqual(content.recipes.map((r) => `${r.slug}.json`).sort());
+    for (const recipe of content.recipes) {
+      expect(recipe, recipe.slug).not.toHaveProperty('html');
+      const body = RecipeBodySchema.parse(JSON.parse(readFileSync(new URL(`${recipe.slug}.json`, dir), 'utf8')));
+      expect(body.slug).toBe(recipe.slug);
+      expect(createHash('sha256').update(body.html).digest('hex').slice(0, 12), recipe.slug).toBe(recipe.bodyHash);
     }
   });
 });

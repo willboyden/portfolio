@@ -21,9 +21,18 @@ export type {
   AiProof,
   Recipe,
   RecipeResult,
+  RecipeBody,
 } from './schema';
 export type { SiteContent };
-export { ProjectSchema, PostSchema, VideoSchema, TalkSchema, AiCapabilitySchema, RecipeSchema } from './schema';
+export {
+  ProjectSchema,
+  PostSchema,
+  VideoSchema,
+  TalkSchema,
+  AiCapabilitySchema,
+  RecipeSchema,
+  RecipeBodySchema,
+} from './schema';
 
 function validate(): SiteContent {
   const parsed = SiteContentSchema.safeParse(raw);

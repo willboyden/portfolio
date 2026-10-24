@@ -10,8 +10,9 @@
  * Runs on plain Node (>= 22.6 with native TS type-stripping, as in CONTRACT §0)
  * and reuses the vendored markdown engine — no new dependencies.
  */
-import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readdir, readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,11 +29,15 @@ import {
   TalkSchema,
   AiCapabilitySchema,
   RecipeSchema,
+  RecipeSourceSchema,
+  RecipeBodySchema,
 } from '../src/content/schema.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = join(ROOT, 'content');
 const OUT_FILE = join(ROOT, 'src', 'content', 'generated', 'content.json');
+/** One <slug>.json per recipe body; public/ so the dev server and the build serve them. */
+const RECIPE_BODY_DIR = join(ROOT, 'public', 'recipe-bodies');
 
 /** Collection = a subdirectory of content/ + its schema. Root-level .md files
  *  (about/now) are static pages, not entries in the generated bundle. */
@@ -42,8 +47,9 @@ const COLLECTIONS = [
   { dir: 'videos', schema: VideoSchema },
   { dir: 'talks', schema: TalkSchema },
   { dir: 'ai-engineering', key: 'aiCapabilities', schema: AiCapabilitySchema },
-  /* AI Engineering › Local recipes (rendered under /ai-engineering/local-recipes). */
-  { dir: 'recipes', schema: RecipeSchema },
+  /* AI Engineering › Local recipes (rendered under /ai-engineering/local-recipes).
+   * Validated with the body; main() moves the body to its own file. */
+  { dir: 'recipes', schema: RecipeSourceSchema },
 ];
 
 const byDateDesc = (a, b) =>
@@ -311,11 +317,32 @@ async function main() {
   checkSummary(out.posts, 'posts');
   checkSummary(out.aiCapabilities, 'ai-engineering');
   checkSummary(out.recipes, 'recipes');
+  /* Local recipes: each body ships as its own file and the bundle keeps only
+   * what the cards and the "at a glance" block show. Every body in the bundle
+   * counted against the site's JS budget (one recipe was 12.8 kB of the 220 kB,
+   * gzipped; 2026-10-24); the page loads a body only when someone opens that
+   * recipe (src/content/recipe-bodies.ts). bodyHash versions its URL. Files of
+   * recipes that no longer exist are removed. Runs after every check above, so
+   * the path, image and summary checks still read each body. */
+  await mkdir(RECIPE_BODY_DIR, { recursive: true });
+  const bodyFiles = new Set();
+  out.recipes = await Promise.all(
+    out.recipes.map(async ({ html, ...recipe }) => {
+      const file = `${recipe.slug}.json`;
+      const bodyJson = JSON.stringify(RecipeBodySchema.parse({ slug: recipe.slug, html }), null, 2);
+      await writeFile(join(RECIPE_BODY_DIR, file), bodyJson + '\n', 'utf8');
+      bodyFiles.add(file);
+      const bodyHash = createHash('sha256').update(html).digest('hex').slice(0, 12);
+      return RecipeSchema.parse({ ...recipe, bodyHash });
+    }),
+  );
+  for (const file of await readdir(RECIPE_BODY_DIR)) {
+    if (file.endsWith('.json') && !bodyFiles.has(file)) await rm(join(RECIPE_BODY_DIR, file));
+  }
   await mkdir(dirname(OUT_FILE), { recursive: true });
   /* Deterministic fingerprint of the content itself (R3C-03: a wall-clock
    * generatedAt made every rebuild dirty git and made "byte-stable output"
    * claims false). Same inputs -> same file, byte for byte. */
-  const { createHash } = await import('node:crypto');
   /* Hash the payload WITHOUT the hash field (self-reference would be circular):
    * build the body explicitly — a destructured throwaway would be an unused
    * var (lint gate; R4-C F1). */
@@ -336,6 +363,9 @@ async function main() {
     .map((k) => `${out[k].length} ${k}`)
     .join(', ');
   process.stdout.write(`build-content: wrote ${relative(ROOT, OUT_FILE)} (${counts})\n`);
+  process.stdout.write(
+    `build-content: wrote ${bodyFiles.size} recipe bod${bodyFiles.size === 1 ? 'y' : 'ies'} to ${relative(ROOT, RECIPE_BODY_DIR)}/\n`,
+  );
 }
 
 await main();

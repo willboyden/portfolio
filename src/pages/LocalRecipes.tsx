@@ -6,7 +6,9 @@
  * hardware: the frontmatter gives the card and the "at a glance" block
  * (hardware, model, engine, measured results); the markdown body is the
  * recipe itself, rendered at BUILD time by the vetted vendor/markdown engine
- * (CONTRACT §5 — the one place dangerouslySetInnerHTML is honest).
+ * (CONTRACT §5 — the one place dangerouslySetInnerHTML is honest). The body
+ * is not in the JS bundle: RecipeBody takes it from app/content/recipe-bodies
+ * (prerendered, adopted on first load, or fetched once on a client visit).
  *
  * Shape and a11y follow the AI Engineering pages: one h1; the shared
  * subsection nav (Local recipes is its last entry); card titles are h2; crumb
@@ -14,14 +16,15 @@
  * (styled(Link) would drop `to`). Unknown slugs render NotFound, never crash.
  */
 
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { useTheme } from '@emotion/react';
 import { Link, useParams } from '@portfolio/router';
 import { Container, EmptyState, Heading, Prose, Stack, Tag } from 'app/components/ui';
 import { getRecipe, recipesByDate, type Recipe } from 'app/content';
+import { cachedRecipeBody, loadRecipeBody } from 'app/content/recipe-bodies';
 import { formatDate, formatReadingTime } from 'app/lib/format';
-import { rebaseHtml } from 'app/lib/seo';
+import { withBase } from 'app/lib/seo';
 import type { Tokens } from 'app/theme/tokens';
 import { LOCAL_RECIPES_PATH, SubsectionNav, cardLinkClass, crumbClass } from './AiEngineering';
 import { NotFound } from './NotFound';
@@ -348,10 +351,9 @@ export function RecipeDetailView({ slug }: { slug: string }): ReactNode {
         </Glance>
 
         <Body>
-          {/* recipe.html is markdown rendered + sanitized at BUILD time by the
-              pipeline (CONTRACT §5) — trusted by construction, not by network. */}
           <Prose data-testid="recipe-prose">
-            <div dangerouslySetInnerHTML={{ __html: rebaseHtml(recipe.html) }} />
+            {/* key: a visit to another recipe starts from that recipe's own state. */}
+            <RecipeBody key={recipe.slug} slug={recipe.slug} bodyHash={recipe.bodyHash} />
           </Prose>
         </Body>
 
@@ -361,6 +363,39 @@ export function RecipeDetailView({ slug }: { slug: string }): ReactNode {
       </Article>
     </Container>
   );
+}
+
+/** The recipe itself. Shown at once when this page already has it (the
+ * prerender, or the first load's adopted copy); otherwise fetched once. */
+export function RecipeBody({ slug, bodyHash }: { slug: string; bodyHash: string }): ReactNode {
+  const [html, setHtml] = useState<string | null>(() => cachedRecipeBody(slug) ?? null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (html !== null) return undefined;
+    let live = true;
+    loadRecipeBody(slug, bodyHash).then(
+      (loaded) => {
+        if (live) setHtml(loaded);
+      },
+      () => {
+        if (live) setFailed(true);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [slug, bodyHash, html]);
+  if (failed) {
+    return (
+      <p data-testid="recipe-body-error">
+        This recipe did not load. <a href={withBase(recipePath(slug))}>Reload the page</a> to try again.
+      </p>
+    );
+  }
+  if (html === null) return <p data-testid="recipe-body-loading">Loading the recipe…</p>;
+  /* Markdown rendered and sanitized at BUILD time by the pipeline (CONTRACT
+   * §5), served from this site's own origin: trusted by construction. */
+  return <div data-recipe-body={slug} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 /** Route component: the slug comes from the URL. */
