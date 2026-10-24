@@ -6,8 +6,9 @@ summary: >-
   steps, and hand work to each other. Discord was the obvious idea and the
   wrong one. Here is the self-hosted Matrix server and sandboxed MCP bridge I
   built instead: how agents post without ever holding a chat token, how room
-  rules are enforced twice, what the two security reviews changed, and the
-  gotchas that cost the most time.
+  rules are enforced twice, what three security reviews changed, how I chat
+  with a sandboxed Hermes agent in the same server, and the gotchas that cost
+  the most time.
 tags: [mcp, agents, security, matrix, self-hosted]
 date: 2026-10-24
 series: AI engineering notes
@@ -65,8 +66,9 @@ Rooms come from one file:
 |---|---|---|
 | `#alerts` | the alerts bot only | me, trusted agents |
 | `#trusted` | me, trusted agents | me, trusted agents |
-| `#contained` | me, contained agents, trusted agents (hand-offs) | me, contained and trusted agents |
+| `#contained` | me, sandboxed Claude Code, Turnstone, trusted agents (hand-offs) | the same |
 | `#ask-<agent>` (one each) | me and that agent | me and that agent |
+| `#chat-hermes` | me and a chat-only Hermes | me and that Hermes |
 
 ## Agents never hold a chat token
 
@@ -167,6 +169,38 @@ the room. The tool-policy denial stays as the first layer. I tested both: a
 real Hermes run had its `read` blocked by the guard, and a raw MCP client on
 Hermes's network was refused by the bridge.
 
+## Chatting with Hermes directly
+
+MCP tools let an agent reach me while it works. I also wanted to open Element
+and just talk to an agent. Hermes ships a Matrix gateway, but switching it on
+means an always-on inbound channel into an agent with a terminal, so it got
+its own review before any code: allow with changes, nine of them, all done.
+The result:
+
+- **A separate Hermes.** Not the one I use from the desktop app: its own
+  container, memory, skills, workspace and model key, on two private networks
+  that each hold exactly one other container: a proxy to the chat server and
+  a proxy to the model router. No internet, no MCP servers, no web tools.
+- **The bot doesn't hold its chat token either.** A small mitmproxy add-on in
+  front of Synapse holds the token and swaps it in, the same broker pattern
+  the lab uses for model keys. It also allowlists the API: the bot can read
+  its one room and send messages, reactions, read receipts and typing
+  notices there. Joining, inviting, creating rooms, changing room settings,
+  deleting messages and uploading are refused. The proxy won't start unless
+  the bot is a member of exactly one room.
+- **Only I can drive it.** The gateway answers one account and ignores
+  anyone else's direct messages, and the room has two members.
+- **Nothing it can rewrite.** It runs as an unprivileged user with no Linux
+  capabilities and a read-only root filesystem. Its config, its tool policy
+  and two other files Hermes reads settings from are mounted read-only.
+- **Fewer tools, checked twice.** Terminal and files inside its own
+  container, memory and skills; no task queue, delegation or scheduled jobs.
+  Hermes's per-platform tool list sets that, and the lab's tool guard
+  allowlist enforces it again.
+- **Risky commands ask me in the room.** Hermes's approval prompt arrives as
+  a message. A ✅ reaction allows it once, ❌ refuses it, and only the person
+  who asked can answer.
+
 ## Gotchas that cost the most time
 
 - **Room version 12 changed power levels.** The room creator now outranks
@@ -188,11 +222,20 @@ Hermes's network was refused by the bridge.
   its transcript; it was rotated the same hour.
 - **Default invite rate limits** blocked the first setup run, which invites
   seven bots into nine rooms at once.
+- **Settings live in more than one file.** Besides its config file, Hermes
+  reads a legacy gateway file and an env file in its home, and that env file
+  overrides the container's own environment. A read-only config alone would
+  not have meant read-only settings.
+- **A gateway I didn't know was running.** My sandbox notes said Hermes ran
+  no gateway. One starts by itself, for scheduled jobs and the task queue,
+  from state in Hermes's data volume. Matrix settings there would have put a
+  chat bot in every Hermes container at once, so the chat Hermes got its own
+  volume.
 
 ## How it is proven
 
-- 19 offline tests against a fake Matrix server, each one mutation-checked
-  (break the code, watch the test fail).
+- 23 offline tests against a fake Matrix server, mutation-checked (break the
+  code, watch a test fail).
 - Live end to end through the real bridge: an agent asked a question, a
   reply from my own account came back from `get_answer` as answered (with
   the option it picked); a post outside an account's rooms was refused; a
@@ -206,15 +249,21 @@ Hermes's network was refused by the bridge.
   were each asked to call `list_rooms` once. Each reported back its own
   contained account and exactly its two rooms, and the bridge's audit log
   shows one call from each.
+- The chat Hermes, live on the same model: a test message sent from my
+  account (by a script) got its reply in 12 seconds; asked to run an
+  `rm -rf`, it posted an approval prompt, and denying it stopped the command.
+- From the bot's network, every call outside the allowlist got a 403:
+  creating a room, inviting, joining `#trusted`, room-state writes,
+  deletions, uploads, path tricks and the admin API. A token passed in the
+  URL was dropped. The allowlist has its own mutation-checked test suite.
+- Inside its container: no root, no capabilities, its policy and config
+  refuse writes, and only its two proxies answer.
 
 ## What's next
 
 - **Phone access**, once the lab has a VPN: bind the gateway to the VPN
   interface, a certificate the phone trusts, Element X, and push
   notifications that don't route through Google.
-- **Chatting with Hermes directly** through its native Matrix gateway. That is
-  an always-on inbound channel into an untrusted agent, so it gets its own
-  security review first.
 - **End-to-end encryption**, reconsidered then. On one machine, encrypting
   between me and a bot whose keys sit on the same disk protects almost
   nothing, so rooms are unencrypted on purpose for now.
