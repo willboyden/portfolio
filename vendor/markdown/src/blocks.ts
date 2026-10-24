@@ -169,18 +169,12 @@ function parseBlocks(lines: string[]): Blk[] {
         const l = lines[i]!;
         if (l.trim() === '') {
           const next = lines[i + 1];
-          const continues =
-            next !== undefined &&
-            (indentOf(next) >= baseIndent + markerWidth || (next.trim() !== '' && !isBlockStart(next) && sawBlank === false && items.length > 0));
           const isItemStart = next !== undefined && ((ordered && RE_OL.test(next)) || (!ordered && RE_UL.test(next))) && indentOf(next) === baseIndent;
+          // After a blank line the list continues only with an indented line (more of the item) or a new item.
+          // An unindented paragraph ends the list (CommonMark); it used to be folded into the last item.
           if (next !== undefined && (indentOf(next) >= baseIndent + markerWidth || isItemStart)) {
             sawBlank = true;
             loose = true;
-            i++;
-            continue;
-          }
-          if (continues) {
-            sawBlank = true;
             i++;
             continue;
           }

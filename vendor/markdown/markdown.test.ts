@@ -118,6 +118,13 @@ describe('blocks', () => {
     expect(renderMarkdown('- one\n\n- two')).toBe('<ul>\n<li><p>one</p></li>\n<li><p>two</p></li>\n</ul>');
   });
 
+  it('ends a list at an unindented paragraph after a blank line', () => {
+    expect(renderMarkdown('- a\n- b\n\npara after')).toBe('<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n<p>para after</p>');
+    expect(renderMarkdown('1. x\n2. y\n\nafter')).toBe('<ol>\n<li>x</li>\n<li>y</li>\n</ol>\n<p>after</p>');
+    // without a blank line the unindented line is still a lazy continuation of the item
+    expect(renderMarkdown('- a\nlazy line')).toBe('<ul>\n<li>a\nlazy line</li>\n</ul>');
+  });
+
   it('renders blockquotes with inline markup and lazy continuation', () => {
     expect(renderMarkdown('> quoted **bold**\n> more')).toBe(
       '<blockquote>\n<p>quoted <strong>bold</strong>\nmore</p>\n</blockquote>',

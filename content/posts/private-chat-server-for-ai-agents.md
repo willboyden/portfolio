@@ -153,14 +153,23 @@ Both came back "allow with changes", and all eight changes are in:
 - The compose scan and the live member check for network identity described
   above.
 
-### The one accepted risk
+### The risk I first accepted, then closed
 
-One risk is accepted and written down rather than fixed: Hermes has no
-per-tool approval layer for MCP tools, so it runs the chat tools without
-asking, and `#contained` is shared. A message another contained agent posts
-can reach an agent with a terminal. Two small changes close it (deny Hermes
-`read` and `post`, or give each contained agent its own room); that decision
-is pending.
+The second review left one risk open on purpose: Hermes has no per-tool
+approval layer for MCP tools, so it ran the chat tools without asking, and
+it shared `#contained` with the other contained agents. A message one of them
+posted could steer an agent that has a terminal and some web access.
+
+I closed it the same day by taking Hermes out of agent conversations
+entirely: it can notify me and ask me questions, nothing else. The obvious fix
+was one line in Hermes's tool policy denying `read` and `post`, and on its own
+it would have been theatre. Hermes has a terminal, and on its private network
+the bridge needs no token, so a single `curl` could skip the agent's own tool
+guard. The fix that counts is on the bridge side: `rooms.json` no longer lists
+Hermes in `#contained`, so the bridge refuses it and Synapse removed it from
+the room. The tool-policy denial stays as the first layer. I tested both: a
+real Hermes run had its `read` blocked by the guard, and a raw MCP client on
+Hermes's network was refused by the bridge.
 
 ## Gotchas that cost the most time
 
