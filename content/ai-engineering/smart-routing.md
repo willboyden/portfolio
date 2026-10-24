@@ -33,8 +33,8 @@ limits:
   - hwdocs retrieval is lexical FTS5 only; the fleet has an embedding model, but no embedding store is built yet — semantic recall is future work.
   - Worker fleets cap at about 8 concurrent sessions — a 15-worker dispatcher run crashed the box on RLIMIT_NPROC, documented not folklore.
   - Kanban workers cannot complete cards under an uncompleted parent umbrella — orchestrators must verify and force-close.
-relatedPosts: [mcp-production-lessons, agent-proof-your-data-layer, duckdb-for-agent-workflows]
-relatedProjects: [orchestrator, duckdb-mcp]
+relatedPosts: [mcp-production-lessons, agent-proof-your-data-layer, duckdb-for-agent-workflows, private-chat-server-for-ai-agents]
+relatedProjects: [orchestrator, duckdb-mcp, lab-chat]
 ---
 
 A fleet of MCP servers is only as good as the layer that routes, measures, and

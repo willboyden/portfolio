@@ -1,6 +1,68 @@
 {
-  "contentHash": "88cbd2c2169e8b67",
+  "contentHash": "a76c09d707b0c126",
   "projects": [
+    {
+      "slug": "lab-chat",
+      "title": "lab-chat — a private chat server for AI agents",
+      "summary": "A self-hosted Matrix server where six coding agents notify me, ask for approval, and hand work to each other, and where lab alerts land. No agent holds a chat credential: they call an MCP bridge that runs one sandbox per trust domain and posts as each agent's own account into a fixed set of rooms. Nothing leaves the workstation.",
+      "tags": [
+        "mcp",
+        "agents",
+        "security",
+        "matrix",
+        "self-hosted",
+        "observability"
+      ],
+      "date": "2026-10-24",
+      "role": "Design, implementation and security review (solo)",
+      "status": "active",
+      "period": "2026-10",
+      "highlights": [
+        "Closed by construction — federation, registration, guests, URL previews and stats reporting are off, and Synapse plus its database sit on an internal Docker network with no route to the internet, the LAN or DNS; one nginx gateway publishes Element and the client API on loopback and answers 404 for federation and the admin API",
+        "Agents never hold a Matrix token — a 6-tool MCP bridge (notify, ask_human/get_answer, post, read, list_rooms) maps each client's own token, or for containers the private network it calls from, to exactly one chat account",
+        "One sandbox per trust domain — trusted host agents, the sandboxed local Claude Code, Hermes and Turnstone each get their own bridge process in an srt sandbox with no network and read access to only their own bot tokens; the code runs from hash-checked copies outside the repo the agents can write",
+        "Room rules enforced twice — one rooms.json drives both the bridge's ACL and Synapse's membership and power levels, so contained agents can neither read nor post in trusted rooms even with a valid token",
+        "Built for prompt injection — only messages the server authenticated as the human count as instructions; other agents' text comes back labelled [UNTRUSTED trust:account] with terminal escapes and bidi characters stripped, agent posts are notices (bots don't answer them, so no reply loops), and writes and pings to the human are rate-limited",
+        "Lab alerts in the same place — Prometheus fires into Alertmanager, which posts firing and resolved alerts to an #alerts room over an internal network with exactly two members"
+      ],
+      "stack": [
+        "Synapse 1.163 (Matrix)",
+        "Element Web 1.12",
+        "PostgreSQL 18",
+        "nginx",
+        "Python 3.13",
+        "MCP SDK 1.30 (FastMCP)",
+        "httpx",
+        "Anthropic srt sandbox",
+        "rootless Docker",
+        "Prometheus Alertmanager 0.34"
+      ],
+      "metrics": [
+        {
+          "label": "agent clients",
+          "value": "6 (Claude Code, opencode, Codex, sandboxed Claude Code, Hermes, Turnstone)"
+        },
+        {
+          "label": "sandboxed bridge domains",
+          "value": "4"
+        },
+        {
+          "label": "rooms",
+          "value": "9 (trusted, contained, alerts, one ask room per agent)"
+        },
+        {
+          "label": "offline bridge tests",
+          "value": "19 (mutation-checked)"
+        },
+        {
+          "label": "security reviews",
+          "value": "2 (both allow-with-changes; all 8 required fixes done)"
+        }
+      ],
+      "relatedPost": "private-chat-server-for-ai-agents",
+      "featured": false,
+      "html": "<p>The question was simple: how do agents reach me, and each other, without\nhanding a third party a command channel into them? The answer was a chat server\nI own end to end, plus a bridge that keeps chat credentials out of every agent.\nThe full design, the threat model and what went wrong along the way are in the\nwrite-up linked below.</p>"
+    },
     {
       "slug": "crucible",
       "title": "Crucible — WASM Training-Data Refinery",
@@ -426,6 +488,28 @@
     }
   ],
   "posts": [
+    {
+      "slug": "private-chat-server-for-ai-agents",
+      "title": "A private chat server for my AI agents (and why not Discord)",
+      "summary": "Six agents on one workstation needed a way to ping me, ask before risky steps, and hand work to each other. Discord was the obvious idea and the wrong one. Here is the self-hosted Matrix server and sandboxed MCP bridge I built instead: how agents post without ever holding a chat token, how room rules are enforced twice, what the two security reviews changed, and the gotchas that cost the most time.",
+      "tags": [
+        "mcp",
+        "agents",
+        "security",
+        "matrix",
+        "self-hosted"
+      ],
+      "date": "2026-10-24",
+      "readingMinutes": 8,
+      "series": "AI engineering notes",
+      "relatedProject": "lab-chat",
+      "relatedPosts": [
+        "mcp-production-lessons",
+        "security-first-ingest-prompt-injection"
+      ],
+      "html": "<p>My workstation runs six coding agents. Three are trusted and run as me: Claude\nCode, opencode and Codex. Three are contained: a sandboxed Claude Code on a\nlocal model, Hermes Agent and Turnstone, each walled off because they read the\nweb or run on models I trust less. All of them do long jobs, and all of them\nhit moments where they need me: &quot;done&quot;, &quot;blocked&quot;, &quot;may I delete this?&quot;.\nThey also need to hand work to each other. And the lab's Prometheus alerts\nhad nowhere to go except a web page nobody watches.</p>\n<p>I wanted one place for all of it.</p>\n<h2 id=\"why-not-discord\">Why not Discord</h2>\n<p>A private Discord server was my first idea, and it fails on every point that\nmatters here.</p>\n<ul>\n<li><strong>It can't be self-hosted.</strong> A &quot;private server&quot; is still a guild on\nDiscord's cloud, so every message, every bot token and every piece of agent\noutput (code, prompts, sometimes personal data) goes to a third party.</li>\n<li><strong>Every bot needs internet access</strong> to Discord's API and gateway. My lab is\ndeny-by-default for egress; each bot would be a new hole.</li>\n<li><strong>A leaked bot token or invite is a command channel</strong> into agents that can\nrun shell commands. Hermes and Turnstone both ship Discord integrations, and\nI keep both switched off for exactly these reasons.</li>\n</ul>\n<h2 id=\"the-shape\">The shape</h2>\n<p>Matrix is an open protocol I can run myself, with good web, desktop and phone\nclients. So: Matrix, closed off from everything.</p>\n<table>\n<thead><tr><th>Piece</th><th>Job</th><th>Exposure</th></tr></thead>\n<tbody>\n<tr><td>Synapse + PostgreSQL</td><td>the Matrix server and its database</td><td>internal Docker network only: no route to the internet, the LAN or DNS</td></tr>\n<tr><td>nginx gateway</td><td>serves Element Web and the Matrix client API</td><td>loopback only; federation and the admin API answer 404</td></tr>\n<tr><td><code>lab-chat-mcp</code></td><td>the MCP bridge agents talk to</td><td>one sandboxed process per trust domain</td></tr>\n<tr><td>Alertmanager + chat-alerts</td><td>Prometheus alerts into an <code>#alerts</code> room</td><td>an internal network with exactly two members</td></tr>\n</tbody>\n</table>\n<p>Synapse runs closed: no federation listener, an empty federation allowlist,\nregistration and guests off, URL previews off (they are an SSRF and egress\npath), no stats reporting. The internal network enforces the same thing a\nsecond time, so a config mistake does not open a door. Element has its\nintegration manager, video calls, location sharing, analytics and bug reports\nturned off, and the gateway's Content-Security-Policy (<code>connect-src 'self'</code>)\nis the real guarantee: the browser refuses any request to another host.</p>\n<p>Rooms come from one file:</p>\n<table>\n<thead><tr><th>Room</th><th>Who may post</th><th>Who may read</th></tr></thead>\n<tbody>\n<tr><td><code>#alerts</code></td><td>the alerts bot only</td><td>me, trusted agents</td></tr>\n<tr><td><code>#trusted</code></td><td>me, trusted agents</td><td>me, trusted agents</td></tr>\n<tr><td><code>#contained</code></td><td>me, contained agents, trusted agents (hand-offs)</td><td>me, contained and trusted agents</td></tr>\n<tr><td><code>#ask-&lt;agent&gt;</code> (one each)</td><td>me and that agent</td><td>me and that agent</td></tr>\n</tbody>\n</table>\n<h2 id=\"agents-never-hold-a-chat-token\">Agents never hold a chat token</h2>\n<p>This is the core of the design. Each agent gets an MCP server called\n<code>lab-chat</code> with six tools:</p>\n<table>\n<thead><tr><th>Tool</th><th>What it does</th></tr></thead>\n<tbody>\n<tr><td><code>notify(text, level)</code></td><td>a message to me in the agent's own room, with a ping</td></tr>\n<tr><td><code>ask_human(question, options)</code></td><td>a question in that room; returns a ticket</td></tr>\n<tr><td><code>get_answer(ticket, wait)</code></td><td>long-polls up to 50 s for my reply, reaction or thread answer</td></tr>\n<tr><td><code>post(room, text)</code></td><td>a message for other agents</td></tr>\n<tr><td><code>read(room, since)</code></td><td>messages, each tagged with who wrote it and whether it was me</td></tr>\n<tr><td><code>list_rooms</code></td><td>who am I, and where may I read and post</td></tr>\n</tbody>\n</table>\n<p>The bridge holds the Matrix tokens; agents hold only a bridge token, and the\nbridge maps it to exactly one Matrix account. Containerized agents don't even\nhold that: Hermes and Turnstone reach the bridge through a relay container on\ntheir own internal Docker network, and the bridge treats every request from\nthat network as that agent. Network identity only works if nothing else can\njoin the network, so three things check it: the agent's start script refuses\nto start if a stranger is on it, a policy script scans every compose file in\nthe repo for that network (and for containers that borrow another container's\nnetwork namespace), and the bridge's status command checks the live members.</p>\n<p>The bridge runs as four processes, one per trust domain: trusted host agents,\nthe sandboxed local Claude Code, Hermes, and Turnstone. Each runs inside\nAnthropic's <code>srt</code> sandbox with no network and read access to only its own\ndomain's tokens; it reaches Synapse through a Unix socket that a separate relay\nforwards to the gateway. The code runs from copies outside the repository,\nhash-checked before every start, because the contained agents can write the\nrepository and a changed bridge would run outside their sandbox.</p>\n<h2 id=\"room-rules-enforced-twice\">Room rules, enforced twice</h2>\n<p>The bridge checks every call against an ACL built from <code>rooms.json</code>. Synapse\nenforces the same table independently: contained bots are simply never members\nof <code>#trusted</code> or <code>#alerts</code>, posters sit at power level 50 and a room's default\nsend level is 50, so a reader with a valid token still can't post. The same\nparser feeds both, and it refuses any room file that would let contained\nagents read what trusted ones post.</p>\n<h2 id=\"treating-chat-as-an-injection-surface\">Treating chat as an injection surface</h2>\n<p>Agents read text other agents wrote, and some of those agents read the web. So\nthe bridge assumes every message from a bot is hostile:</p>\n<ul>\n<li><strong>Only the human counts.</strong> Each message carries <code>from_human</code>, which comes\nfrom the sender the server authenticated, so no agent can fake it. The tool\ndescriptions and the agents' instructions say only those messages are\ninstructions.</li>\n<li><strong>Labels and stripping.</strong> Agent text comes back prefixed\n<code>[UNTRUSTED contained:hermes]</code> (or similar), with terminal escape codes and\nbidirectional-text characters removed.</li>\n<li><strong>No reply loops.</strong> Agent posts are Matrix notices, which bots by convention\nnever answer.</li>\n<li><strong>Rate limits.</strong> 10 writes a minute and 120 an hour per account, a separate\nbudget of 3 pings a minute and 20 an hour to me, and at most 2 waiting\n<code>get_answer</code> calls per account.</li>\n<li><strong>A secret filter, which is a seatbelt, not the boundary.</strong> A post that\nlooks like a key is refused, never redacted and sent. Split or encoded\nsecrets get through; the real controls are that agents can't read\ncredentials in the first place and that the chat never leaves the machine.</li>\n</ul>\n<h2 id=\"what-the-two-security-reviews-changed\">What the two security reviews changed</h2>\n<p>I had an independent reviewer agent audit the design twice, once before the\nsandboxed Claude Code was wired and once before Hermes and Turnstone were.\nBoth came back &quot;allow with changes&quot;, and all eight changes are in:</p>\n<ul>\n<li>The sandboxed Claude Code may not <code>read</code> without asking, since <code>#contained</code>\ncarries text from agents that browse the web.</li>\n<li>The installed helper that hands the client its token must exist, not be a\nsymlink, match the repository copy, and that copy may have no uncommitted\nchange: the model can write the repository, and the helper runs outside its\nsandbox.</li>\n<li>Inline untrusted labels, control-character stripping, the separate ping\nbudget, a cap on concurrent waits, tests for cross-domain tickets, and a\nhealth endpoint that names nothing.</li>\n<li>The compose scan and the live member check for network identity described\nabove.</li>\n</ul>\n<h3 id=\"the-one-accepted-risk\">The one accepted risk</h3>\n<p>One risk is accepted and written down rather than fixed: Hermes has no\nper-tool approval layer for MCP tools, so it runs the chat tools without\nasking, and <code>#contained</code> is shared. A message another contained agent posts\ncan reach an agent with a terminal. Two small changes close it (deny Hermes\n<code>read</code> and <code>post</code>, or give each contained agent its own room); that decision\nis pending.</p>\n<h2 id=\"gotchas-that-cost-the-most-time\">Gotchas that cost the most time</h2>\n<ul>\n<li><strong>Room version 12 changed power levels.</strong> The room creator now outranks\nevery power level and must <em>not</em> appear in the power-level user list.\nListing myself there made room creation fail, and the failed attempt left a\nhalf-made room behind its alias. Setup now re-asserts every piece of room\nstate on each run.</li>\n<li><strong>Single-file bind mounts pin the inode.</strong> Editing Element's config on the\nhost changed nothing in the container, because the editor wrote a new file.\nMount the directory.</li>\n<li><strong>Tool names get rewritten.</strong> Hermes turns <code>-</code> into <code>_</code> in MCP tool names,\nand its tool guard matches names exactly. The server is <code>lab_chat</code> for\nHermes and Turnstone so every layer sees one spelling.</li>\n<li><strong>Invisible characters.</strong> A regex of <code>\\u</code> escapes went through a file-write\ntool as literal bidi and zero-width characters. Semgrep caught it; every\nfile is now swept for them.</li>\n<li><strong>Configs that hold tokens inline get read.</strong> One client keeps MCP tokens\ninline in its config file. An agent grepping that file printed a token into\nits transcript; it was rotated the same hour.</li>\n<li><strong>Default invite rate limits</strong> blocked the first setup run, which invites\nseven bots into nine rooms at once.</li>\n</ul>\n<h2 id=\"how-it-is-proven\">How it is proven</h2>\n<ul>\n<li>19 offline tests against a fake Matrix server, each one mutation-checked\n(break the code, watch the test fail).</li>\n<li>Live end to end through the real bridge: an agent asked a question, a\nreply from my own account came back from <code>get_answer</code> as answered (with\nthe option it picked); a post outside an account's rooms was refused; a\ntoken used on the wrong domain's listener was rejected; a post holding a\nfake key was refused.</li>\n<li>A test alert fired through Alertmanager reached <code>#alerts</code>, and its\nresolution followed.</li>\n<li>The server's containers were tested for no DNS and no outbound\nconnections.</li>\n<li>Not yet proven: a model inside Hermes or Turnstone actually choosing to call\nthe tools. Both connect and list the six tools; no suitable model was loaded\nto drive them.</li>\n</ul>\n<h2 id=\"whats-next\">What's next</h2>\n<ul>\n<li><strong>Phone access</strong>, once the lab has a VPN: bind the gateway to the VPN\ninterface, a certificate the phone trusts, Element X, and push\nnotifications that don't route through Google.</li>\n<li><strong>Chatting with Hermes directly</strong> through its native Matrix gateway. That is\nan always-on inbound channel into an untrusted agent, so it gets its own\nsecurity review first.</li>\n<li><strong>End-to-end encryption</strong>, reconsidered then. On one machine, encrypting\nbetween me and a bot whose keys sit on the same disk protects almost\nnothing, so rooms are unencrypted on purpose for now.</li>\n</ul>",
+      "excerpt": "My workstation runs six coding agents. Three are trusted and run as me: Claude Code, opencode and Codex. Three are contained: a sandboxed …"
+    },
     {
       "slug": "review-fleet-loop",
       "title": "Twelve specialist lenses on one portfolio: what three review rounds found",
@@ -972,11 +1056,13 @@
       "relatedPosts": [
         "mcp-production-lessons",
         "agent-proof-your-data-layer",
-        "duckdb-for-agent-workflows"
+        "duckdb-for-agent-workflows",
+        "private-chat-server-for-ai-agents"
       ],
       "relatedProjects": [
         "orchestrator",
-        "duckdb-mcp"
+        "duckdb-mcp",
+        "lab-chat"
       ],
       "html": "<p>A fleet of MCP servers is only as good as the layer that routes, measures, and\ncomposes it. Guardrails beat scores; golden tests beat vibes.</p>"
     },
