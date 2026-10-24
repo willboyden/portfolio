@@ -476,3 +476,41 @@ caveat — mangling chip/metric strings to game the score would damage the site.
 
 **R7 gate battery (final):** tsc 0 / lint 0 / unit 503/503 / e2e 57/57 (+4 no-JS specs) /
 AUDIT OK 23 pages / 153 kB JS gzipped (bundle unchanged).
+
+## Round 8 — four fresh lenses (wire, privacy, buyer, off-browser)
+
+**Fleet:** R8-A caching/CDN/headers (6→8) · R8-B privacy/licensing (6→9) ·
+R8-C prospective-client conversion (6→7) · R8-D print/export/ATS (4→8).
+Reports + disposition + re-reviews: `reviews/round8/`.
+
+**Substantive wins:**
+- **R8D-1 HIGH**: canonical/og:url/og:image/JSON-LD pointed at the placeholder
+  domain on every page. R8-D proved the round-7 disposition was structurally
+  impossible as specified (SITE.url hardcoded; workflow env reached only the
+  feeds). Real fix: SITE_URL injected into BOTH vite builds via define,
+  SITE.url overridable, audit-dist fails on placeholder-domain survival in
+  SITE_URL builds. Proven: SITE_URL build ships zero alexrivera.dev refs.
+- **R8D-2 HIGH**: @media print — dark-theme pages printed as near-blank sheets
+  (near-white ink, backgrounds stripped). Light palette forced in print, chrome
+  hidden, headings kept with content, external link URLs revealed. (R8-D's
+  re-review downgraded the original "blank" measurement — the block remains
+  for consistency/polish.)
+- **R8A-3**: per-URL sitemap lastmod from each entry's own content date.
+- **R8D-4/5**: ai-engineering OG art (newest section had none) + og:image
+  width/height/alt.
+- **R8B-1**: LICENSE (MIT) + THIRD-PARTY-NOTICES.md (React/Emotion/Zod).
+- **R8C-1/2/3**: /contact "What I'm hired for" (site's own verified
+  capabilities, status-chipped, tech-stack inventory excluded); honest
+  unset-email state; empty Elsewhere panel renders nothing (R6-B recipe).
+  OWNER-GATED BLOCKER stands: SITE.email/socials/resume unset — no agent can
+  fill these honestly.
+
+**Phantoms retracted at re-review** (documented in DISPOSITION.md):
+R8A-1 "immutable-critical-scripts" (all three serving paths correct: Pages
+600s / serve-dist no-store / nginx no-store), R8A-2 "missing CSS .gz" (zero
+CSS files exist — inline styles), R8D-2's original ink measurement (3.7% ink
+is readable text; misread as blank).
+
+**Battery:** tsc 0 / lint 0 / unit 526/526 / e2e 57/57 / AUDIT OK 34 pages /
+178 kB gz. Live deploy pending push (with R8D-1 the live canonical/OG fix
+finally ships).

@@ -236,6 +236,21 @@ const HiredBody = styled.span`
   color: ${(p) => p.theme.color.textMuted};
 `;
 
+/* R8C-6: maturity chip — 'in-progress' services are labelled, never passed
+ * off as shipped. Same honest-status language as the project cards. */
+const StatusChip = styled.span`
+  margin-left: ${(p) => p.theme.space[2]};
+  padding: ${(p) => `${p.theme.space['0']} ${p.theme.space[2]}`};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  letter-spacing: ${(p) => p.theme.font.tracking.wider};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textMuted};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.full};
+  white-space: nowrap;
+`;
+
 /* Map platform labels to the icon set we actually ship. */
 function socialIcon(label: string): IconName {
   if (label.toLowerCase().includes('github')) return 'github';
@@ -343,18 +358,29 @@ export function Contact(): React.ReactNode {
         description="The engagement shapes behind the case studies — each one links to the work that proves it."
       >
         <HiredList data-testid="contact-hired-for">
-          {content.aiCapabilities.map((cap) => (
-            <HiredItem key={cap.slug}>
-              <HiredLink
-                as={ROUTER_LINK}
-                to={`/ai-engineering/${cap.slug}`}
-                data-testid={`contact-hired-${cap.slug}`}
-              >
-                {cap.title}
-              </HiredLink>
-              <HiredBody>{cap.summary}</HiredBody>
-            </HiredItem>
-          ))}
+          {/* R8C-7: the tech-stack inventory is an inventory page, not a
+           * hireable service — only capabilities that name an engagement
+           * shape belong here. R8C-6: in-progress work carries its status
+           * chip so a buyer is never misled about maturity. */}
+          {content.aiCapabilities
+            .filter((cap) => cap.slug !== 'tech-stack')
+            .map((cap) => (
+              <HiredItem key={cap.slug}>
+                <HiredLink
+                  as={ROUTER_LINK}
+                  to={`/ai-engineering/${cap.slug}`}
+                  data-testid={`contact-hired-${cap.slug}`}
+                >
+                  {cap.title}
+                  {cap.status === 'in-progress' && (
+                    <StatusChip data-testid={`contact-hired-${cap.slug}-status`}>
+                      in progress
+                    </StatusChip>
+                  )}
+                </HiredLink>
+                <HiredBody>{cap.summary}</HiredBody>
+              </HiredItem>
+            ))}
           <HiredItem>
             <HiredLink as={ROUTER_LINK} to="/projects" data-testid="contact-hired-projects">
               Full-stack builds &amp; data platforms

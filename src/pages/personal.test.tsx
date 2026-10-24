@@ -246,8 +246,14 @@ describe('Contact', () => {
 
   it('names what he is hired for, from the verified capabilities (R8C-2)', () => {
     expect(html).toContain('data-testid="contact-hired-for"');
-    for (const cap of content.aiCapabilities) {
+    /* R8C-7: the tech-stack inventory page is not a hireable service. */
+    for (const cap of content.aiCapabilities.filter((c) => c.slug !== 'tech-stack')) {
       expect(html).toContain(`data-testid="contact-hired-${cap.slug}"`);
+    }
+    expect(html).not.toContain('data-testid="contact-hired-tech-stack"');
+    /* R8C-6: in-progress capabilities carry an honest status chip. */
+    for (const cap of content.aiCapabilities.filter((c) => c.status === 'in-progress')) {
+      expect(html).toContain(`data-testid="contact-hired-${cap.slug}-status"`);
     }
     expect(html).toContain('data-testid="contact-hired-projects"');
   });
