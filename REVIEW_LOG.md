@@ -413,3 +413,66 @@ before acting. ~28 findings total; dispositions:
 Battery after fixes: 503 unit / 53 e2e / tsc 0 / lint 0 / AUDIT OK 23 pages
 137 kB gz (was 136 kB — the cross-link blocks cost ~1 kB gz across the bundle).
 Commits: e8ee32f (D1 pre-fix), 9ad3c6b (round-6 batch).
+
+### R7 (round 7 — four fresh lenses, fully dispositioned 2026-10-23)
+
+**Fleet:** R7-A zero-JS/graceful-degradation (7/10) · R7-B cross-browser/platform quirks (7/10) ·
+R7-C cognitive accessibility & plain language (7/10) · R7-D maintenance/content rot (5/10).
+Full reports: `reviews/round7/`. Disposition decisions: `reviews/round7/DISPOSITION.md`.
+
+**Gate-rot pre-fix (found by R7-D, fixed before the round battery):** the typecheck/lint
+gates were green at round-6 closeout only because the offline env carried `@types/node`
+and `typescript-eslint` transitively. A fresh real `npm install` was red. Both added to
+devDependencies; `package-lock.json` committed; `.github/dependabot.yml` added;
+`deploy-pages.yml` pinned to `chrome-headless-shell@151.0.7922.34` and now runs e2e
+against the Pages-base artifact that actually ships (R7B-02/03/04, R7E-01).
+README/CONTRACT now describe both the offline-container and networked-host setup
+(R7E-02/R7G-01/02). `prerender-built/` untracked (R7C-01).
+
+**Shipped fixes:**
+- **R7A-1** HIGH: no-JS mobile navigation — prerender template now emits a hidden
+  static nav (real `NAV_ITEMS`, drift-free import) revealed only by a `<noscript>` style
+  block; menu button/search/chips hidden no-JS (R7A-2); base rule `.static-mobile-nav{display:none}`
+  in global styles so JS users never see a double nav. New e2e spec `09-no-js-resilience.e2e.mjs`
+  (4 tests: noscript block, static-nav completeness, no-double-nav CSS, root 404.html).
+- **R7A-3/R7B-1** MEDIUM: `withBase()` applied to every root-absolute URL sink in the
+  prerender template (theme-init, favicon, apple-touch-icon, manifest) and Footer
+  RSS/sitemap/ExternalNote links — no more 404 RSS/sitemap links on the Pages deployment.
+- **R7A-4** MEDIUM: `dist/404.html` emitted from `scripts/prerender.mjs` (moved out of
+  build.mjs so the Pages-base rebuild ships a correct subpath 404); `audit-dist.mjs` asserts it.
+- **R7A-5/6/7/8** LOW: dev-only noscript removed from index.html; back-to-top is now a real
+  `<a href="#main">` (44px target kept — touch-target e2e still green); footer email li renders
+  only when configured with the DRAFT comment outside the list; no-JS theme behavior documented
+  next to the theme-color meta.
+- **Monogram** (out-of-lens, accepted): wordmark "AR" (placeholder-persona remnant) → "WB".
+- **R7B-3..9**: `-webkit-tap-highlight-color: transparent`; `overscroll-behavior: contain` on the
+  open mobile menu; `100vh` fallback before `100dvh`; `-webkit-user-select: none` twins;
+  `overflow-wrap: break-word` fallback before `anywhere`; `@supports` gate widened for
+  `-webkit-backdrop-filter`; forced-colors accepted (LOW, watch item).
+- **R7C-1..8** (the round's substantive copy wins): all 14 card summaries re-cut to ≤2
+  sentences/≤25 words outcome-first (no new facts); home lede → two sentences, promise first;
+  `post.summary` now rendered as a standfirst on post detail pages; projects chips show
+  tags with count ≥2 with the single-use tail behind a no-JS `<details>` "More tags (N)"
+  disclosure (22 controls → 8+1); "View case study"→"Read the case study" unified; About
+  idiom de-jargoned; "Now" nav link titled "What I'm working on now"; related-projects block
+  gained a one-line relationship explanation.
+- **R7C guardrail**: `build-content.mjs` WARNS when a summary exceeds 30 words or lacks a
+  sentence break (warn, not fail — grid pages measure this).
+- **R7D-01** MEDIUM: unused `heroImage` removed from PostSchema (silent no-op surface).
+- **R7H-01** MEDIUM: markdown images fail closed — remote srcs rejected (zero-external-URL
+  policy) and missing public/ files fail the build with file + src.
+- **R7I-01** LOW: /now "Last updated" derived from the newest shipped content date via
+  `formatMonthYear()` — a build invariant, not a manual promise.
+- **R7J-01** LOW: ACCEPTED (owner-verified project status; not changed).
+- **R7D R7B-01** HIGH: `serve-dist.mjs` handles EADDRINUSE with a clear diagnostic and
+  next-free-port fallback for the e2e runner.
+
+**Readability (R7-C lens, `reviews/r7c_readability.py`, dist visible text):**
+home FRE 20.6 → 36.7 (w/sent 32.5 → 22.1); /projects FRE 8.6 → 22.8 (w/sent 33.9 → 24.9);
+/writing FRE 23.2 → 32.8. The R7-C aspiration (projects ≥35, home ≥40) is bounded by
+non-prose extraction noise (filter chips and metric rows concatenate into pseudo-sentences
+in the scorer); the actual prose (summaries, lede) meets the skim bar. Accepted with that
+caveat — mangling chip/metric strings to game the score would damage the site.
+
+**R7 gate battery (final):** tsc 0 / lint 0 / unit 503/503 / e2e 57/57 (+4 no-JS specs) /
+AUDIT OK 23 pages / 153 kB JS gzipped (bundle unchanged).
