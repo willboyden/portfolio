@@ -8,9 +8,25 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # Propose only versions published at least 14 days earlier: most malicious
+    # releases are caught and pulled within days. Security updates are not
+    # delayed by the cooldown.
+    cooldown:
+      default-days: 14
     # Group runtime deps so one PR = one gate run (the gate is the expensive part).
     groups:
       runtime:
         dependency-type: "production"
       dev:
         dependency-type: "development"
+    ignore:
+      # typescript-eslint accepts TypeScript only below 6.1, and on 2026-10-24 no
+      # release supported 7 (8.72.0, nor the 8.72.1 alphas). A TypeScript major in
+      # the dev group made `npm ci` fail with ERESOLVE (PR #2). Drop this rule once
+      # typescript-eslint's peer range takes the new major.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # The site builds and runs on Node 22 (deploy-pages.yml, engines >=22), so its
+      # types follow Node 22; bump this major together with the Node version.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
