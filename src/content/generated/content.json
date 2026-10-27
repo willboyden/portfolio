@@ -1,5 +1,5 @@
 {
-  "contentHash": "e87b1d4b2e732253",
+  "contentHash": "b87d8a7d5052c0f3",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -204,7 +204,7 @@
           "value": "v0.3.1 (2026-10-24)"
         }
       ],
-      "relatedPost": "routing-coding-agent-two-local-models",
+      "relatedPost": "building-nemo-console",
       "featured": true,
       "html": "<p>My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a\nDCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails\nserver and four NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,\nNeMo Evaluator). Each is configured differently — TOML,\nYAML, CSV, compose files, systemd units — and a bad edit to a routing file takes\nrouting down for every agent at once. Nemo Console puts them on one page: see\nwhat each system is doing, change its config with a diff and an automatic\nrollback, run its checks, and send a test request through it.</p>\n<h2 id=\"what-031-fixed\">What 0.3.1 fixed</h2>\n<p>After the 0.3.0 update, the five newest pages showed &quot;Something went wrong&quot; in a\nbrowser that had used an older version. The console served its files with no\ncaching instructions, so the browser kept an old shared module and paired it\nwith the new pages; one missing function was enough to stop all five from\nloading. Every file is now checked with the server on each load.</p>\n<p>Unit tests could not have seen that, so 0.3.1 adds a browser test: it starts the\nreal backend, signs in with a fresh key, and opens every page and tab in a\nheadless Chrome, failing on any error screen, script error, server error or\nfile served without that header. It runs in CI and in a pre-push hook that\nrefuses to push code it has not passed. Its first run from a fresh clone, with\nno lab next to it, found two more bugs: a Dynamo parameter preview that crashed\nwith a server error and Config tabs that reported &quot;Something went wrong&quot; for\nsystems that are simply not deployed.</p>\n<h2 id=\"what-030-added\">What 0.3.0 added</h2>\n<p>Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,\nNeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found\nalong the way: <code>nemo-console stop</code> hung while a browser held a live event\nstream, three status caches skipped their check for the first minute after a\nreboot (a fresh CI runner caught it), and per-GPU charts were empty because a\nlabel held spaces.</p>\n<p>It was written against one deployment, and the README says so: container names\nand paths are settings or constants, and only the parts marked verified-live were\nexercised against the real systems.</p>\n<p>The write-up linked below covers what this console was first built to watch:\nrouting a coding agent between a fast model and a large one.</p>"
     },
@@ -788,6 +788,28 @@
     }
   ],
   "posts": [
+    {
+      "slug": "building-nemo-console",
+      "title": "Building Nemo Console: one page for ten NVIDIA AI systems",
+      "summary": "Nemo Console went from three NVIDIA systems to ten in a month. How it is put together: a locked adapter port, config edits that roll themselves back, a localhost security baseline, and the bugs that only daily use, a fresh clone and a real browser found.",
+      "tags": [
+        "observability",
+        "security",
+        "fastapi",
+        "llm-routing",
+        "testing",
+        "open-source"
+      ],
+      "date": "2026-10-26",
+      "readingMinutes": 9,
+      "relatedProject": "nemo-console",
+      "relatedPosts": [
+        "routing-coding-agent-two-local-models",
+        "taking-a-repository-public"
+      ],
+      "bodyHash": "52701aa57728",
+      "excerpt": "My lab runs a small stack of NVIDIA software around its models. NeMo Switchyard routes requests between a fast model and a large one, NeMo …"
+    },
     {
       "slug": "building-harness2-workbench",
       "title": "Building Harness² Workbench around Google's harness2",

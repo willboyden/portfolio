@@ -14,7 +14,7 @@ role: Design and implementation
 status: active
 period: "Sep–Oct 2026"
 featured: true
-relatedPost: routing-coding-agent-two-local-models
+relatedPost: building-nemo-console
 links:
   source: "https://github.com/willboyden/nemo-console"
 stack: [Python 3.13, FastAPI, SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
