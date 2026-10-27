@@ -34,6 +34,7 @@ import {
   PostSourceSchema,
   PostBodySchema,
 } from '../src/content/schema.ts';
+import { graphFile } from './knowledge-graph.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = join(ROOT, 'content');
@@ -42,6 +43,8 @@ const OUT_FILE = join(ROOT, 'src', 'content', 'generated', 'content.json');
 const RECIPE_BODY_DIR = join(ROOT, 'public', 'recipe-bodies');
 /** One <slug>.json per post body, the same way. */
 const POST_BODY_DIR = join(ROOT, 'public', 'post-bodies');
+/* The /graph page's data (scripts/knowledge-graph.mjs): regenerated on every build. */
+const GRAPH_FILE = join(ROOT, 'public', 'knowledge-graph.json');
 
 /** Collection = a subdirectory of content/ + its schema. Root-level .md files
  *  (about/now) are static pages, not entries in the generated bundle. */
@@ -329,6 +332,9 @@ async function main() {
    * recipe (src/content/recipe-bodies.ts). bodyHash versions its URL. Files of
    * recipes that no longer exist are removed. Runs after every check above, so
    * the path, image and summary checks still read each body. */
+  /* The graph reads body links, so keep the collections as they are now, bodies
+   * attached (the steps below replace out.recipes / out.posts with new arrays). */
+  const withBodies = { ...out };
   await mkdir(RECIPE_BODY_DIR, { recursive: true });
   const bodyFiles = new Set();
   out.recipes = await Promise.all(
@@ -385,12 +391,20 @@ async function main() {
     .digest('hex')
     .slice(0, 16);
   await writeFile(OUT_FILE, JSON.stringify(out, null, 2) + '\n', 'utf8');
+  /* Knowledge graph of this content, tied to it by contentHash (a unit test
+   * fails a file built from other content). Not imported by any module: the
+   * /graph page fetches it, so it costs nothing on the JS budget. */
+  const graph = graphFile(withBodies, out.contentHash);
+  await writeFile(GRAPH_FILE, JSON.stringify(graph) + '\n', 'utf8');
   const counts = ['projects', 'posts', 'videos', 'talks', 'recipes']
     .map((k) => `${out[k].length} ${k}`)
     .join(', ');
   process.stdout.write(`build-content: wrote ${relative(ROOT, OUT_FILE)} (${counts})\n`);
   process.stdout.write(
     `build-content: wrote ${bodyFiles.size} recipe bod${bodyFiles.size === 1 ? 'y' : 'ies'} to ${relative(ROOT, RECIPE_BODY_DIR)}/\n`,
+  );
+  process.stdout.write(
+    `build-content: wrote ${relative(ROOT, GRAPH_FILE)} (${graph.nodes.length} nodes, ${graph.edges.length} edges)\n`,
   );
   process.stdout.write(
     `build-content: wrote ${postBodyFiles.size} post bod${postBodyFiles.size === 1 ? 'y' : 'ies'} to ${relative(ROOT, POST_BODY_DIR)}/\n`,

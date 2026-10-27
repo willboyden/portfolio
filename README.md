@@ -6,6 +6,7 @@ then the same React app takes over in the browser for client-side navigation.
 
 ```
 content/**/*.md ──build-content──▶ src/content/generated/content.json
+                 └────────────────▶ public/knowledge-graph.json (/graph)
                                           │
  vite build ────▶ dist/assets/*.js        │  prerender pass (react-dom/server)
                           ◀───────────────┴─▶ dist/**/index.html + rss + sitemap
@@ -84,6 +85,17 @@ against the JS budget. Commit the body file with the post or recipe and
 content.json. The prerender inlines it, the first load reuses that copy, and a
 client-side visit fetches it once (`src/content/post-bodies.ts`,
 `src/content/recipe-bodies.ts`).
+
+The same step rebuilds the **knowledge graph** behind `/graph` from all of the
+content: every project, post, AI capability and recipe, the topics (tags and
+stack entries, merged by name) at least two of them share, their series, their
+frontmatter cross-links and the links inside post bodies, with a precomputed 3D
+layout (`scripts/knowledge-graph.mjs` → `public/knowledge-graph.json`). It is
+keyed to content.json's `contentHash`, so every content change redraws it on the
+next build and deploy; a unit test and the prerender fail a stale file. Commit it
+with content.json. The page draws it with a small canvas renderer
+(`src/lib/graph3d.ts`, ~3 kB gzipped, loaded only on `/graph`), and selecting any
+node lists links to its page and every connected page.
 
 ## Architecture notes
 

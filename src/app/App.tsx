@@ -22,6 +22,7 @@ import { Talks } from 'app/pages/Talks';
 import { AiEngineeringHub, AiCapabilityDetail } from 'app/pages/AiEngineering';
 import { LocalRecipesIndex, RecipeDetail } from 'app/pages/LocalRecipes';
 import { Contact } from 'app/pages/Contact';
+import { KnowledgeGraph } from 'app/pages/KnowledgeGraph';
 import { NotFound } from 'app/pages/NotFound';
 
 /** One route for every capability page: the slug comes from the URL, so a
@@ -49,6 +50,8 @@ export const routes: RouteDefinition[] = [
   { path: '/ai-engineering/local-recipes', component: LocalRecipesIndex as never },
   { path: '/ai-engineering/local-recipes/:slug', component: RecipeDetail },
   { path: '/contact', component: Contact },
+  /* The site as a 3D knowledge graph, rebuilt from the content on every build. */
+  { path: '/graph', component: KnowledgeGraph },
 ];
 
 function Shell(): ReactNode {

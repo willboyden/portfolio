@@ -30,6 +30,7 @@ export function titleFor(path: string): string {
     talks: 'Talks',
     'ai-engineering': 'AI Engineering',
     contact: 'Contact',
+    graph: 'Knowledge graph',
   };
   if (seg === 'projects') {
     const slug = path.split('/')[2];
@@ -116,6 +117,8 @@ export function descriptionFor(path: string): string {
     '/about': 'Who William Boyden is, how he works, and the stack he ships with.',
     '/now': 'What William Boyden is working on this quarter — current focus, availability, and what changes when it changes.',
     '/contact': 'How to reach William Boyden, what working together looks like, and what to put in a first email.',
+    '/graph':
+      'Every project, post and AI capability on this site as an interactive 3D knowledge graph, linked by the topics and tools they share — pick a node to get links to every connected page.',
   };
   return sectionDescriptions[path] ?? SITE_FALLBACK_DESCRIPTION;
 }

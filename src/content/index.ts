@@ -54,6 +54,12 @@ function validate(): SiteContent {
 
 export const content: SiteContent = validate();
 
+/** content.json's fingerprint (validated with the rest above). Versions files built
+ * from this exact content, such as the knowledge graph (./knowledge-graph.ts). */
+export const contentHash: string = SiteContentSchema.shape.contentHash.parse(
+  (raw as { contentHash?: unknown }).contentHash,
+);
+
 /** R9: the AI Engineering capability API the section pages code against. */
 export function getAiCapability(slug: string): AiCapability | undefined {
   return content.aiCapabilities.find((c) => c.slug === slug);

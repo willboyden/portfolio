@@ -97,7 +97,10 @@ These are real, tested behaviours. Build on them — do not work around them.
 
 ## 3. Routes (from `@portfolio/router`)
 
-`/` · `/about` · `/projects` · `/projects/:slug` · `/writing` · `/writing/:slug` · `/talks` · `/contact` · `*` (404)
+`/` · `/about` · `/projects` · `/projects/:slug` · `/writing` · `/writing/:slug` · `/talks` · `/contact` · `/graph` · `*` (404)
+
+`/graph` is the site as a 3D knowledge graph (`src/pages/KnowledgeGraph.tsx`), drawn from `public/knowledge-graph.json`,
+which `scripts/build-content.mjs` rebuilds from the content on every build (`scripts/knowledge-graph.mjs`).
 
 Import: `Link`, `useRouter`, `useParams`, `useIsActive`, `Outlet`, `RouterProvider`, `type RouteDefinition` from `@portfolio/router`.
 

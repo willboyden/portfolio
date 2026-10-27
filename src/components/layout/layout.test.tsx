@@ -117,12 +117,14 @@ describe('Nav', () => {
 
   it('NAV_ITEMS is the full route list; chrome shows availableNavItems() (R2-A A7/A11)', () => {
     /* Full list = every chrome-eligible route (CONTRACT §3). If nav changes,
-     * update CONTRACT §3 routes AND this list. R9: AI Engineering joins. */
+     * update CONTRACT §3 routes AND this list. R9: AI Engineering joins.
+     * 2026-10-27: Graph (the knowledge graph) joins. */
     expect(NAV_ITEMS.map((i) => i.label)).toEqual([
       'Home',
       'Projects',
       'AI Engineering',
       'Writing',
+      'Graph',
       'Videos',
       'Talks',
       'Now',

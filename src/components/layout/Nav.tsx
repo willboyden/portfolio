@@ -38,6 +38,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Projects', to: '/projects' },
   { label: 'AI Engineering', to: '/ai-engineering' },
   { label: 'Writing', to: '/writing' },
+  { label: 'Graph', to: '/graph', title: 'The site as a 3D knowledge graph', 'aria-label': 'Knowledge graph of the site' },
   { label: 'Videos', to: '/videos' },
   { label: 'Talks', to: '/talks' },
   { label: 'Now', to: '/now', title: 'What I\'m working on now', 'aria-label': 'What I\'m working on now' },

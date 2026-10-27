@@ -19,10 +19,11 @@ import { createApp } from '../src/app/App.tsx';
 import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE } from '../src/lib/seo.ts';
 import { metaFor } from '../src/lib/route-meta.ts';
-import { content } from '../src/content/index.ts';
+import { content, contentHash } from '../src/content/index.ts';
 import { PostBodySchema, RecipeBodySchema } from '../src/content/schema.ts';
 import { primeRecipeBody } from '../src/content/recipe-bodies.ts';
 import { primePostBody } from '../src/content/post-bodies.ts';
+import { primeKnowledgeGraph } from '../src/content/knowledge-graph.ts';
 import { availableNavItems } from '../src/components/layout/Nav';
 
 /* Local recipes: a recipe's body is not in the client bundle
@@ -53,6 +54,17 @@ for (const post of content.posts) {
   primePostBody(post.slug, body.html);
 }
 
+/* The knowledge graph (src/content/knowledge-graph.ts): /graph's static HTML
+ * carries every page and link from it; a file built from other content fails
+ * the build, like a stale body. */
+{
+  const where = 'public/knowledge-graph.json';
+  const graph = primeKnowledgeGraph(JSON.parse(readFileSync(new URL(`../${where}`, import.meta.url), 'utf8')));
+  if (graph.contentHash !== contentHash) {
+    throw new Error(`${where} does not match content.json — run node scripts/build-content.mjs`);
+  }
+}
+
 /** R7A-3: prepend BASE_URL to root-absolute paths so they resolve under
  * GitHub Pages subpaths (e.g. BASE_URL='/portfolio/' → /portfolio/rss.xml). */
 function withBase(path: string): string {
@@ -72,6 +84,7 @@ export function prerenderPaths(): string[] {
     '/talks',
     '/ai-engineering',
     '/contact',
+    '/graph',
     /* nginx error_page serves /404/index.html — rendered via the router
      * fallback since no route matches the path. */
     '/404',
