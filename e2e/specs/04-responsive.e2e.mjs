@@ -67,11 +67,15 @@ describe('responsive', () => {
   test('prefers-reduced-motion disables transitions', async ({ page, setReducedMotion, goto }) => {
     await setReducedMotion(true);
     await goto('/');
+    /* An animation counts only if it still runs. The global reduced-motion guard
+     * (src/theme/global-styles.ts) keeps an animation's name and cuts its duration
+     * to 0.01 ms, e.g. the Spinner's ui-pulse while the home page's graph loads;
+     * checking the name alone failed whenever the check caught that spinner. */
     const animating = await page.evaluate(`
       return [...document.querySelectorAll('a,button,[class]')].slice(0, 200).some(el => {
         const s = getComputedStyle(el);
         const d = parseFloat(s.transitionDuration) || 0;
-        const a = s.animationName && s.animationName !== 'none';
+        const a = s.animationName && s.animationName !== 'none' && (parseFloat(s.animationDuration) || 0) > 0.05;
         return d > 0.05 || a;
       })
     `);
