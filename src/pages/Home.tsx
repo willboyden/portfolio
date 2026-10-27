@@ -403,6 +403,24 @@ export function Home(): React.ReactNode {
         )}
       </HeroShell>
 
+      {/* The site as a 3D knowledge graph (the /graph page's explorer, without its
+       * full page list): pick a node for links to its page and every page
+       * connected to it. Rebuilt from the content on every build. */}
+      <Section
+        id="explore"
+        eyebrow="Explore the site"
+        title="Everything here, connected"
+        description="Every project, post and AI capability on this site, linked by the topics and tools they share. Pick a node to get links to its page and every page connected to it."
+        data-testid="home-graph-section"
+      >
+        <KnowledgeGraphPreview />
+        <CtaRow>
+          <Button as={ROUTER_LINK} to="/graph" variant="secondary" size="md" iconRight="arrow-right" data-testid="home-graph-cta">
+            Open the full graph
+          </Button>
+        </CtaRow>
+      </Section>
+
       <Section
         id="featured"
         eyebrow="Selected work"
@@ -464,24 +482,6 @@ export function Home(): React.ReactNode {
             }
           />
         )}
-      </Section>
-
-      {/* The site as a 3D knowledge graph (the /graph page's explorer, without its
-       * full page list): pick a node for links to its page and every page
-       * connected to it. Rebuilt from the content on every build. */}
-      <Section
-        id="explore"
-        eyebrow="Explore the site"
-        title="Everything here, connected"
-        description="Every project, post and AI capability on this site, linked by the topics and tools they share. Pick a node to get links to its page and every page connected to it."
-        data-testid="home-graph-section"
-      >
-        <KnowledgeGraphPreview />
-        <CtaRow>
-          <Button as={ROUTER_LINK} to="/graph" variant="secondary" size="md" iconRight="arrow-right" data-testid="home-graph-cta">
-            Open the full graph
-          </Button>
-        </CtaRow>
       </Section>
     </>
   );

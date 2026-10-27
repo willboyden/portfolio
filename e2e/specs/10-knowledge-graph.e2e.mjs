@@ -79,6 +79,10 @@ describe('knowledge graph', () => {
        return n > 200;`,
     );
     if (await page.exists('[data-testid="graph-list"]')) throw new Error('the full page list is on the home page');
+    const above = await page.evaluate(
+      `return !!(document.querySelector('[data-testid="home-graph-section"]').compareDocumentPosition(document.querySelector('#featured')) & Node.DOCUMENT_POSITION_FOLLOWING)`,
+    );
+    if (!above) throw new Error('the graph is not above Selected work on the home page');
     const full = await page.attribute('[data-testid="home-graph-cta"]', 'href');
     if (!full?.endsWith('/graph')) throw new Error(`"Open the full graph" points at ${full}`);
     /* A section link in the starting panel navigates. */

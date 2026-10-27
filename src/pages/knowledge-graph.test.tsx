@@ -23,6 +23,7 @@ import {
   groupNodes,
   indexOfId,
   nodeRadius,
+  panelPageGroups,
   searchNodes,
 } from './KnowledgeGraph';
 
@@ -82,6 +83,16 @@ describe('home page graph (KnowledgeGraphPreview)', () => {
     expect(render(<KnowledgeGraph />)).toContain('data-testid="graph-list"');
   });
 
+  it('sits above Selected work on the home page', () => {
+    primeKnowledgeGraph(file);
+    const home = render(<Home />);
+    const graphAt = home.indexOf('data-testid="home-graph-section"');
+    const featuredAt = home.indexOf('id="featured"');
+    expect(graphAt).toBeGreaterThan(-1);
+    expect(featuredAt).toBeGreaterThan(graphAt);
+    expect(home.indexOf('data-testid="home-hero"')).toBeLessThan(graphAt);
+  });
+
   it('shows a loading state on the home page until the graph arrives', () => {
     resetKnowledgeGraphForTests();
     const html = render(<KnowledgeGraphPreview />);
@@ -106,6 +117,17 @@ describe('SelectionPanel', () => {
     }
   });
 
+  it('links /writing once for a post in a series, and shows the series as a chip', () => {
+    const graph = primeKnowledgeGraph(file);
+    const neighbours = adjacency(graph);
+    const i = graph.nodes.findIndex((n, k) => n.type === 'post' && (neighbours[k] ?? []).some((j) => graph.nodes[j]?.type === 'series'));
+    expect(i).toBeGreaterThanOrEqual(0);
+    const seriesLabel = (neighbours[i] ?? []).map((j) => graph.nodes[j]).find((n) => n?.type === 'series')?.label ?? '';
+    const html = render(<SelectionPanel graph={graph} neighbours={neighbours} selected={i} onSelect={() => {}} />);
+    expect(html.split('href="/writing"').length - 1).toBe(1);
+    expect(html).toMatch(new RegExp(`<button[^>]*>${seriesLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</button>`));
+  });
+
   it('lists every page about a topic', () => {
     const graph = primeKnowledgeGraph(file);
     const neighbours = adjacency(graph);
@@ -124,6 +146,27 @@ describe('GraphList', () => {
     const html = render(<GraphList graph={graph} neighbours={adjacency(graph)} />);
     expect(html).toContain('Every page and its connections');
     expect(html).toContain('Topics:');
+  });
+});
+
+describe('panelPageGroups', () => {
+  it('drops topics and series, repeats no URL, and never repeats the node’s own page', () => {
+    const graph = primeKnowledgeGraph({
+      version: 1,
+      contentHash: 'x',
+      nodes: [
+        { id: 'section:writing', type: 'section', label: 'Writing', url: '/writing', x: 0, y: 0, z: 0 },
+        { id: 'series:notes', type: 'series', label: 'Notes', url: '/writing', x: 0, y: 0, z: 0 },
+        { id: 'topic:mcp', type: 'topic', label: 'MCP', x: 0, y: 0, z: 0 },
+        { id: 'post:a', type: 'post', label: 'A', url: '/writing/a', x: 0, y: 0, z: 0 },
+        { id: 'post:b', type: 'post', label: 'B', url: '/writing/b', x: 0, y: 0, z: 0 },
+      ],
+      edges: [],
+    });
+    const groups = groupNodes(graph, [0, 1, 2, 3, 4]);
+    const out = panelPageGroups(graph, groups, '/writing/a');
+    expect(out.map((g) => g.type)).toEqual(['section', 'post']);
+    expect(out.flatMap((g) => g.indexes)).toEqual([0, 4]);
   });
 });
 

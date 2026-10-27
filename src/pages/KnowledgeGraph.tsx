@@ -82,6 +82,29 @@ export function groupNodes(graph: Graph, indexes: readonly number[]): Group[] {
   }));
 }
 
+/**
+ * The page links the panel lists for a node: topics and series are left out
+ * (they show as chips: a series' page is just /writing, which the Writing
+ * section link already gives), and each URL appears once, never repeating
+ * the selected node's own page.
+ */
+export function panelPageGroups(graph: Graph, groups: readonly Group[], ownUrl?: string): Group[] {
+  const seen = new Set<string>(ownUrl ? [ownUrl] : []);
+  return groups
+    .filter((g) => g.type !== 'topic' && g.type !== 'series')
+    .map((g) => ({
+      type: g.type,
+      indexes: g.indexes.filter((i) => {
+        const url = graph.nodes[i]?.url;
+        if (!url) return true;
+        if (seen.has(url)) return false;
+        seen.add(url);
+        return true;
+      }),
+    }))
+    .filter((g) => g.indexes.length > 0);
+}
+
 /** Search by label (and slug): prefix matches first, then by connections. */
 export function searchNodes(
   graph: Graph,
@@ -316,6 +339,23 @@ const CanvasWrap = styled.div<{ $compact: boolean }>`
   border-radius: ${(p) => p.theme.radius.lg};
   background: ${(p) => p.theme.color.bgSunken};
   overflow: hidden;
+`;
+
+/* The home preview's loading state: a still box the size of the compact canvas
+ * (no spinner: it sits near the top of the home page, so it must not animate
+ * under reduced motion, and reserving the height keeps the page from jumping
+ * when the graph arrives). */
+const LoadingBox = styled.p`
+  display: grid;
+  place-items: center;
+  margin: 0;
+  min-height: 360px;
+  height: min(60vh, 520px);
+  border: 1px dashed ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.lg};
+  background: ${(p) => p.theme.color.bgSunken};
+  color: ${(p) => p.theme.color.textSubtle};
+  font-size: ${(p) => p.theme.font.sizes.sm};
 `;
 
 const Canvas = styled.canvas`
@@ -576,9 +616,22 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 
   const info = TYPE_INFO[node.type];
   const linked = neighbours[selected] ?? [];
   const groups = groupNodes(graph, linked);
-  const pageGroups = groups.filter((g) => g.type !== 'topic');
+  const pageGroups = panelPageGroups(graph, groups, node.url);
   const topics = groups.find((g) => g.type === 'topic')?.indexes ?? [];
+  const series = groups.find((g) => g.type === 'series')?.indexes ?? [];
   const pageCount = pageGroups.reduce((s, g) => s + g.indexes.length, 0);
+  const chips = (indexes: number[]): ReactNode => (
+    <Chips>
+      {indexes.map((i) => {
+        const n = graph.nodes[i];
+        return n ? (
+          <ChipButton key={n.id} type="button" onClick={() => onSelect(i)}>
+            {n.label}
+          </ChipButton>
+        ) : null;
+      })}
+    </Chips>
+  );
   return (
     <Panel aria-label={`Links for ${node.label}`} data-testid="graph-panel" aria-live="polite" $compact={compact}>
       <Kind>{info.label}</Kind>
@@ -594,7 +647,8 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 
       {pageCount > 0 && (
         <>
           <GroupTitle as={groupTag}>
-            {node.type === 'topic' ? `Pages about ${node.label}` : 'Connected pages'} ({pageCount})
+            {node.type === 'topic' ? `Pages about ${node.label}` : node.type === 'series' ? `Posts in ${node.label}` : 'Connected pages'}{' '}
+            ({pageCount})
           </GroupTitle>
           {pageGroups.map((g) => (
             <div key={g.type}>
@@ -616,19 +670,16 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 
           ))}
         </>
       )}
+      {series.length > 0 && (
+        <>
+          <GroupTitle as={groupTag}>Series</GroupTitle>
+          {chips(series)}
+        </>
+      )}
       {topics.length > 0 && (
         <>
           <GroupTitle as={groupTag}>Topics ({topics.length})</GroupTitle>
-          <Chips>
-            {topics.map((i) => {
-              const n = graph.nodes[i];
-              return n ? (
-                <ChipButton key={n.id} type="button" onClick={() => onSelect(i)}>
-                  {n.label}
-                </ChipButton>
-              ) : null;
-            })}
-          </Chips>
+          {chips(topics)}
         </>
       )}
       <ShowButton type="button" onClick={() => onSelect(-1)} data-testid="graph-clear">
@@ -993,7 +1044,7 @@ export function KnowledgeGraphPreview(): ReactNode {
   }
   return (
     <div data-testid="home-graph">
-      <Spinner label="Loading the graph" />
+      <LoadingBox role="status">Loading the graph…</LoadingBox>
     </div>
   );
 }
