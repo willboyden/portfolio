@@ -4,8 +4,8 @@
 title: "Three spinning threads were overheating my DGX Sparks"
 slug: dgx-spark-busy-polling-heat
 summary: >-
-  Four GB10 boxes serving DeepSeek hit 90 °C in under a minute. Pinning NCCL's
-  threads and an Arm WFE wait cut the heating rate 62% for under 2% speed.
+  Four GB10 boxes serving DeepSeek hit 90 °C within a minute. Two fixes cut
+  their heating rate 60%, at 1 or 16 requests, for under 2% speed.
 tags: [gb10, dgx-spark, sglang, nccl, arm64, thermals, local-inference]
 date: 2026-10-27
 series: AI engineering notes
@@ -26,7 +26,8 @@ Blackwell GPU on one package, 128 GB of shared memory). On SGLang, with MiaAI-La
 The GPU die meanwhile sat at 61–67 °C. Whatever was hot, it was not mainly the GPU.
 
 This post is the hypothesis, the experiments and the numbers. The short version: three CPU threads per box were
-spinning at 100%. Two small changes cut how fast a box heats up by about 62%, and cost under 2% of decode speed.
+spinning at 100%. Two small changes cut how fast a box heats up by about 60%, with one request or with 16 at once,
+and cost under 2% of decode speed. Both are now part of the engine's image and configuration.
 
 ## The hypothesis
 
@@ -176,22 +177,53 @@ never hit its 10-second timeout.
 One thing did not change: `top` still shows that thread at about 100%. To the OS, a core waiting in WFE is a running
 core. The difference shows only on the thermometer.
 
+## Making it permanent, then 16 requests at once
+
+*Added later the same evening.*
+
+Both changes were trials until then: the WFE wait loaded from a file share at start-up, and the NCCL pinning lived
+in a test overlay. I made them part of the engine:
+
+- **The WFE wait is in the image.** A new build step patches SGLang's wait function, the same way the image already
+  patches the recipe's launcher. Each text substitution must match exactly once, or the build fails. The step then
+  compiles the C file and checks the hook is in place. It is the last step of the Dockerfile, so every earlier
+  layer came from the build cache, and the new image differs from the old one by one small layer. The wait stays
+  off unless `LAB_WFE_WAIT=1`, so switching it off is a one-line change.
+- **The lane's config sets both.** It has `NCCL_PROXY_CPUSET` with the explicit list of efficient cores,
+  `NCCL_SET_THREAD_NAME=1` and `LAB_WFE_WAIT=1`.
+
+Then the open question: does any of this matter under heavy load? That is where these boxes actually overheated.
+With 16 requests running, the GPU does far more work, so the three threads could have been a rounding error. Same
+method, new load. Each trial sent 16 different coding tasks at once, 200 tokens each, at temperature 0. The fixed
+lane (both changes on) ran against the stock one (NCCL threads on any core, scheduler spinning). It was the same
+boot, in ABBA order, with 4 trials each:
+
+| 16 requests at once | Throughput, all streams | Hottest box's rise over 13 s | Rate |
+|---|---|---|---|
+| stock | 251.6 tok/s | +15.8 °C | 1.26 °C/s |
+| fixed | 248.6 tok/s | +6.4 °C | 0.50 °C/s |
+
+**−1.2% throughput, −60% heating rate.** The gain held under load, almost exactly as it did for a single stream.
+The same three threads were busy in both settings; only the cores they ran on, and how they waited, changed. With
+bigger batches each decode step takes longer, and the WFE wait averaged about 171 ms per step, again with no
+timeouts. The hottest reading over the whole run was 75 °C. Under real traffic, before the fixes, the same boxes
+had passed 96 °C.
+
 ## What this does and doesn't fix
 
-Together, the two changes take a single stream's heating rate from 1.18 to 0.45 °C/s, about −62%. They cost under
-2% of decode speed: −1.5% for the pinning and −0.2% for WFE, each measured within one boot. The pinned, spinning
-setting measured 0.73 and 0.72 °C/s on two different boots, which is why I combine the two results. These boxes used
-to reach 90 °C in under a minute. Now a 14-second, 1,200-token answer raises the hottest sensor by about 6 °C.
+Together, the two changes take a single stream's heating rate from 1.18 to 0.45 °C/s, about −62%, and 16 requests'
+from 1.26 to 0.50 °C/s, −60%. They cost under 2%: −1.5% for the pinning and −0.2% for WFE on a single stream, each
+measured within one boot, and −1.2% for both together at 16 requests. The pinned, spinning setting measured 0.73
+and 0.72 °C/s on two different boots, which is why I combine the single-stream results. These boxes used to reach
+90 °C in under a minute. Now a 13-second burst of 16 answers raises the hottest sensor by about 6 °C.
 
-What it does not fix:
+What it does not tell me yet:
 
-- **Heavy concurrency.** vLLM, which spins less, still reached 96–97 °C under nine or more parallel requests. At 16
-  requests the GPU does much more work, so the three threads are a smaller share of the heat. I measured single
-  streams only. The cap on parallel requests stays until a guarded 16-request run says otherwise.
-- **It is a trial, not production.** Both changes ran as a trial overlay on a port no client uses. Next:
-  - build the WFE wait into the image;
-  - set `NCCL_PROXY_CPUSET` in the lane's config, and in the vLLM lane's too, which also talks over NCCL;
-  - repeat the measurement under real concurrency.
+- **Where a sustained load settles.** Every trial lasted 13–14 seconds, from a cool start. The rate is lower, but a
+  benchmark harness that keeps 16 requests running for minutes will still warm the boxes toward some steady
+  temperature. I have not measured that temperature yet. Until I have, the harness that caused the trouble stays
+  capped at a few parallel requests.
+- **The vLLM lane.** It also talks over NCCL, so the same pinning should help it. It has not been measured there.
 
 ## Method notes
 
@@ -200,6 +232,8 @@ What it does not fix:
 - **A/B in one boot.** A restart takes 14 minutes and changes the caches. Both knobs here could be flipped live: CPU
   affinity with `sched_setaffinity`, and the WFE wait with an off-switch file the wrapper checks.
 - **Name your threads.** `NCCL_SET_THREAD_NAME=1` turned three identical `sglang::schedul` lines into an answer.
+- **Test at the load that hurt.** The single-stream result could have vanished at 16 requests. It took one more
+  boot and fifteen minutes to find out that it does not.
 - **Check the parser.** The CPU-set variable accepted two formats silently and did something else with both.
   Read back `Cpus_allowed_list` after setting any affinity.
 - **The standard fix can be the wrong one.** Blocking sync is the textbook answer to a spinning CUDA wait. On this
