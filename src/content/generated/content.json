@@ -1,5 +1,5 @@
 {
-  "contentHash": "46b4e6a8892249f6",
+  "contentHash": "be26fe4cc397b735",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -790,6 +790,25 @@
     }
   ],
   "posts": [
+    {
+      "slug": "dgx-spark-busy-polling-heat",
+      "title": "Three spinning threads were overheating my DGX Sparks",
+      "summary": "Four GB10 boxes serving DeepSeek hit 90 °C in under a minute. Pinning NCCL's threads and an Arm WFE wait cut the heating rate 62% for under 2% speed.",
+      "tags": [
+        "gb10",
+        "dgx-spark",
+        "sglang",
+        "nccl",
+        "arm64",
+        "thermals",
+        "local-inference"
+      ],
+      "date": "2026-10-27",
+      "readingMinutes": 9,
+      "series": "AI engineering notes",
+      "bodyHash": "56342b3fbe87",
+      "excerpt": "I run DeepSeek-V4.1-Flash-1017 as one engine across four GB10 machines (DGX Spark class: a 20-core Arm CPU and a Blackwell GPU on one …"
+    },
     {
       "slug": "building-agent-hub",
       "title": "Building Agent Hub: one place for what your coding agents know and may do",
