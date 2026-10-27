@@ -13,6 +13,7 @@ role: Design and implementation
 status: active
 period: "2026-10"
 featured: true
+relatedPost: building-agent-hub
 links:
   source: "https://github.com/willboyden/agent-hub"
 stack: [Python 3.13, FastAPI, git, SQLite, LanceDB + Qdrant (knowledge plane), ES modules + web components (no npm)]

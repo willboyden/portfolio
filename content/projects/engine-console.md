@@ -13,6 +13,7 @@ role: Design and implementation
 status: active
 period: "Sep–Oct 2026"
 featured: true
+relatedPost: building-engine-console
 links:
   source: "https://github.com/willboyden/engine-console"
 stack: [Python 3.13, FastAPI, SQLite (WAL), SSE, Prometheus + OTLP, rootless Docker, NVML, ES modules + web components (no npm)]

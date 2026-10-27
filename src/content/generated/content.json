@@ -1,5 +1,5 @@
 {
-  "contentHash": "b87d8a7d5052c0f3",
+  "contentHash": "46b4e6a8892249f6",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -253,6 +253,7 @@
           "value": "off by default (bearer key everywhere)"
         }
       ],
+      "relatedPost": "building-agent-hub",
       "featured": true,
       "html": "<p>Each coding agent keeps its instructions, skills, subagents, MCP servers and\npermissions in a different format and place. In my lab that is Claude Code,\nopencode, Hermes Agent and Turnstone, and shared content drifted between them\nwith nothing showing what any one of them was allowed to do. Agent Hub treats\nthat configuration like infrastructure code: reviewed in git, planned, applied\nwith a diff, and checked against a floor of rules that content cannot loosen.</p>\n<p>The README names the limit plainly: the hub cannot protect you from an\nunsandboxed client that runs as your own user. <code>hubctl doctor</code> reports what is\nexposed on the host.</p>"
     },
@@ -404,6 +405,7 @@
           "value": "v0.4.0 (2026-10-15)"
         }
       ],
+      "relatedPost": "building-engine-console",
       "featured": true,
       "html": "<p>I run several inference engines on a workstation with two RTX PRO 6000s,\nnext to a second GPU machine and four DGX Sparks. Every engine had its\nown start script, its own flags and its own way of reporting memory. Engine\nConsole puts them on one page without taking over: it watches by default, and\neach machine decides for itself, in a root-owned policy file, whether the\nconsole may start, stop, download or delete anything there.</p>\n<h2 id=\"how-it-is-built\">How it is built</h2>\n<ul>\n<li><strong>Hub and node.</strong> The hub is a FastAPI app on loopback with a zero-build\nbrowser UI. It never runs Docker or reads <code>/proc</code> itself. Every machine,\nincluding its own, is reached through <code>ecnode</code>, a standard-library Python\nagent, over stdio locally and over ssh with a key restricted to that one\ncommand elsewhere.</li>\n<li><strong>Policy as the hard boundary.</strong> <code>monitor</code> or <code>manage</code> mode, allowed images,\nmodel roots and scripts are set per machine. The node re-reads its policy\nwithin seconds; the hub cannot edit it.</li>\n<li><strong>Engine isolation.</strong> Engines are labelled sibling containers on an\n<code>--internal</code> network with <code>--cap-drop ALL</code>, <code>no-new-privileges</code> and a pids\nlimit. The hub reaches an engine's API only through its node.</li>\n<li><strong>Security posture.</strong> Loopback is not trusted (API key, Host, Origin and\nCSRF checks on every call), secrets are stored as <code>[set]</code> markers or 0600\nfiles, and model files are confined to the policy's roots.</li>\n</ul>\n<h2 id=\"what-is-not-done-yet\">What is not done yet</h2>\n<p>The README is explicit: remote machines over ssh, copies between real\nmachines, multi-GPU launches and launches of any engine but vLLM have run only\nagainst fakes. No penetration test or independent review has been done.</p>"
     },
@@ -788,6 +790,51 @@
     }
   ],
   "posts": [
+    {
+      "slug": "building-agent-hub",
+      "title": "Building Agent Hub: one place for what your coding agents know and may do",
+      "summary": "Claude Code, opencode, Hermes Agent and Turnstone each keep skills, instructions, MCP servers and permissions in their own format. Agent Hub compiles them from one git repository instead: edit, commit, plan, apply, above a policy floor that content can only tighten, with every skill evaluated before it is imported.",
+      "tags": [
+        "ai-agents",
+        "mcp",
+        "security",
+        "developer-tools",
+        "fastapi",
+        "open-source"
+      ],
+      "date": "2026-10-26",
+      "readingMinutes": 7,
+      "relatedProject": "agent-hub",
+      "relatedPosts": [
+        "building-engine-console",
+        "building-nemo-console"
+      ],
+      "bodyHash": "19d7906d0666",
+      "excerpt": "I run several agent clients side by side: Claude Code, opencode, Hermes Agent in a container, and Turnstone. Each one keeps its …"
+    },
+    {
+      "slug": "building-engine-console",
+      "title": "Building Engine Console: one page for five inference engines, on one machine or several",
+      "summary": "Engine Console runs vLLM, SGLang, TensorRT-LLM, llama.cpp and Ollama from one page. How it grew from a single-workstation control plane into a small fleet manager: sandboxed engines behind a loopback gateway, an agent on every machine, a policy file as the hard boundary, and the security findings that shaped each step.",
+      "tags": [
+        "llm-inference",
+        "vllm",
+        "sglang",
+        "gpu",
+        "security",
+        "fastapi",
+        "open-source"
+      ],
+      "date": "2026-10-26",
+      "readingMinutes": 9,
+      "relatedProject": "engine-console",
+      "relatedPosts": [
+        "building-nemo-console",
+        "building-agent-hub"
+      ],
+      "bodyHash": "8c0fedf6fea6",
+      "excerpt": "Serving models locally means living with several inference engines. vLLM, SGLang, TensorRT-LLM, llama.cpp and Ollama each have their own …"
+    },
     {
       "slug": "building-nemo-console",
       "title": "Building Nemo Console: one page for ten NVIDIA AI systems",
