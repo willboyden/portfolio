@@ -47,7 +47,7 @@ describe('knowledge graph', () => {
     if (!post) throw new Error('no connected post linked from the panel');
     /* The harness clicks at the element's on-screen centre, like a user who
      * has scrolled to it: the link sits lower in the panel. */
-    await page.evaluate(`document.querySelector('[data-testid="graph-links-post"] a').scrollIntoView({ block: 'center' })`);
+    await page.evaluate(`document.querySelector('[data-testid="graph-links-post"] a').scrollIntoView({ block: 'center', behavior: 'instant' })`);
     await page.click(`[data-testid="graph-links-post"] a[href="${post}"]`);
     await page.waitForFunction(`return location.pathname.endsWith(${JSON.stringify(post.replace(/^.*(?=\/writing\/)/, ''))})`);
     await page.waitForSelector('article');
@@ -64,6 +64,31 @@ describe('knowledge graph', () => {
     await page.waitForFunction(`return document.querySelector('${PANEL}')?.textContent.includes('Pages about ${topic}')`);
     const n = await page.evaluate(`return document.querySelectorAll('${PANEL} a').length`);
     if (n < 2) throw new Error(`topic "${topic}" links only ${n} page(s)`);
+  });
+
+  test('the home page shows the graph and its links, without the full page list', async ({ goto, page }) => {
+    await goto('/');
+    await page.waitForSelector('[data-testid="home-graph"] [data-testid="graph-canvas"]');
+    /* The scene draws only while it is on screen, and it sits below the fold. */
+    await page.evaluate(`document.querySelector('[data-testid="graph-canvas"]').scrollIntoView({ block: 'center', behavior: 'instant' })`);
+    await page.waitForFunction(
+      `const c = document.querySelector('[data-testid="graph-canvas"]');
+       if (!c || c.width < 50) return false;
+       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+       let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 0) n++;
+       return n > 200;`,
+    );
+    if (await page.exists('[data-testid="graph-list"]')) throw new Error('the full page list is on the home page');
+    const full = await page.attribute('[data-testid="home-graph-cta"]', 'href');
+    if (!full?.endsWith('/graph')) throw new Error(`"Open the full graph" points at ${full}`);
+    /* A section link in the starting panel navigates. */
+    const href = await page.evaluate(`return document.querySelector('${PANEL} a[href$="/projects"]')?.getAttribute('href') ?? null`);
+    if (!href) throw new Error('no Projects link in the home graph panel');
+    await page.evaluate(`document.querySelector('${PANEL} a[href$="/projects"]').scrollIntoView({ block: 'center', behavior: 'instant' })`);
+    await page.click(`${PANEL} a[href="${href}"]`);
+    await page.waitForFunction(`return location.pathname.replace(/\\/$/, '').endsWith('/projects')`);
+    await goto('/graph');
+    await page.waitForSelector('[data-testid="graph-list"]');
   });
 
   test('with reduced motion the graph does not turn on its own', async ({ goto, page, setReducedMotion }) => {

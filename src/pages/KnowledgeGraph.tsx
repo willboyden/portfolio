@@ -11,6 +11,9 @@
  * A11Y: the canvas is one labelled image; everything it shows is also in the
  * search, the panel (real links and buttons) and the full list below the graph,
  * which the prerender writes into the static HTML for no-JS readers.
+ *
+ * The home page shows the same explorer (KnowledgeGraphPreview), smaller and
+ * without the full list, which stays on /graph.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
@@ -157,6 +160,7 @@ function useLivePalette(): Palette | null {
 /* Layout                                                                      */
 /* -------------------------------------------------------------------------- */
 
+
 const PageHeader = styled.header`
   display: flex;
   flex-direction: column;
@@ -225,6 +229,10 @@ const Results = styled.ul`
 `;
 
 const ResultButton = styled.button`
+  /* >=44px touch target on phones and tablets (WCAG 2.5.5; e2e 04-responsive). */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
   display: flex;
   width: 100%;
   gap: ${(p) => p.theme.space[2]};
@@ -258,6 +266,10 @@ const Legend = styled.div`
 `;
 
 const Toggle = styled.button`
+  /* >=44px touch target on phones and tablets (WCAG 2.5.5; e2e 04-responsive). */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
@@ -296,10 +308,10 @@ const Stage = styled.div`
   }
 `;
 
-const CanvasWrap = styled.div`
+const CanvasWrap = styled.div<{ $compact: boolean }>`
   position: relative;
-  min-height: 420px;
-  height: min(70vh, 640px);
+  min-height: ${(p) => (p.$compact ? '360px' : '420px')};
+  height: ${(p) => (p.$compact ? 'min(60vh, 520px)' : 'min(70vh, 640px)')};
   border: 1px solid ${(p) => p.theme.color.border};
   border-radius: ${(p) => p.theme.radius.lg};
   background: ${(p) => p.theme.color.bgSunken};
@@ -350,7 +362,7 @@ const Tooltip = styled.div`
   transform: translate(12px, 12px);
 `;
 
-const Panel = styled.aside`
+const Panel = styled.aside<{ $compact?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${(p) => p.theme.space[3]};
@@ -360,7 +372,7 @@ const Panel = styled.aside`
   background: ${(p) => p.theme.color.surface};
   align-self: start;
   @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
-    max-height: min(70vh, 640px);
+    max-height: ${(p) => (p.$compact ? 'min(60vh, 520px)' : 'min(70vh, 640px)')};
     overflow-y: auto;
   }
 `;
@@ -397,6 +409,11 @@ const LinkRow = styled.li`
   & > a {
     color: ${(p) => p.theme.color.accent};
     text-underline-offset: 3px;
+    @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
   }
 `;
 
@@ -407,6 +424,10 @@ const Chips = styled.div`
 `;
 
 const ChipButton = styled.button`
+  /* >=44px touch target on phones and tablets (WCAG 2.5.5; e2e 04-responsive). */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
   padding: ${(p) => `2px ${p.theme.space[2]}`};
   border: 1px solid ${(p) => p.theme.color.border};
   border-radius: ${(p) => p.theme.radius.full};
@@ -423,7 +444,14 @@ const ChipButton = styled.button`
 `;
 
 const ShowButton = styled.button`
+  /* >=44px touch target on phones and tablets (WCAG 2.5.5; e2e 04-responsive). */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
   flex: none;
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-width: 44px;
+  }
   padding: 0 ${(p) => p.theme.space[1]};
   border: 0;
   background: transparent;
@@ -460,6 +488,11 @@ const Entry = styled.li`
   & > a {
     font-weight: 600;
     color: ${(p) => p.theme.color.accent};
+    @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
   }
 `;
 
@@ -483,16 +516,22 @@ function NodeLink({ node }: { node: GraphNode }): ReactNode {
   return node.url ? <Link to={node.url}>{node.label}</Link> : <span>{node.label}</span>;
 }
 
+export type PanelLevel = 2 | 3;
+
 interface PanelProps {
   graph: Graph;
   neighbours: number[][];
   selected: number;
   onSelect: (i: number) => void;
+  /** Heading level of the panel's title; its group titles sit one level below. */
+  level?: PanelLevel;
+  compact?: boolean;
 }
 
 /** The selected node's own page and every connected page, as real links. */
-export function SelectionPanel({ graph, neighbours, selected, onSelect }: PanelProps): ReactNode {
+export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 2, compact = false }: PanelProps): ReactNode {
   const node = graph.nodes[selected];
+  const groupTag = level === 3 ? 'h4' : 'h3';
   if (!node) {
     const sections = graph.nodes.map((n, i) => (n.type === 'section' ? i : -1)).filter((i) => i >= 0);
     const topTopics = graph.nodes
@@ -501,15 +540,15 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect }: PanelP
       .sort((a, b) => b.d - a.d)
       .slice(0, 10);
     return (
-      <Panel aria-label="Links from the graph" data-testid="graph-panel">
-        <Heading level={2} size="md">
+      <Panel aria-label="Links from the graph" data-testid="graph-panel" $compact={compact}>
+        <Heading level={level} size="md">
           Explore
         </Heading>
         <PanelText>
           Click a node, or search, to see its page and every page connected to it. Double-click a node to open its
           page.
         </PanelText>
-        <GroupTitle>Sections</GroupTitle>
+        <GroupTitle as={groupTag}>Sections</GroupTitle>
         <LinkList>
           {sections.map((i) => {
             const n = graph.nodes[i];
@@ -523,7 +562,7 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect }: PanelP
             ) : null;
           })}
         </LinkList>
-        <GroupTitle>Most connected topics</GroupTitle>
+        <GroupTitle as={groupTag}>Most connected topics</GroupTitle>
         <Chips>
           {topTopics.map(({ n, i, d }) => (
             <ChipButton key={n.id} type="button" onClick={() => onSelect(i)} aria-label={`${n.label}: ${d} pages`}>
@@ -541,9 +580,9 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect }: PanelP
   const topics = groups.find((g) => g.type === 'topic')?.indexes ?? [];
   const pageCount = pageGroups.reduce((s, g) => s + g.indexes.length, 0);
   return (
-    <Panel aria-label={`Links for ${node.label}`} data-testid="graph-panel" aria-live="polite">
+    <Panel aria-label={`Links for ${node.label}`} data-testid="graph-panel" aria-live="polite" $compact={compact}>
       <Kind>{info.label}</Kind>
-      <Heading level={2} size="md" data-testid="graph-selected-title">
+      <Heading level={level} size="md" data-testid="graph-selected-title">
         {node.label}
       </Heading>
       {node.summary && <PanelText>{node.summary}</PanelText>}
@@ -554,7 +593,7 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect }: PanelP
       )}
       {pageCount > 0 && (
         <>
-          <GroupTitle>
+          <GroupTitle as={groupTag}>
             {node.type === 'topic' ? `Pages about ${node.label}` : 'Connected pages'} ({pageCount})
           </GroupTitle>
           {pageGroups.map((g) => (
@@ -579,7 +618,7 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect }: PanelP
       )}
       {topics.length > 0 && (
         <>
-          <GroupTitle>Topics ({topics.length})</GroupTitle>
+          <GroupTitle as={groupTag}>Topics ({topics.length})</GroupTitle>
           <Chips>
             {topics.map((i) => {
               const n = graph.nodes[i];
@@ -661,7 +700,16 @@ export function GraphList({ graph, neighbours }: { graph: Graph; neighbours: num
 /* Explorer                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function Explorer({ graph }: { graph: Graph }): ReactNode {
+interface ExplorerProps {
+  graph: Graph;
+  /** The full "every page and its connections" list (on /graph only). */
+  showList?: boolean;
+  level?: PanelLevel;
+  /** Smaller canvas and panel (the home page). */
+  compact?: boolean;
+}
+
+function Explorer({ graph, showList = true, level = 2, compact = false }: ExplorerProps): ReactNode {
   const navigate = useNavigate();
   const neighbours = useMemo(() => adjacency(graph), [graph]);
   const [selected, setSelected] = useState(-1);
@@ -849,12 +897,12 @@ function Explorer({ graph }: { graph: Graph }): ReactNode {
         </Legend>
       </Toolbar>
       <Stage>
-        <CanvasWrap>
+        <CanvasWrap $compact={compact}>
           <Canvas
             ref={canvasRef}
             tabIndex={0}
             role="img"
-            aria-label={`3D knowledge graph of ${pageNodes} pages and ${topicNodes} shared topics. Drag to turn it, arrow keys to rotate, plus and minus to zoom. Every link is also in the panel and the list below.`}
+            aria-label={`3D knowledge graph of ${pageNodes} pages and ${topicNodes} shared topics. Drag to turn it, arrow keys to rotate, plus and minus to zoom. Every link is also in the panel${showList ? ' and the list below' : ''}.`}
             data-testid="graph-canvas"
           />
           <Controls>
@@ -885,13 +933,13 @@ function Explorer({ graph }: { graph: Graph }): ReactNode {
           )}
           <CanvasNote>
             {sceneError
-              ? 'The 3D view could not start in this browser; every page and link is in the panel and the list below.'
+              ? `The 3D view could not start in this browser; every page and link is in the panel${showList ? ' and the list below' : ''}.`
               : 'Drag to turn · click a node for its links · focus the graph, then scroll (or Ctrl + scroll) to zoom'}
           </CanvasNote>
         </CanvasWrap>
-        <SelectionPanel graph={graph} neighbours={neighbours} selected={selected} onSelect={select} />
+        <SelectionPanel graph={graph} neighbours={neighbours} selected={selected} onSelect={select} level={level} compact={compact} />
       </Stage>
-      <GraphList graph={graph} neighbours={neighbours} />
+      {showList && <GraphList graph={graph} neighbours={neighbours} />}
     </>
   );
 }
@@ -900,10 +948,10 @@ function Explorer({ graph }: { graph: Graph }): ReactNode {
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
-export function KnowledgeGraph(): ReactNode {
+/** The graph: primed (prerender, tests) or fetched once; `failed` if it could not load. */
+export function useKnowledgeGraph(): { graph: Graph | undefined; failed: boolean } {
   const [graph, setGraph] = useState<Graph | undefined>(() => cachedKnowledgeGraph());
   const [failed, setFailed] = useState(false);
-
   useEffect(() => {
     if (graph) return;
     let live = true;
@@ -919,6 +967,39 @@ export function KnowledgeGraph(): ReactNode {
       live = false;
     };
   }, [graph]);
+  return { graph, failed };
+}
+
+/**
+ * The explorer for the home page: the same graph, search and links panel, a
+ * smaller canvas, no full list (that stays on /graph). Sits inside a section
+ * whose title is an h2, so the panel's headings start at h3.
+ */
+export function KnowledgeGraphPreview(): ReactNode {
+  const { graph, failed } = useKnowledgeGraph();
+  if (graph) {
+    return (
+      <div data-testid="home-graph">
+        <Explorer graph={graph} showList={false} level={3} compact />
+      </div>
+    );
+  }
+  if (failed) {
+    return (
+      <PanelText data-testid="home-graph">
+        The graph did not load here; <Link to="/graph">open the knowledge graph</Link> to try again.
+      </PanelText>
+    );
+  }
+  return (
+    <div data-testid="home-graph">
+      <Spinner label="Loading the graph" />
+    </div>
+  );
+}
+
+export function KnowledgeGraph(): ReactNode {
+  const { graph, failed } = useKnowledgeGraph();
 
   const pages = graph?.nodes.filter((n) => n.type !== 'topic' && n.type !== 'section' && n.type !== 'series').length ?? 0;
   const topics = graph?.nodes.filter((n) => n.type === 'topic').length ?? 0;

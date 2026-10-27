@@ -12,9 +12,11 @@ import { RouterProvider, type RouteDefinition } from '@portfolio/router';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 import { content } from 'app/content';
 import { adjacency, primeKnowledgeGraph, resetKnowledgeGraphForTests } from 'app/content/knowledge-graph';
+import { Home } from './Home';
 import {
   GraphList,
   KnowledgeGraph,
+  KnowledgeGraphPreview,
   SelectionPanel,
   TYPE_INFO,
   TYPE_ORDER,
@@ -53,6 +55,38 @@ describe('KnowledgeGraph page', () => {
     for (const p of content.projects) expect(html).toContain(`href="/projects/${p.slug}"`);
     for (const p of content.posts) expect(html).toContain(`href="/writing/${p.slug}"`);
     for (const c of content.aiCapabilities) expect(html).toContain(`href="/ai-engineering/${c.slug}"`);
+  });
+});
+
+describe('home page graph (KnowledgeGraphPreview)', () => {
+  it('shows the explorer and links panel but not the full page list, headings under the section h2', () => {
+    const graph = primeKnowledgeGraph(file);
+    const html = render(<KnowledgeGraphPreview />);
+    expect(html).toContain('data-testid="graph-canvas"');
+    expect(html).toContain('data-testid="graph-panel"');
+    expect(html).toContain('data-testid="graph-search"');
+    expect(html).not.toContain('data-testid="graph-list"');
+    expect(html).not.toContain('Every page and its connections');
+    expect(html).toMatch(/<h3[^>]*>Explore<\/h3>/);
+    expect(html).toMatch(/<h4[^>]*>Sections<\/h4>/);
+    expect(html).not.toMatch(/<h2/);
+    for (const n of graph.nodes.filter((x) => x.type === 'section')) expect(html).toContain(`href="${n.url}"`);
+  });
+
+  it('is on the home page, with a link to the full graph; the full list stays on /graph', () => {
+    primeKnowledgeGraph(file);
+    const home = render(<Home />);
+    expect(home).toContain('data-testid="home-graph-section"');
+    expect(home).toContain('href="/graph"');
+    expect(home).not.toContain('data-testid="graph-list"');
+    expect(render(<KnowledgeGraph />)).toContain('data-testid="graph-list"');
+  });
+
+  it('shows a loading state on the home page until the graph arrives', () => {
+    resetKnowledgeGraphForTests();
+    const html = render(<KnowledgeGraphPreview />);
+    expect(html).toContain('Loading the graph');
+    expect(html).not.toContain('data-testid="graph-canvas"');
   });
 });
 

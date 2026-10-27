@@ -111,6 +111,7 @@ describe('responsive', () => {
     await check('/projects/');
     await check('/writing/');
     await check('/');
+    await check('/graph/'); /* the knowledge graph's toggles, chips and link lists */
     /* R3D-03: crumb/back/related nav links only exist on detail routes —
      * one of each so the blind spot stays closed without sweeping 23 pages. */
     const generated = JSON.parse(
