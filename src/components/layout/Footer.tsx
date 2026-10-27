@@ -46,9 +46,11 @@ const Shell = styled.footer`
    * Both stacked = a 224px dead band above the footer on short pages. */
 `;
 
+/* The link groups get two thirds of the row: at 1.4fr / 1fr they were squeezed
+ * into ~40%, so "Elsewhere" wrapped under "Sitemap" and "RSS feed" broke. */
 const Inner = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   gap: ${(p) => p.theme.space[6]};
   max-width: ${(p) => p.theme.layout.maxWidth};
   margin: 0 auto;
@@ -84,14 +86,41 @@ const Role = styled.p`
   max-width: ${(p) => p.theme.layout.maxWidthProse};
 `;
 
+/* Desktop: Sitemap (its own two columns) | More | Elsewhere on one row.
+ * Phone: Sitemap across the full width, More and Elsewhere side by side. */
 const Column = styled.nav`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: ${(p) => p.theme.space[5]};
+
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: ${(p) => p.theme.space[4]} ${(p) => p.theme.space[5]};
+  }
+`;
+
+const WideGroup = styled.div`
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-column: 1 / -1;
+  }
+`;
+
+/* Lists carry no bullets or indent; each link keeps its 44px touch target,
+ * so rows sit flush (gap 0) and the sitemap splits into two columns. */
+const LinkList = styled.ul`
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+
+const SitemapList = styled(LinkList)`
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  column-gap: ${(p) => p.theme.space[6]};
 `;
 
 const Heading = styled.h2`
-  margin: 0 0 ${(p) => p.theme.space[3]};
+  margin: 0 0 ${(p) => p.theme.space[2]};
   font-size: ${(p) => p.theme.font.sizes.xs};
   font-weight: ${(p) => p.theme.font.weights.semibold};
   letter-spacing: ${(p) => p.theme.font.tracking.wider};
@@ -101,12 +130,6 @@ const Heading = styled.h2`
 
 const LinkLine = styled.li`
   margin: 0;
-`;
-
-const ExternalNote = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const BottomRow = styled.div`
@@ -251,9 +274,9 @@ export function Footer({
         </Identity>
 
         <Column aria-label="Footer" data-testid="footer-nav">
-          <div>
+          <WideGroup>
             <Heading id="footer-sites-heading">Sitemap</Heading>
-            <ul role="list" aria-labelledby="footer-sites-heading" data-testid="footer-sitemap">
+            <SitemapList role="list" aria-labelledby="footer-sites-heading" data-testid="footer-sitemap">
               {availableNavItems().map((item) => (
                 <LinkLine key={item.to}>
                   <Link
@@ -265,12 +288,12 @@ export function Footer({
                   </Link>
                 </LinkLine>
               ))}
-            </ul>
-          </div>
+            </SitemapList>
+          </WideGroup>
 
           <div>
             <Heading id="footer-more-heading">More</Heading>
-            <ul role="list" aria-labelledby="footer-more-heading" data-testid="footer-more">
+            <LinkList role="list" aria-labelledby="footer-more-heading" data-testid="footer-more">
               <LinkLine>
                 <a
                   href={RSS_HREF}
@@ -279,7 +302,6 @@ export function Footer({
                   data-testid="footer-rss"
                 >
                   RSS feed
-                  <ExternalNote aria-hidden="true">{withBase('/rss.xml')}</ExternalNote>
                 </a>
               </LinkLine>
               <LinkLine>
@@ -287,24 +309,24 @@ export function Footer({
                   Sitemap
                 </a>
               </LinkLine>
-            </ul>
-            {email && (
-              <LinkLine>
-                <a
-                  href={`mailto:${email}`}
-                  className={classes}
-                  data-testid="footer-email"
-                >
-                  Email
-                </a>
-              </LinkLine>
-            )}
+              {email && (
+                <LinkLine>
+                  <a
+                    href={`mailto:${email}`}
+                    className={classes}
+                    data-testid="footer-email"
+                  >
+                    Email
+                  </a>
+                </LinkLine>
+              )}
+            </LinkList>
           </div>
 
           {configuredSocials.length > 0 && (
             <div>
               <Heading id="footer-social-heading">Elsewhere</Heading>
-              <ul role="list" aria-labelledby="footer-social-heading" data-testid="footer-social">
+              <LinkList role="list" aria-labelledby="footer-social-heading" data-testid="footer-social">
                 {configuredSocials.map((entry) => (
                   <LinkLine key={entry.label}>
                     {/* R2-A A12: configured profiles render as real links;
@@ -321,7 +343,7 @@ export function Footer({
                     </a>
                   </LinkLine>
                 ))}
-              </ul>
+              </LinkList>
             </div>
           )}
         </Column>
