@@ -236,4 +236,40 @@ describe('responsive', () => {
                       (!state.burgerVisible && state.navCount > 0);
     if (!navUsable) throw new Error(`tablet nav broken: burgerVisible=${state.burgerVisible}, inline links=${state.navCount}`);
   });
+
+  /* The footer shipped with browser-default bullets and indents, a link label
+   * broken over two lines and a 702 px (desktop) / 964 px (phone) height, and
+   * every other spec passed (its links still met 44 px). Budgets: the fixed
+   * footer measured 388 px at 1280 and 618 px at 320. */
+  test('footer lists carry no bullets, no label wraps, and it stays compact', async ({ page, goto320, goto1280 }) => {
+    for (const [go, width, maxHeight] of [[goto320, 320, 700], [goto1280, 1280, 460]]) {
+      await go('/writing');
+      const problem = await page.evaluate(`
+        return (() => {
+          const footer = document.querySelector('footer');
+          if (!footer) return 'no footer';
+          const bulleted = [...footer.querySelectorAll('ul, ol')].filter((list) => {
+            const s = getComputedStyle(list);
+            return s.listStyleType !== 'none' || parseFloat(s.paddingLeft) > 0;
+          });
+          if (bulleted.length) return bulleted.length + ' list(s) keep bullets or an indent';
+          const wrapped = [...footer.querySelectorAll('a')].filter((a) => {
+            const tops = new Set();
+            const walker = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
+            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+              if (!node.textContent.trim()) continue;
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              for (const rect of range.getClientRects()) if (rect.width > 0) tops.add(Math.round(rect.top));
+            }
+            return tops.size > 1;
+          });
+          if (wrapped.length) return 'labels wrap: ' + wrapped.map((a) => a.textContent.trim()).join(', ');
+          const height = Math.round(footer.getBoundingClientRect().height);
+          return height > ${maxHeight} ? 'footer is ' + height + 'px tall (budget ${maxHeight}px)' : null;
+        })()
+      `);
+      if (problem) throw new Error(`footer @${width}: ${problem}`);
+    }
+  });
 });

@@ -6,7 +6,7 @@
  * Usage: node scripts/serve-dist.mjs [distDir] [port] [--no-spa]
  */
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve , sep} from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist');
@@ -64,13 +64,32 @@ function safeJoin(rootDir, urlPath) {
   return candidate;
 }
 
+/**
+ * The hosting base the build in `dir` was made for, without its trailing
+ * slash ('' for a root build). VITE_BASE wins when set; otherwise it is read
+ * from the first asset URL in the built index.html, so a plain
+ * `npm run preview` of a /portfolio/ build serves /portfolio/... too (it used
+ * to 404 on every real URL unless VITE_BASE was exported again).
+ */
+export function hostingBase(dir, env = process.env) {
+  if (env.VITE_BASE) return env.VITE_BASE.replace(/\/$/, '');
+  try {
+    const html = readFileSync(join(dir, 'index.html'), 'utf8');
+    const m = /(?:src|href)="(\/(?:[A-Za-z0-9._-]+\/)*)assets\//.exec(html);
+    if (m) return m[1].replace(/\/$/, '');
+  } catch {
+    /* No index.html (nothing built yet): serve at root. */
+  }
+  return '';
+}
+
 export function startServer({ dir = root, port: bindPort = port, spaMode = spa } = {}) {
+  /* R8: strip the hosting base (e.g. /portfolio/ on Pages) so the server —
+   * which serves dist at root — resolves base-prefixed asset/asset-script refs
+   * the same way nginx-with-subpath would. */
+  const base = hostingBase(dir);
   const server = createServer((req, res) => {
-    /* R8: strip the hosting base (VITE_BASE, e.g. /portfolio/ on Pages) so
-     * the e2e server — which serves dist at root — resolves base-prefixed
-     * asset/asset-script refs the same way nginx-with-subpath would. */
     let reqUrl = req.url ?? '/';
-    const base = (process.env.VITE_BASE ?? '/').replace(/\/$/, '');
     if (base && (reqUrl === base || reqUrl.startsWith(`${base}/`))) {
       reqUrl = reqUrl.slice(base.length) || '/';
     }
@@ -176,5 +195,5 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
 import { pathToFileURL } from 'node:url';
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const { port: bound } = await startServer();
-  console.log(`serving ${root} at http://127.0.0.1:${bound}`);
+  console.log(`serving ${root} at http://127.0.0.1:${bound}${hostingBase(root)}/`);
 }
