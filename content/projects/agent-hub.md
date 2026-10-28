@@ -7,7 +7,7 @@ summary: >-
   Shared instructions, skills, subagents, MCP servers, permissions and egress
   for Claude Code, opencode, Hermes Agent and Turnstone. Edit, commit, plan,
   apply — with a policy floor content can only make stricter.
-tags: [ai-agents, mcp, security, developer-tools, fastapi, open-source]
+tags: [ai-agents, mcp, security, developer-tools, rust, open-source]
 date: 2026-10-18
 role: Design and implementation
 status: active
@@ -16,8 +16,9 @@ featured: true
 relatedPost: building-agent-hub
 links:
   source: "https://github.com/willboyden/agent-hub"
-stack: [Python 3.13, FastAPI, git, SQLite, LanceDB + Qdrant (knowledge plane), ES modules + web components (no npm)]
+stack: [Rust (axum, hyper, tokio), git, SQLite, LanceDB + Qdrant (knowledge plane), ES modules + web components (no npm)]
 highlights:
+  - "0.3.0 rewrites the hub, hubctl and the knowledge service in Rust as a drop-in: the same bytes written into every client's files (PyYAML-exact YAML), 0 differences in 545 side-by-side cases against the last Python code, and three security fixes published as GHSA-7j23-gq83-5j4w"
   - "A git repository of declarative files is the source of truth; the hub compiles it into each client's native format (.claude/skills, .opencode/agent, AGENTS.md, Hermes and Turnstone stages) instead of being a service the agents query"
   - "Edit, commit, plan, apply: a plan renders the committed tree per client and shows the diff; apply writes only from that plan, only after confirmation, and refuses if anything moved since"
   - "A policy floor outside the content repo — credential paths denied, egress deny-by-default, no unscanned MCP server, no catch-all shell allow — that content can only tighten"
@@ -25,7 +26,8 @@ highlights:
   - "Optional skill evaluation before import with NVIDIA SkillEvaluator, and an import gate that can require a clean static security scan"
   - "New clients without code: a declarative YAML spec validated live in the add-client wizard"
 metrics:
-  - client adapters = 4 + a generic YAML adapter
+  - client adapters = 5 + a generic YAML adapter (DeepSeek Harness added in 0.3.0)
+  - latest release = v0.3.0 (2026-10-28), backend in Rust
   - loopback trust = off by default (bearer key everywhere)
 ---
 

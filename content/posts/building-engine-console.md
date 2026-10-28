@@ -13,6 +13,8 @@ relatedProject: engine-console
 relatedPosts: [building-nemo-console, building-agent-hub]
 ---
 
+> **Update, 2026-10-28:** since 0.5.0 the hub and the `ecnode` node agent are Rust, a drop-in for the Python version described here, with the same wire protocol. How that was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
+
 Serving models locally means living with several inference engines. vLLM,
 SGLang, TensorRT-LLM, llama.cpp and Ollama each have their own flags, images,
 metrics endpoints and failure modes, and the question I kept asking was simple:

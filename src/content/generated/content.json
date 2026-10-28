@@ -1,5 +1,5 @@
 {
-  "contentHash": "3fb8a6fef1b8e755",
+  "contentHash": "5586af684d6d5858",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -151,7 +151,7 @@
         "nemo-switchyard",
         "observability",
         "security",
-        "fastapi",
+        "rust",
         "open-source"
       ],
       "date": "2026-10-24",
@@ -159,6 +159,7 @@
       "status": "active",
       "period": "Sep–Oct 2026",
       "highlights": [
+        "0.4.0 rewrites the backend in Rust as a drop-in: same API, settings, database and launcher; all 936 Python tests mapped to Rust tests, and 1,392 of 1,393 side-by-side cases against the last Python backend identical (the one difference documented)",
         "Ten systems in v0.3.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, Data Designer)",
         "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view",
         "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets",
@@ -170,8 +171,9 @@
         "A browser end-to-end test (the real backend and a headless Chrome, every page and tab) runs in CI and in a pre-push hook that refuses code it has not passed"
       ],
       "stack": [
-        "Python 3.13",
-        "FastAPI",
+        "Rust (axum",
+        "hyper",
+        "tokio)",
         "SQLite (WAL)",
         "SSE",
         "Docker",
@@ -201,7 +203,7 @@
         },
         {
           "label": "latest release",
-          "value": "v0.3.1 (2026-10-24)"
+          "value": "v0.4.0 (2026-10-28), backend in Rust"
         }
       ],
       "relatedPost": "building-nemo-console",
@@ -217,7 +219,7 @@
         "mcp",
         "security",
         "developer-tools",
-        "fastapi",
+        "rust",
         "open-source"
       ],
       "date": "2026-10-18",
@@ -225,6 +227,7 @@
       "status": "active",
       "period": "2026-10",
       "highlights": [
+        "0.3.0 rewrites the hub, hubctl and the knowledge service in Rust as a drop-in: the same bytes written into every client's files (PyYAML-exact YAML), 0 differences in 545 side-by-side cases against the last Python code, and three security fixes published as GHSA-7j23-gq83-5j4w",
         "A git repository of declarative files is the source of truth; the hub compiles it into each client's native format (.claude/skills, .opencode/agent, AGENTS.md, Hermes and Turnstone stages) instead of being a service the agents query",
         "Edit, commit, plan, apply: a plan renders the committed tree per client and shows the diff; apply writes only from that plan, only after confirmation, and refuses if anything moved since",
         "A policy floor outside the content repo — credential paths denied, egress deny-by-default, no unscanned MCP server, no catch-all shell allow — that content can only tighten",
@@ -233,8 +236,9 @@
         "New clients without code: a declarative YAML spec validated live in the add-client wizard"
       ],
       "stack": [
-        "Python 3.13",
-        "FastAPI",
+        "Rust (axum",
+        "hyper",
+        "tokio)",
         "git",
         "SQLite",
         "LanceDB + Qdrant (knowledge plane)",
@@ -246,7 +250,11 @@
       "metrics": [
         {
           "label": "client adapters",
-          "value": "4 + a generic YAML adapter"
+          "value": "5 + a generic YAML adapter (DeepSeek Harness added in 0.3.0)"
+        },
+        {
+          "label": "latest release",
+          "value": "v0.3.0 (2026-10-28), backend in Rust"
         },
         {
           "label": "loopback trust",
@@ -361,7 +369,7 @@
         "vllm",
         "sglang",
         "gpu",
-        "fastapi",
+        "rust",
         "security",
         "open-source"
       ],
@@ -370,6 +378,7 @@
       "status": "active",
       "period": "Sep–Oct 2026",
       "highlights": [
+        "0.5.0 rewrites the hub and the node agent in Rust: one 4.7 MB node binary per architecture instead of a Python environment, the same wire protocol in both directions so machines move one at a time, and 0 differences in 674 side-by-side steps against the last Python code",
         "A hub talks to a small agent on every machine (ecnode) over a restricted ssh key; the node does all Docker, GPU and file work and obeys a local policy file, so a bug in the hub can do at most what each machine's policy allows",
         "Five engines behind one adapter port, each with a pinned image — vLLM 0.27.1, SGLang 0.5.20, TensorRT-LLM 1.2.1, llama.cpp b10156 by digest, Ollama 0.30.11 — and launch forms generated from each adapter's parameter catalog",
         "Engines run on an internal Docker network with no ports and all capabilities dropped, reachable only through a per-instance loopback gateway",
@@ -379,8 +388,9 @@
         "Honest status: the README lists what was verified live (one workstation, two GPUs) and what has only run against fakes (remote machines, launches of engines other than vLLM)"
       ],
       "stack": [
-        "Python 3.13",
-        "FastAPI",
+        "Rust (axum",
+        "hyper",
+        "tokio)",
         "SQLite (WAL)",
         "SSE",
         "Prometheus + OTLP",
@@ -402,12 +412,12 @@
         },
         {
           "label": "latest release",
-          "value": "v0.4.0 (2026-10-15)"
+          "value": "v0.5.0 (2026-10-28), hub and node in Rust"
         }
       ],
       "relatedPost": "building-engine-console",
       "featured": true,
-      "html": "<p>I run several inference engines on a workstation with two RTX PRO 6000s,\nnext to a second GPU machine and four DGX Sparks. Every engine had its\nown start script, its own flags and its own way of reporting memory. Engine\nConsole puts them on one page without taking over: it watches by default, and\neach machine decides for itself, in a root-owned policy file, whether the\nconsole may start, stop, download or delete anything there.</p>\n<h2 id=\"how-it-is-built\">How it is built</h2>\n<ul>\n<li><strong>Hub and node.</strong> The hub is a FastAPI app on loopback with a zero-build\nbrowser UI. It never runs Docker or reads <code>/proc</code> itself. Every machine,\nincluding its own, is reached through <code>ecnode</code>, a standard-library Python\nagent, over stdio locally and over ssh with a key restricted to that one\ncommand elsewhere.</li>\n<li><strong>Policy as the hard boundary.</strong> <code>monitor</code> or <code>manage</code> mode, allowed images,\nmodel roots and scripts are set per machine. The node re-reads its policy\nwithin seconds; the hub cannot edit it.</li>\n<li><strong>Engine isolation.</strong> Engines are labelled sibling containers on an\n<code>--internal</code> network with <code>--cap-drop ALL</code>, <code>no-new-privileges</code> and a pids\nlimit. The hub reaches an engine's API only through its node.</li>\n<li><strong>Security posture.</strong> Loopback is not trusted (API key, Host, Origin and\nCSRF checks on every call), secrets are stored as <code>[set]</code> markers or 0600\nfiles, and model files are confined to the policy's roots.</li>\n</ul>\n<h2 id=\"what-is-not-done-yet\">What is not done yet</h2>\n<p>The README is explicit: remote machines over ssh, copies between real\nmachines, multi-GPU launches and launches of any engine but vLLM have run only\nagainst fakes. No penetration test or independent review has been done.</p>"
+      "html": "<p>I run several inference engines on a workstation with two RTX PRO 6000s,\nnext to a second GPU machine and four DGX Sparks. Every engine had its\nown start script, its own flags and its own way of reporting memory. Engine\nConsole puts them on one page without taking over: it watches by default, and\neach machine decides for itself, in a root-owned policy file, whether the\nconsole may start, stop, download or delete anything there.</p>\n<h2 id=\"how-it-is-built\">How it is built</h2>\n<ul>\n<li><strong>Hub and node.</strong> The hub is a Rust service on loopback (a FastAPI app until\n0.5.0) with a zero-build browser UI. It never runs Docker or reads <code>/proc</code> itself. Every machine,\nincluding its own, is reached through <code>ecnode</code>, a single Rust binary (a\nstandard-library Python agent until 0.5.0), over stdio locally and over ssh with a key restricted to that one\ncommand elsewhere.</li>\n<li><strong>Policy as the hard boundary.</strong> <code>monitor</code> or <code>manage</code> mode, allowed images,\nmodel roots and scripts are set per machine. The node re-reads its policy\nwithin seconds; the hub cannot edit it.</li>\n<li><strong>Engine isolation.</strong> Engines are labelled sibling containers on an\n<code>--internal</code> network with <code>--cap-drop ALL</code>, <code>no-new-privileges</code> and a pids\nlimit. The hub reaches an engine's API only through its node.</li>\n<li><strong>Security posture.</strong> Loopback is not trusted (API key, Host, Origin and\nCSRF checks on every call), secrets are stored as <code>[set]</code> markers or 0600\nfiles, and model files are confined to the policy's roots.</li>\n</ul>\n<h2 id=\"what-is-not-done-yet\">What is not done yet</h2>\n<p>The README is explicit: remote machines over ssh, copies between real\nmachines, multi-GPU launches and launches of any engine but vLLM have run only\nagainst fakes. No penetration test or independent review has been done.</p>"
     },
     {
       "slug": "system-monitor",
@@ -791,6 +801,27 @@
   ],
   "posts": [
     {
+      "slug": "rewriting-three-python-services-in-rust",
+      "title": "Rewriting three Python services in Rust without breaking them",
+      "summary": "Nemo Console, Agent Hub and Engine Console are now Rust: 56,000 lines of FastAPI and Python agent code replaced as a drop-in, with every one of 4,508 Python tests mapped to a Rust test or a written reason, and both implementations run side by side on the same requests until they agreed. The port also found three security bugs and a data-loss bug in the Python code.",
+      "tags": [
+        "rust",
+        "python",
+        "testing",
+        "security",
+        "open-source"
+      ],
+      "date": "2026-10-28",
+      "readingMinutes": 10,
+      "relatedPosts": [
+        "building-nemo-console",
+        "building-agent-hub",
+        "building-engine-console"
+      ],
+      "bodyHash": "e3cef8c635b9",
+      "excerpt": "Nemo Console, Agent Hub and Engine Console are three local control planes I run every day. All three started as FastAPI backends with a …"
+    },
+    {
       "slug": "dgx-spark-busy-polling-heat",
       "title": "Three spinning threads were overheating my DGX Sparks",
       "summary": "Four GB10 boxes serving DeepSeek hit 90 °C within a minute. Two fixes cut their heating rate 60%, at 1 or 16 requests, for under 2% speed.",
@@ -828,8 +859,8 @@
         "building-engine-console",
         "building-nemo-console"
       ],
-      "bodyHash": "19d7906d0666",
-      "excerpt": "I run several agent clients side by side: Claude Code, opencode, Hermes Agent in a container, and Turnstone. Each one keeps its …"
+      "bodyHash": "67ad57b466ec",
+      "excerpt": "Update, 2026-10-28: since 0.3.0 the hub, and the knowledge service are Rust, a drop-in for the FastAPI version described here, and three …"
     },
     {
       "slug": "building-engine-console",
@@ -851,8 +882,8 @@
         "building-nemo-console",
         "building-agent-hub"
       ],
-      "bodyHash": "8c0fedf6fea6",
-      "excerpt": "Serving models locally means living with several inference engines. vLLM, SGLang, TensorRT-LLM, llama.cpp and Ollama each have their own …"
+      "bodyHash": "28f579c80f54",
+      "excerpt": "Update, 2026-10-28: since 0.5.0 the hub and the node agent are Rust, a drop-in for the Python version described here, with the same wire …"
     },
     {
       "slug": "building-nemo-console",
@@ -873,8 +904,8 @@
         "routing-coding-agent-two-local-models",
         "taking-a-repository-public"
       ],
-      "bodyHash": "52701aa57728",
-      "excerpt": "My lab runs a small stack of NVIDIA software around its models. NeMo Switchyard routes requests between a fast model and a large one, NeMo …"
+      "bodyHash": "393a128df0b7",
+      "excerpt": "Update, 2026-10-28: since 0.4.0 the backend is Rust, a drop-in for the FastAPI version described here. How that was checked: Rewriting …"
     },
     {
       "slug": "building-harness2-workbench",

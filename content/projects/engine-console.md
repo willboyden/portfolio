@@ -1,5 +1,5 @@
 ---
-# Facts from the public README and release v0.4.0 (2026-10-15),
+# Facts from the public README and releases v0.4.0 (2026-10-15) and v0.5.0 (2026-10-28),
 # github.com/willboyden/engine-console. Checked 2026-10-24.
 title: Engine Console — one page for GPU inference engines
 slug: engine-console
@@ -7,7 +7,7 @@ summary: >-
   A control plane for vLLM, SGLang, TensorRT-LLM, llama.cpp and Ollama across
   one or several machines. Each machine's own policy file decides whether the
   console may only watch it or also change it.
-tags: [llm-inference, vllm, sglang, gpu, fastapi, security, open-source]
+tags: [llm-inference, vllm, sglang, gpu, rust, security, open-source]
 date: 2026-10-15
 role: Design and implementation
 status: active
@@ -16,8 +16,9 @@ featured: true
 relatedPost: building-engine-console
 links:
   source: "https://github.com/willboyden/engine-console"
-stack: [Python 3.13, FastAPI, SQLite (WAL), SSE, Prometheus + OTLP, rootless Docker, NVML, ES modules + web components (no npm)]
+stack: [Rust (axum, hyper, tokio), SQLite (WAL), SSE, Prometheus + OTLP, rootless Docker, NVML, ES modules + web components (no npm)]
 highlights:
+  - "0.5.0 rewrites the hub and the node agent in Rust: one 4.7 MB node binary per architecture instead of a Python environment, the same wire protocol in both directions so machines move one at a time, and 0 differences in 674 side-by-side steps against the last Python code"
   - "A hub talks to a small agent on every machine (ecnode) over a restricted ssh key; the node does all Docker, GPU and file work and obeys a local policy file, so a bug in the hub can do at most what each machine's policy allows"
   - "Five engines behind one adapter port, each with a pinned image — vLLM 0.27.1, SGLang 0.5.20, TensorRT-LLM 1.2.1, llama.cpp b10156 by digest, Ollama 0.30.11 — and launch forms generated from each adapter's parameter catalog"
   - "Engines run on an internal Docker network with no ports and all capabilities dropped, reachable only through a per-instance loopback gateway"
@@ -28,7 +29,7 @@ highlights:
 metrics:
   - engines = 5
   - architecture decisions recorded = 21 ADRs
-  - latest release = v0.4.0 (2026-10-15)
+  - latest release = v0.5.0 (2026-10-28), hub and node in Rust
 ---
 
 I run several inference engines on a workstation with two RTX PRO 6000s,
@@ -40,10 +41,10 @@ console may start, stop, download or delete anything there.
 
 ## How it is built
 
-- **Hub and node.** The hub is a FastAPI app on loopback with a zero-build
-  browser UI. It never runs Docker or reads `/proc` itself. Every machine,
-  including its own, is reached through `ecnode`, a standard-library Python
-  agent, over stdio locally and over ssh with a key restricted to that one
+- **Hub and node.** The hub is a Rust service on loopback (a FastAPI app until
+  0.5.0) with a zero-build browser UI. It never runs Docker or reads `/proc` itself. Every machine,
+  including its own, is reached through `ecnode`, a single Rust binary (a
+  standard-library Python agent until 0.5.0), over stdio locally and over ssh with a key restricted to that one
   command elsewhere.
 - **Policy as the hard boundary.** `monitor` or `manage` mode, allowed images,
   model roots and scripts are set per machine. The node re-reads its policy

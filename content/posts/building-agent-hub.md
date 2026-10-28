@@ -13,6 +13,8 @@ relatedProject: agent-hub
 relatedPosts: [building-engine-console, building-nemo-console]
 ---
 
+> **Update, 2026-10-28:** since 0.3.0 the hub, `hubctl` and the knowledge service are Rust, a drop-in for the FastAPI version described here, and three security bugs found during the rewrite are fixed ([GHSA-7j23-gq83-5j4w](https://github.com/willboyden/agent-hub/security/advisories/GHSA-7j23-gq83-5j4w)). How the rewrite was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
+
 I run several agent clients side by side: Claude Code, opencode, Hermes Agent
 in a container, and Turnstone. Each one keeps its instructions, skills,
 subagents, MCP servers and permissions in a different format and a different

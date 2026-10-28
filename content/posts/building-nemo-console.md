@@ -12,6 +12,8 @@ relatedProject: nemo-console
 relatedPosts: [routing-coding-agent-two-local-models, taking-a-repository-public]
 ---
 
+> **Update, 2026-10-28:** since 0.4.0 the backend is Rust, a drop-in for the FastAPI version described here. How that was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
+
 My lab runs a small stack of NVIDIA software around its models. NeMo
 Switchyard routes requests between a fast model and a large one, NeMo Relay is
 the gateway my coding agents talk to, and Dynamo serves a model when I want it.

@@ -1,5 +1,5 @@
 ---
-# Facts from the public README, CHANGELOG, RELEASE-NOTES and release v0.3.1 (2026-10-24),
+# Facts from the public README, CHANGELOG, RELEASE-NOTES and releases v0.3.1 (2026-10-24) and v0.4.0 (2026-10-28),
 # github.com/willboyden/nemo-console. Checked 2026-10-24.
 title: Nemo Console — one page for ten NVIDIA AI systems
 slug: nemo-console
@@ -8,7 +8,7 @@ summary: >-
   routing and serving to GPU telemetry, sandboxes, guardrails and evals.
   Config edits are validated, backed up and rolled back if the system comes up
   unhealthy.
-tags: [llm-routing, nemo-switchyard, observability, security, fastapi, open-source]
+tags: [llm-routing, nemo-switchyard, observability, security, rust, open-source]
 date: 2026-10-24
 role: Design and implementation
 status: active
@@ -17,8 +17,9 @@ featured: true
 relatedPost: building-nemo-console
 links:
   source: "https://github.com/willboyden/nemo-console"
-stack: [Python 3.13, FastAPI, SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
+stack: [Rust (axum, hyper, tokio), SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
 highlights:
+  - "0.4.0 rewrites the backend in Rust as a drop-in: same API, settings, database and launcher; all 936 Python tests mapped to Rust tests, and 1,392 of 1,393 side-by-side cases against the last Python backend identical (the one difference documented)"
   - "Ten systems in v0.3.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, Data Designer)"
   - "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view"
   - "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets"
@@ -33,7 +34,7 @@ metrics:
   - backend tests = 837 passed from a clean clone (878 in the deployment checkout)
   - frontend tests = 121 passed
   - browser end-to-end = every page and tab (46 views) in headless Chrome, gating every push
-  - latest release = v0.3.1 (2026-10-24)
+  - latest release = v0.4.0 (2026-10-28), backend in Rust
 ---
 
 My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a
