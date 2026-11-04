@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="420" viewBox="0 0 620 420" font-family="Helvetica,Arial,sans-serif" font-size="13" role="img" aria-labelledby="t d"><title id="t">Total decode throughput against concurrent requests</title><desc id="d">Line chart, total decode tokens per second against concurrent requests on a log scale. Tuned lane on 2026-11-04: 58.6 at 1, 144.8 at 4, 210.4 at 8, 303 at 16 (the best of several runs, 225 to 303), 497.3 at 64, 786 at 128. First boot on 2026-11-03, limited to 16 requests: 45.7, 88.7, 114.7 and 140.4. The SGLang lane on the four Sparks alone, same weights: about 250 at 16 requests; it would not boot at 32.</desc><rect width="100%" height="100%" fill="white"/>
+<text x="16.0" y="28.0" font-size="17" fill="#0b0b0b" text-anchor="start" font-weight="bold">Total decode throughput vs concurrent requests</text>
+<text x="16.0" y="49.0" font-size="14" fill="#52514e" text-anchor="start">DeepSeek-V4.1-Flash-1017, temperature 1.0, 512 new tokens each</text>
+<line x1="66" y1="350.0" x2="556" y2="350.0" stroke="#e6e5e1" stroke-width="1"/>
+<text x="58.0" y="355.0" font-size="13" fill="#52514e" text-anchor="end">0</text>
+<line x1="66" y1="280.0" x2="556" y2="280.0" stroke="#e6e5e1" stroke-width="1"/>
+<text x="58.0" y="285.0" font-size="13" fill="#52514e" text-anchor="end">200</text>
+<line x1="66" y1="210.0" x2="556" y2="210.0" stroke="#e6e5e1" stroke-width="1"/>
+<text x="58.0" y="215.0" font-size="13" fill="#52514e" text-anchor="end">400</text>
+<line x1="66" y1="140.0" x2="556" y2="140.0" stroke="#e6e5e1" stroke-width="1"/>
+<text x="58.0" y="145.0" font-size="13" fill="#52514e" text-anchor="end">600</text>
+<line x1="66" y1="70.0" x2="556" y2="70.0" stroke="#e6e5e1" stroke-width="1"/>
+<text x="58.0" y="75.0" font-size="13" fill="#52514e" text-anchor="end">800</text>
+<line x1="66.0" y1="350" x2="66.0" y2="355" stroke="#8a8984"/>
+<text x="66.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">1</text>
+<line x1="136.0" y1="350" x2="136.0" y2="355" stroke="#8a8984"/>
+<text x="136.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">2</text>
+<line x1="206.0" y1="350" x2="206.0" y2="355" stroke="#8a8984"/>
+<text x="206.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">4</text>
+<line x1="276.0" y1="350" x2="276.0" y2="355" stroke="#8a8984"/>
+<text x="276.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">8</text>
+<line x1="346.0" y1="350" x2="346.0" y2="355" stroke="#8a8984"/>
+<text x="346.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">16</text>
+<line x1="416.0" y1="350" x2="416.0" y2="355" stroke="#8a8984"/>
+<text x="416.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">32</text>
+<line x1="486.0" y1="350" x2="486.0" y2="355" stroke="#8a8984"/>
+<text x="486.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">64</text>
+<line x1="556.0" y1="350" x2="556.0" y2="355" stroke="#8a8984"/>
+<text x="556.0" y="371.0" font-size="13" fill="#52514e" text-anchor="middle">128</text>
+<line x1="66" y1="350" x2="556" y2="350" stroke="#8a8984" stroke-width="1"/>
+<text x="311.0" y="394.0" font-size="14" fill="#52514e" text-anchor="middle">concurrent requests (log scale)</text>
+<text x="18" y="210.0" font-size="14" fill="#52514e" text-anchor="middle" transform="rotate(-90 18 210.0)">total tokens per second</text>
+<path d="M66.0,334.0 L206.0,319.0 L276.0,309.9 L346.0,300.9" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="66.0" cy="334.0" r="4.5" fill="#eb6834" stroke="white" stroke-width="2"/>
+<circle cx="206.0" cy="319.0" r="4.5" fill="#eb6834" stroke="white" stroke-width="2"/>
+<circle cx="276.0" cy="309.9" r="4.5" fill="#eb6834" stroke="white" stroke-width="2"/>
+<circle cx="346.0" cy="300.9" r="4.5" fill="#eb6834" stroke="white" stroke-width="2"/>
+<path d="M66.0,329.5 L206.0,299.3 L276.0,276.4 L346.0,243.9 L486.0,175.9 L556.0,74.9" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="66.0" cy="329.5" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<circle cx="206.0" cy="299.3" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<circle cx="276.0" cy="276.4" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<circle cx="346.0" cy="243.9" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<circle cx="486.0" cy="175.9" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<circle cx="556.0" cy="74.9" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<rect x="341.0" y="257.5" width="10" height="10" fill="#1baf7a" stroke="white" stroke-width="2" transform="rotate(45 346.0 262.5)"/>
+<text x="546.0" y="79.9" font-size="14" fill="#0b0b0b" text-anchor="end" font-weight="bold">786</text>
+<text x="494.0" y="195.9" font-size="13" fill="#52514e" text-anchor="start">497</text>
+<text x="342.0" y="231.9" font-size="13" fill="#52514e" text-anchor="end">303 (best run)</text>
+<text x="356.0" y="305.9" font-size="13" fill="#52514e" text-anchor="start">140 (its limit: 16)</text>
+<text x="356.0" y="267.5" font-size="13" fill="#52514e" text-anchor="start">~250, SGLang</text>
+<line x1="84" y1="88" x2="106" y2="88" stroke="#2a78d6" stroke-width="2"/><circle cx="95" cy="88" r="4.5" fill="#2a78d6" stroke="white" stroke-width="2"/>
+<text x="114.0" y="93.0" font-size="14" fill="#0b0b0b" text-anchor="start" font-weight="bold">This lane, tuned</text>
+<text x="114.0" y="110.0" font-size="13" fill="#52514e" text-anchor="start">2026-11-04: up to 128 requests</text>
+<line x1="84" y1="134" x2="106" y2="134" stroke="#eb6834" stroke-width="2"/><circle cx="95" cy="134" r="4.5" fill="#eb6834" stroke="white" stroke-width="2"/>
+<text x="114.0" y="139.0" font-size="14" fill="#0b0b0b" text-anchor="start" font-weight="bold">This lane, first boot</text>
+<text x="114.0" y="156.0" font-size="13" fill="#52514e" text-anchor="start">2026-11-03: up to 16 requests</text>
+<rect x="90" y="175" width="10" height="10" fill="#1baf7a" transform="rotate(45 95 180)"/>
+<text x="114.0" y="185.0" font-size="14" fill="#0b0b0b" text-anchor="start" font-weight="bold">SGLang, four Sparks only</text>
+<text x="114.0" y="202.0" font-size="13" fill="#52514e" text-anchor="start">same weights; would not boot at 32</text>
+</svg>

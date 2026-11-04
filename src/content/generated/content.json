@@ -1,5 +1,5 @@
 {
-  "contentHash": "5586af684d6d5858",
+  "contentHash": "3a28ff9867c04bec",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -800,6 +800,29 @@
     }
   ],
   "posts": [
+    {
+      "slug": "one-model-across-five-machines",
+      "title": "One model across five machines: a tensor-parallel size for each pipeline stage in vLLM",
+      "summary": "DeepSeek-V4.1-Flash now runs as one vLLM engine across four DGX Spark-class boxes and a two-GPU RTX PRO 6000 workstation, Arm and x86 in the same engine. A small patch gives each pipeline stage its own tensor-parallel size. Tuned, it decodes 174 tok/s on one stream and 786 tok/s across 128 requests, and an agentic coding loop runs 50% faster than on the best four-Spark setup I had.",
+      "tags": [
+        "vllm",
+        "deepseek",
+        "pipeline-parallelism",
+        "tensor-parallelism",
+        "dgx-spark",
+        "gb10",
+        "rtx-pro-6000",
+        "local-inference"
+      ],
+      "date": "2026-11-04",
+      "readingMinutes": 20,
+      "series": "AI engineering notes",
+      "relatedPosts": [
+        "dgx-spark-busy-polling-heat"
+      ],
+      "bodyHash": "fdc923202fdd",
+      "excerpt": "My lab has seven GPUs of three kinds on six machines: two RTX PRO 6000 Blackwell cards in one x86 workstation, four GB10 boxes (DGX Spark …"
+    },
     {
       "slug": "rewriting-three-python-services-in-rust",
       "title": "Rewriting three Python services in Rust without breaking them",
