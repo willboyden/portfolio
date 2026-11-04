@@ -1,5 +1,5 @@
 {
-  "contentHash": "3a28ff9867c04bec",
+  "contentHash": "84b597ea79d785dd",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -144,8 +144,8 @@
     },
     {
       "slug": "nemo-console",
-      "title": "Nemo Console — one page for ten NVIDIA AI systems",
-      "summary": "A local console that monitors, configures and tests ten NVIDIA systems, from routing and serving to GPU telemetry, sandboxes, guardrails and evals. Config edits are validated, backed up and rolled back if the system comes up unhealthy.",
+      "title": "Nemo Console — one page for twelve NVIDIA AI systems",
+      "summary": "A local console that monitors, configures and tests twelve NVIDIA systems, from routing and serving to GPU telemetry, sandboxes, guardrails, evals, model compression and RL rollouts. Config edits are validated, backed up and rolled back if the system comes up unhealthy, and every page has its own getting-started guide and FAQ.",
       "tags": [
         "llm-routing",
         "nemo-switchyard",
@@ -157,10 +157,12 @@
       "date": "2026-10-24",
       "role": "Design and implementation",
       "status": "active",
-      "period": "Sep–Oct 2026",
+      "period": "Sep–Nov 2026",
       "highlights": [
+        "0.6.0 adds a Getting started tab and a FAQ tab to every system page: numbered steps from install to first use, the system's problem codes and refusals explained, commands with a Copy button and links to the tab each step needs",
+        "0.5.0 adds the eleventh and twelfth systems: NVIDIA Model Optimizer (offline checkpoint compression, started as a background job whose verdict and size the console reads) and NVIDIA NeMo Gym (RL rollouts in a client whose only way out is a router broker; a network that is not internal blocks a run)",
         "0.4.0 rewrites the backend in Rust as a drop-in: same API, settings, database and launcher; all 936 Python tests mapped to Rust tests, and 1,392 of 1,393 side-by-side cases against the last Python backend identical (the one difference documented)",
-        "Ten systems in v0.3.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, Data Designer)",
+        "Twelve systems since v0.5.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf, Model Optimizer), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, NeMo Gym, Data Designer)",
         "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view",
         "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets",
         "Security checks surface as problems with one exact fix: a DCGM exporter older than 4.8.3 (CVE-2026-47483) or an open /debug/pprof, an OpenShell sandbox network that is not internal, a Guardrails server that can reach the internet",
@@ -187,28 +189,28 @@
       "metrics": [
         {
           "label": "systems managed",
-          "value": "10 (since v0.3.0)"
+          "value": "12 (since v0.5.0)"
         },
         {
           "label": "backend tests",
-          "value": "837 passed from a clean clone (878 in the deployment checkout)"
+          "value": "862 passed from a clean clone"
         },
         {
           "label": "frontend tests",
-          "value": "121 passed"
+          "value": "128 passed"
         },
         {
           "label": "browser end-to-end",
-          "value": "every page and tab (46 views) in headless Chrome, gating every push"
+          "value": "every page and tab (77 views) in headless Chrome, gating every push"
         },
         {
           "label": "latest release",
-          "value": "v0.4.0 (2026-10-28), backend in Rust"
+          "value": "v0.6.0 (2026-11-04), backend in Rust"
         }
       ],
       "relatedPost": "building-nemo-console",
       "featured": true,
-      "html": "<p>My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a\nDCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails\nserver and four NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,\nNeMo Evaluator). Each is configured differently — TOML,\nYAML, CSV, compose files, systemd units — and a bad edit to a routing file takes\nrouting down for every agent at once. Nemo Console puts them on one page: see\nwhat each system is doing, change its config with a diff and an automatic\nrollback, run its checks, and send a test request through it.</p>\n<h2 id=\"what-031-fixed\">What 0.3.1 fixed</h2>\n<p>After the 0.3.0 update, the five newest pages showed &quot;Something went wrong&quot; in a\nbrowser that had used an older version. The console served its files with no\ncaching instructions, so the browser kept an old shared module and paired it\nwith the new pages; one missing function was enough to stop all five from\nloading. Every file is now checked with the server on each load.</p>\n<p>Unit tests could not have seen that, so 0.3.1 adds a browser test: it starts the\nreal backend, signs in with a fresh key, and opens every page and tab in a\nheadless Chrome, failing on any error screen, script error, server error or\nfile served without that header. It runs in CI and in a pre-push hook that\nrefuses to push code it has not passed. Its first run from a fresh clone, with\nno lab next to it, found two more bugs: a Dynamo parameter preview that crashed\nwith a server error and Config tabs that reported &quot;Something went wrong&quot; for\nsystems that are simply not deployed.</p>\n<h2 id=\"what-030-added\">What 0.3.0 added</h2>\n<p>Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,\nNeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found\nalong the way: <code>nemo-console stop</code> hung while a browser held a live event\nstream, three status caches skipped their check for the first minute after a\nreboot (a fresh CI runner caught it), and per-GPU charts were empty because a\nlabel held spaces.</p>\n<p>It was written against one deployment, and the README says so: container names\nand paths are settings or constants, and only the parts marked verified-live were\nexercised against the real systems.</p>\n<p>The write-up linked below covers what this console was first built to watch:\nrouting a coding agent between a fast model and a large one.</p>"
+      "html": "<p>My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a\nDCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails\nserver and six NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,\nNeMo Evaluator, Model Optimizer, NeMo Gym). Each is configured differently — TOML,\nYAML, CSV, compose files, systemd units — and a bad edit to a routing file takes\nrouting down for every agent at once. Nemo Console puts them on one page: see\nwhat each system is doing, change its config with a diff and an automatic\nrollback, run its checks, and send a test request through it.</p>\n<h2 id=\"what-060-added\">What 0.6.0 added</h2>\n<p>Twelve systems means twelve sets of rules to remember: which actions spend\ntokens, why a start is refused, what a problem code means. Each system page now\nends with two tabs that answer that on the page itself. Getting started says\nwhat the system is and walks from install to first use in numbered steps; a\nstep that needs a command shows it with a Copy button (the console never runs\nit) and a button that opens the tab the step talks about.</p>\n<p><img src=\"/posts/nemo-console/getting-started.png\" alt=\"The Getting started tab of the Dynamo page: what the system is, then numbered steps, each with a button that opens the tab it needs. Rendered from the repository&#39;s mock server, so the data is a canned demo\" /></p>\n<p>The FAQ tab collects the system's common questions, mostly the problem codes\nand refusals its status and actions can show, and below them the questions\nthat apply on every page. A filter narrows the list and opens what matches.</p>\n<p><img src=\"/posts/nemo-console/faq.png\" alt=\"The FAQ tab of the NeMo Guardrails page: the system&#39;s own questions, then the questions about the console, with a filter and Expand all. Rendered from the mock server\" /></p>\n<p>The text is one plain-text file shown as text only, and the tabs are added once\nin the shared page frame, so a future system gets them too. A test checks that\nevery system has a guide and an FAQ and that every link points at a tab or page\nthat exists; the browser test now opens 77 pages and tabs instead of 53. The\nanswers were written from the console's operations guide and feature matrix,\nnot re-checked against every live system.</p>\n<h2 id=\"what-050-added\">What 0.5.0 added</h2>\n<p>Two more systems, both driven through a lab wrapper and both running their\nwork in the background so a closed tab never stops it. Model Optimizer\ncompresses a pinned checkpoint offline: the console validates the recipe file,\nstarts a job that takes a GPU for hours, then reads its verdict, output size and\ncompression ratio; it never stops a running job. NeMo Gym runs reinforcement\nlearning rollouts in a client whose only way out is a router broker: the console\nchecks that containment, runs a small scored smoke rollout and keeps the\nrewards. A client network that is not internal marks the system down and blocks\na run.</p>\n<h2 id=\"what-031-fixed\">What 0.3.1 fixed</h2>\n<p>After the 0.3.0 update, the five newest pages showed &quot;Something went wrong&quot; in a\nbrowser that had used an older version. The console served its files with no\ncaching instructions, so the browser kept an old shared module and paired it\nwith the new pages; one missing function was enough to stop all five from\nloading. Every file is now checked with the server on each load.</p>\n<p>Unit tests could not have seen that, so 0.3.1 adds a browser test: it starts the\nreal backend, signs in with a fresh key, and opens every page and tab in a\nheadless Chrome, failing on any error screen, script error, server error or\nfile served without that header. It runs in CI and in a pre-push hook that\nrefuses to push code it has not passed. Its first run from a fresh clone, with\nno lab next to it, found two more bugs: a Dynamo parameter preview that crashed\nwith a server error and Config tabs that reported &quot;Something went wrong&quot; for\nsystems that are simply not deployed.</p>\n<h2 id=\"what-030-added\">What 0.3.0 added</h2>\n<p>Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,\nNeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found\nalong the way: <code>nemo-console stop</code> hung while a browser held a live event\nstream, three status caches skipped their check for the first minute after a\nreboot (a fresh CI runner caught it), and per-GPU charts were empty because a\nlabel held spaces.</p>\n<p>It was written against one deployment, and the README says so: container names\nand paths are settings or constants, and only the parts marked verified-live were\nexercised against the real systems.</p>\n<p>The write-up linked below covers what this console was first built to watch:\nrouting a coding agent between a fast model and a large one.</p>"
     },
     {
       "slug": "agent-hub",
@@ -921,13 +923,13 @@
         "open-source"
       ],
       "date": "2026-10-26",
-      "readingMinutes": 9,
+      "readingMinutes": 10,
       "relatedProject": "nemo-console",
       "relatedPosts": [
         "routing-coding-agent-two-local-models",
         "taking-a-repository-public"
       ],
-      "bodyHash": "393a128df0b7",
+      "bodyHash": "ba6e74841b1d",
       "excerpt": "Update, 2026-10-28: since 0.4.0 the backend is Rust, a drop-in for the FastAPI version described here. How that was checked: Rewriting …"
     },
     {
@@ -1469,7 +1471,7 @@
           "claim": "Model share over NFS to three Sparks from about 9 to 15.3 GB/s by finding ZFS cache churn on the server, not the NIC that was first blamed"
         },
         {
-          "claim": "Nemo Console 0.3.1 — DCGM telemetry for all six machines, per-GPU diagnostics, AIPerf load tests and NeMo Evaluator benchmarks from one page",
+          "claim": "Nemo Console 0.6.0 — DCGM telemetry for all six machines, per-GPU diagnostics, AIPerf load tests and NeMo Evaluator benchmarks from one page",
           "url": "https://github.com/willboyden/nemo-console"
         },
         {
@@ -1530,7 +1532,7 @@
       ],
       "proof": [
         {
-          "claim": "Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback (0.3.0 manages ten NVIDIA systems)",
+          "claim": "Nemo Console, the open-source console that monitors Switchyard and Relay and edits their routes with validation and automatic rollback (0.6.0 manages twelve NVIDIA systems)",
           "url": "https://github.com/willboyden/nemo-console"
         },
         {
@@ -1620,7 +1622,7 @@
           "url": "https://github.com/willboyden/gpu-tuner"
         },
         {
-          "claim": "Nemo Console 0.3.1 — the open-source console for ten of these NVIDIA systems (Switchyard, Relay, Dynamo, DCGM, AIPerf, NeMo Guardrails, OpenShell, SkillEvaluator, NeMo Evaluator, Data Designer)",
+          "claim": "Nemo Console 0.6.0 — the open-source console for twelve of these NVIDIA systems (Switchyard, Relay, Dynamo, DCGM, AIPerf, Model Optimizer, NeMo Guardrails, OpenShell, SkillEvaluator, NeMo Evaluator, NeMo Gym, Data Designer)",
           "url": "https://github.com/willboyden/nemo-console"
         },
         {

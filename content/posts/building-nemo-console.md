@@ -13,6 +13,8 @@ relatedPosts: [routing-coding-agent-two-local-models, taking-a-repository-public
 ---
 
 > **Update, 2026-10-28:** since 0.4.0 the backend is Rust, a drop-in for the FastAPI version described here. How that was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
+>
+> **Update, 2026-11-04:** 0.5.0 added NVIDIA Model Optimizer and NeMo Gym (twelve systems), and 0.6.0 gives every system page a Getting started tab and a FAQ tab. Both are described on the [project page](/projects/nemo-console).
 
 My lab runs a small stack of NVIDIA software around its models. NeMo
 Switchyard routes requests between a fast model and a large one, NeMo Relay is
