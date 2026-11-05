@@ -1,0 +1,94 @@
+{
+ "taken_at_utc": "2026-11-05T23:40:54+00:00",
+ "method": "huggingface_hub 2.2.0 HfApi(token=False): list_models(filter=base_model:quantized:<base>) and list_models(search=NorthCUA); anonymous, so only public repos",
+ "bases": {
+  "beipo-ai/NorthCUA-Nano": [
+   {
+    "id": "mradermacher/NorthCUA-Nano-GGUF",
+    "created_at": "2026-11-02T13:27:02+00:00",
+    "tags": [
+     "gguf"
+    ]
+   },
+   {
+    "id": "willyb23/NorthCUA-Nano-NVFP4A16",
+    "created_at": "2026-11-05T21:46:40+00:00",
+    "tags": [
+     "nvfp4",
+     "fp4",
+     "compressed-tensors"
+    ]
+   }
+  ],
+  "beipo-ai/NorthCUA-Mini": [
+   {
+    "id": "bartowski/beipo-ai_NorthCUA-Mini-GGUF",
+    "created_at": "2026-11-03T16:03:26+00:00",
+    "tags": [
+     "gguf"
+    ]
+   },
+   {
+    "id": "mradermacher/NorthCUA-Mini-GGUF",
+    "created_at": "2026-11-05T13:59:29+00:00",
+    "tags": [
+     "gguf"
+    ]
+   },
+   {
+    "id": "willyb23/NorthCUA-Mini-NVFP4A16",
+    "created_at": "2026-11-05T23:13:09+00:00",
+    "tags": [
+     "nvfp4",
+     "fp4",
+     "compressed-tensors"
+    ]
+   }
+  ],
+  "beipo-ai/NorthCUA-Pro": []
+ },
+ "search_NorthCUA": [
+  {
+   "id": "beipo-ai/NorthCUA-Pro",
+   "created_at": "2026-10-30T10:35:17+00:00"
+  },
+  {
+   "id": "beipo-ai/NorthCUA-Mini",
+   "created_at": "2026-11-01T19:23:54+00:00"
+  },
+  {
+   "id": "beipo-ai/NorthCUA-Nano",
+   "created_at": "2026-11-01T19:25:27+00:00"
+  },
+  {
+   "id": "mradermacher/NorthCUA-Nano-GGUF",
+   "created_at": "2026-11-02T13:27:02+00:00"
+  },
+  {
+   "id": "bartowski/beipo-ai_NorthCUA-Mini-GGUF",
+   "created_at": "2026-11-03T16:03:26+00:00"
+  },
+  {
+   "id": "mradermacher/NorthCUA-Mini-GGUF",
+   "created_at": "2026-11-05T13:59:29+00:00"
+  },
+  {
+   "id": "willyb23/NorthCUA-Nano-NVFP4A16",
+   "created_at": "2026-11-05T21:46:40+00:00"
+  },
+  {
+   "id": "willyb23/NorthCUA-Mini-NVFP4A16",
+   "created_at": "2026-11-05T23:13:09+00:00"
+  }
+ ],
+ "fp4_named": [
+  {
+   "id": "willyb23/NorthCUA-Nano-NVFP4A16",
+   "created_at": "2026-11-05T21:46:40+00:00"
+  },
+  {
+   "id": "willyb23/NorthCUA-Mini-NVFP4A16",
+   "created_at": "2026-11-05T23:13:09+00:00"
+  }
+ ]
+}

@@ -1,5 +1,5 @@
 {
-  "contentHash": "1085e1b32019cb40",
+  "contentHash": "57db2c74f446054d",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -826,6 +826,26 @@
       ],
       "bodyHash": "8b1beea404a1",
       "excerpt": "Yesterday's post, One model across five machines, described a small vLLM patch that gives each pipeline stage its own tensor-parallel size …"
+    },
+    {
+      "slug": "northcua-nvfp4-quants",
+      "title": "The first NVFP4 quants of NorthCUA on Hugging Face",
+      "summary": "NorthCUA is a new family of open computer-use models. On 2026-11-05 I published the first NVFP4 quantizations of NorthCUA-Nano and NorthCUA-Mini on Hugging Face, for vLLM: 18.8 GB down to 11.2 GB, and 70.2 GB down to 23.9 GB. This post covers what was quantized and why, a two-layer test that checks vLLM reads the format as written, the results against the original BF16 models, and the public timestamps behind \"first\".",
+      "tags": [
+        "quantization",
+        "nvfp4",
+        "vllm",
+        "compressed-tensors",
+        "computer-use",
+        "moe",
+        "local-inference",
+        "hugging-face"
+      ],
+      "date": "2026-11-05",
+      "readingMinutes": 7,
+      "series": "AI engineering notes",
+      "bodyHash": "af22c68a4cd5",
+      "excerpt": "NorthCUA (Nano, Mini and Pro) is a family of computer-use models from the NorthCUA team, built on Qwen3.5 and released under Apache-2.0 at …"
     },
     {
       "slug": "one-model-across-five-machines",
