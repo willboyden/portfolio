@@ -12,8 +12,10 @@ summary: >-
 tags: [vllm, deepseek, pipeline-parallelism, tensor-parallelism, dgx-spark, gb10, rtx-pro-6000, local-inference]
 date: 2026-11-04
 series: AI engineering notes
-relatedPosts: [dgx-spark-busy-polling-heat]
+relatedPosts: [dgx-spark-busy-polling-heat, five-machine-engine-boot-time-and-minimax]
 ---
+
+> **Update, 2026-11-05:** a boot now takes 3.6 minutes instead of 16. The slow part was the workstation's own weight load, not the GB10 boxes' NFS reads that "The page cache that would not stay warm" names as the cost of a restart; each rank now reads only the files that hold its layers. The same engine also runs a second model, MiniMax-M3.1-Flash. Both are in [The five-machine engine, a day later](/writing/five-machine-engine-boot-time-and-minimax).
 
 My lab has seven GPUs of three kinds on six machines: two RTX PRO 6000 Blackwell cards in one x86 workstation, four
 GB10 boxes (DGX Spark class: an Arm CPU and a Blackwell GPU sharing 128 GB of memory), and an RTX 5090 in another x86

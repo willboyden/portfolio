@@ -1,5 +1,5 @@
 {
-  "contentHash": "84b597ea79d785dd",
+  "contentHash": "1085e1b32019cb40",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -803,6 +803,31 @@
   ],
   "posts": [
     {
+      "slug": "five-machine-engine-boot-time-and-minimax",
+      "title": "The five-machine engine, a day later: a 3.6-minute boot and a second model",
+      "summary": "A follow-up to running DeepSeek-V4.1 as one vLLM engine across four GB10 boxes and two RTX PRO 6000s. Each pipeline rank now reads only the checkpoint files that hold its own layers, and the time from the first log line to a serving API went from 16 minutes to 3.6. The same engine now runs a second model, MiniMax-M3.1-Flash with all 128 experts, where a draft model makes a single stream up to three times faster.",
+      "tags": [
+        "vllm",
+        "minimax",
+        "deepseek",
+        "pipeline-parallelism",
+        "tensor-parallelism",
+        "speculative-decoding",
+        "dgx-spark",
+        "gb10",
+        "rtx-pro-6000",
+        "local-inference"
+      ],
+      "date": "2026-11-05",
+      "readingMinutes": 7,
+      "series": "AI engineering notes",
+      "relatedPosts": [
+        "one-model-across-five-machines"
+      ],
+      "bodyHash": "8b1beea404a1",
+      "excerpt": "Yesterday's post, One model across five machines, described a small vLLM patch that gives each pipeline stage its own tensor-parallel size …"
+    },
+    {
       "slug": "one-model-across-five-machines",
       "title": "One model across five machines: a tensor-parallel size for each pipeline stage in vLLM",
       "summary": "DeepSeek-V4.1-Flash now runs as one vLLM engine across four DGX Spark-class boxes and a two-GPU RTX PRO 6000 workstation, Arm and x86 in the same engine. A small patch gives each pipeline stage its own tensor-parallel size. Tuned, it decodes 174 tok/s on one stream and 786 tok/s across 128 requests, and an agentic coding loop runs 50% faster than on the best four-Spark setup I had.",
@@ -820,10 +845,11 @@
       "readingMinutes": 20,
       "series": "AI engineering notes",
       "relatedPosts": [
-        "dgx-spark-busy-polling-heat"
+        "dgx-spark-busy-polling-heat",
+        "five-machine-engine-boot-time-and-minimax"
       ],
-      "bodyHash": "fdc923202fdd",
-      "excerpt": "My lab has seven GPUs of three kinds on six machines: two RTX PRO 6000 Blackwell cards in one x86 workstation, four GB10 boxes (DGX Spark …"
+      "bodyHash": "603687adc362",
+      "excerpt": "Update, 2026-11-05: a boot now takes 3.6 minutes instead of 16. The slow part was the workstation's own weight load, not the GB10 boxes' …"
     },
     {
       "slug": "rewriting-three-python-services-in-rust",
