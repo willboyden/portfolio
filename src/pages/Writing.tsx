@@ -1,6 +1,14 @@
 /**
- * Writing — the post index: client-side search, tag filter chips, reverse
+ * Writing — the post index: client-side search, a topic cloud filter, reverse
  * chronological list, and pagination past 8 posts.
+ *
+ * Topic cloud: word size = how many posts carry the tag (log scale, five
+ * steps), so the subjects written about most stand out. Picking topics is
+ * multi-select AND (a post must carry every picked topic); the cloud is
+ * faceted, so it only offers topics that still match something and each count
+ * is the number of posts you would get. Collapsed, it shows topics used by two
+ * or more posts; "Show all" reveals the single-post tail. Filters live in the
+ * URL (?tag=a&tag=b&q=text&page=n) so a filtered view can be shared.
  *
  * Search is `src/lib/search.search()` (deterministic ranking, diacritic
  * insensitive, empty query = full listing newest-first) — the list and the
@@ -9,8 +17,9 @@
  * Accessibility contract:
  *  - search lives in a `role="search"` form with a visible-to-AT <label>
  *    (never placeholder-only); Enter cannot submit/reload the page.
- *  - tag chips are real <button type="button"> with aria-pressed in a
- *    labelled group — screen readers announce on/off state.
+ *  - cloud words are real <button type="button"> with aria-pressed and an
+ *    aria-label carrying the count, in a labelled group; active filters are
+ *    a second labelled group of "remove" buttons plus "Clear all".
  *  - result count is a `role="status"` live region, so filtering is
  *    announced without stealing focus.
  *  - Pagination keeps real hrefs (middle-click / no-JS) while a delegated
@@ -18,10 +27,10 @@
  *    aria-disabled by the primitive itself.
  */
 
-import { useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
-import { Link } from '@portfolio/router';
+import { Link, useLocation } from '@portfolio/router';
 import { withBase } from 'app/lib/seo';
 import {
   Button,
@@ -73,28 +82,135 @@ export function paginate<T>(posts: readonly T[], page: number, perPage = POSTS_P
   };
 }
 
-/** Tag list for the filter chips: count desc, then alphabetical (content API order). */
+/** Tag list by usage: count desc, then alphabetical (content API order). */
 export function tagsFromPosts(posts: readonly Post[]): string[] {
-  const counts = new Map<string, number>();
-  for (const post of posts) {
-    for (const tag of post.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
-  }
+  const counts = tagCounts(posts);
   return [...counts.keys()].sort(
     (a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0) || a.localeCompare(b),
   );
 }
 
+function tagCounts(posts: readonly Post[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const post of posts) {
+    for (const tag of post.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /**
- * Filter posts by free-text query (title/summary/tags/excerpt) and/or one
- * tag. Empty query → every post, newest first — the same code path, so the
- * default listing and search results are ranked identically.
+ * Filter posts by free-text query (title/summary/tags/excerpt) and/or tags.
+ * Several tags = AND (a post must carry every one). Empty query → every post,
+ * newest first — the same code path, so the default listing and search
+ * results are ranked identically.
  */
-export function filterPosts(posts: readonly Post[], query: string, tag?: string): Post[] {
+export function filterPosts(
+  posts: readonly Post[],
+  query: string,
+  tags?: string | readonly string[],
+): Post[] {
+  const wanted = (typeof tags === 'string' ? [tags] : (tags ?? [])).filter((t) => t !== '');
   return search(query, posts, {
     limit: posts.length,
-    ...(tag !== undefined && tag !== '' ? { filters: { tags: [tag] } } : {}),
+    ...(wanted.length > 0 ? { filters: { tags: wanted } } : {}),
     extraFields: (post) => ({ excerpt: post.excerpt }),
   }).map((hit) => hit.record);
+}
+
+/** Add the tag when absent, remove it when present (order of picking kept). */
+export function toggleTag(selected: readonly string[], tag: string): string[] {
+  return selected.includes(tag) ? selected.filter((t) => t !== tag) : [...selected, tag];
+}
+
+export interface CloudEntry {
+  tag: string;
+  /** Posts that carry this tag AND match the current search + picked tags. */
+  count: number;
+  /** Posts that carry this tag at all (drives the word size). */
+  total: number;
+  /** 1..5 size step, log-scaled against the most used tag. */
+  weight: 1 | 2 | 3 | 4 | 5;
+  selected: boolean;
+}
+
+export interface TagCloud {
+  /** Alphabetical, ready to render. */
+  entries: CloudEntry[];
+  /** Topics left out by the collapsed view (0 = nothing to expand). */
+  hidden: number;
+}
+
+/** Tags used by fewer posts than this fold into "Show all" while collapsed. */
+export const CLOUD_MIN_POSTS = 2;
+
+/** Map a usage count to a 1..5 size step on a log scale (1 post → 1, max → 5). */
+export function cloudWeight(count: number, max: number): CloudEntry['weight'] {
+  if (max <= 1 || count <= 1) return 1;
+  const step = 1 + Math.round((4 * Math.log(count)) / Math.log(max));
+  return Math.min(5, Math.max(1, step)) as CloudEntry['weight'];
+}
+
+/**
+ * Build the faceted cloud. `matching` is the list the page currently shows
+ * (search + picked tags applied). A topic is offered when it is picked or
+ * still matches at least one post, so a click never leads to an empty list.
+ * `collapse` hides topics used by fewer than CLOUD_MIN_POSTS posts overall
+ * (never a picked one).
+ */
+export function tagCloud(
+  all: readonly Post[],
+  matching: readonly Post[],
+  selected: readonly string[],
+  collapse: boolean,
+): TagCloud {
+  const totals = tagCounts(all);
+  const facet = tagCounts(matching);
+  const max = Math.max(0, ...totals.values());
+  const offered = [...totals.keys()].filter((tag) => selected.includes(tag) || (facet.get(tag) ?? 0) > 0);
+  const kept = collapse
+    ? offered.filter((tag) => selected.includes(tag) || (totals.get(tag) ?? 0) >= CLOUD_MIN_POSTS)
+    : offered;
+  const entries = kept
+    .map((tag) => {
+      const total = totals.get(tag) ?? 0;
+      return {
+        tag,
+        count: facet.get(tag) ?? 0,
+        total,
+        weight: cloudWeight(total, max),
+        selected: selected.includes(tag),
+      };
+    })
+    .sort((a, b) => a.tag.localeCompare(b.tag));
+  return { entries, hidden: offered.length - kept.length };
+}
+
+export interface WritingQuery {
+  tags: string[];
+  q: string;
+  page: number;
+}
+
+/** Read ?tag=a&tag=b&q=text&page=n (unknown keys ignored, junk pages → 1). */
+export function parseWritingSearch(searchString: string): WritingQuery {
+  const params = new URLSearchParams(searchString);
+  const tags: string[] = [];
+  for (const raw of params.getAll('tag')) {
+    const tag = raw.trim();
+    if (tag !== '' && !tags.includes(tag)) tags.push(tag);
+  }
+  const page = Number.parseInt(params.get('page') ?? '', 10);
+  return { tags, q: params.get('q') ?? '', page: Number.isFinite(page) && page > 1 ? page : 1 };
+}
+
+/** The inverse of parseWritingSearch: '' when nothing is set. */
+export function writingSearch({ tags, q, page }: WritingQuery): string {
+  const params = new URLSearchParams();
+  for (const tag of tags) params.append('tag', tag);
+  if (q.trim() !== '') params.set('q', q.trim());
+  if (page > 1) params.set('page', String(page));
+  const out = params.toString();
+  return out === '' ? '' : `?${out}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -178,51 +294,109 @@ const SearchInput = styled.input`
   }
 `;
 
-const ChipGroup = styled.div`
+/* Topic cloud panel: a quiet surface under the search box. */
+const TopicPanel = styled.section`
+  margin-bottom: ${(p) => p.theme.space[4]};
+  padding: ${(p) => p.theme.space[3]} ${(p) => p.theme.space[4]};
+  background: ${(p) => p.theme.color.surface};
+  border: 1px solid ${(p) => p.theme.color.border};
+  border-radius: ${(p) => p.theme.radius.lg};
+`;
+
+const TopicHead = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[4]};
+`;
+
+/* Desktop: always open. Phones: folded until "Show topics" (a 29-word cloud
+ * with 44px targets is ~900px tall at 375px wide). */
+const TopicBody = styled.div<{ $phoneOpen: boolean }>`
+  margin-top: ${(p) => p.theme.space[3]};
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    display: ${(p) => (p.$phoneOpen ? 'block' : 'none')};
+  }
+`;
+
+const HeadActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
   gap: ${(p) => p.theme.space[2]};
 `;
 
-const ChipLabel = styled.span`
+const TopicTitle = styled.h2`
+  margin: 0;
   font-family: ${(p) => p.theme.font.mono};
   font-size: ${(p) => p.theme.font.sizes.xs};
   font-weight: ${(p) => p.theme.font.weights.semibold};
   letter-spacing: ${(p) => p.theme.font.tracking.wide};
   text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
-  margin-inline-end: ${(p) => p.theme.space[1]};
 `;
 
-const Chip = styled.button<{ $active: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
-  /* R3-D: 44px touch targets at phone widths (tag filtering is the main
-   * mobile affordance on this page). */
-  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
-    min-height: 44px;
-  }
-  padding: ${(p) => p.theme.space['0']} ${(p) => p.theme.space[3]};
+const TopicLabel = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: ${(p) => p.theme.space[1]} ${(p) => p.theme.space[3]};
+`;
+
+const TopicHint = styled.span`
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.medium};
+  color: ${(p) => p.theme.color.textMuted};
+`;
+
+const Cloud = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: ${(p) => p.theme.space[1]} ${(p) => p.theme.space[1]};
+`;
+
+const CLOUD_SIZES = { 1: 'sm', 2: 'md', 3: 'lg', 4: 'xl', 5: '2xl' } as const;
+
+const CloudWord = styled.button<{ $weight: CloudEntry['weight']; $active: boolean }>`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2em;
+  /* 44px touch targets at phone widths, as on every other filter control. */
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+    align-items: center;
+  }
+  padding: ${(p) => p.theme.space[1]} ${(p) => p.theme.space[2]};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes[CLOUD_SIZES[p.$weight]]};
+  font-weight: ${(p) =>
+    p.$weight >= 4 ? p.theme.font.weights.bold : p.$weight === 3 ? p.theme.font.weights.semibold : p.theme.font.weights.medium};
   line-height: ${(p) => p.theme.font.leading.none};
-  border-radius: ${(p) => p.theme.radius.full};
-  border: 1px solid ${(p) => p.theme.color.border};
+  letter-spacing: ${(p) => (p.$weight >= 4 ? p.theme.font.tracking.tight : p.theme.font.tracking.normal)};
+  color: ${(p) => (p.$weight >= 3 ? p.theme.color.text : p.theme.color.textMuted)};
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: ${(p) => p.theme.radius.md};
   cursor: pointer;
   transition:
     background ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
     color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
     border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
 
+  &:hover {
+    color: ${(p) => p.theme.color.accent};
+    background: ${(p) => p.theme.color.accentSoft};
+  }
+
   ${(p) =>
     p.$active &&
-    `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent};`}
-  ${(p) =>
-    !p.$active &&
-    `background: ${p.theme.color.surface}; color: ${p.theme.color.text}; &:hover { background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; }`}
+    `color: ${p.theme.color.bg}; background: ${p.theme.color.accent}; border-color: ${p.theme.color.accent};
+     &:hover { color: ${p.theme.color.bg}; background: ${p.theme.color.accent}; }`}
 
   &:focus-visible {
     outline: 2px solid ${(p) => p.theme.color.focus};
@@ -231,6 +405,105 @@ const Chip = styled.button<{ $active: boolean }>`
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+`;
+
+const CloudCount = styled.span`
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  font-weight: ${(p) => p.theme.font.weights.normal};
+  letter-spacing: normal;
+  opacity: 0.75;
+`;
+
+/* Small text-style action ("Show all 62 topics", "Clear all"). One rule
+ * string shared by three separate styled buttons: extending a styled
+ * component (styled(TextButton)) emits two classes whose order on the client
+ * is not guaranteed, so a `display` override could lose to the base. */
+function textButtonRules(t: Tokens): string {
+  return `
+  display: inline-flex;
+  align-items: center;
+  gap: ${t.space[1]};
+  min-height: calc(${t.space[6]} + ${t.space[1]});
+  padding: 0 ${t.space[2]};
+  font-family: ${t.font.sans};
+  font-size: ${t.font.sizes.sm};
+  font-weight: ${t.font.weights.medium};
+  color: ${t.color.accent};
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: ${t.radius.md};
+  cursor: pointer;
+  &:hover { background: ${t.color.accentSoft}; }
+  &:focus-visible { outline: 2px solid ${t.color.focus}; outline-offset: 2px; }
+  @media (max-width: ${t.breakpoint.md}) { min-height: 44px; }
+  `;
+}
+
+const TextButton = styled.button`
+  ${(p) => textButtonRules(p.theme as Tokens)}
+`;
+
+/* On phones "Show all" only makes sense once the cloud is open. */
+const ExpandToggle = styled.button<{ $phoneOpen: boolean }>`
+  ${(p) => textButtonRules(p.theme as Tokens)}
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    display: ${(p) => (p.$phoneOpen ? 'inline-flex' : 'none')};
+  }
+`;
+
+/* Phones only: folds the cloud away so the posts stay near the top. */
+const PhoneToggle = styled.button`
+  ${(p) => textButtonRules(p.theme as Tokens)}
+  display: none;
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    display: inline-flex;
+    border-color: ${(p) => p.theme.color.accentBorder};
+  }
+`;
+
+const ActiveBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]};
+  margin-bottom: ${(p) => p.theme.space[3]};
+`;
+
+const ActiveLabel = styled.span`
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.wide};
+  text-transform: uppercase;
+  color: ${(p) => p.theme.color.textSubtle};
+`;
+
+const ActiveChip = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space[1]};
+  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    min-height: 44px;
+  }
+  padding: 0 ${(p) => p.theme.space[2]} 0 ${(p) => p.theme.space[3]};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  font-weight: ${(p) => p.theme.font.weights.medium};
+  color: ${(p) => p.theme.color.accent};
+  background: ${(p) => p.theme.color.accentSoft};
+  border: 1px solid ${(p) => p.theme.color.accentBorder};
+  border-radius: ${(p) => p.theme.radius.full};
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${(p) => p.theme.color.accent};
+  }
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
   }
 `;
 
@@ -324,22 +597,51 @@ function titleLinkCss(theme: Tokens): string {
 export function Writing(): ReactNode {
   const theme = useTheme() as Tokens;
   const reducedMotion = useReducedMotion();
-  const [query, setQuery] = useState('');
-  const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
-  const [page, setPage] = useState(1);
+  const location = useLocation();
+  const allPosts = useMemo(() => postsByDate(), []);
+  const knownTags = useMemo(() => new Set(tagsFromPosts(allPosts)), [allPosts]);
+
+  /* Initial state from the URL (a shared /writing?tag=rust link); tags the
+   * site no longer has are dropped rather than producing an empty list. */
+  const initial = useMemo(() => parseWritingSearch(location.search), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [query, setQuery] = useState(initial.q);
+  const [selected, setSelected] = useState<string[]>(() => initial.tags.filter((t) => knownTags.has(t)));
+  const [page, setPage] = useState(initial.page);
+  const [expanded, setExpanded] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   const debouncedQuery = useDebouncedValue(query, 200);
-  const allPosts = useMemo(() => postsByDate(), []);
-  const availableTags = useMemo(() => tagsFromPosts(allPosts), [allPosts]);
   const filtered = useMemo(
-    () => filterPosts(allPosts, debouncedQuery, activeTag),
-    [allPosts, debouncedQuery, activeTag],
+    () => filterPosts(allPosts, debouncedQuery, selected),
+    [allPosts, debouncedQuery, selected],
+  );
+  const filtering = debouncedQuery.trim() !== '' || selected.length > 0;
+  /* While filtering, the faceted cloud is already short: show every topic
+   * that still matches. Collapse only the unfiltered, full cloud. */
+  const cloud = useMemo(
+    () => tagCloud(allPosts, filtered, selected, !expanded && !filtering),
+    [allPosts, filtered, selected, expanded, filtering],
   );
   const pageData = paginate(filtered, page);
 
+  /* Keep the address bar in step (replaceState: filtering is not navigation,
+   * so Back still leaves the page). Pagination writes its own page number. */
+  const searchString = writingSearch({ tags: selected, q: debouncedQuery, page: pageData.page });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.search === searchString) return;
+    const url = window.location.pathname + searchString + window.location.hash;
+    window.history.replaceState(window.history.state, '', url);
+  }, [searchString]);
+
+  const pickTag = (tag: string): void => {
+    setSelected((current) => toggleTag(current, tag));
+    setPage(1);
+  };
+
   const clearFilters = (): void => {
     setQuery('');
-    setActiveTag(undefined);
+    setSelected([]);
     setPage(1);
   };
 
@@ -370,7 +672,7 @@ export function Writing(): ReactNode {
   };
 
   const linkCls = titleLinkCss(theme);
-  const filtering = debouncedQuery.trim() !== '' || activeTag !== undefined;
+  const totalTopics = knownTags.size;
 
   return (
     <Container data-testid="writing-page">
@@ -405,42 +707,100 @@ export function Writing(): ReactNode {
             data-testid="post-search"
           />
         </SearchForm>
+      </Toolbar>
 
-        {availableTags.length > 0 && (
-          <ChipGroup role="group" aria-label="Filter posts by tag" data-testid="tag-filters">
-            <ChipLabel id="tag-filter-label" aria-hidden="true">
-              Filter
-            </ChipLabel>
-            <Chip
+      {totalTopics > 0 && (
+        <TopicPanel aria-labelledby="topic-cloud-title" data-testid="tag-filters">
+          <TopicHead>
+            <TopicLabel>
+              <TopicTitle id="topic-cloud-title">Topics</TopicTitle>
+              <TopicHint data-testid="tag-cloud-hint">
+                {selected.length > 0 ? 'Posts must match every topic picked' : 'Bigger words have more posts'}
+              </TopicHint>
+            </TopicLabel>
+            <HeadActions>
+              {cloud.hidden > 0 || expanded ? (
+                <ExpandToggle
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls="topic-cloud"
+                  onClick={() => setExpanded((open) => !open)}
+                  data-testid="tag-cloud-toggle"
+                  $phoneOpen={phoneOpen}
+                >
+                  {expanded ? 'Main topics only' : `Show all ${totalTopics} topics`}
+                </ExpandToggle>
+              ) : null}
+            {/* Phones only: the cloud folds away so the posts stay near the top. */}
+            <PhoneToggle
               type="button"
-              $active={activeTag === undefined}
-              aria-pressed={activeTag === undefined}
+              aria-expanded={phoneOpen}
+              aria-controls="topic-body"
+              onClick={() => setPhoneOpen((open) => !open)}
+              data-testid="tag-cloud-phone-toggle"
+            >
+              {phoneOpen ? 'Hide topics' : 'Show topics'}
+            </PhoneToggle>
+            </HeadActions>
+          </TopicHead>
+          <TopicBody id="topic-body" $phoneOpen={phoneOpen} data-testid="tag-cloud-body">
+            <Cloud id="topic-cloud" role="group" aria-label="Filter posts by topic" data-testid="tag-cloud">
+              {cloud.entries.map((entry) => (
+                <li key={entry.tag}>
+                  <CloudWord
+                    type="button"
+                    $weight={entry.weight}
+                    $active={entry.selected}
+                    aria-pressed={entry.selected}
+                    aria-label={`${entry.tag}, ${pluralize(entry.count, 'post')}`}
+                    onClick={() => pickTag(entry.tag)}
+                    data-testid={`tag-cloud-${entry.tag}`}
+                    data-weight={entry.weight}
+                  >
+                    {entry.tag}
+                    <CloudCount aria-hidden="true">{entry.count}</CloudCount>
+                  </CloudWord>
+                </li>
+              ))}
+            </Cloud>
+          </TopicBody>
+        </TopicPanel>
+      )}
+
+      {filtering && (
+        <ActiveBar role="group" aria-label="Active filters" data-testid="active-filters">
+          <ActiveLabel aria-hidden="true">Filtered by</ActiveLabel>
+          {selected.map((tag) => (
+            <ActiveChip
+              key={tag}
+              type="button"
+              aria-label={`Remove topic ${tag}`}
+              onClick={() => pickTag(tag)}
+              data-testid={`active-tag-${tag}`}
+            >
+              {tag}
+              <Icon name="close" size={14} />
+            </ActiveChip>
+          ))}
+          {debouncedQuery.trim() !== '' && (
+            <ActiveChip
+              type="button"
+              aria-label={`Remove search “${debouncedQuery.trim()}”`}
               onClick={() => {
-                setActiveTag(undefined);
+                setQuery('');
                 setPage(1);
               }}
-              data-testid="tag-chip-all"
+              data-testid="active-query"
             >
-              All
-            </Chip>
-            {availableTags.map((tag) => (
-              <Chip
-                key={tag}
-                type="button"
-                $active={activeTag === tag}
-                aria-pressed={activeTag === tag}
-                onClick={() => {
-                  setActiveTag(activeTag === tag ? undefined : tag);
-                  setPage(1);
-                }}
-                data-testid={`tag-chip-${tag}`}
-              >
-                {tag}
-              </Chip>
-            ))}
-          </ChipGroup>
-        )}
-      </Toolbar>
+              “{debouncedQuery.trim()}”
+              <Icon name="close" size={14} />
+            </ActiveChip>
+          )}
+          <TextButton type="button" onClick={clearFilters} data-testid="clear-all-filters">
+            Clear all
+          </TextButton>
+        </ActiveBar>
+      )}
 
       {filtered.length === 0 ? (
         allPosts.length === 0 ? (
@@ -455,7 +815,7 @@ export function Writing(): ReactNode {
             title="No posts match"
             description={
               filtering
-                ? 'Try a different phrase, or clear the tag filter to see everything.'
+                ? 'Try a different phrase, or remove a topic to see more.'
                 : 'Nothing to show here yet.'
             }
             action={
@@ -475,7 +835,9 @@ export function Writing(): ReactNode {
           <StatusLine role="status" data-testid="post-count">
             {pageData.total > POSTS_PER_PAGE
               ? `Showing ${pageData.firstIndex}–${pageData.lastIndex} of ${pluralize(pageData.total, 'post')}`
-              : `Showing all ${pluralize(pageData.total, 'post')}`}
+              : filtering
+                ? `Showing ${pluralize(pageData.total, 'post')} of ${allPosts.length}`
+                : `Showing all ${pluralize(pageData.total, 'post')}`}
           </StatusLine>
           <PostList id="post-list" data-testid="post-list">
             {pageData.items.map((post) => (
@@ -502,7 +864,7 @@ export function Writing(): ReactNode {
                 {post.tags.length > 0 && (
                   <TagRow>
                     {post.tags.map((tag) => (
-                      <Tag key={tag} size="sm">
+                      <Tag key={tag} size="sm" tone={selected.includes(tag) ? 'accent' : 'default'}>
                         {tag}
                       </Tag>
                     ))}
@@ -516,7 +878,9 @@ export function Writing(): ReactNode {
               <Pagination
                 page={pageData.page}
                 total={pageData.pageCount}
-                hrefFor={(n) => withBase(n === 1 ? '/writing' : `/writing?page=${n}`)}
+                hrefFor={(n) =>
+                  withBase(`/writing${writingSearch({ tags: selected, q: debouncedQuery, page: n })}`)
+                }
                 label="Writing pages"
               />
             </div>

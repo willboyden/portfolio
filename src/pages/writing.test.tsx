@@ -3,7 +3,8 @@
  *
  * No jsdom (CONTRACT §0): behaviour that depends on real events (typing into
  * the search box, clicking a page link) is decomposed into PURE functions —
- * filterPosts / paginate / tagsFromPosts / neighboursByDate / shareUrl — and
+ * filterPosts / paginate / tagsFromPosts / tagCloud / parseWritingSearch /
+ * neighboursByDate / shareUrl — and
  * tested directly; the SSR pass pins STRUCTURE (labels, aria wiring, link
  * hrefs, heading order) via renderToStaticMarkup. Real interaction is the
  * CDP e2e suite's job.
@@ -38,7 +39,18 @@ vi.mock('app/content', () => ({
 
 /* Imports AFTER the mock declaration (vi.mock is hoisted by vitest anyway —
  * the ordering is for the reader, the factory closes over `store`). */
-const { Writing, filterPosts, paginate, tagsFromPosts, POSTS_PER_PAGE } = await import('./Writing');
+const {
+  Writing,
+  filterPosts,
+  paginate,
+  tagsFromPosts,
+  tagCloud,
+  cloudWeight,
+  toggleTag,
+  parseWritingSearch,
+  writingSearch,
+  POSTS_PER_PAGE,
+} = await import('./Writing');
 const { PostDetail, neighboursByDate, shareUrl } = await import('./PostDetail');
 const { primePostBody } = await import('app/content/post-bodies');
 
@@ -171,6 +183,103 @@ describe('filterPosts', () => {
   });
 });
 
+describe('filterPosts with several tags', () => {
+  it('several tags are AND: a post must carry every one', () => {
+    expect(filterPosts(FIXTURES, '', ['llm', 'evals']).map((p) => p.slug)).toEqual(['llm-evals']);
+    expect(filterPosts(FIXTURES, '', ['llm', 'rust'])).toEqual([]);
+  });
+
+  it('an empty tag list or empty string tag is no filter', () => {
+    expect(filterPosts(FIXTURES, '', [])).toHaveLength(FIXTURES.length);
+    expect(filterPosts(FIXTURES, '', '')).toHaveLength(FIXTURES.length);
+  });
+});
+
+describe('toggleTag', () => {
+  it('adds in picking order and removes when present', () => {
+    expect(toggleTag([], 'a')).toEqual(['a']);
+    expect(toggleTag(['a'], 'b')).toEqual(['a', 'b']);
+    expect(toggleTag(['a', 'b'], 'a')).toEqual(['b']);
+  });
+});
+
+describe('cloudWeight', () => {
+  it('log scale from 1 (single post) to 5 (most used)', () => {
+    expect(cloudWeight(1, 11)).toBe(1);
+    expect(cloudWeight(11, 11)).toBe(5);
+    expect(cloudWeight(2, 11)).toBe(2);
+    expect(cloudWeight(5, 11)).toBe(4);
+  });
+
+  it('degenerate maxima never divide by zero', () => {
+    expect(cloudWeight(1, 1)).toBe(1);
+    expect(cloudWeight(0, 0)).toBe(1);
+  });
+});
+
+describe('tagCloud', () => {
+  it('unfiltered and collapsed: tags on 2+ posts only, alphabetical, the rest counted as hidden', () => {
+    const cloud = tagCloud(FIXTURES, FIXTURES, [], true);
+    expect(cloud.entries.map((e) => e.tag)).toEqual(['llm']);
+    expect(cloud.hidden).toBe(6);
+    expect(cloud.entries[0]).toMatchObject({ count: 2, total: 2, weight: 5, selected: false });
+  });
+
+  it('expanded: every tag, alphabetical', () => {
+    const cloud = tagCloud(FIXTURES, FIXTURES, [], false);
+    expect(cloud.entries.map((e) => e.tag)).toEqual([
+      'duckdb',
+      'evals',
+      'llm',
+      'perf',
+      'retrieval',
+      'rust',
+      'vision',
+    ]);
+    expect(cloud.hidden).toBe(0);
+  });
+
+  it('faceted: only topics that still match are offered, with the narrowed count; picks stay', () => {
+    const matching = filterPosts(FIXTURES, '', ['llm']);
+    const cloud = tagCloud(FIXTURES, matching, ['llm'], false);
+    expect(cloud.entries.map((e) => e.tag)).toEqual(['evals', 'llm', 'retrieval']);
+    const llm = cloud.entries.find((e) => e.tag === 'llm');
+    expect(llm).toMatchObject({ selected: true, count: 2 });
+    /* the size comes from overall use, so words do not jump while filtering */
+    expect(cloud.entries.find((e) => e.tag === 'evals')).toMatchObject({ count: 1, total: 1, weight: 1 });
+  });
+
+  it('a picked topic stays visible even when collapsing would hide it', () => {
+    const matching = filterPosts(FIXTURES, '', ['rust']);
+    const cloud = tagCloud(FIXTURES, matching, ['rust'], true);
+    expect(cloud.entries.map((e) => e.tag)).toEqual(['rust']);
+  });
+
+  it('no posts → empty cloud', () => {
+    expect(tagCloud([], [], [], true)).toEqual({ entries: [], hidden: 0 });
+  });
+});
+
+describe('parseWritingSearch / writingSearch', () => {
+  it('round-trips tags, query and page', () => {
+    const state = { tags: ['rust', 'local-inference'], q: 'tensor parallel', page: 2 };
+    const qs = writingSearch(state);
+    expect(qs).toBe('?tag=rust&tag=local-inference&q=tensor+parallel&page=2');
+    expect(parseWritingSearch(qs)).toEqual(state);
+  });
+
+  it('nothing set → empty string, and an empty search parses to defaults', () => {
+    expect(writingSearch({ tags: [], q: '  ', page: 1 })).toBe('');
+    expect(parseWritingSearch('')).toEqual({ tags: [], q: '', page: 1 });
+  });
+
+  it('junk pages fall back to 1, blank and duplicate tags are dropped', () => {
+    expect(parseWritingSearch('?page=abc').page).toBe(1);
+    expect(parseWritingSearch('?page=-3').page).toBe(1);
+    expect(parseWritingSearch('?tag=a&tag=&tag=a&tag=b').tags).toEqual(['a', 'b']);
+  });
+});
+
 describe('tagsFromPosts', () => {
   it('count desc, then alphabetical', () => {
     expect(tagsFromPosts(FIXTURES)).toEqual([
@@ -268,14 +377,40 @@ describe('Writing (SSR)', () => {
     expect(html).not.toContain('data-testid="pagination"');
   });
 
-  it('tag chips are aria-pressed toggles in a labelled group', () => {
+  it('topic cloud words are aria-pressed toggles in a labelled group, sized by use', () => {
     const html = render(<Writing />);
-    expect(html).toContain('aria-label="Filter posts by tag"');
-    const all = tags(html, 'button').find((t) => t.includes('tag-chip-all'));
-    expect(all).toContain('aria-pressed="true"');
-    expect(all).toContain('type="button"');
-    const llm = tags(html, 'button').find((t) => t.includes('tag-chip-llm'));
+    expect(html).toContain('aria-label="Filter posts by topic"');
+    expect(html).toContain('data-testid="tag-filters"'); /* noscript CSS hides this */
+    const llm = tags(html, 'button').find((t) => t.includes('tag-cloud-llm'));
     expect(llm).toContain('aria-pressed="false"');
+    expect(llm).toContain('type="button"');
+    expect(llm).toContain('aria-label="llm, 2 posts"');
+    expect(llm).toContain('data-weight="5"');
+    /* single-post topics fold behind the toggle until expanded */
+    expect(html).not.toContain('tag-cloud-rust');
+    const toggle = tags(html, 'button').find((t) => t.includes('tag-cloud-toggle'));
+    expect(toggle).toContain('aria-expanded="false"');
+    expect(html).toContain('Show all 7 topics');
+    /* nothing picked → no active-filter bar */
+    expect(html).not.toContain('data-testid="active-filters"');
+  });
+
+  it('a shared /writing?tag=… URL opens filtered, with the bar and highlighted card tags', () => {
+    const html = render(<Writing />, '/writing?tag=llm&tag=evals');
+    const links = testids(html).filter((id) => id.startsWith('post-link-'));
+    expect(links).toEqual(['post-link-llm-evals']);
+    expect(html).toContain('data-testid="active-filters"');
+    expect(html).toContain('aria-label="Remove topic llm"');
+    expect(html).toContain('aria-label="Remove topic evals"');
+    expect(html).toContain('Showing 1 post of 5');
+    const evals = tags(html, 'button').find((t) => t.includes('tag-cloud-evals'));
+    expect(evals).toContain('aria-pressed="true"');
+  });
+
+  it('an unknown tag in the URL is ignored rather than emptying the list', () => {
+    const html = render(<Writing />, '/writing?tag=no-such-topic');
+    expect(html).toContain('Showing all 5 posts');
+    expect(html).not.toContain('data-testid="active-filters"');
   });
 
   it('result count is a polite live region', () => {

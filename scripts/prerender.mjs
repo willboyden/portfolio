@@ -58,7 +58,8 @@ async function main() {
         '(function(){' +
           'var p=location.pathname.replace(/\\.html$/,"");' +
           'var base="/' + 'portfolio' + '/";' +
-          'if(p.slice(-1)!=="/"){location.replace(p+"/");}' +
+          /* keep ?query and #hash: /writing?tag=x must stay filtered */
+          'if(p.slice(-1)!=="/"){location.replace(p+"/"+location.search+location.hash);}' +
         '})();',
         'utf8',
       );
