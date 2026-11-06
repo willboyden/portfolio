@@ -28,9 +28,7 @@ import { EmptyState, Heading, Icon, Tag, VisuallyHidden } from 'app/components/u
 
 /** Newest-first order (ISO dates sort lexically; title breaks ties). */
 export function videosByDate(all: readonly Video[]): Video[] {
-  return [...all].sort(
-    (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title)),
-  );
+  return [...all].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title)));
 }
 
 /**
@@ -38,10 +36,7 @@ export function videosByDate(all: readonly Video[]): Video[] {
  * TODAY is upcoming). `todayIso` is a parameter — never Date.now() inside —
  * so prerender output is reproducible and unit tests are deterministic.
  */
-export function splitByDate(
-  all: readonly Video[],
-  todayIso: string,
-): { upcoming: Video[]; past: Video[] } {
+export function splitByDate(all: readonly Video[], todayIso: string): { upcoming: Video[]; past: Video[] } {
   const sorted = videosByDate(all);
   return {
     upcoming: sorted.filter((v) => v.date >= todayIso),
@@ -52,11 +47,16 @@ export function splitByDate(
 /** Display label for the provider badge. */
 export function providerLabel(provider: Video['provider']): string {
   switch (provider) {
-    case 'youtube': return 'YouTube';
-    case 'vimeo': return 'Vimeo';
-    case 'podcast': return 'Podcast';
-    case 'audio': return 'Audio';
-    default: return 'Other';
+    case 'youtube':
+      return 'YouTube';
+    case 'vimeo':
+      return 'Vimeo';
+    case 'podcast':
+      return 'Podcast';
+    case 'audio':
+      return 'Audio';
+    default:
+      return 'Other';
   }
 }
 
@@ -268,21 +268,12 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
             <audio controls preload="none" src={video.url} data-testid="video-audio-player">
               <track kind="captions" />
             </audio>
-            <a
-              href={video.url}
-              download
-              className={downloadCls(theme)}
-              data-testid="video-download"
-            >
+            <a href={video.url} download className={downloadCls(theme)} data-testid="video-download">
               Download
               <VisuallyHidden>{` ${video.title} (audio file)`}</VisuallyHidden>
             </a>
             {video.transcriptUrl && (
-              <a
-                href={video.transcriptUrl}
-                className={downloadCls(theme)}
-                data-testid="video-transcript"
-              >
+              <a href={video.transcriptUrl} className={downloadCls(theme)} data-testid="video-transcript">
                 Transcript
                 <VisuallyHidden>{` of ${video.title}`}</VisuallyHidden>
               </a>
@@ -348,8 +339,8 @@ export function Videos(): React.ReactNode {
           Videos and podcasts
         </Heading>
         <Lede>
-          Talks, demos and podcast episodes. Audio plays right here, with a transcript; video
-          links out to the host where it actually plays.
+          Talks, demos and podcast episodes. Audio plays right here, with a transcript; video links out to the host
+          where it actually plays.
         </Lede>
         {total > 0 && (
           <MetaLine role="status" data-testid="videos-count">

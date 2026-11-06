@@ -72,7 +72,7 @@ describe('recipe bodies', () => {
     expect(cachedRecipeBody('mine')).toBeUndefined();
   });
 
-  it("adopts the prerendered body of the page being loaded, markup untouched", () => {
+  it('adopts the prerendered body of the page being loaded, markup untouched', () => {
     const { doc, asked } = fakeDocument({ dataset: { recipeBody: 'adopted' }, innerHTML: '<p>prerendered</p>' });
     adoptPrerenderedRecipeBody(doc);
     expect(asked).toEqual(['#root [data-recipe-body]']);

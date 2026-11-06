@@ -23,15 +23,7 @@ import { Link } from '@portfolio/router';
 import { content, type Project, type ProjectMetric } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
 import { formatPeriod, pluralize } from 'app/lib/format';
-import {
-  Button,
-  Card,
-  EmptyState,
-  Heading,
-  Stack,
-  Tag,
-  type TagTone,
-} from 'app/components/ui';
+import { Button, Card, EmptyState, Heading, Stack, Tag, type TagTone } from 'app/components/ui';
 
 /* -------------------------------------------------------------------------- */
 /* Pure, unit-tested filtering                                                 */
@@ -99,7 +91,7 @@ const CardSummary = styled.p`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.normal};
-  color: ${(p) => p.theme.color.textMuted};  /* R2-D V7: clamp so one long blurb can't make a straggling tall card */
+  color: ${(p) => p.theme.color.textMuted}; /* R2-D V7: clamp so one long blurb can't make a straggling tall card */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -126,7 +118,7 @@ function titleLinkClass(theme: Tokens): string {
     display: 'inline-block',
     minHeight: '28px',
     ['@media (max-width: ' + theme.breakpoint.md + ')']: {
-      minHeight: '44px', /* R3-D: primary card affordance at phone widths */
+      minHeight: '44px' /* R3-D: primary card affordance at phone widths */,
     },
     '&:hover': {
       color: theme.color.accent,
@@ -152,7 +144,6 @@ function ctaLinkClass(theme: Tokens): string {
     '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
   });
 }
-
 
 /* Metrics strip: label/value pairs. A flex row of columns — wraps on narrow
  * cards, token gaps only. Rendered ONLY when metrics exist (empty array must
@@ -418,19 +409,13 @@ export function Projects(): React.ReactNode {
           Selected work
         </Heading>
         <Lede>
-          Open-source tools first, each with its GitHub repository; then
-          smaller systems built and tested in my lab. Every card says what
-          shipped, the stack, and the numbers that judged it. Filter by tag to
-          cut to one thread of the work.
+          Open-source tools first, each with its GitHub repository; then smaller systems built and tested in my lab.
+          Every card says what shipped, the stack, and the numbers that judged it. Filter by tag to cut to one thread of
+          the work.
         </Lede>
         {all.length > 0 && (
           <FilterBar role="group" aria-label="Filter projects by tag" data-testid="tag-filter">
-            <Chip
-              type="button"
-              $active={tag === null}
-              aria-pressed={tag === null}
-              onClick={() => setTag(null)}
-            >
+            <Chip type="button" $active={tag === null} aria-pressed={tag === null} onClick={() => setTag(null)}>
               All <ChipCount>{all.length}</ChipCount>
             </Chip>
             {primaryTags.map((entry) => (

@@ -41,7 +41,9 @@ if (!existsSync(join(root, 'node_modules'))) {
   const probes = ['vitest', 'typescript', 'eslint', 'react'];
   for (const p of probes) {
     if (!existsSync(join(root, 'node_modules', p))) {
-      problems.push(`node_modules/${p} missing — re-run the bootstrap for your environment (npm run deps here, npm install there)`);
+      problems.push(
+        `node_modules/${p} missing — re-run the bootstrap for your environment (npm run deps here, npm install there)`,
+      );
     }
   }
   if (problems.length === 0) fixed.push('vitest/typescript/eslint/react resolve');
@@ -56,7 +58,10 @@ if (!existsSync(join(root, 'src/content/generated/content.json'))) {
 
 /* 5. vendored code is never supposed to be npm-managed */
 for (const v of ['vendor/emotion', 'vendor/markdown', 'vendor/router']) {
-  if (!existsSync(join(root, v))) problems.push(`${v} missing — the repo relies on vendored packages (check out the repo fully, do not npm-install these)`);
+  if (!existsSync(join(root, v)))
+    problems.push(
+      `${v} missing — the repo relies on vendored packages (check out the repo fully, do not npm-install these)`,
+    );
 }
 if (fixed.length + problems.length < 4) fixed.push('vendored packages present');
 

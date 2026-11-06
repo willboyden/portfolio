@@ -12,24 +12,10 @@ export { hash, flatten, objectToCss };
 
 export type StyleObject = {
   [key: string]:
-    | string
-    | number
-    | null
-    | undefined
-    | false
-    | StyleObject
-    | StyleObject[]
-    | Array<string | number | StyleObject>;
+    string | number | null | undefined | false | StyleObject | StyleObject[] | Array<string | number | StyleObject>;
 };
 
-export type StyleValue =
-  | string
-  | number
-  | null
-  | undefined
-  | false
-  | StyleObject
-  | StyleValue[];
+export type StyleValue = string | number | null | undefined | false | StyleObject | StyleValue[];
 
 /**
  * A CSS interpolation.
@@ -41,9 +27,7 @@ export type StyleValue =
  * the function form out of `StyleValue` and adding it per-call-site with a
  * concrete props type is what makes `(p) => p.theme.space[4]` type-checked.
  */
-export type Interpolation<TProps extends object> =
-  | StyleValue
-  | ((props: TProps & { theme: any }) => StyleValue);
+export type Interpolation<TProps extends object> = StyleValue | ((props: TProps & { theme: any }) => StyleValue);
 
 export interface SerializedStyle {
   name: string;

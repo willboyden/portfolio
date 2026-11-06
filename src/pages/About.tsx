@@ -246,40 +246,31 @@ export function About(): React.ReactNode {
         </Heading>
         <Stack gap="4" className="lede-block">
           <Lede>
-            I am William Boyden — a technical consultant who came through
-            full-stack web engineering and a data-science degree, and who still
-            writes the code he recommends.
+            I am William Boyden — a technical consultant who came through full-stack web engineering and a data-science
+            degree, and who still writes the code he recommends.
           </Lede>
           <Paragraph>
-            My path is the one I recommend to teams hiring for the fuzzy
-            boundary between &ldquo;data&rdquo; and &ldquo;engineering&rdquo;:
-            I started building web applications — interfaces, APIs, the whole
-            request-to-database loop — and earned a{' '}
-            <strong>B.S. in Data Science</strong> along the way, because I kept
-            meeting problems where the interesting decision was statistical,
-            not structural. That order matters. I learned to build first, so
-            when an analysis says &ldquo;deploy this model,&rdquo; I know
-            exactly what deploying it costs.
+            My path is the one I recommend to teams hiring for the fuzzy boundary between &ldquo;data&rdquo; and
+            &ldquo;engineering&rdquo;: I started building web applications — interfaces, APIs, the whole
+            request-to-database loop — and earned a <strong>B.S. in Data Science</strong> along the way, because I kept
+            meeting problems where the interesting decision was statistical, not structural. That order matters. I
+            learned to build first, so when an analysis says &ldquo;deploy this model,&rdquo; I know exactly what
+            deploying it costs.
           </Paragraph>
           <Paragraph>
-            Today I work as a <strong>technical consultant</strong>: embedded
-            with engineering and data teams long enough to feel their pain,
-            short enough to keep asking the naive questions they stopped
-            asking. Engagements usually run the same arc — diagnose the real
-            constraint, prototype against it, then engineer the survivor into
-            production alongside the people who will own it after I leave.
+            Today I work as a <strong>technical consultant</strong>: embedded with engineering and data teams long
+            enough to feel their pain, short enough to keep asking the naive questions they stopped asking. Engagements
+            usually run the same arc — diagnose the real constraint, prototype against it, then engineer the survivor
+            into production alongside the people who will own it after I leave.
           </Paragraph>
           <Figure>
-            The most useful sentence in consulting is not &ldquo;trust me,
-            I&rsquo;ve done this before.&rdquo; It is &ldquo;here is how you
-            will know I was wrong.&rdquo;
+            The most useful sentence in consulting is not &ldquo;trust me, I&rsquo;ve done this before.&rdquo; It is
+            &ldquo;here is how you will know I was wrong.&rdquo;
           </Figure>
           <Paragraph>
-            What I am good at, specifically: translating between layers.
-            Explaining a recall/precision tradeoff to the team shipping the
-            feature. Explaining a latency budget to the model. Turning a
-            half-formed &ldquo;can AI do this for us?&rdquo; into a scoped,
-            testable plan — and then being accountable for the numbers in it.
+            What I am good at, specifically: translating between layers. Explaining a recall/precision tradeoff to the
+            team shipping the feature. Explaining a latency budget to the model. Turning a half-formed &ldquo;can AI do
+            this for us?&rdquo; into a scoped, testable plan — and then being accountable for the numbers in it.
           </Paragraph>
         </Stack>
       </Section>

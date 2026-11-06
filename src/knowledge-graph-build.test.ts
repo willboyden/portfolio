@@ -22,7 +22,11 @@ interface GraphModule {
   topicKey(label: string): string;
   internalLinks(html: unknown): string[];
   buildKnowledgeGraph(content: unknown): { nodes: Node[]; edges: [string, string, string][] };
-  layoutGraph(nodes: Node[], edges: [string, string, string][], opts?: { iterations?: number; seed?: number }): number[][];
+  layoutGraph(
+    nodes: Node[],
+    edges: [string, string, string][],
+    opts?: { iterations?: number; seed?: number },
+  ): number[][];
   graphFile(content: unknown, contentHash: string): unknown;
   MIN_TOPIC_ITEMS: number;
 }
@@ -34,11 +38,25 @@ const empty = { projects: [], posts: [], videos: [], talks: [], aiCapabilities: 
 const fixture = {
   ...empty,
   projects: [
-    { slug: 'alpha', title: 'Alpha', summary: 'First.', tags: ['security', 'mcp'], stack: ['Python 3.13', 'SQLite (WAL)'], relatedPost: 'one' },
+    {
+      slug: 'alpha',
+      title: 'Alpha',
+      summary: 'First.',
+      tags: ['security', 'mcp'],
+      stack: ['Python 3.13', 'SQLite (WAL)'],
+      relatedPost: 'one',
+    },
     { slug: 'beta', title: 'Beta', summary: 'Second.', tags: ['Security'], stack: ['python', 'Rust'] },
   ],
   posts: [
-    { slug: 'one', title: 'One', summary: 'Post one.', tags: ['mcp'], series: 'Notes', html: '<p><a href="/projects/beta">beta</a> <a href="//evil.example/x">x</a> <a href="/writing/two/">two</a></p>' },
+    {
+      slug: 'one',
+      title: 'One',
+      summary: 'Post one.',
+      tags: ['mcp'],
+      series: 'Notes',
+      html: '<p><a href="/projects/beta">beta</a> <a href="//evil.example/x">x</a> <a href="/writing/two/">two</a></p>',
+    },
     { slug: 'two', title: 'Two', summary: 'Post two.', tags: ['solo-tag'], series: 'Notes', relatedPosts: ['one'] },
   ],
 };
@@ -55,10 +73,11 @@ describe('topicKey', () => {
 
 describe('internalLinks', () => {
   it('keeps root-absolute site links only, without a trailing slash', () => {
-    expect(mod.internalLinks('<a href="/writing/x/">a</a><a href="https://x.y/z">b</a><a href="//h/p">c</a><a href="/">d</a>')).toEqual([
-      '/writing/x',
-      '/',
-    ]);
+    expect(
+      mod.internalLinks(
+        '<a href="/writing/x/">a</a><a href="https://x.y/z">b</a><a href="//h/p">c</a><a href="/">d</a>',
+      ),
+    ).toEqual(['/writing/x', '/']);
     expect(mod.internalLinks(undefined)).toEqual([]);
   });
 });
@@ -70,9 +89,22 @@ describe('buildKnowledgeGraph', () => {
     g.edges.find((e) => (e[0] === a && e[1] === b) || (e[0] === b && e[1] === a))?.[2];
 
   it('has a node per item and per non-empty section, with its page', () => {
-    expect(ids).toEqual(expect.arrayContaining(['project:alpha', 'project:beta', 'post:one', 'post:two', 'section:projects', 'section:writing']));
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'project:alpha',
+        'project:beta',
+        'post:one',
+        'post:two',
+        'section:projects',
+        'section:writing',
+      ]),
+    );
     expect(ids).not.toContain('section:talks'); /* empty collections get no section */
-    expect(g.nodes.find((n) => n.id === 'project:alpha')).toMatchObject({ url: '/projects/alpha', label: 'Alpha', summary: 'First.' });
+    expect(g.nodes.find((n) => n.id === 'project:alpha')).toMatchObject({
+      url: '/projects/alpha',
+      label: 'Alpha',
+      summary: 'First.',
+    });
   });
 
   it('keeps only topics at least two items share, merged across tags and stacks', () => {
@@ -82,7 +114,9 @@ describe('buildKnowledgeGraph', () => {
     expect(ids).toContain('topic:mcp');
     expect(ids).not.toContain('topic:rust');
     expect(ids).not.toContain('topic:solo-tag');
-    expect(g.nodes.find((n) => n.id === 'topic:python')?.label).toBe('Python'); /* the stack spelling, version dropped */
+    expect(g.nodes.find((n) => n.id === 'topic:python')?.label).toBe(
+      'Python',
+    ); /* the stack spelling, version dropped */
   });
 
   it('links series, cross-links and body links, the strongest kind winning', () => {
@@ -126,8 +160,16 @@ describe('graphFile', () => {
 });
 
 describe('public/knowledge-graph.json (the file the site ships)', () => {
-  const file = KnowledgeGraphSchema.parse(JSON.parse(readFileSync(resolve(ROOT, 'public/knowledge-graph.json'), 'utf8')));
-  const site = raw as { contentHash: string; projects: { slug: string }[]; posts: { slug: string }[]; aiCapabilities: { slug: string }[]; recipes: { slug: string }[] };
+  const file = KnowledgeGraphSchema.parse(
+    JSON.parse(readFileSync(resolve(ROOT, 'public/knowledge-graph.json'), 'utf8')),
+  );
+  const site = raw as {
+    contentHash: string;
+    projects: { slug: string }[];
+    posts: { slug: string }[];
+    aiCapabilities: { slug: string }[];
+    recipes: { slug: string }[];
+  };
 
   it('was built from this content.json — run node scripts/build-content.mjs if not', () => {
     expect(file.contentHash).toBe(site.contentHash);

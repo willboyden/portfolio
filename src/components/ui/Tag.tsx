@@ -23,9 +23,7 @@ const Pill = styled.span<{ $tone: TagTone; $size: TagSize }>`
   border: 1px solid transparent;
   font-size: ${(p) => (p.$size === 'sm' ? p.theme.font.sizes.xs : p.theme.font.sizes.sm)};
   padding: ${(p) =>
-    p.$size === 'sm'
-      ? `${p.theme.space['0']} ${p.theme.space[2]}`
-      : `${p.theme.space['1']} ${p.theme.space[3]}`};
+    p.$size === 'sm' ? `${p.theme.space['0']} ${p.theme.space[2]}` : `${p.theme.space['1']} ${p.theme.space[3]}`};
 
   /* default */
   ${(p) =>

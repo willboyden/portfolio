@@ -25,13 +25,7 @@ export interface ContainerProps {
   'data-testid'?: string;
 }
 
-export function Container({
-  size = 'default',
-  className,
-  children,
-  id,
-  ...rest
-}: ContainerProps): React.ReactNode {
+export function Container({ size = 'default', className, children, id, ...rest }: ContainerProps): React.ReactNode {
   return (
     <Box $size={size} id={id} className={className} data-testid={rest['data-testid'] ?? 'container'}>
       {children}

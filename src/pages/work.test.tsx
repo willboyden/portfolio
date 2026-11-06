@@ -37,18 +37,11 @@ const H = vi.hoisted(() => {
 
 vi.mock('app/content', () => ({
   content: H.store,
-  getProject: (slug: string) =>
-    (H.store.projects as { slug: string }[]).find((p) => p.slug === slug),
+  getProject: (slug: string) => (H.store.projects as { slug: string }[]).find((p) => p.slug === slug),
 }));
 
 /* Import pages AFTER the mock so they bind the intercepted module. */
-import {
-  Projects,
-  ProjectCard,
-  projectTagCounts,
-  statusTone,
-  visibleProjects,
-} from './Projects';
+import { Projects, ProjectCard, projectTagCounts, statusTone, visibleProjects } from './Projects';
 import { ProjectDetail, projectLinkEntries, relatedProjects } from './ProjectDetail';
 import { Videos, VideoRowItem, providerLabel, splitByDate, todayUtcIso } from './Videos';
 import { Talks, talkResourceEntries, talksByDate } from './Talks';
@@ -69,11 +62,7 @@ const routes: RouteDefinition[] = [
 /** Same provider shape the real app mounts, pinned to a test path. */
 function render(ui: ReactNode, initialPath = '/'): string {
   return renderToStaticMarkup(
-    createElement(
-      AppThemeProvider,
-      null,
-      createElement(RouterProvider, { routes, initialPath }, ui),
-    ),
+    createElement(AppThemeProvider, null, createElement(RouterProvider, { routes, initialPath }, ui)),
   );
 }
 
@@ -419,9 +408,7 @@ describe('Projects helpers', () => {
 
 describe('ProjectDetail helpers', () => {
   it('relatedProjects ranks by tag overlap, excludes self and zero-overlap', () => {
-    expect(relatedProjects([PROJECT_A, PROJECT_B, PROJECT_C], PROJECT_A).map((p) => p.slug)).toEqual(
-      ['beta'],
-    );
+    expect(relatedProjects([PROJECT_A, PROJECT_B, PROJECT_C], PROJECT_A).map((p) => p.slug)).toEqual(['beta']);
     expect(relatedProjects([PROJECT_A], PROJECT_A)).toEqual([]);
   });
 
@@ -435,9 +422,7 @@ describe('ProjectDetail helpers', () => {
       { kind: 'source', url: 'https://example.com/alpha' },
       { kind: 'demo', url: 'https://alpha.example.dev' },
     ]);
-    expect(projectLinkEntries(PROJECT_B.links)).toEqual([
-      { kind: 'paper', url: 'https://example.com/beta.pdf' },
-    ]);
+    expect(projectLinkEntries(PROJECT_B.links)).toEqual([{ kind: 'paper', url: 'https://example.com/beta.pdf' }]);
     expect(projectLinkEntries({})).toEqual([]);
   });
 });

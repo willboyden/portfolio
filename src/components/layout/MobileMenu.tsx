@@ -134,8 +134,7 @@ const Panel = styled.div`
   overscroll-behavior: contain;
   /* Extreme-mobile (M4): safe-area insets both ends — top for standalone/
    * fullscreen notches, bottom for home-indicator devices. */
-  padding: calc(${(p) => p.theme.space[5]} + env(safe-area-inset-top))
-    ${(p) => p.theme.layout.gutter}
+  padding: calc(${(p) => p.theme.space[5]} + env(safe-area-inset-top)) ${(p) => p.theme.layout.gutter}
     calc(${(p) => p.theme.space[6]} + env(safe-area-inset-bottom));
   background: ${(p) => p.theme.color.bgElevated};
   border-bottom: 1px solid ${(p) => p.theme.color.border};
@@ -257,9 +256,7 @@ export function MobileMenu({
   useEffect(() => {
     if (!open) return;
     if (!returnFocusRef?.current && typeof document !== 'undefined') {
-      restoreTarget.current = document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+      restoreTarget.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     } else {
       restoreTarget.current = returnFocusRef?.current ?? null;
     }
@@ -368,12 +365,7 @@ export function MobileMenu({
       >
         <HeaderRow>
           <Title id={labelId}>Navigation</Title>
-          <CloseButton
-            type="button"
-            onClick={onClose}
-            data-testid="menu-close"
-            aria-label="Close menu"
-          >
+          <CloseButton type="button" onClick={onClose} data-testid="menu-close" aria-label="Close menu">
             <svg
               viewBox="0 0 24 24"
               width="16"

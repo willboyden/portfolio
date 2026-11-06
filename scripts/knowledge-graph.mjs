@@ -28,8 +28,22 @@ const SUMMARY_MAX = 180;
 
 /** Content collections in graph order: key in content.json, node type, routes. */
 export const SECTIONS = [
-  { key: 'projects', type: 'project', id: 'section:projects', label: 'Projects', url: '/projects', item: (s) => `/projects/${s}` },
-  { key: 'posts', type: 'post', id: 'section:writing', label: 'Writing', url: '/writing', item: (s) => `/writing/${s}` },
+  {
+    key: 'projects',
+    type: 'project',
+    id: 'section:projects',
+    label: 'Projects',
+    url: '/projects',
+    item: (s) => `/projects/${s}`,
+  },
+  {
+    key: 'posts',
+    type: 'post',
+    id: 'section:writing',
+    label: 'Writing',
+    url: '/writing',
+    item: (s) => `/writing/${s}`,
+  },
   {
     key: 'aiCapabilities',
     type: 'capability',
@@ -230,8 +244,12 @@ export function layoutGraph(nodes, edges, { iterations = 400, seed = 1 } = {}) {
         const dz = pos[i][2] - pos[j][2];
         const d2 = dx * dx + dy * dy + dz * dz + 1e-6;
         const f = (k * k) / d2;
-        disp[i][0] += dx * f; disp[i][1] += dy * f; disp[i][2] += dz * f;
-        disp[j][0] -= dx * f; disp[j][1] -= dy * f; disp[j][2] -= dz * f;
+        disp[i][0] += dx * f;
+        disp[i][1] += dy * f;
+        disp[i][2] += dz * f;
+        disp[j][0] -= dx * f;
+        disp[j][1] -= dy * f;
+        disp[j][2] -= dz * f;
       }
     }
     for (const [a, b, len] of links) {
@@ -240,16 +258,24 @@ export function layoutGraph(nodes, edges, { iterations = 400, seed = 1 } = {}) {
       const dz = pos[a][2] - pos[b][2];
       const d = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6;
       const f = d / (k * len);
-      disp[a][0] -= dx * f; disp[a][1] -= dy * f; disp[a][2] -= dz * f;
-      disp[b][0] += dx * f; disp[b][1] += dy * f; disp[b][2] += dz * f;
+      disp[a][0] -= dx * f;
+      disp[a][1] -= dy * f;
+      disp[a][2] -= dz * f;
+      disp[b][0] += dx * f;
+      disp[b][1] += dy * f;
+      disp[b][2] += dz * f;
     }
     for (let i = 0; i < n; i++) {
       const p = pos[i];
       const d = disp[i];
-      d[0] -= p[0] * 0.6; d[1] -= p[1] * 0.6; d[2] -= p[2] * 0.6; /* gravity */
+      d[0] -= p[0] * 0.6;
+      d[1] -= p[1] * 0.6;
+      d[2] -= p[2] * 0.6; /* gravity */
       const len = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) + 1e-9;
       const move = Math.min(len, temp) / len;
-      p[0] += d[0] * move; p[1] += d[1] * move; p[2] += d[2] * move;
+      p[0] += d[0] * move;
+      p[1] += d[1] * move;
+      p[2] += d[2] * move;
     }
   }
   const c = [0, 1, 2].map((ax) => pos.reduce((s, p) => s + p[ax], 0) / n);

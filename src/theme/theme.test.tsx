@@ -39,9 +39,7 @@ describe('AppThemeProvider (SSR)', () => {
      * renders for dark and light, so server/client/prerender output is
      * byte-identical and hydration can never mismatch. The palette is chosen
      * by [data-theme] on the document BEFORE first paint (theme-init script). */
-    const html = renderToStaticMarkup(
-      h(AppThemeProvider, { children: h(AccentProbe, {}) }),
-    );
+    const html = renderToStaticMarkup(h(AppThemeProvider, { children: h(AccentProbe, {}) }));
     expect(html).toContain('<span id="probe">');
     expect(html).toContain(`var(--c-accent, ${darkTheme.color.accent})`);
     expect(html).not.toContain(lightTheme.color.accent);
@@ -54,9 +52,7 @@ describe('AppThemeProvider (SSR)', () => {
   });
 
   it('forcedTheme flips the :root concrete palette (prerenderer override)', () => {
-    renderToStaticMarkup(
-      h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: h(AccentProbe, {}) }),
-    );
+    renderToStaticMarkup(h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: h(AccentProbe, {}) }));
     const sheet = __sheetCss();
     /* The concrete light values must be live in :root for non-var consumers
      * (and the data-theme blocks both ship). */
@@ -72,11 +68,7 @@ describe('AppThemeProvider (SSR)', () => {
   it('useThemeName returns [name, setter] pinned by CONTRACT §4', () => {
     const Probe = (): React.ReactNode => {
       const [name, setName] = useThemeName();
-      return createElement(
-        'span',
-        { 'data-name': name, 'data-setter': typeof setName },
-        name,
-      );
+      return createElement('span', { 'data-name': name, 'data-setter': typeof setName }, name);
     };
     const html = renderToStaticMarkup(h(AppThemeProvider, { children: h(Probe, {}) }));
     expect(html).toContain('data-name="dark"'); /* server snapshot = shell default */
@@ -102,11 +94,8 @@ describe('AppThemeProvider (SSR)', () => {
   });
 
   it('useReducedMotion is false on the server (no matchMedia)', () => {
-    const Probe = (): React.ReactNode =>
-      createElement('span', { 'data-rm': String(useReducedMotion()) });
-    expect(renderToStaticMarkup(h(AppThemeProvider, { children: h(Probe, {}) }))).toContain(
-      'data-rm="false"',
-    );
+    const Probe = (): React.ReactNode => createElement('span', { 'data-rm': String(useReducedMotion()) });
+    expect(renderToStaticMarkup(h(AppThemeProvider, { children: h(Probe, {}) }))).toContain('data-rm="false"');
   });
 });
 
@@ -129,11 +118,11 @@ describe('buildGlobalStyles via <Global> in the provider', () => {
      * palette that DIFFERS (no byte-identical 38-prop re-declaration). */
     renderToStaticMarkup(h(AppThemeProvider, { forcedTheme: 'light' as ThemeName, children: null }));
     const sheet = __sheetCss();
-    expect(sheet).toContain('--c-bg:' + lightTheme.color.bg);       /* :root */
+    expect(sheet).toContain('--c-bg:' + lightTheme.color.bg); /* :root */
     const darkBlock = sheet.match(/\[data-theme=dark\]\s*\{([^}]*)\}/);
     expect(darkBlock, 'dark data-theme block').toBeTruthy();
     expect(darkBlock![1]).toContain('--c-bg:' + darkTheme.color.bg);
-    expect(sheet).not.toContain('[data-theme=light]');               /* same as :root */
+    expect(sheet).not.toContain('[data-theme=light]'); /* same as :root */
 
     /* default render (dark): :root dark, light block ships */
     __resetSheet();
@@ -149,7 +138,9 @@ describe('buildGlobalStyles via <Global> in the provider', () => {
      * kebab-cased emit (`--c-accent-border`). This gate catches any future
      * camelCase/typo'd token reference at test time, both palettes. */
     for (const theme of [darkTheme, lightTheme]) {
-      renderToStaticMarkup(h(AppThemeProvider, { forcedTheme: theme === darkTheme ? 'dark' : 'light', children: null }));
+      renderToStaticMarkup(
+        h(AppThemeProvider, { forcedTheme: theme === darkTheme ? 'dark' : 'light', children: null }),
+      );
       const emitted = new Set(Object.keys(themeToCssVars(theme)));
       const refs = [...__sheetCss().matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
       expect(refs.length, 'sheet exercises var() refs').toBeGreaterThan(5);
@@ -174,7 +165,11 @@ describe('buildGlobalStyles via <Global> in the provider', () => {
 /* -------------------------------------------------------------------------- */
 
 interface FakeDocument {
-  documentElement: { attrs: Record<string, string>; style: Record<string, string>; setAttribute(k: string, v: string): void };
+  documentElement: {
+    attrs: Record<string, string>;
+    style: Record<string, string>;
+    setAttribute(k: string, v: string): void;
+  };
 }
 
 function fakeDocument(): FakeDocument {
@@ -190,11 +185,10 @@ function fakeDocument(): FakeDocument {
 
 /** Run the init script in a sandboxed Function (no globals leak, no eval of
  *  the test file's scope). Throws if it is not valid JS. */
-function runInitScript(opts: {
-  stored?: string | null;
-  systemDark?: boolean;
-  doc?: FakeDocument;
-}): { doc: FakeDocument; threw: unknown } {
+function runInitScript(opts: { stored?: string | null; systemDark?: boolean; doc?: FakeDocument }): {
+  doc: FakeDocument;
+  threw: unknown;
+} {
   const doc = opts.doc ?? fakeDocument();
   const storage = { getItem: (_k: string) => opts.stored ?? null };
   const windowStub = {
@@ -215,10 +209,7 @@ function runInitScript(opts: {
  * cannot drift in behavior (the FOUC-critical path must be tested where it
  * ships, not only where it's imported). */
 describe('public/theme-init.js (shipped file) — same behavior, same contract', () => {
-  const shipped = readFileSync(
-    new URL('../../public/theme-init.js', import.meta.url),
-    'utf8',
-  );
+  const shipped = readFileSync(new URL('../../public/theme-init.js', import.meta.url), 'utf8');
 
   function runShipped(opts: { stored: string | null; systemDark?: boolean }): {
     doc: FakeDocument;
@@ -271,11 +262,13 @@ describe('public/theme-init.js (shipped file) — same behavior, same contract',
 
   it('private-mode storage (getItem throws) degrades to system pref', () => {
     const doc = fakeDocument();
-    const boom = { getItem: () => { throw new Error('SecurityError'); } };
+    const boom = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+    };
     const windowStub = { matchMedia: (q: string) => ({ matches: q.includes('dark') }) };
-    expect(() =>
-      new Function('document', 'window', 'localStorage', shipped)(doc, windowStub, boom),
-    ).not.toThrow();
+    expect(() => new Function('document', 'window', 'localStorage', shipped)(doc, windowStub, boom)).not.toThrow();
     /* inner catch swallows, resolution falls through to prefers-color-scheme */
     expect(doc.documentElement.attrs['data-theme']).toBe('dark');
   });

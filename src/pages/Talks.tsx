@@ -25,15 +25,11 @@ import { EmptyState, Heading, Icon, VisuallyHidden } from 'app/components/ui';
 
 /** Newest-first (ISO dates sort lexically; title breaks ties). */
 export function talksByDate(all: readonly Talk[]): Talk[] {
-  return [...all].sort(
-    (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title)),
-  );
+  return [...all].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title)));
 }
 
 /** Which of slides/video are present, in render order. */
-export function talkResourceEntries(
-  talk: Talk,
-): { kind: 'slides' | 'video'; url: string }[] {
+export function talkResourceEntries(talk: Talk): { kind: 'slides' | 'video'; url: string }[] {
   const entries: { kind: 'slides' | 'video'; url: string }[] = [];
   if (talk.slidesUrl) entries.push({ kind: 'slides', url: talk.slidesUrl });
   if (talk.videoUrl) entries.push({ kind: 'video', url: talk.videoUrl });
@@ -281,8 +277,8 @@ export function Talks(): React.ReactNode {
           Talks
         </Heading>
         <Lede>
-          Where I have spoken, what I said, and the slides that carried it. Each entry expands to
-          the abstract; slides and recordings link out when they exist.
+          Where I have spoken, what I said, and the slides that carried it. Each entry expands to the abstract; slides
+          and recordings link out when they exist.
         </Lede>
         {talks.length > 0 && (
           <MetaLine role="status" data-testid="talks-count">

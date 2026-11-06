@@ -19,7 +19,9 @@ function makeEnv(): Env {
   const env: Env = { store: {}, attrs: {}, handlers: new Map() };
   const doc = {
     documentElement: {
-      setAttribute(k: string, v: string) { env.attrs[k] = v; },
+      setAttribute(k: string, v: string) {
+        env.attrs[k] = v;
+      },
       style: {} as Record<string, string>,
     },
     querySelector: () => null,
@@ -29,9 +31,13 @@ function makeEnv(): Env {
   const win = {
     localStorage: {
       getItem: (k: string) => env.store[k] ?? null,
-      setItem: (k: string, v: string) => { env.store[k] = v; },
+      setItem: (k: string, v: string) => {
+        env.store[k] = v;
+      },
     },
-    addEventListener: (t: string, h: (e: unknown) => void) => { env.handlers.set(t, h); },
+    addEventListener: (t: string, h: (e: unknown) => void) => {
+      env.handlers.set(t, h);
+    },
     removeEventListener: () => {},
     matchMedia: (q: string) => ({
       matches: false,

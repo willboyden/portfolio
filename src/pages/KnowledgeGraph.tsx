@@ -78,7 +78,9 @@ export function groupNodes(graph: Graph, indexes: readonly number[]): Group[] {
   }
   return TYPE_ORDER.filter((t) => byType.has(t)).map((type) => ({
     type,
-    indexes: (byType.get(type) ?? []).sort((a, b) => (graph.nodes[a]?.label ?? '').localeCompare(graph.nodes[b]?.label ?? '')),
+    indexes: (byType.get(type) ?? []).sort((a, b) =>
+      (graph.nodes[a]?.label ?? '').localeCompare(graph.nodes[b]?.label ?? ''),
+    ),
   }));
 }
 
@@ -182,7 +184,6 @@ function useLivePalette(): Palette | null {
 /* -------------------------------------------------------------------------- */
 /* Layout                                                                      */
 /* -------------------------------------------------------------------------- */
-
 
 const PageHeader = styled.header`
   display: flex;
@@ -569,7 +570,14 @@ interface PanelProps {
 }
 
 /** The selected node's own page and every connected page, as real links. */
-export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 2, compact = false }: PanelProps): ReactNode {
+export function SelectionPanel({
+  graph,
+  neighbours,
+  selected,
+  onSelect,
+  level = 2,
+  compact = false,
+}: PanelProps): ReactNode {
   const node = graph.nodes[selected];
   const groupTag = level === 3 ? 'h4' : 'h3';
   if (!node) {
@@ -585,8 +593,7 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 
           Explore
         </Heading>
         <PanelText>
-          Click a node, or search, to see its page and every page connected to it. Double-click a node to open its
-          page.
+          Click a node, or search, to see its page and every page connected to it. Double-click a node to open its page.
         </PanelText>
         <GroupTitle as={groupTag}>Sections</GroupTitle>
         <LinkList>
@@ -641,13 +648,21 @@ export function SelectionPanel({ graph, neighbours, selected, onSelect, level = 
       {node.summary && <PanelText>{node.summary}</PanelText>}
       {node.url && (
         <Button as={ROUTER_LINK} to={node.url} size="sm" iconRight="arrow-right" data-testid="graph-open-link">
-          {node.type === 'section' ? `Go to ${node.label}` : node.type === 'series' ? 'Go to Writing' : `Open this ${info.label.toLowerCase()}`}
+          {node.type === 'section'
+            ? `Go to ${node.label}`
+            : node.type === 'series'
+              ? 'Go to Writing'
+              : `Open this ${info.label.toLowerCase()}`}
         </Button>
       )}
       {pageCount > 0 && (
         <>
           <GroupTitle as={groupTag}>
-            {node.type === 'topic' ? `Pages about ${node.label}` : node.type === 'series' ? `Posts in ${node.label}` : 'Connected pages'}{' '}
+            {node.type === 'topic'
+              ? `Pages about ${node.label}`
+              : node.type === 'series'
+                ? `Posts in ${node.label}`
+                : 'Connected pages'}{' '}
             ({pageCount})
           </GroupTitle>
           {pageGroups.map((g) => (
@@ -779,16 +794,16 @@ function Explorer({ graph, showList = true, level = 2, compact = false }: Explor
     for (const n of graph.nodes) c.set(n.type, (c.get(n.type) ?? 0) + 1);
     return c;
   }, [graph]);
-  const matches = useMemo(() => searchNodes(graph, neighbours, query, hiddenTypes), [graph, neighbours, query, hiddenTypes]);
-
-  const select = useCallback(
-    (i: number) => {
-      setSelected(i);
-      setHover(null);
-      if (i >= 0) sceneRef.current?.flyTo(i);
-    },
-    [],
+  const matches = useMemo(
+    () => searchNodes(graph, neighbours, query, hiddenTypes),
+    [graph, neighbours, query, hiddenTypes],
   );
+
+  const select = useCallback((i: number) => {
+    setSelected(i);
+    setHover(null);
+    if (i >= 0) sceneRef.current?.flyTo(i);
+  }, []);
 
   const sceneNodes = useCallback(
     (pal: Palette): SceneNode[] =>
@@ -854,7 +869,12 @@ function Explorer({ graph, showList = true, level = 2, compact = false }: Explor
 
   /* Theme changes recolour the nodes in place. */
   useEffect(() => {
-    if (palette) sceneRef.current?.update({ nodes: sceneNodes(palette), palette: scenePalette(palette), font: `500 12px ${palette.fontFamily}` });
+    if (palette)
+      sceneRef.current?.update({
+        nodes: sceneNodes(palette),
+        palette: scenePalette(palette),
+        font: `500 12px ${palette.fontFamily}`,
+      });
   }, [palette, sceneNodes]);
 
   /* Selection, search and type filters → what the scene emphasises. */
@@ -890,7 +910,10 @@ function Explorer({ graph, showList = true, level = 2, compact = false }: Explor
     <>
       <Toolbar>
         <SearchBox>
-          <label htmlFor="graph-search" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
+          <label
+            htmlFor="graph-search"
+            style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
+          >
             Search the graph
           </label>
           <SearchInput
@@ -940,7 +963,13 @@ function Explorer({ graph, showList = true, level = 2, compact = false }: Explor
         </SearchBox>
         <Legend role="group" aria-label="Show or hide node types">
           {presentTypes.map((t) => (
-            <Toggle key={t} type="button" aria-pressed={!hiddenTypes.has(t)} onClick={() => toggleType(t)} data-testid={`graph-toggle-${t}`}>
+            <Toggle
+              key={t}
+              type="button"
+              aria-pressed={!hiddenTypes.has(t)}
+              onClick={() => toggleType(t)}
+              data-testid={`graph-toggle-${t}`}
+            >
               <Swatch $color={TYPE_INFO[t].color} aria-hidden="true" />
               {TYPE_INFO[t].group} ({counts.get(t) ?? 0})
             </Toggle>
@@ -988,7 +1017,14 @@ function Explorer({ graph, showList = true, level = 2, compact = false }: Explor
               : 'Drag to turn · click a node for its links · focus the graph, then scroll (or Ctrl + scroll) to zoom'}
           </CanvasNote>
         </CanvasWrap>
-        <SelectionPanel graph={graph} neighbours={neighbours} selected={selected} onSelect={select} level={level} compact={compact} />
+        <SelectionPanel
+          graph={graph}
+          neighbours={neighbours}
+          selected={selected}
+          onSelect={select}
+          level={level}
+          compact={compact}
+        />
       </Stage>
       {showList && <GraphList graph={graph} neighbours={neighbours} />}
     </>
@@ -1052,7 +1088,8 @@ export function KnowledgeGraphPreview(): ReactNode {
 export function KnowledgeGraph(): ReactNode {
   const { graph, failed } = useKnowledgeGraph();
 
-  const pages = graph?.nodes.filter((n) => n.type !== 'topic' && n.type !== 'section' && n.type !== 'series').length ?? 0;
+  const pages =
+    graph?.nodes.filter((n) => n.type !== 'topic' && n.type !== 'section' && n.type !== 'series').length ?? 0;
   const topics = graph?.nodes.filter((n) => n.type === 'topic').length ?? 0;
 
   return (

@@ -38,8 +38,7 @@ const Main = styled.main`
   width: 100%;
   max-width: ${(p) => p.theme.layout.maxWidth};
   margin: 0 auto;
-  padding: ${(p) => p.theme.space[7]} ${(p) => p.theme.layout.gutter}
-    ${(p) => p.theme.space[9]};
+  padding: ${(p) => p.theme.space[7]} ${(p) => p.theme.layout.gutter} ${(p) => p.theme.space[9]};
   outline: none;
 
   &:focus-visible {

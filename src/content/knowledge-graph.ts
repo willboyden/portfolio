@@ -14,7 +14,17 @@
 import { z } from 'zod';
 import { withBase } from 'app/lib/seo';
 
-export const GRAPH_NODE_TYPES = ['section', 'project', 'post', 'capability', 'recipe', 'talk', 'video', 'topic', 'series'] as const;
+export const GRAPH_NODE_TYPES = [
+  'section',
+  'project',
+  'post',
+  'capability',
+  'recipe',
+  'talk',
+  'video',
+  'topic',
+  'series',
+] as const;
 export type GraphNodeType = (typeof GRAPH_NODE_TYPES)[number];
 export const GRAPH_EDGE_KINDS = ['related', 'mentions', 'series', 'section', 'topic'] as const;
 export type GraphEdgeKind = (typeof GRAPH_EDGE_KINDS)[number];
@@ -85,7 +95,8 @@ export async function loadKnowledgeGraph(
   if (!res.ok) throw new Error(`knowledge graph: HTTP ${res.status}`);
   const parsed = KnowledgeGraphSchema.safeParse(await res.json());
   if (!parsed.success) throw new Error('knowledge graph: the file is not a valid graph');
-  if (parsed.data.contentHash !== contentHash) throw new Error('knowledge graph: the file was built from other content');
+  if (parsed.data.contentHash !== contentHash)
+    throw new Error('knowledge graph: the file was built from other content');
   cached = parsed.data;
   return cached;
 }

@@ -29,12 +29,9 @@ vi.mock('app/content', () => ({
   /* R6-C: PostDetail also reads `content.projects` for the related-project
    * cross-link block — the fixture store carries an empty project list. */
   content: { projects: [] as unknown[] },
-  getPost: (slug: string) =>
-    store.posts.find((p) => (p as { slug: string }).slug === slug) as never,
+  getPost: (slug: string) => store.posts.find((p) => (p as { slug: string }).slug === slug) as never,
   postsByDate: () =>
-    [...store.posts].sort((a, b) =>
-      (a as { date: string }).date < (b as { date: string }).date ? 1 : -1,
-    ) as never,
+    [...store.posts].sort((a, b) => ((a as { date: string }).date < (b as { date: string }).date ? 1 : -1)) as never,
 }));
 
 /* Imports AFTER the mock declaration (vi.mock is hoisted by vitest anyway —
@@ -69,10 +66,30 @@ const makePost = (over: Partial<Post> & { slug: string; title: string }): Post =
 });
 
 const FIXTURES: Post[] = [
-  makePost({ slug: 'rag-scale', title: 'RAG at Scale', tags: ['llm', 'retrieval'], date: '2026-06-01', series: 'LLM Ops', readingMinutes: 12 }),
-  makePost({ slug: 'duckdb-io', title: 'DuckDB for Disk IO', summary: 'Columnar scans beat row stores', tags: ['duckdb', 'perf'], date: '2026-05-02', readingMinutes: 8 }),
+  makePost({
+    slug: 'rag-scale',
+    title: 'RAG at Scale',
+    tags: ['llm', 'retrieval'],
+    date: '2026-06-01',
+    series: 'LLM Ops',
+    readingMinutes: 12,
+  }),
+  makePost({
+    slug: 'duckdb-io',
+    title: 'DuckDB for Disk IO',
+    summary: 'Columnar scans beat row stores',
+    tags: ['duckdb', 'perf'],
+    date: '2026-05-02',
+    readingMinutes: 8,
+  }),
   makePost({ slug: 'cafe-ocr', title: 'Café OCR Pipeline', tags: ['vision'], date: '2026-04-03', readingMinutes: 4 }),
-  makePost({ slug: 'llm-evals', title: 'LLM Evals That Stick', tags: ['llm', 'evals'], date: '2026-03-04', readingMinutes: 6 }),
+  makePost({
+    slug: 'llm-evals',
+    title: 'LLM Evals That Stick',
+    tags: ['llm', 'evals'],
+    date: '2026-03-04',
+    readingMinutes: 6,
+  }),
   makePost({ slug: 'legacy-rust', title: 'Old Rust Services', tags: ['rust'], date: '2024-01-01', readingMinutes: 3 }),
 ];
 
@@ -84,11 +101,7 @@ const routes: RouteDefinition[] = [
 /** Provider stack: AppThemeProvider → RouterProvider(initialPath) → page. */
 function render(ui: ReactNode, path = '/writing'): string {
   return renderToStaticMarkup(
-    createElement(
-      AppThemeProvider,
-      null,
-      createElement(RouterProvider, { routes, initialPath: path }, ui),
-    ),
+    createElement(AppThemeProvider, null, createElement(RouterProvider, { routes, initialPath: path }, ui)),
   );
 }
 
@@ -227,15 +240,7 @@ describe('tagCloud', () => {
 
   it('expanded: every tag, alphabetical', () => {
     const cloud = tagCloud(FIXTURES, FIXTURES, [], false);
-    expect(cloud.entries.map((e) => e.tag)).toEqual([
-      'duckdb',
-      'evals',
-      'llm',
-      'perf',
-      'retrieval',
-      'rust',
-      'vision',
-    ]);
+    expect(cloud.entries.map((e) => e.tag)).toEqual(['duckdb', 'evals', 'llm', 'perf', 'retrieval', 'rust', 'vision']);
     expect(cloud.hidden).toBe(0);
   });
 
@@ -282,15 +287,7 @@ describe('parseWritingSearch / writingSearch', () => {
 
 describe('tagsFromPosts', () => {
   it('count desc, then alphabetical', () => {
-    expect(tagsFromPosts(FIXTURES)).toEqual([
-      'llm',
-      'duckdb',
-      'evals',
-      'perf',
-      'retrieval',
-      'rust',
-      'vision',
-    ]);
+    expect(tagsFromPosts(FIXTURES)).toEqual(['llm', 'duckdb', 'evals', 'perf', 'retrieval', 'rust', 'vision']);
   });
 
   it('no posts → no tags', () => {

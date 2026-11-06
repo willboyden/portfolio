@@ -185,8 +185,7 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
 }
 
 /* Media/typography defaults hoisted to keep the function readable. */
-const monoStack =
-  "'JetBrains Mono var', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+const monoStack = "'JetBrains Mono var', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 const code: Record<string, string | number> = {
   fontFamily: monoStack,
   fontSize: '0.9375em',

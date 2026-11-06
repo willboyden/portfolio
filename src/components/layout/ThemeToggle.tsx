@@ -151,4 +151,3 @@ export function ThemeToggle({ showLabel = false, className }: ThemeToggleProps):
     </>
   );
 }
-

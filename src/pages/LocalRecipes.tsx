@@ -262,10 +262,9 @@ export function LocalRecipesIndex({ currentPath }: { currentPath?: string }): Re
           Local recipes
         </Heading>
         <Lede>
-          Exact, measured setups for running open models on my own hardware:
-          every flag, the tests behind each number, and how each one was
-          found. Written so you can rebuild them; machine names, addresses
-          and keys are placeholders.
+          Exact, measured setups for running open models on my own hardware: every flag, the tests behind each number,
+          and how each one was found. Written so you can rebuild them; machine names, addresses and keys are
+          placeholders.
         </Lede>
         <SubsectionNav currentPath={currentPath ?? LOCAL_RECIPES_PATH} />
       </PageHeader>
@@ -280,7 +279,11 @@ export function LocalRecipesIndex({ currentPath }: { currentPath?: string }): Re
                 <span>{formatReadingTime(recipe.readingMinutes)}</span>
               </CardMeta>
               <CardTitle>
-                <Link to={recipePath(recipe.slug)} className={cardLinkClass(theme)} data-testid={`recipe-link-${recipe.slug}`}>
+                <Link
+                  to={recipePath(recipe.slug)}
+                  className={cardLinkClass(theme)}
+                  data-testid={`recipe-link-${recipe.slug}`}
+                >
                   {recipe.title}
                 </Link>
               </CardTitle>

@@ -243,10 +243,9 @@ export function Contact(): React.ReactNode {
           Tell me what is actually broken.
         </Heading>
         <Lede>
-          The best first message is a paragraph of unpolished context: the
-          system, the constraint, the deadline you are worried about. I read
-          everything myself, and a concrete &ldquo;no&rdquo; or a referral is
-          a real answer — you will never be left in silence.
+          The best first message is a paragraph of unpolished context: the system, the constraint, the deadline you are
+          worried about. I read everything myself, and a concrete &ldquo;no&rdquo; or a referral is a real answer — you
+          will never be left in silence.
         </Lede>
       </Section>
 
@@ -256,10 +255,9 @@ export function Contact(): React.ReactNode {
             <PrimaryPanel aria-labelledby="contact-primary-title">
               <PanelTitle id="contact-primary-title">LinkedIn</PanelTitle>
               <PanelBody>
-                The fastest route for everything: engagements, architecture
-                reviews, or a hard question you want a second opinion on.
-                Include a link to context — a repo, a doc, an incident
-                timeline — and I will come prepared.
+                The fastest route for everything: engagements, architecture reviews, or a hard question you want a
+                second opinion on. Include a link to context — a repo, a doc, an incident timeline — and I will come
+                prepared.
               </PanelBody>
               <CtaRow>
                 <Button
@@ -282,10 +280,8 @@ export function Contact(): React.ReactNode {
             <Panel aria-labelledby="contact-social-title">
               <PanelTitle id="contact-social-title">The code and models</PanelTitle>
               <PanelBody>
-                The open-source tools on this site — Engine Console, Nemo
-                Console, GPU Tuner, Agent Hub — live on GitHub with their
-                docs, tests and release notes. The models I quantize and
-                publish are on Hugging Face.
+                The open-source tools on this site — Engine Console, Nemo Console, GPU Tuner, Agent Hub — live on GitHub
+                with their docs, tests and release notes. The models I quantize and publish are on Hugging Face.
               </PanelBody>
               <SocialList data-testid="contact-social-list">
                 {OTHER_PROFILES.map((link) => (
@@ -325,9 +321,7 @@ export function Contact(): React.ReactNode {
                 >
                   {cap.title}
                   {cap.status === 'in-progress' && (
-                    <StatusChip data-testid={`contact-hired-${cap.slug}-status`}>
-                      in progress
-                    </StatusChip>
+                    <StatusChip data-testid={`contact-hired-${cap.slug}-status`}>in progress</StatusChip>
                   )}
                 </HiredLink>
                 <HiredBody>{cap.summary}</HiredBody>
@@ -338,8 +332,8 @@ export function Contact(): React.ReactNode {
               Full-stack builds &amp; data platforms
             </HiredLink>
             <HiredBody>
-              Design, build and handover of the systems around the models —
-              the case studies on the projects page are the evidence.
+              Design, build and handover of the systems around the models — the case studies on the projects page are
+              the evidence.
             </HiredBody>
           </HiredItem>
         </HiredList>
@@ -355,24 +349,22 @@ export function Contact(): React.ReactNode {
           <ExpectGroup>
             <ExpectTerm>Reply, honestly</ExpectTerm>
             <ExpectBody>
-              A considered response — including when the answer is that I am
-              not the right person for it. Silence is the failure mode I
-              promise to avoid.
+              A considered response — including when the answer is that I am not the right person for it. Silence is the
+              failure mode I promise to avoid.
             </ExpectBody>
           </ExpectGroup>
           <ExpectGroup>
             <ExpectTerm>Fixed scope, written down</ExpectTerm>
             <ExpectBody>
-              Before work starts: the question, the deliverable, and what
-              &ldquo;done&rdquo; means, in one page. If scope changes, the
-              page changes — visibly.
+              Before work starts: the question, the deliverable, and what &ldquo;done&rdquo; means, in one page. If
+              scope changes, the page changes — visibly.
             </ExpectBody>
           </ExpectGroup>
           <ExpectGroup>
             <ExpectTerm>Handover included</ExpectTerm>
             <ExpectBody>
-              Every engagement ends with the team able to run and extend the
-              result without me. Dependency is a defect, not a business model.
+              Every engagement ends with the team able to run and extend the result without me. Dependency is a defect,
+              not a business model.
             </ExpectBody>
           </ExpectGroup>
         </ExpectList>

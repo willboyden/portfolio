@@ -29,9 +29,13 @@ import {
 
 const routes: RouteDefinition[] = [{ path: '*', component: () => null }];
 const render = (ui: ReactNode): string =>
-  renderToStaticMarkup(createElement(AppThemeProvider, null, createElement(RouterProvider, { routes, initialPath: '/graph' }, ui)));
+  renderToStaticMarkup(
+    createElement(AppThemeProvider, null, createElement(RouterProvider, { routes, initialPath: '/graph' }, ui)),
+  );
 
-const file = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../public/knowledge-graph.json'), 'utf8')) as unknown;
+const file = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, '../../public/knowledge-graph.json'), 'utf8'),
+) as unknown;
 
 afterEach(() => resetKnowledgeGraphForTests());
 
@@ -105,7 +109,9 @@ describe('SelectionPanel', () => {
   it('links the selected page and every page connected to it', () => {
     const graph = primeKnowledgeGraph(file);
     const neighbours = adjacency(graph);
-    const i = graph.nodes.findIndex((n) => n.type === 'project' && (neighbours[graph.nodes.indexOf(n)]?.length ?? 0) > 3);
+    const i = graph.nodes.findIndex(
+      (n) => n.type === 'project' && (neighbours[graph.nodes.indexOf(n)]?.length ?? 0) > 3,
+    );
     const node = graph.nodes[i];
     expect(node).toBeDefined();
     const html = render(<SelectionPanel graph={graph} neighbours={neighbours} selected={i} onSelect={() => {}} />);
@@ -120,7 +126,9 @@ describe('SelectionPanel', () => {
   it('links /writing once for a post in a series, and shows the series as a chip', () => {
     const graph = primeKnowledgeGraph(file);
     const neighbours = adjacency(graph);
-    const i = graph.nodes.findIndex((n, k) => n.type === 'post' && (neighbours[k] ?? []).some((j) => graph.nodes[j]?.type === 'series'));
+    const i = graph.nodes.findIndex(
+      (n, k) => n.type === 'post' && (neighbours[k] ?? []).some((j) => graph.nodes[j]?.type === 'series'),
+    );
     expect(i).toBeGreaterThanOrEqual(0);
     const seriesLabel = (neighbours[i] ?? []).map((j) => graph.nodes[j]).find((n) => n?.type === 'series')?.label ?? '';
     const html = render(<SelectionPanel graph={graph} neighbours={neighbours} selected={i} onSelect={() => {}} />);
@@ -175,7 +183,10 @@ describe('helpers', () => {
   const neighbours = adjacency(graph);
 
   it('groups nodes in display order, sorted by label', () => {
-    const groups = groupNodes(graph, graph.nodes.map((_, i) => i));
+    const groups = groupNodes(
+      graph,
+      graph.nodes.map((_, i) => i),
+    );
     expect(groups.map((g) => g.type)).toEqual(TYPE_ORDER.filter((t) => graph.nodes.some((n) => n.type === t)));
     for (const g of groups) {
       const labels = g.indexes.map((i) => graph.nodes[i]?.label ?? '');
@@ -187,7 +198,9 @@ describe('helpers', () => {
     const mcp = searchNodes(graph, neighbours, 'mcp');
     expect(mcp.length).toBeGreaterThan(0);
     expect(graph.nodes[mcp[0] ?? -1]?.label.toLowerCase().startsWith('mcp')).toBe(true);
-    expect(searchNodes(graph, neighbours, 'mcp', new Set(['topic'])).every((i) => graph.nodes[i]?.type !== 'topic')).toBe(true);
+    expect(
+      searchNodes(graph, neighbours, 'mcp', new Set(['topic'])).every((i) => graph.nodes[i]?.type !== 'topic'),
+    ).toBe(true);
     expect(searchNodes(graph, neighbours, '   ')).toEqual([]);
     expect(searchNodes(graph, neighbours, 'zzzz-nothing')).toEqual([]);
   });

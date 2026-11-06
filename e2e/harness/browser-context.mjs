@@ -108,7 +108,9 @@ export async function startBrowser(baseUrl) {
     async expectText(selector, expected) {
       const actual = await text(selector);
       if (!actual.includes(expected)) {
-        throw new Error(`"${selector}" text was ${JSON.stringify(actual)}, expected to contain ${JSON.stringify(expected)}`);
+        throw new Error(
+          `"${selector}" text was ${JSON.stringify(actual)}, expected to contain ${JSON.stringify(expected)}`,
+        );
       }
       return actual;
     },
@@ -162,7 +164,10 @@ export async function startBrowser(baseUrl) {
     },
 
     async screenshotOnFailure(name) {
-      const safe = name.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 60);
+      const safe = name
+        .replace(/[^a-z0-9]+/gi, '-')
+        .toLowerCase()
+        .slice(0, 60);
       await page.screenshot(`${SHOTS}/fail-${safe}.png`);
     },
 

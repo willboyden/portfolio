@@ -94,9 +94,8 @@ export function NotFound(): React.ReactNode {
           This page doesn&rsquo;t exist — yet.
         </Heading>
         <Body>
-          A 404 here usually means a link outlived a refactor or the address
-          was mistyped. Neither is your problem to solve — the three links
-          below cover almost every path through this site.
+          A 404 here usually means a link outlived a refactor or the address was mistyped. Neither is your problem to
+          solve — the three links below cover almost every path through this site.
         </Body>
         <CtaRow>
           <Button as={ROUTER_LINK} to="/" variant="primary" data-testid="notfound-cta-home">
@@ -111,13 +110,22 @@ export function NotFound(): React.ReactNode {
         </CtaRow>
         <TextLinkList aria-label="Recovery links">
           <TextLinkItem>
-            or jump straight to <Link to="/contact" className={linkClass}>contact</Link>
+            or jump straight to{' '}
+            <Link to="/contact" className={linkClass}>
+              contact
+            </Link>
           </TextLinkItem>
           <TextLinkItem>
-            · <Link to="/about" className={linkClass}>about</Link>
+            ·{' '}
+            <Link to="/about" className={linkClass}>
+              about
+            </Link>
           </TextLinkItem>
           <TextLinkItem>
-            · <Link to="/now" className={linkClass}>now</Link>
+            ·{' '}
+            <Link to="/now" className={linkClass}>
+              now
+            </Link>
           </TextLinkItem>
         </TextLinkList>
       </Shell>

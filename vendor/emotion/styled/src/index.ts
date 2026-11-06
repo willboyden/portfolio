@@ -17,15 +17,7 @@
  *    to options; styles cannot be re-passed there.
  */
 
-import {
-  createElement,
-  forwardRef,
-  useContext,
-  type ComponentType,
-  type JSX,
-  type ReactNode,
-  type Ref,
-} from 'react';
+import { createElement, forwardRef, useContext, type ComponentType, type JSX, type ReactNode, type Ref } from 'react';
 import { interpolate, registerStyle, serializeStyles, type StyleObject, type StyleValue } from '@emotion-mini/core';
 import { ThemeContext, emptyTheme, type Theme } from '@emotion-mini/react';
 
@@ -43,35 +35,258 @@ const ALWAYS_SAFE = /^(data-|aria-)/;
  * `$`-transients, which are always consumed.
  */
 const SAFE_DOM_PROPS = new Set([
-  'abbr','accept','acceptCharset','accessKey','action','allow','alt','as','async','autoCapitalize',
-  'autoComplete','autoCorrect','autoFocus','autoPlay','autoSave','capture','cellPadding','cellSpacing',
-  'charSet','challenge','checked','children','cite','classID','className','colSpan','cols','content',
-  'contentEditable','controls','controlsList','coords','crossOrigin','dangerouslySetInnerHTML','dateTime',
-  'default','defer','dir','disabled','disablePictureInPicture','download','draggable','encType','enterKeyHint',
-  'form','formAction','formEncType','formMethod','formNoValidate','formTarget','frameBorder','headers','height',
-  'hidden','high','href','hrefLang','htmlFor','httpEquiv','id','inputMode','integrity','is','keyParams',
-  'keyType','kind','label','lang','list','loop','low','manifest','marginHeight','marginWidth','max','maxLength',
-  'media','mediaGroup','method','min','minLength','multiple','muted','name','noValidate','nonce','open','optimum',
-  'pattern','placeholder','playsInline','poster','preload','profile','readOnly','referrerPolicy','rel','required',
-  'reversed','rows','rowSpan','sandbox','scope','scoped','scrolling','seamless','selected','shape','size','sizes',
-  'slot','span','spellCheck','src','srcDoc','srcLang','srcSet','start','style','summary','tabIndex','target',
-  'title','translate','type','useMap','value','width','window','wrap','role',
-  'onCopy','onCut','onPaste','onCompositionEnd','onCompositionStart','onCompositionUpdate','onKeyDown','onKeyPress',
-  'onKeyUp','onFocus','onBlur','onChange','onInput','onInvalid','onReset','onSubmit','onClick','onContextMenu',
-  'onDoubleClick','onDrag','onDragEnd','onDragEnter','onDragExit','onDragLeave','onDragOver','onDragStart','onDrop',
-  'onMouseDown','onMouseEnter','onMouseLeave','onMouseMove','onMouseOut','onMouseOver','onMouseUp','onSelect',
-  'onTouchCancel','onTouchEnd','onTouchMove','onTouchStart','onScroll','onWheel','onAbort','onCanPlay',
-  'onCanPlayThrough','onDurationChange','onEmptied','onEncrypted','onEnded','onError','onLoadedData',
-  'onLoadedMetadata','onLoadStart','onPause','onPlay','onPlaying','onProgress','onRateChange','onSeeked','onSeeking',
-  'onStalled','onTimeUpdate','onVolumeChange','onWaiting','onLoad','onAuxClick','onToggle','onPointerDown',
-  'onPointerUp','onPointerMove','onPointerEnter','onPointerLeave','onGotPointerCapture','onLostPointerCapture',
+  'abbr',
+  'accept',
+  'acceptCharset',
+  'accessKey',
+  'action',
+  'allow',
+  'alt',
+  'as',
+  'async',
+  'autoCapitalize',
+  'autoComplete',
+  'autoCorrect',
+  'autoFocus',
+  'autoPlay',
+  'autoSave',
+  'capture',
+  'cellPadding',
+  'cellSpacing',
+  'charSet',
+  'challenge',
+  'checked',
+  'children',
+  'cite',
+  'classID',
+  'className',
+  'colSpan',
+  'cols',
+  'content',
+  'contentEditable',
+  'controls',
+  'controlsList',
+  'coords',
+  'crossOrigin',
+  'dangerouslySetInnerHTML',
+  'dateTime',
+  'default',
+  'defer',
+  'dir',
+  'disabled',
+  'disablePictureInPicture',
+  'download',
+  'draggable',
+  'encType',
+  'enterKeyHint',
+  'form',
+  'formAction',
+  'formEncType',
+  'formMethod',
+  'formNoValidate',
+  'formTarget',
+  'frameBorder',
+  'headers',
+  'height',
+  'hidden',
+  'high',
+  'href',
+  'hrefLang',
+  'htmlFor',
+  'httpEquiv',
+  'id',
+  'inputMode',
+  'integrity',
+  'is',
+  'keyParams',
+  'keyType',
+  'kind',
+  'label',
+  'lang',
+  'list',
+  'loop',
+  'low',
+  'manifest',
+  'marginHeight',
+  'marginWidth',
+  'max',
+  'maxLength',
+  'media',
+  'mediaGroup',
+  'method',
+  'min',
+  'minLength',
+  'multiple',
+  'muted',
+  'name',
+  'noValidate',
+  'nonce',
+  'open',
+  'optimum',
+  'pattern',
+  'placeholder',
+  'playsInline',
+  'poster',
+  'preload',
+  'profile',
+  'readOnly',
+  'referrerPolicy',
+  'rel',
+  'required',
+  'reversed',
+  'rows',
+  'rowSpan',
+  'sandbox',
+  'scope',
+  'scoped',
+  'scrolling',
+  'seamless',
+  'selected',
+  'shape',
+  'size',
+  'sizes',
+  'slot',
+  'span',
+  'spellCheck',
+  'src',
+  'srcDoc',
+  'srcLang',
+  'srcSet',
+  'start',
+  'style',
+  'summary',
+  'tabIndex',
+  'target',
+  'title',
+  'translate',
+  'type',
+  'useMap',
+  'value',
+  'width',
+  'window',
+  'wrap',
+  'role',
+  'onCopy',
+  'onCut',
+  'onPaste',
+  'onCompositionEnd',
+  'onCompositionStart',
+  'onCompositionUpdate',
+  'onKeyDown',
+  'onKeyPress',
+  'onKeyUp',
+  'onFocus',
+  'onBlur',
+  'onChange',
+  'onInput',
+  'onInvalid',
+  'onReset',
+  'onSubmit',
+  'onClick',
+  'onContextMenu',
+  'onDoubleClick',
+  'onDrag',
+  'onDragEnd',
+  'onDragEnter',
+  'onDragExit',
+  'onDragLeave',
+  'onDragOver',
+  'onDragStart',
+  'onDrop',
+  'onMouseDown',
+  'onMouseEnter',
+  'onMouseLeave',
+  'onMouseMove',
+  'onMouseOut',
+  'onMouseOver',
+  'onMouseUp',
+  'onSelect',
+  'onTouchCancel',
+  'onTouchEnd',
+  'onTouchMove',
+  'onTouchStart',
+  'onScroll',
+  'onWheel',
+  'onAbort',
+  'onCanPlay',
+  'onCanPlayThrough',
+  'onDurationChange',
+  'onEmptied',
+  'onEncrypted',
+  'onEnded',
+  'onError',
+  'onLoadedData',
+  'onLoadedMetadata',
+  'onLoadStart',
+  'onPause',
+  'onPlay',
+  'onPlaying',
+  'onProgress',
+  'onRateChange',
+  'onSeeked',
+  'onSeeking',
+  'onStalled',
+  'onTimeUpdate',
+  'onVolumeChange',
+  'onWaiting',
+  'onLoad',
+  'onAuxClick',
+  'onToggle',
+  'onPointerDown',
+  'onPointerUp',
+  'onPointerMove',
+  'onPointerEnter',
+  'onPointerLeave',
+  'onGotPointerCapture',
+  'onLostPointerCapture',
   /* SVG presentation + geometry attributes — without these, styled.svg/path
    * silently drop fill/stroke/viewBox and every inline icon renders blank. */
-  'focusable','viewBox','preserveAspectRatio','d','cx','cy','r','rx','ry','x','x1','x2','y','y1','y2','points',
-  'fill','fillOpacity','fillRule','stroke','strokeOpacity','strokeWidth','strokeLinecap','strokeLinejoin',
-  'strokeDasharray','strokeDashoffset','strokeMiterlimit','clipPath','clipRule',
-  'stopColor','stopOpacity','offset','textAnchor','dominantBaseline','vectorEffect','shapeRendering',
-  'transform','transformOrigin','markerEnd','markerStart','markerMid','targetX','targetY','aspectRatio','xmlns','xmlnsXLink',
+  'focusable',
+  'viewBox',
+  'preserveAspectRatio',
+  'd',
+  'cx',
+  'cy',
+  'r',
+  'rx',
+  'ry',
+  'x',
+  'x1',
+  'x2',
+  'y',
+  'y1',
+  'y2',
+  'points',
+  'fill',
+  'fillOpacity',
+  'fillRule',
+  'stroke',
+  'strokeOpacity',
+  'strokeWidth',
+  'strokeLinecap',
+  'strokeLinejoin',
+  'strokeDasharray',
+  'strokeDashoffset',
+  'strokeMiterlimit',
+  'clipPath',
+  'clipRule',
+  'stopColor',
+  'stopOpacity',
+  'offset',
+  'textAnchor',
+  'dominantBaseline',
+  'vectorEffect',
+  'shapeRendering',
+  'transform',
+  'transformOrigin',
+  'markerEnd',
+  'markerStart',
+  'markerMid',
+  'targetX',
+  'targetY',
+  'aspectRatio',
+  'xmlns',
+  'xmlnsXLink',
 ]);
 
 export function isPropValid(prop: string): boolean {
@@ -86,18 +301,111 @@ export interface StyledOptions {
 type Parser = (props: Record<string, unknown>) => StyleValue;
 
 export type HtmlTag =
-  | 'a' | 'abbr' | 'address' | 'article' | 'aside' | 'audio' | 'b' | 'bdi' | 'blockquote' | 'body'
-  | 'br' | 'button' | 'canvas' | 'caption' | 'cite' | 'code' | 'col' | 'colgroup' | 'data' | 'dd' | 'del'
-  | 'details' | 'dfn' | 'dialog' | 'div' | 'dl' | 'dt' | 'em' | 'embed' | 'fieldset' | 'figcaption' | 'figure'
-  | 'footer' | 'form' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'header' | 'hr' | 'i' | 'iframe' | 'img'
-  | 'input' | 'ins' | 'kbd' | 'label' | 'legend' | 'li' | 'link' | 'main' | 'map' | 'mark' | 'menu' | 'nav'
-  | 'ol' | 'optgroup' | 'option' | 'output' | 'p' | 'picture' | 'pre' | 'progress' | 'q' | 's' | 'samp'
-  | 'section' | 'select' | 'slot' | 'small' | 'source' | 'span' | 'strong' | 'sub' | 'summary' | 'sup'
-  | 'table' | 'tbody' | 'td' | 'textarea' | 'tfoot' | 'th' | 'thead' | 'time' | 'tr' | 'u' | 'ul' | 'var'
-  | 'video' | 'wbr'
+  | 'a'
+  | 'abbr'
+  | 'address'
+  | 'article'
+  | 'aside'
+  | 'audio'
+  | 'b'
+  | 'bdi'
+  | 'blockquote'
+  | 'body'
+  | 'br'
+  | 'button'
+  | 'canvas'
+  | 'caption'
+  | 'cite'
+  | 'code'
+  | 'col'
+  | 'colgroup'
+  | 'data'
+  | 'dd'
+  | 'del'
+  | 'details'
+  | 'dfn'
+  | 'dialog'
+  | 'div'
+  | 'dl'
+  | 'dt'
+  | 'em'
+  | 'embed'
+  | 'fieldset'
+  | 'figcaption'
+  | 'figure'
+  | 'footer'
+  | 'form'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'h5'
+  | 'h6'
+  | 'header'
+  | 'hr'
+  | 'i'
+  | 'iframe'
+  | 'img'
+  | 'input'
+  | 'ins'
+  | 'kbd'
+  | 'label'
+  | 'legend'
+  | 'li'
+  | 'link'
+  | 'main'
+  | 'map'
+  | 'mark'
+  | 'menu'
+  | 'nav'
+  | 'ol'
+  | 'optgroup'
+  | 'option'
+  | 'output'
+  | 'p'
+  | 'picture'
+  | 'pre'
+  | 'progress'
+  | 'q'
+  | 's'
+  | 'samp'
+  | 'section'
+  | 'select'
+  | 'slot'
+  | 'small'
+  | 'source'
+  | 'span'
+  | 'strong'
+  | 'sub'
+  | 'summary'
+  | 'sup'
+  | 'table'
+  | 'tbody'
+  | 'td'
+  | 'textarea'
+  | 'tfoot'
+  | 'th'
+  | 'thead'
+  | 'time'
+  | 'tr'
+  | 'u'
+  | 'ul'
+  | 'var'
+  | 'video'
+  | 'wbr'
   /* SVG intrinsics (inline icons are first-class in this design system). */
-  | 'svg' | 'path' | 'circle' | 'rect' | 'line' | 'polyline' | 'polygon' | 'g'
-  | 'defs' | 'stop' | 'linearGradient' | 'radialGradient';
+  | 'svg'
+  | 'path'
+  | 'circle'
+  | 'rect'
+  | 'line'
+  | 'polyline'
+  | 'polygon'
+  | 'g'
+  | 'defs'
+  | 'stop'
+  | 'linearGradient'
+  | 'radialGradient';
 
 export interface StyledProps {
   as?: HtmlTag | ComponentType<any>;
@@ -116,9 +424,7 @@ export interface StyledComponent<P extends object> {
 }
 
 /** A styled-component interpolation: CSS text, a style object, or a props function. */
-export type Interpolation<TProps extends object> =
-  | StyleValue
-  | ((props: TProps & { theme: Theme }) => StyleValue);
+export type Interpolation<TProps extends object> = StyleValue | ((props: TProps & { theme: Theme }) => StyleValue);
 
 /**
  * Builder returned by `styled.div` / `styled(Component)`.
@@ -134,17 +440,14 @@ export type Interpolation<TProps extends object> =
  * implicitly `any`).
  */
 export interface StyledBuilder<TBaseProps extends object> {
-  (
-    strings: TemplateStringsArray,
-    ...interpolations: Array<Interpolation<TBaseProps>>
-  ): StyledComponent<TBaseProps>;
+  (strings: TemplateStringsArray, ...interpolations: Array<Interpolation<TBaseProps>>): StyledComponent<TBaseProps>;
   (style: StyleObject | StyleObject[]): StyledComponent<TBaseProps>;
   <TExtraProps extends object>(
     strings: TemplateStringsArray,
     ...interpolations: Array<Interpolation<TBaseProps & TExtraProps>>
   ): StyledComponent<TBaseProps & TExtraProps>;
   <TExtraProps extends object>(
-    style: StyleObject | StyleObject[] | ((props: TBaseProps & TExtraProps & { theme: Theme }) => StyleObject)
+    style: StyleObject | StyleObject[] | ((props: TBaseProps & TExtraProps & { theme: Theme }) => StyleObject),
   ): StyledComponent<TBaseProps & TExtraProps>;
 }
 
@@ -242,10 +545,7 @@ function buildComponent<P extends object>(
   return component;
 }
 
-function styledCall<P extends object>(
-  tag: HtmlTag | ComponentType<P>,
-  options: StyledOptions = {},
-): StyledBuilder<P> {
+function styledCall<P extends object>(tag: HtmlTag | ComponentType<P>, options: StyledOptions = {}): StyledBuilder<P> {
   const label =
     options.label ??
     (typeof tag === 'string' ? `styled.${tag}` : (tag as any)?.displayName || (tag as any)?.name || 'Styled');
@@ -263,15 +563,111 @@ function styledCall<P extends object>(
 }
 
 const DOM_TAGS: HtmlTag[] = [
-  'a','abbr','address','article','aside','audio','b','bdi','blockquote','body','br','button','canvas',
-  'caption','cite','code','col','colgroup','data','dd','del','details','dfn','dialog','div','dl','dt',
-  'em','embed','fieldset','figcaption','figure','footer','form','h1','h2','h3','h4','h5','h6','header','hr',
-  'i','iframe','img','input','ins','kbd','label','legend','li','link','main','map','mark','menu','nav',
-  'ol','optgroup','option','output','p','picture','pre','progress','q','s','samp','section','select','slot',
-  'small','source','span','strong','sub','summary','sup','table','tbody','td','textarea','tfoot','th','thead',
-  'time','tr','u','ul','var','video','wbr',
+  'a',
+  'abbr',
+  'address',
+  'article',
+  'aside',
+  'audio',
+  'b',
+  'bdi',
+  'blockquote',
+  'body',
+  'br',
+  'button',
+  'canvas',
+  'caption',
+  'cite',
+  'code',
+  'col',
+  'colgroup',
+  'data',
+  'dd',
+  'del',
+  'details',
+  'dfn',
+  'dialog',
+  'div',
+  'dl',
+  'dt',
+  'em',
+  'embed',
+  'fieldset',
+  'figcaption',
+  'figure',
+  'footer',
+  'form',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'header',
+  'hr',
+  'i',
+  'iframe',
+  'img',
+  'input',
+  'ins',
+  'kbd',
+  'label',
+  'legend',
+  'li',
+  'link',
+  'main',
+  'map',
+  'mark',
+  'menu',
+  'nav',
+  'ol',
+  'optgroup',
+  'option',
+  'output',
+  'p',
+  'picture',
+  'pre',
+  'progress',
+  'q',
+  's',
+  'samp',
+  'section',
+  'select',
+  'slot',
+  'small',
+  'source',
+  'span',
+  'strong',
+  'sub',
+  'summary',
+  'sup',
+  'table',
+  'tbody',
+  'td',
+  'textarea',
+  'tfoot',
+  'th',
+  'thead',
+  'time',
+  'tr',
+  'u',
+  'ul',
+  'var',
+  'video',
+  'wbr',
   /* SVG intrinsics: styled.svg / styled.path for inline icons. */
-  'svg','path','circle','rect','line','polyline','polygon','g','defs','stop','linearGradient','radialGradient',
+  'svg',
+  'path',
+  'circle',
+  'rect',
+  'line',
+  'polyline',
+  'polygon',
+  'g',
+  'defs',
+  'stop',
+  'linearGradient',
+  'radialGradient',
 ];
 
 /**

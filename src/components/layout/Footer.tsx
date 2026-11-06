@@ -56,8 +56,7 @@ const Inner = styled.div`
   gap: ${(p) => p.theme.space[6]};
   max-width: ${(p) => p.theme.layout.maxWidth};
   margin: 0 auto;
-  padding: ${(p) => p.theme.space[8]} ${(p) => p.theme.layout.gutter}
-    ${(p) => p.theme.space[6]};
+  padding: ${(p) => p.theme.space[8]} ${(p) => p.theme.layout.gutter} ${(p) => p.theme.space[6]};
 
   @media (max-width: ${(p) => p.theme.breakpoint.md}) {
     grid-template-columns: minmax(0, 1fr);
@@ -297,12 +296,7 @@ export function Footer({
             <Heading id="footer-more-heading">More</Heading>
             <LinkList role="list" aria-labelledby="footer-more-heading" data-testid="footer-more">
               <LinkLine>
-                <a
-                  href={RSS_HREF}
-                  type="application/rss+xml"
-                  className={classes}
-                  data-testid="footer-rss"
-                >
+                <a href={RSS_HREF} type="application/rss+xml" className={classes} data-testid="footer-rss">
                   RSS feed
                 </a>
               </LinkLine>
@@ -313,11 +307,7 @@ export function Footer({
               </LinkLine>
               {email && (
                 <LinkLine>
-                  <a
-                    href={`mailto:${email}`}
-                    className={classes}
-                    data-testid="footer-email"
-                  >
+                  <a href={`mailto:${email}`} className={classes} data-testid="footer-email">
                     Email
                   </a>
                 </LinkLine>

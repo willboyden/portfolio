@@ -121,8 +121,7 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
     if (typeof document === 'undefined' || chrome) return;
     try {
       document.documentElement.setAttribute('data-theme', themeName);
-      document.documentElement.style.colorScheme =
-        controller.preference === 'system' ? 'dark light' : themeName;
+      document.documentElement.style.colorScheme = controller.preference === 'system' ? 'dark light' : themeName;
     } catch {
       /* document detached mid-unmount */
     }
@@ -131,12 +130,7 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
   return createElement(
     ThemeControllerContext.Provider,
     { value: controller },
-    createElement(
-      EmotionThemeProvider,
-      { theme },
-      createElement(Global, { styles: globalStyles as never }),
-      children,
-    ),
+    createElement(EmotionThemeProvider, { theme }, createElement(Global, { styles: globalStyles as never }), children),
   );
 }
 

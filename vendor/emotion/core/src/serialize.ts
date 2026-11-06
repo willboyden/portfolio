@@ -33,7 +33,10 @@ function assertValidDeclaration(decl: string, context: string): void {
     throw new Error(`[css-mini] not a declaration (missing ':')${context}: "${decl.slice(0, 60)}"`);
   }
   const property = decl.slice(0, colon).trim();
-  const value = decl.slice(colon + 1).trim().replace(/;+$/, '');
+  const value = decl
+    .slice(colon + 1)
+    .trim()
+    .replace(/;+$/, '');
 
   if (!property) {
     throw new Error(`[css-mini] declaration has an empty property name${context}: "${decl.slice(0, 60)}"`);

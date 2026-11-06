@@ -37,7 +37,10 @@ export function parseFrontmatter(src: string): Frontmatter {
     throw new Error('parseFrontmatter: opening `---` has no closing `---` — malformed frontmatter');
   }
   const data = parseYamlSubset(lines.slice(0, end));
-  const body = lines.slice(end + 1).join('\n').replace(/^\n/, '');
+  const body = lines
+    .slice(end + 1)
+    .join('\n')
+    .replace(/^\n/, '');
   return { data, body };
 }
 
@@ -67,7 +70,11 @@ export function parseYamlSubset(lines: string[]): Record<string, unknown> {
     if (valueText !== undefined && valueText !== '') {
       if (/^[-+?*&|{}]/.test(valueText) && !/^>\+?-.?[\s]*$/.test(valueText)) {
         if (!/^(>|<|\|-?|\+)$/.test(valueText.trim()) && valueText.trim() !== '') {
-          fail(i - 1, raw, `unsupported YAML construct ${JSON.stringify(valueText)} (subset: scalars, inline [arrays], >- folds)`);
+          fail(
+            i - 1,
+            raw,
+            `unsupported YAML construct ${JSON.stringify(valueText)} (subset: scalars, inline [arrays], >- folds)`,
+          );
         }
       }
       if (/^\S*[{}]\s*$|^\{/.test(valueText)) fail(i - 1, raw, 'flow mappings {...} are not supported');
@@ -121,7 +128,10 @@ export function parseYamlSubset(lines: string[]): Record<string, unknown> {
       data[key] = seq;
       continue;
     }
-    if (block.some((l) => l.trim() !== '' && !/^\s*-/.test(l)) && block.every((l) => l.trim() === '' || /^\s*[A-Za-z0-9_][^:]*:/.test(l))) {
+    if (
+      block.some((l) => l.trim() !== '' && !/^\s*-/.test(l)) &&
+      block.every((l) => l.trim() === '' || /^\s*[A-Za-z0-9_][^:]*:/.test(l))
+    ) {
       const nested: Record<string, unknown> = {};
       for (const l of block) {
         if (l.trim() === '') continue;

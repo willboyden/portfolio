@@ -23,13 +23,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link, useParams } from '@portfolio/router';
-import {
-  Button,
-  Container,
-  Heading,
-  Icon,
-  Prose,
-} from 'app/components/ui';
+import { Button, Container, Heading, Icon, Prose } from 'app/components/ui';
 import { content, getPost, postsByDate } from 'app/content';
 import { cachedPostBody, loadPostBody } from 'app/content/post-bodies';
 import { formatDate, formatReadingTime } from 'app/lib/format';
@@ -237,8 +231,8 @@ function seriesCls(theme: Tokens): string {
     /* R7B-8: overflow-wrap break-word fallback before anywhere -- modern engines
      * preferentially lay out content with `anywhere`; on Firefox \n\n     * ≤120 / Safari ≤15.3 the value is invalid and dropped, reintroducing unconstrained overflow for
      * long tokens in headings and prose. */
-     'overflow-wrap': 'break-word',
-     overflowWrap: 'anywhere',
+    'overflow-wrap': 'break-word',
+    overflowWrap: 'anywhere',
   });
 }
 
@@ -388,16 +382,10 @@ export function PostDetail(): ReactNode {
   );
 
   /* R6-C C2: position within the series (for the badge's "N of M"). */
-  const seriesPos = useMemo(
-    () => (post ? seriesPosition(postsByDate(), post.slug) : { index: -1, total: 0 }),
-    [post],
-  );
+  const seriesPos = useMemo(() => (post ? seriesPosition(postsByDate(), post.slug) : { index: -1, total: 0 }), [post]);
 
   /* R6-C C1: the curated project link, when the content declares one. */
-  const relatedProject = useMemo(
-    () => relatedProjectOf(content.projects, post?.relatedProject),
-    [post],
-  );
+  const relatedProject = useMemo(() => relatedProjectOf(content.projects, post?.relatedProject), [post]);
 
   if (!post) {
     /* Never crash on an unknown slug (CONTRACT §4b). */
@@ -411,10 +399,7 @@ export function PostDetail(): ReactNode {
     setShareError(false);
     /* SSR has no window; prerender renders the idle button, so the click
        handler can only run in a browser — window.location.href is real there. */
-    const url =
-      typeof window !== 'undefined'
-        ? window.location.href
-        : shareUrl('http://localhost:4173', post.slug);
+    const url = typeof window !== 'undefined' ? window.location.href : shareUrl('http://localhost:4173', post.slug);
     const ok = await copy(url);
     if (!ok) setShareError(true);
   };
@@ -466,9 +451,7 @@ export function PostDetail(): ReactNode {
                 </>
               )}
             </MetaRow>
-            <Standfirst data-testid="post-standfirst">
-              {post.summary}
-            </Standfirst>
+            <Standfirst data-testid="post-standfirst">{post.summary}</Standfirst>
           </TitleBlock>
 
           <ShareWrap>

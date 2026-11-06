@@ -180,7 +180,10 @@ export class Page {
           else if (c === inString) inString = null;
           continue;
         }
-        if (c === '"' || c === "'" || c === '`') { inString = c; continue; }
+        if (c === '"' || c === "'" || c === '`') {
+          inString = c;
+          continue;
+        }
         if (c === '(' || c === '[' || c === '{') depth += 1;
         else if (c === ')' || c === ']' || c === '}') depth -= 1;
         else if (depth === 0 && expression.startsWith('return', i)) {
@@ -219,10 +222,7 @@ export class Page {
   }
 
   async #waitForLifecycle(mode) {
-    const probe =
-      mode === 'networkidle'
-        ? `document.readyState === 'complete'`
-        : `document.readyState !== 'loading'`;
+    const probe = mode === 'networkidle' ? `document.readyState === 'complete'` : `document.readyState !== 'loading'`;
     const deadline = Date.now() + 15_000;
     while (Date.now() < deadline) {
       try {
@@ -324,8 +324,22 @@ export class Page {
     const x = Math.round(box.x + box.width / 2);
     const y = Math.round(box.y + box.height / 2);
     await this.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
-    await this.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1, buttons: 1 });
-    await this.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1, buttons: 0 });
+    await this.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      x,
+      y,
+      button: 'left',
+      clickCount: 1,
+      buttons: 1,
+    });
+    await this.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      x,
+      y,
+      button: 'left',
+      clickCount: 1,
+      buttons: 0,
+    });
     await sleep(40);
   }
 
@@ -358,11 +372,37 @@ export class Page {
       /* Focus traversal is a browser DEFAULT ACTION on the keypress event.
        * CDP only synthesizes keypress when the keydown carries text, so send
        * the rawKeyDown + char pair (Playwright's own Tab recipe). */
-      await this.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
-      await this.send('Input.dispatchKeyEvent', { type: 'char', key, text: '\t', unmodifiedText: '\t', windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+      await this.send('Input.dispatchKeyEvent', {
+        type: 'rawKeyDown',
+        key,
+        windowsVirtualKeyCode: keyCode,
+        nativeVirtualKeyCode: keyCode,
+        shiftKey,
+      });
+      await this.send('Input.dispatchKeyEvent', {
+        type: 'char',
+        key,
+        text: '\t',
+        unmodifiedText: '\t',
+        windowsVirtualKeyCode: keyCode,
+        nativeVirtualKeyCode: keyCode,
+        shiftKey,
+      });
     } else {
-      await this.send('Input.dispatchKeyEvent', { type: 'keyDown', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
-      await this.send('Input.dispatchKeyEvent', { type: 'keyUp', key, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, shiftKey });
+      await this.send('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        key,
+        windowsVirtualKeyCode: keyCode,
+        nativeVirtualKeyCode: keyCode,
+        shiftKey,
+      });
+      await this.send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        key,
+        windowsVirtualKeyCode: keyCode,
+        nativeVirtualKeyCode: keyCode,
+        shiftKey,
+      });
     }
     await sleep(40);
   }

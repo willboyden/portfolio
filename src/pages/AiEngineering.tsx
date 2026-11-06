@@ -43,18 +43,7 @@ import { formatDate, formatReadingTime } from 'app/lib/format';
 import { rebaseHtml } from 'app/lib/seo';
 import type { Tokens } from 'app/theme/tokens';
 import { NotFound } from './NotFound';
-import {
-  Button,
-  Card,
-  Container,
-  EmptyState,
-  Heading,
-  Icon,
-  Prose,
-  Stack,
-  Tag,
-  type TagTone,
-} from 'app/components/ui';
+import { Button, Card, Container, EmptyState, Heading, Icon, Prose, Stack, Tag, type TagTone } from 'app/components/ui';
 
 /* Button's component-target path keeps `to` intact (ui.test.tsx §polymorphic
  * `as`); the cast mirrors Home.tsx / About.tsx. */
@@ -175,10 +164,7 @@ export function aiCapabilityList(raw: unknown = ai.aiCapabilitiesBySlug): AiCapa
  * One capability by slug: prefers `getAiCapability(slug)` and falls back to a
  * scan of the list, so the hub and the detail pages can never disagree.
  */
-export function aiCapabilityBySlug(
-  slug: string,
-  fetcher: unknown = ai.getAiCapability,
-): AiCapability | undefined {
+export function aiCapabilityBySlug(slug: string, fetcher: unknown = ai.getAiCapability): AiCapability | undefined {
   if (typeof fetcher === 'function') {
     const out = (fetcher as (s: string) => unknown)(slug);
     if (isCapability(out)) return out;
@@ -685,9 +671,7 @@ function CapabilityMeta({ capability }: { capability: AiCapability }): ReactNode
  * (never rendered as dead links), an empty result renders nothing. */
 function RelatedWriting({ slugs }: { slugs: readonly string[] }): ReactNode {
   const theme = useTheme() as Tokens;
-  const posts = slugs
-    .map((slug) => getPost(slug))
-    .filter((p): p is Post => p !== undefined);
+  const posts = slugs.map((slug) => getPost(slug)).filter((p): p is Post => p !== undefined);
   if (posts.length === 0) return null;
   return (
     <Block aria-labelledby="related-writing-title">
@@ -699,11 +683,7 @@ function RelatedWriting({ slugs }: { slugs: readonly string[] }): ReactNode {
               <Icon name="arrow-right" size={12} />
               The thinking behind this capability
             </RelatedPostHint>
-            <Link
-              to={`/writing/${post.slug}`}
-              className={relatedPostCls(theme)}
-              data-testid="ai-related-post-link"
-            >
+            <Link to={`/writing/${post.slug}`} className={relatedPostCls(theme)} data-testid="ai-related-post-link">
               <RelatedPostTitle className="related-post-title">{post.title}</RelatedPostTitle>
               <RelatedPostMeta>
                 <time dateTime={post.date}>{formatDate(post.date)}</time>
@@ -815,9 +795,8 @@ export function AiEngineeringHub({ currentPath }: { currentPath?: string }): Rea
           AI engineering
         </Heading>
         <Lede>
-          What I build and operate end to end in my own lab — what each piece
-          is, how it works, the proof, and its honest limits. Linked proof
-          points are public repositories.
+          What I build and operate end to end in my own lab — what each piece is, how it works, the proof, and its
+          honest limits. Linked proof points are public repositories.
         </Lede>
         <SubsectionNav currentPath={currentPath} />
       </PageHeader>
@@ -850,11 +829,7 @@ export function AiEngineeringHub({ currentPath }: { currentPath?: string }): Rea
 /* Detail template                                                             */
 /* -------------------------------------------------------------------------- */
 
-export function AiCapabilityDetail({
-  slug,
-}: {
-  slug: string;
-}): ReactNode {
+export function AiCapabilityDetail({ slug }: { slug: string }): ReactNode {
   const theme = useTheme() as Tokens;
   const capability = aiCapabilityBySlug(slug);
 
@@ -940,9 +915,7 @@ export function AiCapabilityDetail({
                       {url.replace(/^https?:\/\//, '')}
                     </ProofLink>
                   )}
-                  {repoPath !== undefined && (
-                    <ProofPath data-testid="ai-proof-path">{repoPath}</ProofPath>
-                  )}
+                  {repoPath !== undefined && <ProofPath data-testid="ai-proof-path">{repoPath}</ProofPath>}
                 </ProofItem>
               );
             })}
@@ -956,8 +929,8 @@ export function AiCapabilityDetail({
         )}
         <p style={{ margin: `${theme.space[3]} 0 0` }}>
           <small style={{ color: theme.color.textSubtle }}>
-            Linked items are public repositories. The rest runs in my private
-            lab, and I am happy to walk you through it.
+            Linked items are public repositories. The rest runs in my private lab, and I am happy to walk you through
+            it.
           </small>
         </p>
       </Block>

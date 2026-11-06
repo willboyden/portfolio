@@ -9,7 +9,12 @@
 import { describe, test } from '../harness/framework.mjs';
 
 describe('smoke', () => {
-  test('home renders h1 + hero without console errors', async ({ goto, expectVisible, expectCleanConsole, expectNoFailedRequests }) => {
+  test('home renders h1 + hero without console errors', async ({
+    goto,
+    expectVisible,
+    expectCleanConsole,
+    expectNoFailedRequests,
+  }) => {
     await goto('/');
     await expectVisible('h1');
     expectCleanConsole();

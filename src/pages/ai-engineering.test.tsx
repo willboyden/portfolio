@@ -35,8 +35,7 @@ const H = vi.hoisted(() => {
 
 vi.mock('app/content', () => ({
   /* getPost is what RelatedWriting resolves. */
-  getPost: (slug: string) =>
-    (H.store.posts as { slug: string }[]).find((p) => p.slug === slug),
+  getPost: (slug: string) => (H.store.posts as { slug: string }[]).find((p) => p.slug === slug),
   postsByDate: () => H.store.posts as unknown[],
   content: { projects: [], posts: [], videos: [], talks: [] },
   /* Planned AI-capability API: a function-backed implementation so the
@@ -49,8 +48,16 @@ vi.mock('app/content', () => ({
 }));
 
 /* Import pages AFTER the mock so they bind the intercepted module. */
-const { AiEngineeringHub, AiCapabilityDetail, aiCapabilityList, aiCapabilityBySlug, splitProof, capabilityStatusTone, isCapability, aiSections } =
-  await import('./AiEngineering');
+const {
+  AiEngineeringHub,
+  AiCapabilityDetail,
+  aiCapabilityList,
+  aiCapabilityBySlug,
+  splitProof,
+  capabilityStatusTone,
+  isCapability,
+  aiSections,
+} = await import('./AiEngineering');
 const { LocalInference } = await import('./ai-engineering/LocalInference');
 const { VideoGeneration } = await import('./ai-engineering/VideoGeneration');
 const { SmartRouting } = await import('./ai-engineering/SmartRouting');
@@ -92,7 +99,7 @@ const CAP_ROUTING = makeCapability({
   slug: 'smart-routing',
   title: 'Smart routing',
   status: 'offered',
-  howItWorks: [], /* exercises the in-progress write-up branch */
+  howItWorks: [] /* exercises the in-progress write-up branch */,
   proof: [],
   limits: [],
 });

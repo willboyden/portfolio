@@ -8,13 +8,7 @@
  * inert literal text instead of anchors.
  */
 import { describe, expect, it } from 'vitest';
-import {
-  renderMarkdown,
-  parseFrontmatter,
-  deriveHeadingId,
-  readingMinutes,
-  plainText,
-} from './src/index.ts';
+import { renderMarkdown, parseFrontmatter, deriveHeadingId, readingMinutes, plainText } from './src/index.ts';
 
 /* ------------------------------------------------------------------ *
  * SECURITY — XSS surface
@@ -22,9 +16,7 @@ import {
 
 describe('security: escaping and URL hygiene', () => {
   it('escapes a raw <script> tag instead of passing it through', () => {
-    expect(renderMarkdown('<script>alert(1)</script>')).toBe(
-      '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>',
-    );
+    expect(renderMarkdown('<script>alert(1)</script>')).toBe('<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');
   });
 
   it('escapes raw HTML closing tags and HTML comments as literal text', () => {
@@ -56,9 +48,7 @@ describe('security: escaping and URL hygiene', () => {
 
   it('escapes &, <, >, " inside text, code spans and hrefs', () => {
     expect(renderMarkdown('AT&T & C')).toBe('<p>AT&amp;T &amp; C</p>');
-    expect(renderMarkdown('use `a < b && c > d` now')).toBe(
-      '<p>use <code>a &lt; b &amp;&amp; c &gt; d</code> now</p>',
-    );
+    expect(renderMarkdown('use `a < b && c > d` now')).toBe('<p>use <code>a &lt; b &amp;&amp; c &gt; d</code> now</p>');
     expect(renderMarkdown('[ok](https://ex.com/a?d=1&e=2)')).toBe(
       '<p><a href="https://ex.com/a?d=1&amp;e=2">ok</a></p>',
     );
@@ -98,9 +88,7 @@ describe('blocks', () => {
   });
 
   it('renders tilde fences and untagged fences without a class', () => {
-    expect(renderMarkdown('~~~\nplain & <code>\n~~~')).toBe(
-      '<pre><code>plain &amp; &lt;code&gt;\n</code></pre>',
-    );
+    expect(renderMarkdown('~~~\nplain & <code>\n~~~')).toBe('<pre><code>plain &amp; &lt;code&gt;\n</code></pre>');
   });
 
   it('renders nested unordered lists with correct nesting', () => {
@@ -132,15 +120,11 @@ describe('blocks', () => {
   });
 
   it('splits paragraph blocks inside a blockquote on blank quote lines', () => {
-    expect(renderMarkdown('> a\n>\n> b')).toBe(
-      '<blockquote>\n<p>a</p>\n<p>b</p>\n</blockquote>',
-    );
+    expect(renderMarkdown('> a\n>\n> b')).toBe('<blockquote>\n<p>a</p>\n<p>b</p>\n</blockquote>');
   });
 
   it('nests a list inside a blockquote', () => {
-    expect(renderMarkdown('> - a\n> - b')).toBe(
-      '<blockquote>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n</blockquote>',
-    );
+    expect(renderMarkdown('> - a\n> - b')).toBe('<blockquote>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n</blockquote>');
   });
 
   it('renders thematic breaks', () => {
@@ -214,9 +198,7 @@ describe('inline constructs', () => {
   });
 
   it('renders a link title attribute', () => {
-    expect(renderMarkdown('[t](https://e.com "note")')).toBe(
-      '<p><a href="https://e.com" title="note">t</a></p>',
-    );
+    expect(renderMarkdown('[t](https://e.com "note")')).toBe('<p><a href="https://e.com" title="note">t</a></p>');
   });
 
   it('handles emphasis edge cases', () => {
@@ -227,9 +209,7 @@ describe('inline constructs', () => {
   });
 
   it('keeps underscores inside snake_case words literal', () => {
-    expect(renderMarkdown('snake_case_word and _italic_')).toBe(
-      '<p>snake_case_word and <em>italic</em></p>',
-    );
+    expect(renderMarkdown('snake_case_word and _italic_')).toBe('<p>snake_case_word and <em>italic</em></p>');
   });
 
   it('does not treat spaced arithmetic asterisks as emphasis', () => {
@@ -264,9 +244,7 @@ describe('readingMinutes + plainText', () => {
   });
 
   it('plainText strips markdown scaffolding', () => {
-    expect(plainText('some **bold** and `code` [link](http://x) ![i](y)')).toBe(
-      'some bold and  link i',
-    );
+    expect(plainText('some **bold** and `code` [link](http://x) ![i](y)')).toBe('some bold and  link i');
   });
 });
 

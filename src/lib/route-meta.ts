@@ -115,7 +115,8 @@ export function descriptionFor(path: string): string {
     '/ai-engineering':
       'Capability briefs with proof and limits: local inference, smart routing, video generation, data analytics, and the stack underneath.',
     '/about': 'Who William Boyden is, how he works, and the stack he ships with.',
-    '/now': 'What William Boyden is working on this quarter — current focus, availability, and what changes when it changes.',
+    '/now':
+      'What William Boyden is working on this quarter — current focus, availability, and what changes when it changes.',
     '/contact': 'How to reach William Boyden, what working together looks like, and what to put in a first email.',
     '/graph':
       'Every project, post and AI capability on this site as an interactive 3D knowledge graph, linked by the topics and tools they share — pick a node to get links to every connected page.',
@@ -145,19 +146,25 @@ export function publishedFor(path: string): { publishedTime?: string; type: 'art
 
 /** Full MetaResult for a route — identical at build time and in the browser. */
 export function metaFor(path: string): MetaResult {
-  const post = path.startsWith('/writing/')
-    ? content.posts.find((p) => p.slug === path.split('/')[2])
-    : undefined;
+  const post = path.startsWith('/writing/') ? content.posts.find((p) => p.slug === path.split('/')[2]) : undefined;
   /* A recipe is an article too: dated, tagged, shareable on its own. */
   const recipe = recipeFor(path);
   /* R9A-1: the home Person node's knowsAbout comes from the site's own tag
    * corpus (top tags by real usage), not a hardcoded skills list. */
-  const knowsAbout = path === '/' ? allTagsByUse().slice(0, 8).map((t) => t.tag) : undefined;
+  const knowsAbout =
+    path === '/'
+      ? allTagsByUse()
+          .slice(0, 8)
+          .map((t) => t.tag)
+      : undefined;
   /* R9A-3: /now's freshness is machine-readable — the newest shipped content
    * date (the same value the page's "Last updated" stamp renders). */
   const dateModified =
     path === '/now'
-      ? [...content.projects, ...content.posts].map((i) => i.date).sort().at(-1)
+      ? [...content.projects, ...content.posts]
+          .map((i) => i.date)
+          .sort()
+          .at(-1)
       : undefined;
   return pageMeta({
     title: titleFor(path),

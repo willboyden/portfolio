@@ -65,10 +65,12 @@ export function normalizeText(input: string): string {
 /** Split normalized text into word tokens (punctuation dropped). */
 export function tokenize(text: string): string[] {
   const norm = normalizeText(text);
-  return norm
-    .length === 0
+  return norm.length === 0
     ? []
-    : norm.split(' ').flatMap((word) => word.split(/[^\p{L}\p{N}]+/u)).filter(Boolean);
+    : norm
+        .split(' ')
+        .flatMap((word) => word.split(/[^\p{L}\p{N}]+/u))
+        .filter(Boolean);
 }
 
 /**

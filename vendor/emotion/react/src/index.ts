@@ -6,15 +6,7 @@
  * Babel plugin); application code uses `styled(...)` or `css()` + className.
  */
 
-import {
-  createContext,
-  createElement,
-  useContext,
-  useEffect,
-  useMemo,
-  type Context,
-  type ReactNode,
-} from 'react';
+import { createContext, createElement, useContext, useEffect, useMemo, type Context, type ReactNode } from 'react';
 import {
   registerKeyframes,
   registerRaw,
@@ -47,10 +39,7 @@ export interface ThemeProviderProps {
 
 export function ThemeProvider({ theme, children }: ThemeProviderProps): ReactNode {
   const outer = useContext(ThemeContext) ?? emptyTheme;
-  const value = useMemo<Theme>(
-    () => (typeof theme === 'function' ? theme(outer) : theme),
-    [theme, outer],
-  );
+  const value = useMemo<Theme>(() => (typeof theme === 'function' ? theme(outer) : theme), [theme, outer]);
   return createElement(ThemeContext.Provider, { value }, children);
 }
 
@@ -60,9 +49,7 @@ export function useTheme(): Theme {
     /* Emotion throws here. Match that loudly instead of failing silently with
      * an empty theme, which produces invisible components that are agony to
      * debug in prerender output. */
-    throw new Error(
-      '[emotion-mini] useTheme returned undefined — render the tree inside <ThemeProvider>.',
-    );
+    throw new Error('[emotion-mini] useTheme returned undefined — render the tree inside <ThemeProvider>.');
   }
   return theme;
 }
@@ -113,11 +100,7 @@ export interface ClassNamesRenderProps {
 }
 
 /** <ClassNames>{({ css, cx, theme }) => ...}</ClassNames> — Emotion parity. */
-export function ClassNames({
-  children,
-}: {
-  children: (props: ClassNamesRenderProps) => ReactNode;
-}): ReactNode {
+export function ClassNames({ children }: { children: (props: ClassNamesRenderProps) => ReactNode }): ReactNode {
   const theme = useContextSafe();
   const api: ClassNamesRenderProps = {
     css: (...args) => {
@@ -155,7 +138,7 @@ export function Global({ styles }: GlobalProps): null {
     /* Deterministic key so prerender + client agree. Cumulative sheet:
      * re-registering the same key is idempotent (see registry). */
     /* R1A-05: hash the FULL text — a 40-char prefix collides two Globals that
-       * share a selector prefix, silently overwriting the first one's rules. */
+     * share a selector prefix, silently overwriting the first one's rules. */
     const key = `global:${hash(cssText)}`;
     registerRaw(key, cssText);
   }
