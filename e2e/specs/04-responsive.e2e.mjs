@@ -23,12 +23,17 @@ describe('responsive', () => {
     }
   });
 
-  test('mobile menu opens via the hamburger, traps nothing, closes on Escape', async ({ page, goto375, expectVisible }) => {
+  test('mobile menu opens via the hamburger, traps nothing, closes on Escape', async ({
+    page,
+    goto375,
+    expectVisible,
+  }) => {
     await goto375('/');
     const burger = 'button[aria-label*="menu" i], button[aria-expanded]';
     await expectVisible(burger);
     const expandedBefore = await page.attribute(burger, 'aria-expanded');
-    if (expandedBefore !== 'false') throw new Error(`menu button aria-expanded was "${expandedBefore}", expected "false"`);
+    if (expandedBefore !== 'false')
+      throw new Error(`menu button aria-expanded was "${expandedBefore}", expected "false"`);
 
     await page.click(burger);
     const expandedAfter = await page.attribute(burger, 'aria-expanded');
@@ -46,7 +51,8 @@ describe('responsive', () => {
 
     await page.pressKey('Escape');
     const expandedClosed = await page.attribute(burger, 'aria-expanded');
-    if (expandedClosed !== 'false') throw new Error(`Escape did not close the menu (aria-expanded="${expandedClosed}")`);
+    if (expandedClosed !== 'false')
+      throw new Error(`Escape did not close the menu (aria-expanded="${expandedClosed}")`);
   });
 
   test('desktop width shows inline nav, hides hamburger', async ({ page, goto1280 }) => {
@@ -119,7 +125,7 @@ describe('responsive', () => {
     /* R3D-03: crumb/back/related nav links only exist on detail routes —
      * one of each so the blind spot stays closed without sweeping 23 pages. */
     const generated = JSON.parse(
-      readFileSync(new URL('../../src/content/generated/content.json', import.meta.url), 'utf8')
+      readFileSync(new URL('../../src/content/generated/content.json', import.meta.url), 'utf8'),
     );
     if (generated.projects[0]) await check(`/projects/${generated.projects[0].slug}`);
     if (generated.posts[0]) await check(`/writing/${generated.posts[0].slug}`);
@@ -132,7 +138,7 @@ describe('responsive', () => {
      * 236px overflow shipped on a detail route nobody swept. Content slugs
      * are long unbreakable tokens by nature — sweep EVERY generated route. */
     const generated = JSON.parse(
-      readFileSync(new URL('../../src/content/generated/content.json', import.meta.url), 'utf8')
+      readFileSync(new URL('../../src/content/generated/content.json', import.meta.url), 'utf8'),
     );
     const contentPaths = [
       ...generated.projects.map((p) => `/projects/${p.slug}`),
@@ -225,7 +231,10 @@ describe('responsive', () => {
     if (clipped.length > 0) throw new Error(`clipped text at 320px: ${clipped.join(' | ')}`);
   });
 
-  test('tablet breakpoint (768) shows neither broken desktop nav nor cramped mobile menu', async ({ page, goto768 }) => {
+  test('tablet breakpoint (768) shows neither broken desktop nav nor cramped mobile menu', async ({
+    page,
+    goto768,
+  }) => {
     await goto768('/');
     const state = await page.evaluate(`
       return (() => {
@@ -237,9 +246,9 @@ describe('responsive', () => {
       })()
     `);
     /* One and only one navigation affordance is active at the tablet width. */
-    const navUsable = (state.burgerVisible && state.navCount === 0) ||
-                      (!state.burgerVisible && state.navCount > 0);
-    if (!navUsable) throw new Error(`tablet nav broken: burgerVisible=${state.burgerVisible}, inline links=${state.navCount}`);
+    const navUsable = (state.burgerVisible && state.navCount === 0) || (!state.burgerVisible && state.navCount > 0);
+    if (!navUsable)
+      throw new Error(`tablet nav broken: burgerVisible=${state.burgerVisible}, inline links=${state.navCount}`);
   });
 
   /* The footer shipped with browser-default bullets and indents, a link label
@@ -250,7 +259,10 @@ describe('responsive', () => {
    * row at 320 (706 px measured), so the phone budget moved 700 -> 760; the
    * broken layout above (964 px) still fails it. */
   test('footer lists carry no bullets, no label wraps, and it stays compact', async ({ page, goto320, goto1280 }) => {
-    for (const [go, width, maxHeight] of [[goto320, 320, 760], [goto1280, 1280, 460]]) {
+    for (const [go, width, maxHeight] of [
+      [goto320, 320, 760],
+      [goto1280, 1280, 460],
+    ]) {
       await go('/writing');
       const problem = await page.evaluate(`
         return (() => {

@@ -8,20 +8,7 @@
  * agree byte-for-byte without depending on the host ICU data.
  */
 
-const MONTHS_SHORT = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-] as const;
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
 /** Matches a strict ISO date or ISO datetime; anything else is unparseable. */
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
@@ -207,11 +194,7 @@ export function truncateAtWordBoundary(text: string, max: number, ellipsis = 'â€
   if (max <= 0) return ellipsis;
   if (text.length <= max) return text;
   const slice = text.slice(0, max);
-  const boundary = Math.max(
-    slice.lastIndexOf(' '),
-    slice.lastIndexOf('\u00a0'),
-    slice.lastIndexOf('\n'),
-  );
+  const boundary = Math.max(slice.lastIndexOf(' '), slice.lastIndexOf('\u00a0'), slice.lastIndexOf('\n'));
   const cut = boundary > 0 ? slice.slice(0, boundary) : slice;
   return cut.trimEnd() + ellipsis;
 }
@@ -226,7 +209,10 @@ export function initials(name: string, max = 2): string {
     .split(/\s+/)
     .filter(Boolean)
     .map((word) => {
-      const first = word.normalize('NFD').replace(/[\u0300-\u036f]/g, '').match(/[a-z]/i);
+      const first = word
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .match(/[a-z]/i);
       return first ? first[0].toUpperCase() : '';
     })
     .join('')

@@ -55,7 +55,13 @@ export interface CardProps {
   interactive?: boolean;
   href?: string;
   /** Element/component to render; `href` implies an anchor. */
-  as?: 'article' | 'div' | 'a' | 'li' | 'section' | React.ComponentType<{ className?: string; children?: React.ReactNode }>;
+  as?:
+    | 'article'
+    | 'div'
+    | 'a'
+    | 'li'
+    | 'section'
+    | React.ComponentType<{ className?: string; children?: React.ReactNode }>;
   pad?: 'sm' | 'md' | 'lg';
   className?: string;
   children?: React.ReactNode;

@@ -16,15 +16,21 @@ describe('content', () => {
       await goto(href.replace(/\/$/, ''));
       const h1 = (await page.textContent('h1'))?.trim();
       if (!h1 || h1.length < 3) throw new Error(`${href}: detail h1 was "${h1}"`);
-      if (/lorem ipsum|placeholder|coming soon|TODO/i.test(
-        await page.evaluate(`return document.body.innerText.slice(0, 4000)`),
-      )) {
+      if (
+        /lorem ipsum|placeholder|coming soon|TODO/i.test(
+          await page.evaluate(`return document.body.innerText.slice(0, 4000)`),
+        )
+      ) {
         throw new Error(`${href}: placeholder text visible`);
       }
     }
   });
 
-  test('writing list -> post detail shows full article body, not just excerpt', async ({ goto, page, expectVisible }) => {
+  test('writing list -> post detail shows full article body, not just excerpt', async ({
+    goto,
+    page,
+    expectVisible,
+  }) => {
     await goto('/writing');
     const href = await page.evaluate(
       `return [...document.querySelectorAll('a[href*="/writing/"]')].map(a => a.getAttribute('href')).find(h => h.split('/').filter(Boolean).length >= 2)`,
@@ -32,9 +38,7 @@ describe('content', () => {
     if (!href) throw new Error('no post links on /writing');
     await goto(href.replace(/\/$/, ''));
     await expectVisible('article');
-    const bodyLength = await page.evaluate(
-      `return (document.querySelector('article')?.innerText ?? '').length`,
-    );
+    const bodyLength = await page.evaluate(`return (document.querySelector('article')?.innerText ?? '').length`);
     if (bodyLength < 800) throw new Error(`article body only ${bodyLength} chars — looks like an excerpt, not a post`);
     const hasStructure = await page.evaluate(
       `return !!document.querySelector('article h2, article h3, article p, article ul')`,
@@ -55,12 +59,17 @@ describe('content', () => {
     await page.click(`a[href="${href}"]`);
     await page.waitForSelector('[data-recipe-body] h2');
     const fetched = await page.evaluate(bodyFetches);
-    if (fetched.length !== 1) throw new Error(`client visit fetched ${fetched.length} body files: ${fetched.join(', ')}`);
+    if (fetched.length !== 1)
+      throw new Error(`client visit fetched ${fetched.length} body files: ${fetched.join(', ')}`);
     await goto(href.replace(/\/$/, ''));
     await page.waitForSelector('[data-recipe-body] h2');
     const refetched = await page.evaluate(bodyFetches);
     if (refetched.length !== 0) throw new Error(`first load fetched the body it already had: ${refetched.join(', ')}`);
-    if (await page.evaluate(`return !!document.querySelector('[data-testid="recipe-body-loading"], [data-testid="recipe-body-error"]')`)) {
+    if (
+      await page.evaluate(
+        `return !!document.querySelector('[data-testid="recipe-body-loading"], [data-testid="recipe-body-error"]')`,
+      )
+    ) {
       throw new Error('the loading or error state is on screen after the body arrived');
     }
   });
@@ -76,12 +85,17 @@ describe('content', () => {
     await page.click(`a[href="${href}"]`);
     await page.waitForSelector('[data-post-body] p');
     const fetched = await page.evaluate(bodyFetches);
-    if (fetched.length !== 1) throw new Error(`client visit fetched ${fetched.length} body files: ${fetched.join(', ')}`);
+    if (fetched.length !== 1)
+      throw new Error(`client visit fetched ${fetched.length} body files: ${fetched.join(', ')}`);
     await goto(href.replace(/\/$/, ''));
     await page.waitForSelector('[data-post-body] p');
     const refetched = await page.evaluate(bodyFetches);
     if (refetched.length !== 0) throw new Error(`first load fetched the body it already had: ${refetched.join(', ')}`);
-    if (await page.evaluate(`return !!document.querySelector('[data-testid="post-body-loading"], [data-testid="post-body-error"]')`)) {
+    if (
+      await page.evaluate(
+        `return !!document.querySelector('[data-testid="post-body-loading"], [data-testid="post-body-error"]')`,
+      )
+    ) {
       throw new Error('the loading or error state is on screen after the body arrived');
     }
   });

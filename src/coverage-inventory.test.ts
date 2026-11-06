@@ -30,7 +30,8 @@ function walk(dir: string): string[] {
     if (entry.name === 'node_modules' || entry.isSymbolicLink()) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walk(full));
-    else if (entry.isFile() && /\.(ts|tsx)$/.test(full) && !full.includes('.smoke') && !full.endsWith('.d.ts')) out.push(full);
+    else if (entry.isFile() && /\.(ts|tsx)$/.test(full) && !full.includes('.smoke') && !full.endsWith('.d.ts'))
+      out.push(full);
   }
   return out;
 }
@@ -47,8 +48,10 @@ function resolveSpecifier(spec: string, fromFile: string): string | null {
   let base: string | null = null;
   if (spec.startsWith('.')) base = presolve(dirname(fromFile), spec);
   else if (spec.startsWith('app/')) base = presolve(SRC, spec.slice('app/'.length));
-  else if (spec.startsWith('@portfolio/')) base = presolve(ROOT, `vendor/${spec.slice('@portfolio/'.length)}/src/index.tsx`);
-  else if (spec.startsWith('@emotion-mini/')) base = presolve(ROOT, `vendor/emotion/${spec.slice('@emotion-mini/'.length)}/src/index.ts`);
+  else if (spec.startsWith('@portfolio/'))
+    base = presolve(ROOT, `vendor/${spec.slice('@portfolio/'.length)}/src/index.tsx`);
+  else if (spec.startsWith('@emotion-mini/'))
+    base = presolve(ROOT, `vendor/emotion/${spec.slice('@emotion-mini/'.length)}/src/index.ts`);
   else if (/^@emotion\//.test(spec)) {
     const name = spec.replace('@emotion/', '');
     if (name === 'react' || name === 'styled') base = presolve(ROOT, `vendor/emotion/${name}/src/index.ts`);
@@ -72,7 +75,8 @@ function resolveSpecifier(spec: string, fromFile: string): string | null {
   return null;
 }
 
-const IMPORT_RE = /(?:import|export)[\s\S]*?from\s+['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s+['"]([^'"]+)['"]/g;
+const IMPORT_RE =
+  /(?:import|export)[\s\S]*?from\s+['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s+['"]([^'"]+)['"]/g;
 
 function importsOf(file: string): string[] {
   const text = readFileSync(file, 'utf8');
@@ -122,8 +126,9 @@ describe('coverage inventory — every src/ module is exercised by tests', () =>
     ).toEqual([]);
   });
 
-  const vendorUncovered = SOURCE_FILES
-    .filter((f) => !f.startsWith(SRC_PREFIX) && !f.startsWith(join(ROOT, 'prerender')))
+  const vendorUncovered = SOURCE_FILES.filter(
+    (f) => !f.startsWith(SRC_PREFIX) && !f.startsWith(join(ROOT, 'prerender')),
+  )
     .filter((f) => !reachable.has(f))
     .map((f) => relative(ROOT, f).split('/').join('/'));
 

@@ -14,14 +14,7 @@
  * (mount-gated UI), which is invisible for these hooks.
  */
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { RefObject } from 'react';
 import type { ThemeName } from 'app/theme/tokens';
 import { themeStore, THEME_STORAGE_KEY, ThemePrefSchema, getItem } from './storage';
@@ -37,9 +30,7 @@ import type { ThemePref, ThemePreference } from './storage';
  * page; this silences it without changing client semantics.
  */
 export const useIsomorphicLayoutEffect: typeof useEffect =
-  typeof window !== 'undefined' && typeof window.document !== 'undefined'
-    ? useLayoutEffect
-    : useEffect;
+  typeof window !== 'undefined' && typeof window.document !== 'undefined' ? useLayoutEffect : useEffect;
 
 /* -------------------------------------------------------------------------- */
 /* useSyncExternalStore helpers (React 19, no use-sync-external-store shim)   */
@@ -191,7 +182,11 @@ export function useScrollProgress(): ScrollProgress {
       if (raf !== 0) window.cancelAnimationFrame(raf);
     };
   }, []);
-  return useSyncExternalStore(subscribe, () => snapshotRef.current, () => SERVER_SCROLL_PROGRESS);
+  return useSyncExternalStore(
+    subscribe,
+    () => snapshotRef.current,
+    () => SERVER_SCROLL_PROGRESS,
+  );
 }
 
 /** Pure: modern API vs execCommand fallback (older/insecure-origins browsers). */
@@ -358,8 +353,7 @@ export function useThemeNameState(): ThemeNameState {
   }, []);
 
   const cycle = useCallback((): void => {
-    const next: ThemePreference =
-      preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
+    const next: ThemePreference = preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
     if (next === 'system') {
       themeStore.remove();
       if (typeof document !== 'undefined') {

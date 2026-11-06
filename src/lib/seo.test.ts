@@ -4,14 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import {
-  SITE,
-  absoluteUrl,
-  buildHead,
-  escapeHtml,
-  joinUrl,
-  pageMeta,
-} from 'app/lib/seo';
+import { SITE, absoluteUrl, buildHead, escapeHtml, joinUrl, pageMeta } from 'app/lib/seo';
 
 describe('SITE constants', () => {
   it('pinned values', () => {
@@ -183,9 +176,9 @@ describe('buildHead', () => {
   });
 
   it('all hrefs/content values are quoted and escaped; hostile title neutralized', () => {
-    const hostile = buildHead(
-      pageMeta({ title: `X <script>y("z")</script>`, description: 'a"b', path: '/p' }),
-    ).join('\n');
+    const hostile = buildHead(pageMeta({ title: `X <script>y("z")</script>`, description: 'a"b', path: '/p' })).join(
+      '\n',
+    );
     expect(hostile).not.toContain('<script>y');
     expect(hostile).toContain('&lt;script&gt;y');
   });

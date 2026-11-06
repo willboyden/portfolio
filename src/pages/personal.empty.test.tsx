@@ -30,11 +30,7 @@ function render(ui: React.ReactNode): string {
     createElement(
       AppThemeProvider,
       null,
-      createElement(
-        RouterProvider,
-        { routes: [{ path: '*', component: () => null }], initialPath: '/' },
-        ui,
-      ),
+      createElement(RouterProvider, { routes: [{ path: '*', component: () => null }], initialPath: '/' }, ui),
     ),
   );
 }

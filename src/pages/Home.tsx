@@ -18,15 +18,7 @@ import { SITE } from 'app/lib/seo';
 import { KnowledgeGraphPreview } from 'app/pages/KnowledgeGraph';
 import { formatDate, formatPeriod } from 'app/lib/format';
 import type { Tokens } from 'app/theme/tokens';
-import {
-  Button,
-  Card,
-  EmptyState,
-  Heading,
-  Section,
-  Stack,
-  Tag,
-} from 'app/components/ui';
+import { Button, Card, EmptyState, Heading, Section, Stack, Tag } from 'app/components/ui';
 
 /* Button's component-target path is verified for the router Link (ui.test.tsx
  * §polymorphic `as`); Link's props are wider than ButtonProps' `as` record
@@ -217,7 +209,7 @@ function titleLinkClass(theme: Tokens): string {
     display: 'inline-block',
     minHeight: '28px',
     ['@media (max-width: ' + theme.breakpoint.md + ')']: {
-      minHeight: '44px', /* R3-D: primary card affordance at phone widths */
+      minHeight: '44px' /* R3-D: primary card affordance at phone widths */,
     },
     '&:hover': {
       color: theme.color.accent,
@@ -260,13 +252,7 @@ interface LinkClasses {
   title: string;
 }
 
-function ProjectCard({
-  project,
-  links,
-}: {
-  project: Project;
-  links: LinkClasses;
-}): React.ReactNode {
+function ProjectCard({ project, links }: { project: Project; links: LinkClasses }): React.ReactNode {
   const detailHref = `/projects/${project.slug}`;
   return (
     <Card interactive data-testid="featured-project">
@@ -366,14 +352,13 @@ export function Home(): React.ReactNode {
         <Heading level={1} id="home-title" size="5xl" data-testid="home-title">
           William Boyden
           <Tagline>
-            I turn analytical work into software that survives production — and
-            production realities back into the analysis.
+            I turn analytical work into software that survives production — and production realities back into the
+            analysis.
           </Tagline>
         </Heading>
         <Lede>
-          I help teams turn data-science results into services that survive
-          production. That means making "it runs on my machine" become "it runs,
-          and we know why."
+          I help teams turn data-science results into services that survive production. That means making "it runs on my
+          machine" become "it runs, and we know why."
         </Lede>
         <CtaRow>
           {/* William Boyden: size md at extreme mobile — the lg button's 56px
@@ -415,7 +400,14 @@ export function Home(): React.ReactNode {
       >
         <KnowledgeGraphPreview />
         <CtaRow>
-          <Button as={ROUTER_LINK} to="/graph" variant="secondary" size="md" iconRight="arrow-right" data-testid="home-graph-cta">
+          <Button
+            as={ROUTER_LINK}
+            to="/graph"
+            variant="secondary"
+            size="md"
+            iconRight="arrow-right"
+            data-testid="home-graph-cta"
+          >
             Open the full graph
           </Button>
         </CtaRow>

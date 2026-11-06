@@ -9,8 +9,8 @@
  */
 import { describe, test } from '../harness/framework.mjs';
 
-const LIGHT_BG = 'rgb(238, 241, 246)';   /* #eef1f6 */
-const DARK_BG = 'rgb(11, 14, 20)';       /* #0b0e14 */
+const LIGHT_BG = 'rgb(238, 241, 246)'; /* #eef1f6 */
+const DARK_BG = 'rgb(11, 14, 20)'; /* #0b0e14 */
 
 async function firstPaint(page, baseUrl, { system, stored }) {
   await page.evaluate(`(() => {
@@ -26,17 +26,13 @@ async function firstPaint(page, baseUrl, { system, stored }) {
    * Without this, a dropped override made the stored-pref tests resolve the
    * wrong palette ~50% of runs — the "legacy bare-string" flake. */
   for (let attempt = 0; attempt < 3; attempt++) {
-    const effective = await page.evaluate(
-      `matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'`,
-    );
+    const effective = await page.evaluate(`matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'`);
     if (effective === system) break;
     await page.send('Emulation.setEmulatedMedia', {
       features: [{ name: 'prefers-color-scheme', value: system }],
     });
   }
-  const verified = await page.evaluate(
-    `matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'`,
-  );
+  const verified = await page.evaluate(`matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'`);
   if (verified !== system) {
     throw new Error(`emulated prefers-color-scheme never took effect (wanted ${system})`);
   }
@@ -81,7 +77,10 @@ describe('fouc (pre-paint theme resolution)', () => {
     }
   });
 
-  test('data-theme flip happens without React: script-disabled render is impossible, but attribute must precede module eval', async ({ page, baseUrl }) => {
+  test('data-theme flip happens without React: script-disabled render is impossible, but attribute must precede module eval', async ({
+    page,
+    baseUrl,
+  }) => {
     /* The strongest available proxy: data-theme is already correct in the
      * HTML-READY snapshot before hydration completes; module scripts are
      * type=module (deferred) so any attribute seen at 'load' with the right

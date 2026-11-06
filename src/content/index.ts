@@ -78,7 +78,14 @@ export function recipesByDate(): Recipe[] {
 }
 
 /** Hub and subsection-nav order; capabilities not listed follow, newest first. */
-const AI_CAPABILITY_ORDER = ['local-inference', 'smart-routing', 'agent-harness-engineering', 'video-generation', 'data-analytics', 'tech-stack'];
+const AI_CAPABILITY_ORDER = [
+  'local-inference',
+  'smart-routing',
+  'agent-harness-engineering',
+  'video-generation',
+  'data-analytics',
+  'tech-stack',
+];
 
 /** Every capability in hub order. The hub and the subsection nav read this —
  * it was missing, so the hub rendered its "still being written" empty state
@@ -107,8 +114,8 @@ export function getPost(slug: string): Post | undefined {
 
 /** Newest first; date-identical entries keep stable slug order. */
 export function postsByDate(): Post[] {
-  return [...content.posts].sort(
-    (a, b) => (a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1),
+  return [...content.posts].sort((a, b) =>
+    a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1,
   );
 }
 

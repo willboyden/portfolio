@@ -32,16 +32,7 @@ import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from '@portfolio/router';
 import { withBase } from 'app/lib/seo';
-import {
-  Button,
-  Container,
-  EmptyState,
-  Heading,
-  Icon,
-  Pagination,
-  Tag,
-  VisuallyHidden,
-} from 'app/components/ui';
+import { Button, Container, EmptyState, Heading, Icon, Pagination, Tag, VisuallyHidden } from 'app/components/ui';
 import { postsByDate, type Post } from 'app/content';
 import { formatDate, formatReadingTime, pluralize } from 'app/lib/format';
 import { search } from 'app/lib/search';
@@ -85,9 +76,7 @@ export function paginate<T>(posts: readonly T[], page: number, perPage = POSTS_P
 /** Tag list by usage: count desc, then alphabetical (content API order). */
 export function tagsFromPosts(posts: readonly Post[]): string[] {
   const counts = tagCounts(posts);
-  return [...counts.keys()].sort(
-    (a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0) || a.localeCompare(b),
-  );
+  return [...counts.keys()].sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0) || a.localeCompare(b));
 }
 
 function tagCounts(posts: readonly Post[]): Map<string, number> {
@@ -104,11 +93,7 @@ function tagCounts(posts: readonly Post[]): Map<string, number> {
  * newest first — the same code path, so the default listing and search
  * results are ranked identically.
  */
-export function filterPosts(
-  posts: readonly Post[],
-  query: string,
-  tags?: string | readonly string[],
-): Post[] {
+export function filterPosts(posts: readonly Post[], query: string, tags?: string | readonly string[]): Post[] {
   const wanted = (typeof tags === 'string' ? [tags] : (tags ?? [])).filter((t) => t !== '');
   return search(query, posts, {
     limit: posts.length,
@@ -375,7 +360,11 @@ const CloudWord = styled.button<{ $weight: CloudEntry['weight']; $active: boolea
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes[CLOUD_SIZES[p.$weight]]};
   font-weight: ${(p) =>
-    p.$weight >= 4 ? p.theme.font.weights.bold : p.$weight === 3 ? p.theme.font.weights.semibold : p.theme.font.weights.medium};
+    p.$weight >= 4
+      ? p.theme.font.weights.bold
+      : p.$weight === 3
+        ? p.theme.font.weights.semibold
+        : p.theme.font.weights.medium};
   line-height: ${(p) => p.theme.font.leading.none};
   letter-spacing: ${(p) => (p.$weight >= 4 ? p.theme.font.tracking.tight : p.theme.font.tracking.normal)};
   color: ${(p) => (p.$weight >= 3 ? p.theme.color.text : p.theme.color.textMuted)};
@@ -611,10 +600,7 @@ export function Writing(): ReactNode {
   const [phoneOpen, setPhoneOpen] = useState(false);
 
   const debouncedQuery = useDebouncedValue(query, 200);
-  const filtered = useMemo(
-    () => filterPosts(allPosts, debouncedQuery, selected),
-    [allPosts, debouncedQuery, selected],
-  );
+  const filtered = useMemo(() => filterPosts(allPosts, debouncedQuery, selected), [allPosts, debouncedQuery, selected]);
   const filtering = debouncedQuery.trim() !== '' || selected.length > 0;
   /* While filtering, the faceted cloud is already short: show every topic
    * that still matches. Collapse only the unfiltered, full cloud. */
@@ -680,10 +666,7 @@ export function Writing(): ReactNode {
         <Heading level={1} data-testid="writing-title">
           Writing
         </Heading>
-        <Lead>
-          Notes on building software — architecture, data, and the occasional
-          post-mortem.
-        </Lead>
+        <Lead>Notes on building software — architecture, data, and the occasional post-mortem.</Lead>
       </PageHeader>
 
       <Toolbar>
@@ -731,16 +714,16 @@ export function Writing(): ReactNode {
                   {expanded ? 'Main topics only' : `Show all ${totalTopics} topics`}
                 </ExpandToggle>
               ) : null}
-            {/* Phones only: the cloud folds away so the posts stay near the top. */}
-            <PhoneToggle
-              type="button"
-              aria-expanded={phoneOpen}
-              aria-controls="topic-body"
-              onClick={() => setPhoneOpen((open) => !open)}
-              data-testid="tag-cloud-phone-toggle"
-            >
-              {phoneOpen ? 'Hide topics' : 'Show topics'}
-            </PhoneToggle>
+              {/* Phones only: the cloud folds away so the posts stay near the top. */}
+              <PhoneToggle
+                type="button"
+                aria-expanded={phoneOpen}
+                aria-controls="topic-body"
+                onClick={() => setPhoneOpen((open) => !open)}
+                data-testid="tag-cloud-phone-toggle"
+              >
+                {phoneOpen ? 'Hide topics' : 'Show topics'}
+              </PhoneToggle>
             </HeadActions>
           </TopicHead>
           <TopicBody id="topic-body" $phoneOpen={phoneOpen} data-testid="tag-cloud-body">
@@ -814,17 +797,10 @@ export function Writing(): ReactNode {
             icon="search"
             title="No posts match"
             description={
-              filtering
-                ? 'Try a different phrase, or remove a topic to see more.'
-                : 'Nothing to show here yet.'
+              filtering ? 'Try a different phrase, or remove a topic to see more.' : 'Nothing to show here yet.'
             }
             action={
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={clearFilters}
-                data-testid="clear-filters"
-              >
+              <Button variant="secondary" size="sm" onClick={clearFilters} data-testid="clear-filters">
                 Clear search and filters
               </Button>
             }
@@ -878,9 +854,7 @@ export function Writing(): ReactNode {
               <Pagination
                 page={pageData.page}
                 total={pageData.pageCount}
-                hrefFor={(n) =>
-                  withBase(`/writing${writingSearch({ tags: selected, q: debouncedQuery, page: n })}`)
-                }
+                hrefFor={(n) => withBase(`/writing${writingSearch({ tags: selected, q: debouncedQuery, page: n })}`)}
                 label="Writing pages"
               />
             </div>

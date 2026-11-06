@@ -89,7 +89,9 @@ describe('createApp (full tree)', () => {
     /* A recipe committed without its public/recipe-bodies file (or with a stale
      * one) would ship an empty or outdated page; the prerender refuses that too. */
     const dir = new URL('../../public/recipe-bodies/', import.meta.url);
-    const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
+    const files = readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .sort();
     expect(files).toEqual(content.recipes.map((r) => `${r.slug}.json`).sort());
     for (const recipe of content.recipes) {
       expect(recipe, recipe.slug).not.toHaveProperty('html');
@@ -103,7 +105,9 @@ describe('createApp (full tree)', () => {
     /* Same rule as recipes: a post committed without its public/post-bodies
      * file (or with a stale one) would ship an empty or outdated essay. */
     const dir = new URL('../../public/post-bodies/', import.meta.url);
-    const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
+    const files = readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .sort();
     expect(files).toEqual(content.posts.map((p) => `${p.slug}.json`).sort());
     for (const post of content.posts) {
       expect(post, post.slug).not.toHaveProperty('html');
@@ -138,7 +142,15 @@ describe('route-meta (shared prerender/SPA source, R2C-3)', () => {
 
   it('every prerenderable route has a unique composed title', () => {
     const paths = [
-      '/', '/about', '/now', '/projects', '/writing', '/videos', '/talks', '/contact', '/404',
+      '/',
+      '/about',
+      '/now',
+      '/projects',
+      '/writing',
+      '/videos',
+      '/talks',
+      '/contact',
+      '/404',
       ...content.projects.map((p) => `/projects/${p.slug}`),
       ...content.posts.map((p) => `/writing/${p.slug}`),
       '/ai-engineering/local-recipes',

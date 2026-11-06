@@ -26,16 +26,7 @@ import { formatDate, formatReadingTime } from 'app/lib/format';
 import { rebaseHtml } from 'app/lib/seo';
 import { NotFound } from './NotFound';
 import { ProjectMetrics, statusTone } from './Projects';
-import {
-  Button,
-  Container,
-  Heading,
-  Icon,
-  Prose,
-  Stack,
-  Tag,
-  VisuallyHidden,
-} from 'app/components/ui';
+import { Button, Container, Heading, Icon, Prose, Stack, Tag, VisuallyHidden } from 'app/components/ui';
 
 /* -------------------------------------------------------------------------- */
 /* Pure, unit-tested helpers                                                   */
@@ -53,7 +44,11 @@ export function relatedProjects(all: readonly Project[], current: Project, limit
     .sort(
       (a, b) =>
         b.overlap - a.overlap ||
-        (a.project.date < b.project.date ? 1 : a.project.date > b.project.date ? -1 : a.project.title.localeCompare(b.project.title)),
+        (a.project.date < b.project.date
+          ? 1
+          : a.project.date > b.project.date
+            ? -1
+            : a.project.title.localeCompare(b.project.title)),
     )
     .slice(0, limit)
     .map((entry) => entry.project);
@@ -259,7 +254,7 @@ function relatedPostCls(theme: Tokens): string {
     color: 'inherit',
     minHeight: '28px',
     ['@media (max-width: ' + t.breakpoint.md + ')']: {
-      minHeight: '44px', /* R3D-03: primary affordance at phone widths */
+      minHeight: '44px' /* R3D-03: primary affordance at phone widths */,
     },
     '&:hover .related-post-title': { color: t.color.accent },
     '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '3px' },
@@ -319,9 +314,7 @@ export function ProjectDetail(): React.ReactNode {
   const links = projectLinkEntries(project.links);
   const related = relatedProjects(content.projects, project);
   /* R6-C C1: the curated post that tells this project's story. */
-  const relatedPost = project.relatedPost
-    ? content.posts.find((p) => p.slug === project.relatedPost)
-    : undefined;
+  const relatedPost = project.relatedPost ? content.posts.find((p) => p.slug === project.relatedPost) : undefined;
 
   return (
     <Container data-testid="project-detail">
@@ -411,11 +404,7 @@ export function ProjectDetail(): React.ReactNode {
               <Icon name="arrow-right" size={12} />
               The thinking behind this project
             </RelatedPostHint>
-            <Link
-              to={`/writing/${relatedPost.slug}`}
-              className={relatedPostCls(theme)}
-              data-testid="related-post-link"
-            >
+            <Link to={`/writing/${relatedPost.slug}`} className={relatedPostCls(theme)} data-testid="related-post-link">
               <RelatedPostTitle className="related-post-title">{relatedPost.title}</RelatedPostTitle>
               <RelatedPostMeta>
                 <time dateTime={relatedPost.date}>{formatDate(relatedPost.date)}</time>
@@ -426,7 +415,6 @@ export function ProjectDetail(): React.ReactNode {
           </RelatedPostCard>
         </Block>
       )}
-
 
       {related.length > 0 && (
         <Block aria-labelledby="related-title">

@@ -169,7 +169,10 @@ function parseBlocks(lines: string[]): Blk[] {
         const l = lines[i]!;
         if (l.trim() === '') {
           const next = lines[i + 1];
-          const isItemStart = next !== undefined && ((ordered && RE_OL.test(next)) || (!ordered && RE_UL.test(next))) && indentOf(next) === baseIndent;
+          const isItemStart =
+            next !== undefined &&
+            ((ordered && RE_OL.test(next)) || (!ordered && RE_UL.test(next))) &&
+            indentOf(next) === baseIndent;
           // After a blank line the list continues only with an indented line (more of the item) or a new item.
           // An unindented paragraph ends the list (CommonMark); it used to be folded into the last item.
           if (next !== undefined && (indentOf(next) >= baseIndent + markerWidth || isItemStart)) {
@@ -269,15 +272,11 @@ function renderBlocks(blocks: Blk[], headingId: HeadingIdFn): string {
         parts.push('<hr />');
         break;
       case 'table': {
-        const th = b.header
-          .map((c, i) => `<th${alignAttr(b.align[i])}>${renderInline(c)}</th>`)
-          .join('');
+        const th = b.header.map((c, i) => `<th${alignAttr(b.align[i])}>${renderInline(c)}</th>`).join('');
         const body = b.rows
           .map((r) => `<tr>${r.map((c, i) => `<td${alignAttr(b.align[i])}>${renderInline(c)}</td>`).join('')}</tr>`)
           .join('\n');
-        parts.push(
-          `<table>\n<thead><tr>${th}</tr></thead>\n<tbody>\n${body}\n</tbody>\n</table>`,
-        );
+        parts.push(`<table>\n<thead><tr>${th}</tr></thead>\n<tbody>\n${body}\n</tbody>\n</table>`);
         break;
       }
       case 'list': {

@@ -13,13 +13,42 @@ const R = (over: Partial<SearchableRecord> & { slug: string }): SearchableRecord
 });
 
 const RECORDS: SearchableRecord[] = [
-  R({ slug: 'rag-scale', title: 'RAG at Scale', summary: 'Retrieval pipelines in production', tags: ['llm', 'retrieval'], date: '2026-06-01' }),
-  R({ slug: 'duckdb-io', title: 'DuckDB for Disk IO', summary: 'Columnar scans beat row stores', tags: ['duckdb', 'perf'], date: '2026-05-02' }),
-  R({ slug: 'cafe-ocr', title: 'Café OCR Pipeline', summary: 'OCR for menu cards at a café', tags: ['vision'], date: '2026-04-03' }),
-  R({ slug: 'llm-eval', title: 'LLM Evals That Stick', summary: 'Regression suites for prompts', tags: ['llm', 'evals'], date: '2026-03-04' }),
-  R({ slug: 'legacy', title: 'Old Rust Services', summary: 'Notes on retiring a monolith', tags: ['rust'], date: '2024-01-01' }),
+  R({
+    slug: 'rag-scale',
+    title: 'RAG at Scale',
+    summary: 'Retrieval pipelines in production',
+    tags: ['llm', 'retrieval'],
+    date: '2026-06-01',
+  }),
+  R({
+    slug: 'duckdb-io',
+    title: 'DuckDB for Disk IO',
+    summary: 'Columnar scans beat row stores',
+    tags: ['duckdb', 'perf'],
+    date: '2026-05-02',
+  }),
+  R({
+    slug: 'cafe-ocr',
+    title: 'Café OCR Pipeline',
+    summary: 'OCR for menu cards at a café',
+    tags: ['vision'],
+    date: '2026-04-03',
+  }),
+  R({
+    slug: 'llm-eval',
+    title: 'LLM Evals That Stick',
+    summary: 'Regression suites for prompts',
+    tags: ['llm', 'evals'],
+    date: '2026-03-04',
+  }),
+  R({
+    slug: 'legacy',
+    title: 'Old Rust Services',
+    summary: 'Notes on retiring a monolith',
+    tags: ['rust'],
+    date: '2024-01-01',
+  }),
 ];
-
 
 describe('normalizeText / tokenize', () => {
   it('strips diacritics, lowercases, collapses whitespace', () => {
@@ -36,13 +65,7 @@ describe('normalizeText / tokenize', () => {
 describe('search — empty query', () => {
   it('returns everything newest-first with zero scores', () => {
     const hits = search('', RECORDS);
-    expect(hits.map((h) => h.record.slug)).toEqual([
-      'rag-scale',
-      'duckdb-io',
-      'cafe-ocr',
-      'llm-eval',
-      'legacy',
-    ]);
+    expect(hits.map((h) => h.record.slug)).toEqual(['rag-scale', 'duckdb-io', 'cafe-ocr', 'llm-eval', 'legacy']);
     expect(hits.every((h) => h.score === 0 && h.matchedFields.length === 0)).toBe(true);
   });
   it('whitespace-only behaves as empty', () => {

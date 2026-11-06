@@ -128,7 +128,11 @@ export function Pagination({
   const items = pageWindow(clamped, total);
   const linkProps = (target: number, current: boolean) =>
     current || target < 1 || target > total
-      ? { href: undefined, 'aria-disabled': true as const, 'aria-label': current ? `Page ${target}, current page` : `Page ${target}` }
+      ? {
+          href: undefined,
+          'aria-disabled': true as const,
+          'aria-label': current ? `Page ${target}, current page` : `Page ${target}`,
+        }
       : { href: hrefFor(target), 'aria-disabled': undefined, 'aria-label': `Go to page ${target}` };
 
   /* R1-B L2: an <a> without href is NOT focusable, so on page 1 the disabled

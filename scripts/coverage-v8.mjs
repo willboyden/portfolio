@@ -175,10 +175,14 @@ if (parsed === 0 || totalLines === 0) {
 }
 console.log('files with below-average coverage:');
 for (const r of rows.filter((r) => r.pct < 100).slice(0, 18)) {
-  console.log(`  ${r.pct.toFixed(1).padStart(5)}%  ${String(r.cov).padStart(4)}/${String(r.lines).padStart(4)}  ${r.file}`);
+  console.log(
+    `  ${r.pct.toFixed(1).padStart(5)}%  ${String(r.cov).padStart(4)}/${String(r.lines).padStart(4)}  ${r.file}`,
+  );
 }
 const pct = totalLines ? (totalCovered / totalLines) * 100 : 0;
-console.log(`\nV8 line coverage (src+vendor, excl. tests): ${pct.toFixed(1)}%  (${totalCovered}/${totalLines} code lines)`);
+console.log(
+  `\nV8 line coverage (src+vendor, excl. tests): ${pct.toFixed(1)}%  (${totalCovered}/${totalLines} code lines)`,
+);
 console.log('note: V8 range-based estimate — punctuation/declaration lines excluded; treat as a floor.');
 
 if (MIN !== null) {

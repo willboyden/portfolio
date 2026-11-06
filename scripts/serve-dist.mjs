@@ -7,7 +7,7 @@
  */
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { extname, join, normalize, resolve , sep} from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist');
 const port = Number(process.argv[3] ?? process.env.PORT ?? 4321);
@@ -27,7 +27,10 @@ const SECURITY_HEADERS = {
 
 /** R1-C #5 + R3-A #2: attacker-controlled strings never reach HTML raw. */
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? '');
+  return String(value).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? '',
+  );
 }
 
 const MIME = {
@@ -124,7 +127,11 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
       /* The message interpolates req.url — escape HERE, at the sink, so every
        * call site is safe by construction (was: escaped only at one of two). */
       const body = `<!doctype html><html><head><meta charset="utf-8"><title>404</title></head><body style="font-family:sans-serif;background:#0b0e14;color:#eef1f8"><h1>404</h1><p>${escapeHtml(message)}</p></body></html>`;
-      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', ...SECURITY_HEADERS });
+      res.writeHead(404, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        ...SECURITY_HEADERS,
+      });
       res.end(body);
     };
 
@@ -157,7 +164,11 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
     }
 
     if (spaFallback && existsSync(spaFallback)) {
-      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', ...SECURITY_HEADERS });
+      res.writeHead(404, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        ...SECURITY_HEADERS,
+      });
       createReadStream(spaFallback).pipe(res);
       return;
     }
@@ -179,7 +190,9 @@ export function startServer({ dir = root, port: bindPort = port, spaMode = spa }
           resolveListen({ server, port: attempt, failed: true });
           return;
         }
-        console.error(`serve-dist: port ${attempt} is in use (EADDRINUSE) — is another preview/e2e server running? Retrying on ${attempt + 1}.`);
+        console.error(
+          `serve-dist: port ${attempt} is in use (EADDRINUSE) — is another preview/e2e server running? Retrying on ${attempt + 1}.`,
+        );
         attempt += 1;
         tryListen(remaining - 1);
       });

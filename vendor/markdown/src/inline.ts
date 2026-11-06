@@ -75,7 +75,8 @@ export function sanitizeUrl(raw: string): string | null {
  * at column 0 of the paragraph, and made AUTOLINK/RAW_HTML `index === pos`
  * checks vacuous. Callers always set `lastIndex` before `exec` and, where
  * position matters, compare `m.index === pos` explicitly. */
-const LINK_RE = /\[([^\][]*(?:\[[^\][]*\][^\][]*)*)\]\(\s*(<[^<>\n]*>|[^\s()\\]*(?:\\.[^\s()\\]*)*)(\s+(?:"[^"\n]*"|'[^'\n]*'))?\s*\)/g;
+const LINK_RE =
+  /\[([^\][]*(?:\[[^\][]*\][^\][]*)*)\]\(\s*(<[^<>\n]*>|[^\s()\\]*(?:\\.[^\s()\\]*)*)(\s+(?:"[^"\n]*"|'[^'\n]*'))?\s*\)/g;
 const IMG_RE = /!\[([^\][]*)\]\(\s*(<[^<>\n]*>|[^\s()\\]*(?:\\.[^\s()\\]*)*)(\s+(?:"[^"\n]*"|'[^'\n]*'))?\s*\)/g;
 const AUTOLINK_RE = /<(?:((?:https?|mailto):[^\s<>]*)|((?:[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})))>/g;
 const RAW_HTML_RE = /<!--[\s\S]*?-->|<\/?[A-Za-z][A-Za-z0-9-]*(?:\s+[^<>]*?)?\/?>/g;
@@ -125,10 +126,15 @@ function extractLinks(src: string): Cell[] | null {
     LINK_RE.lastIndex = pos;
     const mLink = LINK_RE.exec(src);
     const hit =
-      mImg && mLink ? (mImg.index <= mLink.index ? { m: mImg, img: true } : { m: mLink, img: false })
-      : mImg ? { m: mImg, img: true }
-      : mLink ? { m: mLink, img: false }
-      : null;
+      mImg && mLink
+        ? mImg.index <= mLink.index
+          ? { m: mImg, img: true }
+          : { m: mLink, img: false }
+        : mImg
+          ? { m: mImg, img: true }
+          : mLink
+            ? { m: mLink, img: false }
+            : null;
     if (!hit) break;
     const html = hit.img
       ? imageHtml(hit.m[1] ?? '', cleanDest(hit.m[2] ?? ''), cleanTitle(hit.m[3]))
@@ -336,7 +342,8 @@ function processEmphasis(buf: Cell[]): void {
       break;
     }
     if (blocked) {
-      if (closer.openable) closer.closeable = false; // demote: may still act as an opener
+      if (closer.openable)
+        closer.closeable = false; // demote: may still act as an opener
       else closer.dead = true;
       ci++;
       continue;

@@ -112,7 +112,7 @@ describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
   const dockerignore = readFileSync(resolve(root, '.dockerignore'), 'utf8');
 
   it('both variants ship the SAME nginx config + snippets layout', () => {
-    for (const [name, df] of Object.entries({ 'Dockerfile': dockerfile, 'Dockerfile.prebuilt': prebuilt })) {
+    for (const [name, df] of Object.entries({ Dockerfile: dockerfile, 'Dockerfile.prebuilt': prebuilt })) {
       expect(df, name).toContain('nginx:1.27-alpine');
       expect(df, name).toContain('COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf');
       expect(df, name).toContain('COPY deploy/snippets /etc/nginx/snippets');
@@ -128,7 +128,10 @@ describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
      * is impossible and there is no committed lockfile — so the prebuilt
      * Dockerfile must not pretend otherwise. Check INSTRUCTIONS, not comments. */
     const instructions = (df: string) =>
-      df.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+      df
+        .split('\n')
+        .filter((l) => !l.trim().startsWith('#'))
+        .join('\n');
     expect(instructions(dockerfile)).toContain('npm ci');
     expect(instructions(prebuilt)).not.toMatch(/\bnpm\b|\bnode\b/);
     expect(prebuilt).toContain('COPY dist /usr/share/nginx/html');
@@ -142,7 +145,10 @@ describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
   });
 
   it('.dockerignore keeps the prebuilt context lean and never ships secrets', () => {
-    const lines = dockerignore.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = dockerignore
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     for (const must of ['.git', 'node_modules', 'e2e']) {
       expect(lines, `missing ${must}`).toContain(must);
     }
@@ -163,7 +169,9 @@ describe('container contract (deploy/Dockerfile*, .dockerignore)', () => {
     expect(lc).toContain('immutable');
     expect(lc).toMatch(/cache-control[^;]*no-store/);
     /* expires/etag off for no-store HTML avoids 304s beating no-store */
-    const htmlLoc = locations(nginx).find((l) => /index\.html|html|try_files|\//.test(l.header) && /no-store/.test(l.body.toLowerCase()));
+    const htmlLoc = locations(nginx).find(
+      (l) => /index\.html|html|try_files|\//.test(l.header) && /no-store/.test(l.body.toLowerCase()),
+    );
     expect(htmlLoc, 'an HTML location must set no-store').toBeDefined();
     expect(htmlLoc!.body.toLowerCase()).toMatch(/add_header cache-control/);
     expect(htmlLoc!.body.toLowerCase()).toMatch('security-headers.conf'); // include snippet

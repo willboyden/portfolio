@@ -155,9 +155,7 @@ describe('truncateAtWordBoundary', () => {
     expect(truncateAtWordBoundary('the quick brown fox jumps', 14)).toBe('the quick…');
   });
   it('never mid-cuts a word unless the word alone overflows', () => {
-    expect(truncateAtWordBoundary('antidisestablishmentarianism is long', 10)).toBe(
-      'antidisest…',
-    );
+    expect(truncateAtWordBoundary('antidisestablishmentarianism is long', 10)).toBe('antidisest…');
   });
   it('empty and degenerate inputs', () => {
     expect(truncateAtWordBoundary('', 10)).toBe('');

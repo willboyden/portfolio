@@ -124,7 +124,11 @@ export function approach(cam: Camera, goal: Camera, t: number): boolean {
   cam.yaw = lerp(cam.yaw, goal.yaw);
   cam.pitch = lerp(cam.pitch, goal.pitch);
   cam.distance = lerp(cam.distance, goal.distance);
-  cam.target = [lerp(cam.target[0], goal.target[0]), lerp(cam.target[1], goal.target[1]), lerp(cam.target[2], goal.target[2])];
+  cam.target = [
+    lerp(cam.target[0], goal.target[0]),
+    lerp(cam.target[1], goal.target[1]),
+    lerp(cam.target[2], goal.target[2]),
+  ];
   const gap =
     Math.abs(cam.yaw - goal.yaw) +
     Math.abs(cam.pitch - goal.pitch) +
@@ -339,7 +343,11 @@ export class GraphScene {
       const pb = this.projected[b];
       if (!pa?.visible || !pb?.visible) continue;
       const strong = anchor >= 0 && (a === anchor || b === anchor);
-      ctx.globalAlpha = strong ? 0.9 : faded(a) || faded(b) ? 0.05 : clamp(0.55 - (pa.depth + pb.depth - 2 * this.cam.distance) * 0.25, 0.08, 0.5);
+      ctx.globalAlpha = strong
+        ? 0.9
+        : faded(a) || faded(b)
+          ? 0.05
+          : clamp(0.55 - (pa.depth + pb.depth - 2 * this.cam.distance) * 0.25, 0.08, 0.5);
       ctx.strokeStyle = strong ? palette.edgeStrong : palette.edge;
       ctx.lineWidth = strong ? 1.6 : 1;
       ctx.beginPath();
@@ -349,7 +357,9 @@ export class GraphScene {
     }
 
     /* Nodes, farthest first, then labels on top. */
-    const nodeOrder = nodes.map((_, i) => i).sort((a, b) => (this.projected[b]?.depth ?? 0) - (this.projected[a]?.depth ?? 0));
+    const nodeOrder = nodes
+      .map((_, i) => i)
+      .sort((a, b) => (this.projected[b]?.depth ?? 0) - (this.projected[a]?.depth ?? 0));
     const labels: number[] = [];
     for (const i of nodeOrder) {
       const p = this.projected[i];
@@ -379,7 +389,10 @@ export class GraphScene {
     /* Most important first (hovered, selected, then bigger and nearer nodes);
      * a label that would overlap one already drawn is skipped. */
     const priority = (i: number): number =>
-      (i === this.hovered ? -2e6 : 0) + (i === selected ? -1e6 : 0) - (nodes[i]?.radius ?? 0) * 1000 + (this.projected[i]?.depth ?? 0);
+      (i === this.hovered ? -2e6 : 0) +
+      (i === selected ? -1e6 : 0) -
+      (nodes[i]?.radius ?? 0) * 1000 +
+      (this.projected[i]?.depth ?? 0);
     const placed: LabelBox[] = [];
     for (const i of labels.sort((a, b) => priority(a) - priority(b))) {
       const p = this.projected[i];
@@ -415,7 +428,13 @@ export class GraphScene {
   }
 
   private pickAt(x: number, y: number): number {
-    return pick(this.projected, this.opts.nodes.map((n) => n.radius), x, y, (i) => !this.focus.hidden.has(i));
+    return pick(
+      this.projected,
+      this.opts.nodes.map((n) => n.radius),
+      x,
+      y,
+      (i) => !this.focus.hidden.has(i),
+    );
   }
 
   private setHovered(i: number, x: number, y: number): void {

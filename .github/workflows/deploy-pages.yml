@@ -73,6 +73,8 @@ jobs:
         run: node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
       - name: Lint
         run: node node_modules/eslint/bin/eslint.js . --max-warnings 0
+      - name: Format (Prettier)
+        run: node node_modules/prettier/bin/prettier.cjs --check .
       - name: Unit tests
         run: node node_modules/vitest/vitest.mjs run
       - name: Build + audit

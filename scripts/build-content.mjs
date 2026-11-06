@@ -16,12 +16,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  renderMarkdown,
-  parseFrontmatter,
-  readingMinutes,
-  plainText,
-} from '../vendor/markdown/src/index.ts';
+import { renderMarkdown, parseFrontmatter, readingMinutes, plainText } from '../vendor/markdown/src/index.ts';
 import {
   ProjectSchema,
   PostSchema,
@@ -60,8 +55,7 @@ const COLLECTIONS = [
   { dir: 'recipes', schema: RecipeSourceSchema },
 ];
 
-const byDateDesc = (a, b) =>
-  a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1;
+const byDateDesc = (a, b) => (a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1);
 
 /** Human-readable zod issues: "file: <path>: posts/hello.md › title: <msg>". */
 function formatIssues(err, file, kind) {
@@ -157,7 +151,11 @@ async function loadCollection(dir, schema) {
        * `comparisonTitle: '...'` + `comparisonRows: [[a, b], [c, d]]`
        * (one comparison per capability; extend to numbered keys if a
        * second table ever lands). Expand into the schema's shape here. */
-      if (dir === 'ai-engineering' && typeof entry.comparisonTitle === 'string' && Array.isArray(entry.comparisonRows)) {
+      if (
+        dir === 'ai-engineering' &&
+        typeof entry.comparisonTitle === 'string' &&
+        Array.isArray(entry.comparisonRows)
+      ) {
         entry.comparisons = [{ title: entry.comparisonTitle, rows: entry.comparisonRows }];
         delete entry.comparisonTitle;
         delete entry.comparisonRows;
@@ -396,9 +394,7 @@ async function main() {
    * /graph page fetches it, so it costs nothing on the JS budget. */
   const graph = graphFile(withBodies, out.contentHash);
   await writeFile(GRAPH_FILE, JSON.stringify(graph) + '\n', 'utf8');
-  const counts = ['projects', 'posts', 'videos', 'talks', 'recipes']
-    .map((k) => `${out[k].length} ${k}`)
-    .join(', ');
+  const counts = ['projects', 'posts', 'videos', 'talks', 'recipes'].map((k) => `${out[k].length} ${k}`).join(', ');
   process.stdout.write(`build-content: wrote ${relative(ROOT, OUT_FILE)} (${counts})\n`);
   process.stdout.write(
     `build-content: wrote ${bodyFiles.size} recipe bod${bodyFiles.size === 1 ? 'y' : 'ies'} to ${relative(ROOT, RECIPE_BODY_DIR)}/\n`,

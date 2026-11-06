@@ -18,14 +18,7 @@ import {
   TalkSchema,
   SiteContentSchema,
 } from './schema';
-import {
-  allTags,
-  content,
-  featuredProjects,
-  getPost,
-  getProject,
-  postsByDate,
-} from './index';
+import { allTags, content, featuredProjects, getPost, getProject, postsByDate } from './index';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -150,17 +143,14 @@ describe('schema behaviour (contract §4)', () => {
 
   it('VideoSchema constrains provider; TalkSchema requires event/location/abstract', () => {
     expect(
-      VideoSchema.safeParse({ ...base, url: 'https://youtu.be/x', provider: 'tiktok', duration: '5:00' })
-        .success,
+      VideoSchema.safeParse({ ...base, url: 'https://youtu.be/x', provider: 'tiktok', duration: '5:00' }).success,
     ).toBe(false);
     expect(
       VideoSchema.safeParse({ ...base, url: 'https://youtube.com/watch?v=x', provider: 'youtube', duration: '5:00' })
         .success,
     ).toBe(true);
     expect(TalkSchema.safeParse(base).success).toBe(false);
-    expect(
-      TalkSchema.safeParse({ ...base, event: 'e', location: 'l', abstract: 'a' }).success,
-    ).toBe(true);
+    expect(TalkSchema.safeParse({ ...base, event: 'e', location: 'l', abstract: 'a' }).success).toBe(true);
   });
 });
 
@@ -181,7 +171,10 @@ describe('content API (contract §4)', () => {
     for (let i = 1; i < ordered.length; i++) {
       expect(ordered[i - 1]!.date >= ordered[i]!.date, ordered[i]!.slug).toBe(true);
     }
-    const maxDate = [...content.posts].map((p) => p.date).sort().at(-1)!;
+    const maxDate = [...content.posts]
+      .map((p) => p.date)
+      .sort()
+      .at(-1)!;
     expect(ordered[0]!.date).toBe(maxDate);
   });
 
@@ -198,9 +191,7 @@ describe('content API (contract §4)', () => {
     for (let i = 1; i < tags.length; i++) {
       const prev = tags[i - 1]!;
       const cur = tags[i]!;
-      const ok =
-        prev.count > cur.count ||
-        (prev.count === cur.count && prev.tag.localeCompare(cur.tag) <= 0);
+      const ok = prev.count > cur.count || (prev.count === cur.count && prev.tag.localeCompare(cur.tag) <= 0);
       expect(ok, `${prev.tag} before ${cur.tag}`).toBe(true);
     }
     const total = tags.reduce((s, t) => s + t.count, 0);

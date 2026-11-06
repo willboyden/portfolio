@@ -4,8 +4,7 @@ import styled from '@emotion/styled';
  * Stack — one-dimensional flex layout with consistent gaps.
  * Gap keys map to the space scale (0..12), never raw px.
  */
-export type StackGap =
-  | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '10' | '12';
+export type StackGap = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '10' | '12';
 
 const Flex = styled.div<{
   $gap: StackGap;
@@ -18,8 +17,7 @@ const Flex = styled.div<{
   flex-direction: ${(p) => p.$direction};
   flex-wrap: ${(p) => (p.$wrap ? 'wrap' : 'nowrap')};
   gap: ${(p) => p.theme.space[p.$gap]};
-  align-items: ${(p) =>
-    p.$align === 'start' ? 'flex-start' : p.$align === 'end' ? 'flex-end' : p.$align};
+  align-items: ${(p) => (p.$align === 'start' ? 'flex-start' : p.$align === 'end' ? 'flex-end' : p.$align)};
   justify-content: ${(p) =>
     p.$justify === 'between'
       ? 'space-between'

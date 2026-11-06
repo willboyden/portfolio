@@ -124,7 +124,12 @@ export const sitemapDates: Record<string, string> = {
   ...Object.fromEntries(content.recipes.map((r) => [`/ai-engineering/local-recipes/${r.slug}`, r.date])),
   /* The recipes index changes when its newest recipe does. */
   ...(content.recipes.length > 0
-    ? { '/ai-engineering/local-recipes': content.recipes.map((r) => r.date).sort().at(-1) as string }
+    ? {
+        '/ai-engineering/local-recipes': content.recipes
+          .map((r) => r.date)
+          .sort()
+          .at(-1) as string,
+      }
     : {}),
 };
 
@@ -244,8 +249,9 @@ function chunkHrefs(): string[] {
   const manifest = readManifest();
   if (!manifest) return [];
   const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
-  return Object.values(manifest)
-    .flatMap((e) => (typeof e.file === 'string' && e.file.endsWith('.js') ? [`${base}/${e.file}`] : []));
+  return Object.values(manifest).flatMap((e) =>
+    typeof e.file === 'string' && e.file.endsWith('.js') ? [`${base}/${e.file}`] : [],
+  );
 }
 
 function assetHref(): string {
@@ -272,4 +278,3 @@ function assetHref(): string {
     );
   }
 }
-

@@ -85,7 +85,15 @@ describe('hooks render on the server without throwing', () => {
     useOnClickOutside({ current: null }, () => undefined);
     return createElement(
       'output',
-      { 'data-reduced': String(reduced), 'data-mounted': String(mounted), 'data-wide': String(wide), 'data-debounced': debounced, 'data-progress': String(scroll.progress), 'data-copied': String(copied), 'data-failed': String(failed) },
+      {
+        'data-reduced': String(reduced),
+        'data-mounted': String(mounted),
+        'data-wide': String(wide),
+        'data-debounced': debounced,
+        'data-progress': String(scroll.progress),
+        'data-copied': String(copied),
+        'data-failed': String(failed),
+      },
       typeof copy === 'function' ? 'copy-ready' : 'missing',
     );
   };

@@ -207,11 +207,7 @@ export interface HeaderProps {
   name?: string;
 }
 
-export function Header({
-  currentPath,
-  menuOpen = false,
-  name = 'William Boyden',
-}: HeaderProps): ReactNode {
+export function Header({ currentPath, menuOpen = false, name = 'William Boyden' }: HeaderProps): ReactNode {
   const [open, setOpen] = useState(menuOpen);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const tokens = useThemeTokens(); /* also asserts a ThemeProvider wraps us */
@@ -236,14 +232,8 @@ export function Header({
     <>
       <Bar data-testid="site-header" data-theme={themeName}>
         <Inner>
-          <Link
-            to="/"
-            className={wordmarkClass(tokens)}
-            data-testid="wordmark"
-            aria-label={`${name} — home`}
-          >
-            <WordmarkMark aria-hidden="true">WB</WordmarkMark>{' '}
-            {name}
+          <Link to="/" className={wordmarkClass(tokens)} data-testid="wordmark" aria-label={`${name} — home`}>
+            <WordmarkMark aria-hidden="true">WB</WordmarkMark> {name}
           </Link>
 
           <DesktopNav aria-label="Primary" data-testid="desktop-nav">
@@ -275,12 +265,7 @@ export function Header({
         </Inner>
       </Bar>
 
-      <MobileMenu
-        open={open}
-        onClose={close}
-        currentPath={currentPath}
-        returnFocusRef={triggerRef}
-      />
+      <MobileMenu open={open} onClose={close} currentPath={currentPath} returnFocusRef={triggerRef} />
     </>
   );
 }

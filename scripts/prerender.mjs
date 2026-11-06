@@ -27,7 +27,9 @@ async function main() {
    * the router and emotion compiled in. */
   const appEntry = join(ROOT, 'prerender-built', 'entry.mjs');
   if (!existsSync(appEntry)) {
-    console.error('prerender-built/entry.mjs missing — run the vite SSR prerender build first (scripts/build.mjs does).');
+    console.error(
+      'prerender-built/entry.mjs missing — run the vite SSR prerender build first (scripts/build.mjs does).',
+    );
     process.exit(1);
   }
 
@@ -57,10 +59,12 @@ async function main() {
         join(DIST, 'spa-gate.js'),
         '(function(){' +
           'var p=location.pathname.replace(/\\.html$/,"");' +
-          'var base="/' + 'portfolio' + '/";' +
+          'var base="/' +
+          'portfolio' +
+          '/";' +
           /* keep ?query and #hash: /writing?tag=x must stay filtered */
           'if(p.slice(-1)!=="/"){location.replace(p+"/"+location.search+location.hash);}' +
-        '})();',
+          '})();',
         'utf8',
       );
     }
@@ -114,7 +118,8 @@ async function writeArtifacts(mod) {
   try {
     const { spawnSync } = await import('node:child_process');
     const r = spawnSync('git', ['log', '-1', '--format=%cs', '--', 'content'], {
-      cwd: ROOT ?? process.cwd(), encoding: 'utf8',
+      cwd: ROOT ?? process.cwd(),
+      encoding: 'utf8',
     });
     if (r.status === 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.stdout.trim())) {
       lastmod = r.stdout.trim();
@@ -139,9 +144,7 @@ async function writeArtifacts(mod) {
    * (LLM agents, retrieval) get a curated map of the site in plain markdown
    * instead of scraping every page. Generated from the same content bundle
    * that renders the site, so it can never drift from what ships. */
-  const contentJson = JSON.parse(
-    readFileSync(join(ROOT, 'src', 'content', 'generated', 'content.json'), 'utf8'),
-  );
+  const contentJson = JSON.parse(readFileSync(join(ROOT, 'src', 'content', 'generated', 'content.json'), 'utf8'));
   const md = (lines) => lines.filter(Boolean).join('\n') + '\n';
   const llms = md([
     `# ${siteMeta.title}`,
@@ -174,8 +177,7 @@ async function writeArtifacts(mod) {
     '',
     '## AI engineering capabilities',
     ...contentJson.aiCapabilities.map(
-      (c) =>
-        `- [${c.title}](${ORIGIN}/ai-engineering/${c.slug}/) — ${c.summary} (status: ${c.status ?? 'n/a'})`,
+      (c) => `- [${c.title}](${ORIGIN}/ai-engineering/${c.slug}/) — ${c.summary} (status: ${c.status ?? 'n/a'})`,
     ),
     '',
     '## Local recipes',
@@ -248,11 +250,7 @@ ${items.join('\n')}
 }
 
 function xmlEscape(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function rfc822(dateLike) {

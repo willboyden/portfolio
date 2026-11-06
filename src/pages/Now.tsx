@@ -202,9 +202,8 @@ export function Now(): React.ReactNode {
           Updated when the picture changes — not on a calendar.
         </Stamp>
         <Intro>
-          A standing answer to &ldquo;what are you working on these
-          days?&rdquo; — published in the spirit of thenowpage.com, so you
-          know what to expect from me before you get in touch.
+          A standing answer to &ldquo;what are you working on these days?&rdquo; — published in the spirit of
+          thenowpage.com, so you know what to expect from me before you get in touch.
         </Intro>
       </Section>
 

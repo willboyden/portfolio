@@ -209,7 +209,11 @@ function entityName(rawTitle: string): string {
   return rawTitle.replace(/ — (Projects|Writing|AI Engineering|Videos|Talks|About|Now|Contact)$/, '').trim();
 }
 
-function buildJsonLd(opts: PageMetaOptions, kind: 'person' | 'article' | 'collection' | 'contact', canonical: string): JsonLdObject {
+function buildJsonLd(
+  opts: PageMetaOptions,
+  kind: 'person' | 'article' | 'collection' | 'contact',
+  canonical: string,
+): JsonLdObject {
   /* R9A-1: every non-home page binds the Person entity so agents can answer
    * "who made this?" from ANY deep link, not just the homepage. */
   const personRef = {
@@ -286,8 +290,7 @@ export function pageMeta(opts: PageMetaOptions): MetaResult {
   const canonical = absoluteUrl(path);
   const isHome = path === '/';
   const type: MetaType = opts.type ?? (opts.publishedTime ? 'article' : 'website');
-  const ogType =
-    opts.ogType ?? (type === 'article' ? 'article' : isHome ? 'website' : 'website');
+  const ogType = opts.ogType ?? (type === 'article' ? 'article' : isHome ? 'website' : 'website');
 
   const titlePlain = capTitle(opts.title);
   const descriptionRaw = opts.description.trim() || SITE.description;
@@ -368,9 +371,7 @@ export function buildHead(meta: MetaResult): string[] {
 
   /* JSON-LD: `<` escaped to \u003c so a `</script>` inside data can't break
    * out of the tag; the result is still strict JSON (JSON.parse handles it). */
-  const ld = JSON.stringify(meta.jsonLd)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e');
+  const ld = JSON.stringify(meta.jsonLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
   tags.push(`<script type="application/ld+json">${ld}</script>`);
 
   return tags;

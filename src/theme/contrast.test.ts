@@ -33,7 +33,10 @@ function parseColor(css: string): { r: number; g: number; b: number; a: number }
 }
 
 /** Composite a translucent fg over an opaque bg (sRGB, per compositing). */
-function composite(fg: { r: number; g: number; b: number; a: number }, bg: { r: number; g: number; b: number; a: number }) {
+function composite(
+  fg: { r: number; g: number; b: number; a: number },
+  bg: { r: number; g: number; b: number; a: number },
+) {
   return {
     r: fg.r * fg.a + bg.r * (1 - fg.a),
     g: fg.g * fg.a + bg.g * (1 - fg.a),
@@ -101,9 +104,7 @@ describe('token contrast matrix (WCAG 2.x AA)', () => {
     for (const pair of PAIRS) {
       it(`${theme.name}: ${pair.name} >= ${pair.min ?? BODY}`, () => {
         const ratio = contrastRatio(pair.fg(theme.tokens), pair.bg(theme.tokens));
-        expect(ratio, `${pair.name} = ${ratio.toFixed(2)}:1 in ${theme.name}`).toBeGreaterThanOrEqual(
-          pair.min ?? BODY,
-        );
+        expect(ratio, `${pair.name} = ${ratio.toFixed(2)}:1 in ${theme.name}`).toBeGreaterThanOrEqual(pair.min ?? BODY);
       });
     }
   }

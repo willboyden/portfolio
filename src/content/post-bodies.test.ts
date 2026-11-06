@@ -8,13 +8,7 @@
  * stand-ins, and every case uses its own slug because the cache is per page.
  */
 import { describe, expect, it } from 'vitest';
-import {
-  adoptPrerenderedPostBody,
-  cachedPostBody,
-  loadPostBody,
-  postBodyUrl,
-  primePostBody,
-} from './post-bodies';
+import { adoptPrerenderedPostBody, cachedPostBody, loadPostBody, postBodyUrl, primePostBody } from './post-bodies';
 
 const HASH = 'abcdef012345';
 

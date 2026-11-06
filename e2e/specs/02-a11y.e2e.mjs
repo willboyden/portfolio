@@ -117,6 +117,7 @@ describe('a11y', () => {
       })()
     `);
     if (after === null) throw new Error('theme toggle disappeared after activation');
-    if (after === before) throw new Error(`aria-label unchanged after toggle ("${after}") — label should describe the new state`);
+    if (after === before)
+      throw new Error(`aria-label unchanged after toggle ("${after}") — label should describe the new state`);
   });
 });

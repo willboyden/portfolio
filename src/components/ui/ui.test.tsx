@@ -22,7 +22,6 @@ import {
   Pagination,
   Prose,
   Section,
-
   Spinner,
   Stack,
   Tag,
@@ -33,7 +32,8 @@ import {
 const h = (c: React.ComponentType<any> | string, p?: Record<string, unknown>, ...kids: unknown[]) =>
   createElement(c, p, ...(kids as React.ReactNode[]));
 const dark = (node: ReactNode) => renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: node as never }));
-const light = (node: ReactNode) => renderToStaticMarkup(h(ThemeProvider, { theme: lightTheme, children: node as never }));
+const light = (node: ReactNode) =>
+  renderToStaticMarkup(h(ThemeProvider, { theme: lightTheme, children: node as never }));
 
 const REDUCED = '@media (prefers-reduced-motion: reduce)';
 
@@ -82,10 +82,7 @@ describe('Button', () => {
 
   it('sizes change the min-height via space tokens', () => {
     dark(h(Button, { size: 'sm', children: 'x' }));
-    hasDecl(
-      __sheetCss(),
-      `min-height: calc(${darkTheme.space[5]} + ${darkTheme.space[4]} + ${darkTheme.space[1]})`,
-    );
+    hasDecl(__sheetCss(), `min-height: calc(${darkTheme.space[5]} + ${darkTheme.space[4]} + ${darkTheme.space[1]})`);
   });
 
   it('as="a" with href renders an anchor', () => {
@@ -477,8 +474,25 @@ describe('Pagination', () => {
 
 describe('Icon', () => {
   const names = [
-    'arrow-right', 'arrow-up', 'chevron-left', 'chevron-right', 'github', 'linkedin', 'mail', 'rss',
-    'external-link', 'play', 'clock', 'search', 'sun', 'moon', 'menu', 'close', 'download', 'calendar', 'check',
+    'arrow-right',
+    'arrow-up',
+    'chevron-left',
+    'chevron-right',
+    'github',
+    'linkedin',
+    'mail',
+    'rss',
+    'external-link',
+    'play',
+    'clock',
+    'search',
+    'sun',
+    'moon',
+    'menu',
+    'close',
+    'download',
+    'calendar',
+    'check',
   ] as const;
 
   it.each(names)('renders %s', (name) => {

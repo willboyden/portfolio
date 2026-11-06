@@ -23,7 +23,7 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
       ],
-      '@typescript-eslint/no-explicit-any': 'off', /* vendored shim layer uses any at its edges */
+      '@typescript-eslint/no-explicit-any': 'off' /* vendored shim layer uses any at its edges */,
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'smart'],
       'prefer-const': 'error',
@@ -50,10 +50,7 @@ export default tseslint.config(
     rules: {
       'no-var': 'off',
       'no-empty': ['error', { allowEmptyCatch: true }],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { caughtErrors: 'none', varsIgnorePattern: '^_' },
-      ],
+      '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'none', varsIgnorePattern: '^_' }],
     },
   },
   {

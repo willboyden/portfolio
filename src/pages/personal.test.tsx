@@ -43,11 +43,7 @@ const routes: RouteDefinition[] = [
 /** Same provider shape the real app mounts, pinned to a test path. */
 function render(ui: ReactNode, initialPath = '/'): string {
   return renderToStaticMarkup(
-    createElement(
-      AppThemeProvider,
-      null,
-      createElement(RouterProvider, { routes, initialPath }, ui),
-    ),
+    createElement(AppThemeProvider, null, createElement(RouterProvider, { routes, initialPath }, ui)),
   );
 }
 
@@ -121,8 +117,12 @@ describe('Home', () => {
 
   it('primary CTAs link to /projects and /contact', () => {
     const anchors = tags(html, 'a');
-    const projectsCta = anchors.find((t) => t.includes('href="/projects"') && t.includes('data-testid="home-cta-projects"'));
-    const contactCta = anchors.find((t) => t.includes('href="/contact"') && t.includes('data-testid="home-cta-contact"'));
+    const projectsCta = anchors.find(
+      (t) => t.includes('href="/projects"') && t.includes('data-testid="home-cta-projects"'),
+    );
+    const contactCta = anchors.find(
+      (t) => t.includes('href="/contact"') && t.includes('data-testid="home-cta-contact"'),
+    );
     expect(projectsCta).toBeDefined();
     expect(contactCta).toBeDefined();
     /* Button's label renders in a <span data-slot="label"> after the tag. */

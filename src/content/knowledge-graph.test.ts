@@ -28,7 +28,11 @@ const graph: KnowledgeGraph = {
   ],
 };
 
-const reply = (status: number, body: unknown) => async () => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+const reply = (status: number, body: unknown) => async () => ({
+  ok: status >= 200 && status < 300,
+  status,
+  json: async () => body,
+});
 
 afterEach(() => resetKnowledgeGraphForTests());
 

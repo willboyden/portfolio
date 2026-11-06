@@ -25,14 +25,7 @@ import { content } from 'app/content';
 import { Header } from './Header';
 import { Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
 import { Layout, skipLinkClass } from './Layout';
-import {
-  NAV_ITEMS,
-  availableNavItems,
-  decorateNavItems,
-  isNavActive,
-  normalizePath,
-  type NavItem,
-} from './Nav';
+import { NAV_ITEMS, availableNavItems, decorateNavItems, isNavActive, normalizePath, type NavItem } from './Nav';
 import {
   FOCUSABLE_SELECTOR,
   MOBILE_MENU_ID,
@@ -412,16 +405,12 @@ describe('isEscape / scroll lock / aria state', () => {
   });
 
   it('MobileMenu renders nothing when closed', () => {
-    const html = render(
-      <MobileMenu open={false} onClose={() => undefined} staticRender />,
-    );
+    const html = render(<MobileMenu open={false} onClose={() => undefined} staticRender />);
     expect(html).toBe('');
   });
 
   it('MobileMenu stands alone: dialog + close + nav + toggle in order', () => {
-    const html = render(
-      <MobileMenu open onClose={() => undefined} currentPath="/about" staticRender />,
-    );
+    const html = render(<MobileMenu open onClose={() => undefined} currentPath="/about" staticRender />);
     const ids = testids(html);
     expect(ids.slice(0, 2)).toEqual(['menu-backdrop', 'mobile-menu']);
     expect(ids).toContain('menu-close');
@@ -469,7 +458,7 @@ describe('Layout', () => {
   });
 
   it('renders children inside main', () => {
-    const html = render(<Layout currentPath="/">{"page-body-here"}</Layout>);
+    const html = render(<Layout currentPath="/">{'page-body-here'}</Layout>);
     const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
     expect(main).toContain('page-body-here');
   });
@@ -536,7 +525,7 @@ describe('Footer', () => {
     expect(link).toContain('aria-label="Back to top"');
   });
 
-  it('renders the owner\'s real profiles, never a placeholder handle (R2-A A12)', () => {
+  it("renders the owner's real profiles, never a placeholder handle (R2-A A12)", () => {
     expect(html).toContain('data-testid="footer-social"');
     expect(html).not.toContain('your-handle');
     for (const entry of SOCIAL_LINKS) {

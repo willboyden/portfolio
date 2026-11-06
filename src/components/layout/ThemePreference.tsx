@@ -266,12 +266,7 @@ let crossTabAttached = false;
 function attachCrossTabSync(): void {
   /* needs BOTH globals: the handler's consequence (applyThemeToDocument)
    * requires document; attaching to a window-less env would drift. */
-  if (
-    crossTabAttached ||
-    typeof window === 'undefined' ||
-    typeof document === 'undefined'
-  )
-    return;
+  if (crossTabAttached || typeof window === 'undefined' || typeof document === 'undefined') return;
   crossTabAttached = true;
   window.addEventListener('storage', (event: StorageEvent) => {
     if (event.key !== THEME_STORAGE_KEY) return;
@@ -351,9 +346,7 @@ export function ThemePreferenceProvider({
     [current.themeName, current.resolvedFrom, setThemeName, toggleTheme],
   );
 
-  return (
-    <ThemePreferenceContext.Provider value={value}>{children}</ThemePreferenceContext.Provider>
-  );
+  return <ThemePreferenceContext.Provider value={value}>{children}</ThemePreferenceContext.Provider>;
 }
 
 export function useThemePreference(): ThemePreferenceValue {
