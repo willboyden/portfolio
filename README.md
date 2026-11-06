@@ -20,7 +20,7 @@ Two supported environments (CONTRACT §1):
 ```bash
 # Networked host / CI (GitHub Actions, your dev machine):
 npm ci               # or: npm install --legacy-peer-deps on npm 10.9.x
-npm run verify       # typecheck + lint + unit + full build + e2e + dist audit
+npm run verify       # typecheck + lint + format check + unit + full build + e2e + dist audit
 
 # Offline sandbox (/opt/hermes container) — no network:
 npm run deps         # symlink node_modules from /opt/hermes/node_modules
@@ -36,6 +36,8 @@ npm run verify
 | `npm run test:e2e` | real headless Chrome (CDP) against built `dist/` |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | eslint (hooks rules included) |
+| `npm run format` | Prettier 3.9.10 rewrites code and JSON in place (`.prettierrc.json`; Markdown, YAML and generated content are skipped, see `.prettierignore`) |
+| `npm run format:check` | the same check `verify` and the deploy workflow run; fails on any unformatted file |
 | `npm run audit:site` | checks dist/ pages, feeds, links, bundle budget |
 
 ## Deploying with nginx

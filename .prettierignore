@@ -1,0 +1,22 @@
+# Prettier checks code and JSON only. Markdown (prose style) and YAML
+# (workflows) are deliberately not formatted.
+*.md
+*.yml
+*.yaml
+
+# Dependencies, build output, coverage
+node_modules/
+dist/
+prerender-built/
+coverage/
+package-lock.json
+
+# Written by scripts/build-content.mjs and hash-checked against the content
+# (bodyHash / contentHash): never hand-edited, never reformatted.
+src/content/generated/
+public/post-bodies/
+public/recipe-bodies/
+public/knowledge-graph.json
+
+# Evidence files published with posts, linked by URL: kept byte-for-byte.
+public/posts/
