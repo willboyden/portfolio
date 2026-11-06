@@ -246,6 +246,8 @@ describe('Contact', () => {
     expect(socialAnchors).toHaveLength(0);
     expect(html).toContain('data-testid="contact-social-list"');
     expect(html).toContain('href="https://github.com/willboyden"');
+    /* the published model quantizations (owner's request, 2026-11-05) */
+    expect(html).toContain('href="https://huggingface.co/willyb23"');
   });
 
   it('names what he is hired for, from the verified capabilities (R8C-2)', () => {

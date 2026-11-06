@@ -33,6 +33,8 @@ export interface SocialLink {
 export const SOCIAL_LINKS: readonly SocialLink[] = [
   { label: 'LinkedIn', url: 'https://www.linkedin.com/in/william-boyden-88a324b6/' },
   { label: 'GitHub', url: 'https://github.com/willboyden', handle: 'willboyden' },
+  /* The models I quantize and publish (owner's request, 2026-11-05). */
+  { label: 'Hugging Face', url: 'https://huggingface.co/willyb23', handle: 'willyb23' },
 ];
 
 export const RSS_HREF = withBase('/rss.xml');
@@ -337,7 +339,7 @@ export function Footer({
                       className={classes}
                       target="_blank"
                       rel="noreferrer noopener"
-                      data-testid={`footer-social-${entry.label.toLowerCase()}`}
+                      data-testid={`footer-social-${entry.label.toLowerCase().replace(/\s+/g, '-')}`}
                     >
                       {entry.label}
                     </a>

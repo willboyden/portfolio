@@ -280,11 +280,12 @@ export function Contact(): React.ReactNode {
 
           {OTHER_PROFILES.length > 0 && (
             <Panel aria-labelledby="contact-social-title">
-              <PanelTitle id="contact-social-title">The code</PanelTitle>
+              <PanelTitle id="contact-social-title">The code and models</PanelTitle>
               <PanelBody>
                 The open-source tools on this site — Engine Console, Nemo
                 Console, GPU Tuner, Agent Hub — live on GitHub with their
-                docs, tests and release notes.
+                docs, tests and release notes. The models I quantize and
+                publish are on Hugging Face.
               </PanelBody>
               <SocialList data-testid="contact-social-list">
                 {OTHER_PROFILES.map((link) => (

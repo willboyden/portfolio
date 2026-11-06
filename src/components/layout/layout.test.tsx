@@ -563,6 +563,18 @@ describe('Footer', () => {
     expect(filled).toContain('Elsewhere');
   });
 
+  it('a two-word profile label gets a hyphenated test id (Hugging Face, 2026-11-05)', () => {
+    const filled = render(
+      <Footer
+        now={new Date('2026-01-01T00:00:00Z')}
+        social={[{ label: 'Hugging Face', url: 'https://example.com/someone' }]}
+      />,
+    );
+    const anchor = tags(filled, 'a').find((t) => t.includes('data-testid="footer-social-hugging-face"'));
+    expect(anchor).toContain('href="https://example.com/someone"');
+    expect(filled).not.toContain('footer-social-hugging face');
+  });
+
   it('social list is a labelled list, not a bare run of links (when configured)', () => {
     /* R6-B: the list only exists when at least one social is configured —
      * assert against a configured render, not the default (unset) one. */
