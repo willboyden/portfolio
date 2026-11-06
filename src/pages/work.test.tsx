@@ -327,6 +327,41 @@ describe('Videos populated', () => {
   });
 });
 
+describe('Videos audio rows', () => {
+  const EPISODE: Video = {
+    ...VIDEO_PAST,
+    slug: 'ep-1',
+    title: 'Episode one',
+    url: 'https://example.com/ep-1.mp3',
+    provider: 'podcast',
+    duration: '33 min',
+    speakers: ['Nora (AI voice)', 'Sam (AI voice)'],
+    transcriptUrl: 'https://example.com/ep-1.txt',
+  };
+
+  it('plays on the page with download and transcript links, no external title link', () => {
+    const html = render(<VideoRowItem video={EPISODE} />, '/videos');
+    expect(html).toContain('data-testid="video-audio-player"');
+    expect(html).toContain('preload="none"');
+    expect(html).toContain('src="https://example.com/ep-1.mp3"');
+    expect(html).toContain('data-testid="video-download"');
+    expect(html).toContain('data-testid="video-transcript"');
+    expect(html).toContain('href="https://example.com/ep-1.txt"');
+    expect(html).toContain('Podcast');
+    expect(html).toContain('Nora (AI voice), Sam (AI voice)');
+    /* Only the download and transcript links; neither opens a new tab. */
+    const anchors = externalAnchors(html);
+    expect(anchors.length).toBe(2);
+    for (const anchor of anchors) expect(anchor).not.toContain('target="_blank"');
+  });
+
+  it('omits the transcript link when there is none', () => {
+    const html = render(<VideoRowItem video={{ ...EPISODE, transcriptUrl: undefined }} />, '/videos');
+    expect(html).toContain('data-testid="video-download"');
+    expect(html).not.toContain('data-testid="video-transcript"');
+  });
+});
+
 describe('Talks populated', () => {
   it('renders native disclosures with slides/video links', () => {
     setContent({ talks: [TALK_1, TALK_2] });

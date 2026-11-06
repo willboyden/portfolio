@@ -5,7 +5,7 @@
  * classic portfolio lie; the brief bans fake embed players outright).
  *
  * Grouping: videos dated in the FUTURE are "Upcoming" (premiere/announced
- * slots), the rest are "Past videos", newest first. "Today" is pinned to UTC
+ * slots), the rest are "Past recordings", newest first. "Today" is pinned to UTC
  * (src/lib/format.ts posture — the prerendered shell and the hydrated client
  * must agree), and the cutoff is passed INTO the pure helper (`splitByDate`)
  * so unit tests are deterministic.
@@ -277,6 +277,16 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
               Download
               <VisuallyHidden>{` ${video.title} (audio file)`}</VisuallyHidden>
             </a>
+            {video.transcriptUrl && (
+              <a
+                href={video.transcriptUrl}
+                className={downloadCls(theme)}
+                data-testid="video-transcript"
+              >
+                Transcript
+                <VisuallyHidden>{` of ${video.title}`}</VisuallyHidden>
+              </a>
+            )}
           </AudioPlayerControls>
         )}
         <MetaLine>
@@ -335,15 +345,15 @@ export function Videos(): React.ReactNode {
     <>
       <PageHeader>
         <Heading level={1} data-testid="videos-title">
-          Videos
+          Videos and podcasts
         </Heading>
         <Lede>
-          Conference talks, meet-up demos, and interviews — every entry links out to the host
-          where it actually plays.
+          Talks, demos and podcast episodes. Audio plays right here, with a transcript; video
+          links out to the host where it actually plays.
         </Lede>
         {total > 0 && (
           <MetaLine role="status" data-testid="videos-count">
-            {pluralize(total, 'video')} in the library.
+            {pluralize(total, 'recording')} in the library.
           </MetaLine>
         )}
       </PageHeader>
@@ -368,7 +378,7 @@ export function Videos(): React.ReactNode {
           )}
           {past.length > 0 && (
             <GroupSection aria-labelledby="videos-past-title" data-testid="videos-past">
-              <GroupTitle id="videos-past-title">Past videos</GroupTitle>
+              <GroupTitle id="videos-past-title">Past recordings</GroupTitle>
               <VideoList>
                 {past.map((video) => (
                   <VideoRowItem key={video.slug} video={video} />

@@ -1,0 +1,344 @@
+The Local Lab, episode 1: One Door, No Keys: Containment First in a Private AI Lab
+
+Transcript. The hosts, Nora, Sam and Isla, are AI-generated voices and faces. The script is drawn from Will Boyden's published write-ups and lab notes.
+Length: 44:56
+
+Chapters
+0:00 Cold open
+2:12 One door for every model call
+8:30 Agents that hold nothing
+15:11 Proving it works
+17:58 Data an agent can't misread
+24:20 A chat server with trust domains
+34:09 Loopback is not a boundary
+42:47 Three things to take away
+
+
+Nora: Picture a commit message that says, give the Hermes agents Relay. The settings are in the compose file, the output folders exist, and every config check passes.
+Sam: For three days, it captures nothing at all. Not one single event.
+Isla: Somebody writes a better check, naturally. It asks the agent's plugin list whether the plugin is there.
+Sam: That check passes too. The plugin's name is right there in the list.
+Nora: It's right there, in the section marked disabled.
+Isla: Three days of nothing, and every check said it was working.
+Nora: Welcome to The Local Lab. I'm Nora.
+Sam: I'm Sam, and I'm glad you're here.
+Isla: I'm Isla. Quick note before we start: all three of us are AI-generated voices. Everything we talk about comes from Will Boyden's published write-ups and lab notes.
+Nora: Today's about containment. Will runs a private AI lab built around one workstation, with local models and a handful of coding agents.
+Nora: Some of those agents are trusted, and some deliberately aren't. The lab's own rulebook says the whole point is containment plus observability.
+Nora: First we're going to walk through how it's built. There's one door for every model call, agents that hold no keys, and a private chat server for agents.
+Nora: After that comes the part I find more useful, which is how you prove each control actually works.
+Isla: That second part is the one I'm here for, honestly.
+Sam: It's most of the episode, to be fair. The design's the easy part to describe.
+Sam: What's interesting is how many ways a control can look switched on while doing nothing.
+
+[2:12] One door for every model call
+
+Nora: Let's start with the shape. Sam, what does one door mean here?
+Sam: Every client in the lab talks to exactly one thing, a LiteLLM router. That's true whether it's a chat web app, a coding agent or an evaluation script.
+Sam: LiteLLM is a proxy that speaks the OpenAI and Anthropic APIs. It forwards each call to whatever engine serves the model.
+Nora: That's what the lab's rulebook calls the single chokepoint for auth, tracing and egress on every model call. Let me push on it, though. Why only one?
+Nora: You could let each tool talk to its engine directly.
+Sam: You could, and then you'd have as many places to enforce rules as you have tools.
+Sam: With one door, the router checks the key, records the call, meters it and filters the output.
+Isla: That's the bit I'd sell to anyone. No client changes when a rule changes. Adding a model is one new alias in the router's config.
+Isla: No client needs code changes, though a few re-sync their model lists.
+Nora: How do all the pieces find each other?
+Sam: Over a shared Docker network that works like a bus. Docker here runs rootless, so there's no root daemon and no docker group at all.
+Sam: One side effect is that containers can't reach ports published on the host the usual way. Traffic between projects travels over that bus by service name instead.
+Nora: What about the outbound side? If model calls have one door, what about everything else an agent might want to reach?
+Sam: Rule one of the lab is deny-by-default egress. Nothing reaches the network except through a logging, allowlisted chokepoint. That's a mitmproxy instance, which is an intercepting HTTP proxy.
+Sam: Every call through it is logged, and a host that isn't on the allowlist gets refused.
+Nora: You don't give a tool network access, then, without adding its host to the allowlist first. That sounds strict, Isla. Does it ever bend?
+Isla: It does, and how it bends is the interesting part. The rulebook lists every exception with a date and the words user-approved.
+Isla: In mid-October Will approved a narrow one for skill-evaluation jobs started by his trusted agents. Jobs from contained clients stay on the allowlist.
+Nora: The second one's from late October, for setup downloads in Harness squared Workbench. That's one of Will's public projects. What does that exception cover?
+Isla: It's limited to package registries, GitHub and Hugging Face. For one benchmark's image builds, it adds Docker Hub, Debian and Node downloads.
+Nora: It's downloads only, and the jobs go back to router-only before any model runs. Both entries say the same thing, too. Don't widen this to other clients.
+Isla: I love that line. It's the sentence that stops an exception from quietly turning into the rule.
+Nora: You mentioned output filtering at the router, Sam. What's that about?
+Sam: It's Microsoft Presidio, a PII detector, wired in as a router guardrail.
+Sam: It scans model output and masks a short list of genuinely sensitive things, like card and bank account numbers.
+Isla: Why such a short list, though? I'd be tempted to mask everything.
+Sam: It's tuned narrow on purpose, because masking everything mangles ordinary text.
+Nora: Observability was the other half. Rule five is observability first. The monitoring stack comes up before any other layer, so actions are watched from the start.
+Nora: What's actually in it?
+Sam: There are two planes. One's infrastructure, with Prometheus for metrics, Loki for logs, Tempo for traces and Grafana on top.
+Isla: The other one's LLM-specific. Langfuse covers prompts, tool calls and costs, and Phoenix is there for evaluation work.
+Nora: Does the router feed both of those?
+Sam: The router's the single emitter. It sends OpenTelemetry traces to a collector that fans out to Tempo and Phoenix.
+Sam: It exposes metrics for Prometheus to scrape, and it sends its traces to Langfuse as well.
+Nora: Since late September, two audit trails go into Loki as well. One's every tool call the agents make, written by a hook.
+Nora: The other's every allow or block decision at the egress proxy.
+Isla: A Grafana board puts them on one timeline. That's exactly the view I'd want.
+Nora: One more thing on identity. If everything comes through one door, how do you know who knocked?
+Sam: That turned out to matter. In late September Will saw that opencode's usage wasn't showing up under its own name in Grafana.
+Sam: It shared a key with other clients. The fix was a scoped key of its own, and Turnstone and the newer contained agents got their own keys too.
+Nora: That's a tidy lesson to close the chapter on. If you want attribution, each caller needs its own identity at the door.
+
+[8:30] Agents that hold nothing
+
+Nora: Let's talk about the agents themselves. The chat-server post lays it out. Three agents are trusted and run as Will: Claude Code, opencode and Codex.
+Nora: Which ones are contained?
+Sam: Three are contained: claude-local, Hermes Agent and Turnstone.
+Isla: claude-local is Claude Code pointed at a local model, and Hermes Agent is made by Nous.
+Isla: Those three are walled off because they read the web, or because they run on models Will trusts less.
+Nora: In late October a fourth contained agent arrived, DeepSeek's open-source harness. What does contained mean, concretely? Start with Hermes.
+Sam: Hermes is the strictest case, because the lab treats two things as untrusted. One is the model weights.
+Sam: The other, partly, is the agent code itself, since it's a large third-party codebase.
+Isla: That's why the whole agent process lives in a container. All Linux capabilities are dropped except the few its init system needs.
+Sam: Egress is denied at the network layer, too, not by the agent.
+Nora: Meaning the agent doesn't get a vote.
+Sam: Exactly that. It sits on internal-only Docker networks, which have no NAT and no uplink. Its only peers are small broker containers, plus, since October, one egress proxy.
+Nora: The sandbox document makes the point directly. The lab doesn't rely on proxy settings.
+Nora: A model that unsets its proxy variable changes nothing, because there's no route out to begin with.
+Isla: That's a lovely way to put it. What's a broker in this setup, though?
+Sam: It's a tiny mitmproxy container between the agent and the router. The agent's configured with a dummy key, a public placeholder.
+Sam: The broker holds the real router key, injects it into each request, and refuses everything except a handful of allowlisted API paths.
+Isla: The agent can ask for a chat completion, then, but it can't touch the router's admin API. There's no key in the container to steal.
+Sam: The document credits the pattern to NVIDIA's NemoClaw, reimplemented for the lab.
+Nora: Does Hermes have any internet at all?
+Sam: Since early October, a little. Will chose to give it allowlisted web access through its own dedicated proxy, with every call logged.
+Isla: Here's my devil's advocate question. Why not just put it on the shared bus with everything else?
+Sam: The decision record rejected exactly that. Other services live on the bus that the agent has no business reaching.
+Sam: It also rejected trusting the model to stay in bounds.
+Nora: Which means the enforcement point has to be the network. Is it the same pattern for the others?
+Sam: It's the same broker addon, in fact. Turnstone runs on an internal network with a dummy key.
+Sam: Its brokers inject its own scoped key and refuse the admin API.
+Isla: Its containers run read-only with all capabilities dropped. Web search, skill downloads, Discord and Slack are off by design.
+Nora: The lab's image even strips the Google Fonts links, so the browser doesn't call Google. That's thorough. The newest one is DeepSeek Harness, added on October twenty-seventh.
+Nora: How's that one set up?
+Sam: It's built from source at the exact commit that was scanned, and it's contained like Turnstone.
+Sam: Its router key is restricted to local models, and approval is always set to ask.
+Nora: Upstream's desktop app is deliberately not used, because it runs the agent on the host. There's a pattern there, too.
+Nora: You scan the thing, then you pin the exact version you scanned.
+Isla: That's the habit I'd steal first. For packages, it's scan, pin the commit you scanned, and prefer baking it into the image.
+Isla: That beats opening a registry as a standing egress channel.
+Nora: For MCP servers, it's rule two. Every new MCP server is scanned before trust and runs in its own sandbox, with a project-only filesystem and least-privilege credentials.
+Nora: Why one sandbox each, though?
+Sam: The sandbox README puts it plainly. If five MCP servers share one sandbox, a poisoned tool in one can read another's credentials.
+Nora: Where does claude-local fit? It isn't in a container.
+Sam: Right, and it's worth being precise here. claude-local is the same Claude Code binary pointed at the router.
+Sam: Its shell commands run inside a bubblewrap sandbox, the unprivileged namespace tool that Flatpak is built on.
+Isla: The model's treated as adversarial, and it gets no network. The sandboxed shell can't reach out, and the web tools are switched off.
+Nora: Inside Hermes itself, is there a tool policy too?
+Sam: There are three layers, not one. There's the config's deny list, and an explicit toolset pin on every run. There's also a guard plugin baked into the image.
+Sam: It's an allowlist that sees every tool call on every path, and it blocks on any internal error.
+Nora: Is the guard the boundary, then?
+Sam: The document's honest that it isn't. The guard is defense in depth. What holds is the container: no credentials, internal-only networks, the egress chokepoint.
+
+[15:11] Proving it works
+
+Nora: Time for the traces. Sam, start us with the plugin that was never enabled.
+Sam: Hermes has an in-process plugin for NeMo Relay, which the lab uses as its agent observability layer. It looked wired.
+Sam: There were environment variables in the compose file, output folders, and a commit message that said, give the Hermes agents Relay.
+Nora: From September twenty-first to the twenty-fourth, it captured nothing. What actually went wrong there?
+Sam: The sync script enabled it by running a command inside the running container. The launcher, though, starts Hermes as a one-off container that's removed when it exits.
+Sam: There was never a running container to run anything in.
+Isla: The only symptom was a warning printed to standard error at each launch. That's very easy to scroll straight past.
+Nora: It got caught by asking for the output, not reading the config. Here's the part that makes it a good story, though.
+Nora: The first version of the new check passed falsely too.
+Isla: It searched the plugin list for the plugin's name. The name was there, in the disabled section.
+Nora: That's our cold open. What caught the bad check?
+Sam: A negative control did. That's a test you expect to fail, to show your test is able to fail.
+Isla: This is the bit I'd pin above my desk.
+Isla: The rule in the note: when you declare something wired, produce the artifact it should emit, and run one negative control.
+Nora: Can't you just ask the agent whether its tracing works?
+Sam: No, and this one's sneaky. Ask Hermes whether tracing works, and it'll say it has no credentials and can't reach the server. That's expected even when tracing works.
+Isla: Hang on, why would it say that if it's working?
+Sam: Its shell strips secret-looking variables, and it's only allowed to reach a write-only broker. You check Langfuse, not the agent's self-report.
+Nora: Write-only broker meaning what, exactly?
+Isla: The agent holds placeholder Langfuse keys. The broker holds the real ones and forwards only ingestion. Every read path is refused.
+
+[17:58] Data an agent can't misread
+
+Nora: Before the chat server, there's one more kind of containment that's got nothing to do with networks. Isla, this one's yours.
+Nora: What happens when you point an agent at a real database?
+Isla: This is my favorite chapter, because it's the one you can use tomorrow. Will wrote it up in a post called agent-proof your data layer.
+Isla: He built an analytics pipeline over a government payroll and spending database in ClickHouse.
+Sam: It's twenty-three tables, about two hundred seventy-nine million rows. The first decision was about the path. The agent's only way to the data is a read-only MCP server.
+Nora: Read-only meaning the prompt tells it not to write?
+Sam: Meaning the server refuses. Anything that would create, change or delete gets rejected at the server.
+Nora: The post's phrase for that is aggregate-only by construction, not by discipline. It's the same idea as the router.
+Nora: You put the rule where the agent can't argue with it.
+Isla: The agent can't break the data, then. I'd still want to know whether it can get the answer wrong.
+Sam: Easily, and that's the real subject of the post. Some of the traps fail loudly.
+Sam: There's a function that doesn't exist in that database, a column that's named differently in one table, and a year stored as text.
+Isla: Those throw errors, and the post calls that the good category of failure. At least those ones shout at you.
+Nora: What's in the bad category, then?
+Sam: It's the ones that return a perfectly reasonable number. One employment table stores nine aggregation levels for every county.
+Sam: Sum across all of them, and you overstate employment about nine times.
+Isla: Another table keeps a running total for every modification to a federal award. A plain sum overstates spending about twelve times.
+Nora: Twelve times over, and nothing complains at all?
+Sam: Nothing complains, no. The third one's subtler. The municipal payroll data only covers one to four cities in any given year.
+Sam: A chart of top cities built on a thin year ranks, in the post's words, a rounding error.
+Isla: That's the one that would get me. How do you protect an agent from that?
+Sam: By moving the knowledge into the queries. The fix for the nine levels is a single filter, and it goes into every query template that touches that table.
+Sam: The federal data's reduced to one value per award before anything's summed.
+Isla: The city ranking runs on the year with the best coverage.
+Isla: The trend view carries a column that says how many cities each year includes, so a reader can't forget it.
+Nora: The trap stops being something you have to know. That's the post's definition of a data layer that isn't agent-proof.
+Nora: Correctness depends on tribal knowledge living outside the schema.
+Sam: A capable agent will write the reasonable-looking query, get a number, and cite it.
+Nora: What about checking a number after the fact?
+Isla: Every dataset file carries its own provenance. That's the exact query that produced it, timings, row counts, notes, and a flag if it failed.
+Isla: The dashboard has a section that shows the query behind every dataset.
+Nora: The audit path's short, then. Open the file, read the query, run it again. No archaeology, and I like that very much.
+Isla: There's a habit about dates too, and I'd copy it tomorrow. The very first query asks each core table for its first and last year.
+Isla: Every query after that derives its year filters from that answer instead of hard-coding one.
+Nora: Nothing needs editing when a new year lands, then. If that first answer looks wrong, nothing downstream is trusted. Does the protocol itself cause any trouble?
+Sam: It does. Talking to that MCP server takes a short handshake, a session header you've got to capture and replay, and a streamed response to parse.
+Isla: The post wraps all of it in one small module. The agent-facing interface is a single function: give it a query, get rows back.
+Isla: Its line is, wrap the transport, don't prompt for it.
+Nora: Every step you leave to the model is a step it can get wrong, every time it runs. The closing argument's about scale, isn't it?
+Sam: It is. A junior analyst who sums nine aggregation levels gets corrected in code review.
+Isla: An agent doing the same thing produces a dashboard, a summary of the dashboard, and three confident sentences about it before anyone asks.
+Sam: The fixes are old data-engineering virtues. Filters that encode the grain live in the templates, and provenance travels with the data.
+Sam: Refresh is idempotent, and the server says read-only even when the prompt says otherwise.
+
+[24:20] A chat server with trust domains
+
+Nora: Let's switch to something designed from scratch, lab-chat, from late October. The agents needed a way to reach Will.
+Sam: Six agents run long jobs, and they hit moments where they need a person. Done, blocked, may I delete this. They also hand work to each other.
+Nora: Prometheus alerts had nowhere to go either, except a web page nobody watched. The obvious answer's Discord, surely?
+Isla: That was Will's first idea, and the post explains why it fails here. It can't be self-hosted.
+Isla: A private server is still on Discord's cloud, so messages, bot credentials and agent output go to a third party.
+Sam: Every bot needs internet access, and the lab's deny-by-default. A leaked bot credential or invite becomes a command channel into agents that run shell commands.
+Nora: Hermes and Turnstone both ship Discord integrations, and both are switched off. Which is how you end up with Matrix.
+Sam: Matrix is an open chat protocol you can run yourself. The server is Synapse and the client is Element.
+Sam: It's closed off from everything: no federation, registration off, and link previews off.
+Isla: Why switch off link previews? They're handy.
+Sam: Previews are a request-forgery and egress path. The server sits on an internal Docker network with no route to the internet, the LAN or DNS.
+Sam: Only the client API is published, on loopback.
+Nora: Do the agents get chat accounts?
+Sam: The agents never hold a chat credential. That's the core of the design.
+Sam: Each agent gets an MCP server called lab-chat with six tools: notify, ask human, get answer, post, read and list rooms.
+Isla: The bridge behind those tools holds the Matrix credentials. A host agent holds only a bridge credential, and that maps to exactly one Matrix account.
+Nora: What about the containerized agents?
+Sam: They don't even hold that. Hermes and Turnstone reach the bridge through a relay container on their own internal network.
+Sam: The bridge treats anything on that network as that agent. It's network identity.
+Nora: That only works if nobody else can join the network.
+Isla: That was my worry too, and three things check it. The agent's start script refuses to start if a stranger's on the network.
+Isla: A policy script scans every compose file in the lab for that network, and for containers that borrow another container's network.
+Sam: The bridge's status command checks the live members, too.
+Nora: How's the bridge itself contained?
+Sam: It's four processes, one per trust domain. Those are the trusted host agents, claude-local, Hermes and Turnstone.
+Sam: Each runs inside srt with no network, and each can read only its own domain's credentials.
+Nora: The code runs from hash-checked copies kept outside the repository, too.
+Nora: That's because the contained agents can write to the repository, and a changed bridge would run outside their sandbox. What about the rooms?
+Sam: One file defines them. There's an alerts room that only the alerts bot posts in, and a trusted room for Will and the trusted agents.
+Sam: There's a contained room for hand-offs, and one ask room per agent, holding just Will and that agent.
+Nora: The bridge enforces that file, and Synapse enforces the same table independently, through membership and power levels. A reader with valid credentials still can't post.
+Nora: Here's what I wanted to get to. Agents read text other agents wrote, and some of those agents read the web.
+Nora: How does the chat avoid becoming an injection channel?
+Sam: The bridge assumes every message from a bot is hostile. Each message carries a flag that says whether the human wrote it.
+Sam: It's set from the sender the server authenticated, so no agent can fake it.
+Isla: The tool descriptions and the agents' instructions say only those messages are instructions. Agent text comes back labeled untrusted, with terminal escape codes and bidirectional-text characters stripped out.
+Nora: What about bots answering bots forever?
+Sam: Agent posts go out as Matrix notices, which bots by convention never answer. There are rate limits, too.
+Sam: It's ten writes a minute and a hundred and twenty an hour per account.
+Isla: There's a separate budget of three pings a minute and twenty an hour to Will.
+Isla: There's a secret filter as well, which refuses a post that looks like a key.
+Nora: The post calls that filter a seatbelt, not the boundary. There's also the phrase pending is not yes. Where does that come from?
+Isla: It comes from the skill that teaches agents to use lab-chat. When an agent asks Will a question, it gets a ticket back.
+Isla: Checking that ticket returns either answered or pending.
+Sam: The skill says never treat pending as yes. Do other safe work, check again, and if you've got to stop, say you're still waiting.
+Isla: Its list of mistakes puts it bluntly. Treating pending, or a timeout, as approval. No answer means no.
+Nora: Honestly, it sounds obvious written down.
+Isla: It's obvious to a person. An agent that was told to finish a task, and wants to finish it, can easily read silence as consent.
+Nora: That's why it's written down, and the skill was tested against a small model before it shipped. There were two security reviews of the design too, weren't there?
+Sam: Will had an independent reviewer agent audit the design twice. Once before claude-local was wired in, and once before Hermes and Turnstone were.
+Sam: Both came back allow with changes, and all eight changes are in.
+Isla: For example, claude-local doesn't get the read tool pre-approved. The contained room carries text from agents that browse the web.
+Nora: There was one risk left open, though.
+Sam: On purpose, at first. Hermes has no per-tool approval step for MCP tools, so it ran the chat tools without asking.
+Sam: It also shared the contained room with the other contained agents.
+Isla: A message one of them posted could steer an agent that has a terminal and some web access.
+Isla: Will closed it the same day by taking Hermes out of agent conversations entirely.
+Nora: It can still notify him and ask him questions, but nothing else. Isn't that just a one-line policy change?
+Isla: That's the trap the post describes. A line in Hermes's tool policy denying read and post would've been theater on its own, because the agent has a terminal.
+Sam: The fix that counts is on the bridge side. The room file no longer lists Hermes in the contained room, so the bridge refuses it.
+Sam: Synapse removed it from the room as well.
+Isla: Both layers were tested, and I like how. A real Hermes run had its read blocked by the guard.
+Isla: A raw MCP client on Hermes's network was refused by the bridge.
+Nora: Alerts land in the alerts room, I assume. There's also a Hermes you can just chat with?
+Sam: A separate one, with its own container, memory and model key. A small mitmproxy add-on in front of the chat server holds its Matrix credential.
+Sam: It allows only reading its one room, and sending messages, reactions, read receipts and typing notices there.
+Isla: It runs as an unprivileged user with a read-only filesystem, and only Will's account can drive it.
+Isla: Asked to run a recursive delete, it posted an approval prompt in the room. Denying it stopped the command.
+
+[34:09] Loopback is not a boundary
+
+Nora: Next up, the two security reviews of a control plane. This is Harness squared Workbench, one of Will's public repos.
+Sam: It's a web UI, a REST API and an MCP server. It starts processes, holds API keys for cloud models, and reads whatever those processes write.
+Sam: It listens on loopback by default.
+Isla: Devil's advocate again. If it only listens on loopback, isn't that safe enough?
+Sam: The post opens by saying it's tempting to treat that as a trust boundary, and it isn't.
+Sam: Any page open in your browser can send requests to your own machine.
+Nora: A job the Workbench starts runs as a user on that same machine, too. It writes the very files the Workbench later reads back to you.
+Nora: Who reviewed it, and how?
+Sam: An AI security reviewer with no part in writing it, starting with no prior context. The post's explicit that this was not a human penetration test.
+Sam: It asked for findings with a working reproduction and a minimal fix.
+Isla: The first review found seventeen issues. The second, a few hours later, checked those fixes.
+Isla: It confirmed twelve, judged five partial or acceptable by design, and found ten more.
+Nora: A final documentation pass found three more, and every code fix got a regression test. Let's start with what held.
+Sam: The classic attacks on a loopback service. For DNS rebinding and cross-site requests, every request needs an allowed host header.
+Sam: Anything that changes state needs a custom header that a cross-site form can't set.
+Nora: Role checks held across a hundred and ninety-six route and role requests, and path traversal held.
+Nora: Six hundred and eighty-six hostile requests from a fuzzer produced no server error. Where were the findings, then?
+Isla: Lesson one: files a job wrote are hostile input. Size caps on single files were there from the start, and they weren't enough.
+Sam: Six large task summaries took the server's memory from under one gigabyte to nearly four. Four of those requests in parallel reached nearly fifteen.
+Nora: Isla, you'll want to hear this one. Sam, tell me about the named pipe trick.
+Sam: That's the best one. The reader checked a results file, then opened it.
+Sam: Between those two calls, a job can swap the file for a named pipe, a FIFO, in one atomic rename.
+Isla: Opening a FIFO waits forever for a writer, while holding one of four read permits. Do that four times and the results API is dead.
+Nora: In the review, by about thirty-five seconds, every results call was timing out. What was the fix?
+Sam: Open without blocking and without following links. After that, confirm the open handle is a regular file with the same identity the first check saw.
+Isla: The live check swapped a FIFO over that file nine million times while tasks were being listed. No read hung.
+Nora: What about the per-file caps?
+Sam: Hardlinks walk past them. Forty sweeps of hardlinked summaries add up to about ten and a half gigabytes of reading from about four megabytes of disk.
+Isla: That's the lesson I'd take home. The post's rule is that a reader of untrusted files needs limits on type, size, total, time and concurrency, plus cancellation.
+Isla: Any one of them alone can be walked around.
+Nora: Lesson two was about the audit log, wasn't it?
+Sam: It was. An append-only log is a write endpoint. Every request with a junk credential appended a record.
+Sam: A hundred and forty thousand requests made a hundred and forty thousand records.
+Isla: A viewer calling an admin route wrote about twenty-one thousand records a second.
+Isla: Refusals are now recorded at most ten a minute per caller, and only counted after that.
+Nora: What about everything running on the same machine?
+Sam: Another lesson: same machine means same user. In host isolation, jobs run as the Workbench's own user.
+Sam: The first review's job simply opened the Workbench's database and read the server's process environment, which held its secrets.
+Isla: The server now marks itself so a same-user process can't read its environment. The docs say in bold that a host-mode job is, in effect, an administrator.
+Isla: For anything untrusted, the advice is container isolation.
+Nora: There's a connection here to who gets to say yes.
+Sam: There is, in the companion post about the Workbench's MCP server. Host-mode runs need a flag acknowledging the risk.
+Sam: That flag's meant as a statement that a person accepted the risk.
+Isla: The first review pointed out that a model could simply set it.
+Isla: The MCP server's only rule of its own is to refuse that flag from a model, unless whoever started the server opted in.
+Nora: The refusal message lists three ways a human can make the decision instead. That's the same idea as pending is not yes.
+Isla: It's the same as the from-human flag in lab-chat, too. A request saying a person agreed is not a person agreeing.
+Sam: The post states it as a design rule. Separate a person accepted this risk from a request says so, and don't let the model produce the first one.
+Nora: Let's close on data. Strictest-first comes from a decision in early August. Will asked to give Hermes access to Langfuse's trace database. What happened next?
+Sam: A full broker-mediated, read-only design was built, verified live, and security-audited, with a verdict of allow with changes.
+Nora: Will then chose to revert it entirely. He declined even a narrowed version that exposed only telemetry numbers. That's a big call for something that passed review.
+Nora: What was the reasoning?
+Isla: There are two reasons in the note. One's confidentiality: an untrusted model reading other sessions' content. The other's injection, since it would be ingesting text other models wrote.
+Sam: No egress, so it can't leak, was not a sufficient answer. The standing rule since then: don't propose cross-session data for an untrusted agent, even read-only, even sanitized.
+Isla: You start from the strictest option, like an empty scratch database or pre-aggregated numbers with no free text. Anything wider is off the table unless Will asks.
+Nora: That shows up elsewhere too. In lab-chat, contained agents get their own rooms for the same reason.
+Sam: In Will's Langfuse post, a dashboard's data reads all came back refused by that same write-only broker.
+Isla: The post's answer was an honest empty state that quotes the refusal, not demo data. I'd take that over a pretty fake chart any day.
+
+[42:47] Three things to take away
+
+Nora: Let's pull it together. Here are three things to take away.
+Sam: Number one: put the controls where the agent can't argue with them.
+Sam: That means one door for model calls, internal networks with no route out, and brokers that hold the keys.
+Isla: When Hermes had to stop reading the chat, a one-line policy alone would've been theater. The fix that counts is the bridge refusing.
+Nora: Number two: a control isn't on until you've seen it bite. The Relay plugin looked wired and captured nothing.
+Nora: The first check passed on a name in the disabled list. The habit that catches both is to ask for the artifact, and run a negative control.
+Isla: Number three: only a human says yes. Pending is not yes, a flag in a request is not consent, and only messages from the human count as instructions.
+Sam: Every egress exception carries a date and Will's approval. When an untrusted agent wants data, you start from the strictest option.
+Nora: That's the episode. There are two others in this series. One's about running big open models on the lab's own hardware.
+Nora: The other's about how Will ships and reviews his public repositories, and where coding agents fit in.
+Isla: The write-ups behind this one are on Will's portfolio site, in the writing section.
+Isla: There's the private chat server for AI agents, the two security reviews of a control plane, and the MCP server for an agent harness.
+Nora: Thanks for listening to The Local Lab.

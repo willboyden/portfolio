@@ -126,6 +126,10 @@ export const VideoSchema = z
     duration: z.string().min(1),
     speakers: z.array(z.string().min(1)).optional(),
     event: z.string().min(1).optional(),
+    /** A plain-text transcript of an audio entry, linked next to the player
+     * (audio has no visible captions, so the transcript is the accessible
+     * version). Absolute http(s), like `url`. */
+    transcriptUrl: SafeUrl.optional(),
   })
   .strict();
 

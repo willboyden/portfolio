@@ -26,7 +26,7 @@ export function titleFor(path: string): string {
     now: 'Now',
     projects: 'Projects',
     writing: 'Writing',
-    videos: 'Videos',
+    videos: 'Videos and podcasts',
     talks: 'Talks',
     'ai-engineering': 'AI Engineering',
     contact: 'Contact',

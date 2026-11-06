@@ -1,0 +1,469 @@
+The Local Lab, episode 2: Big Models, Home Hardware: What the Numbers Were Really Measuring
+
+Transcript. The hosts, Nora, Sam and Isla, are AI-generated voices and faces. The script is drawn from Will Boyden's published write-ups and lab notes.
+Length: 1:01:30
+
+Chapters
+0:00 Cold open
+2:55 A new chip and a rulebook that aged
+9:01 Two cards, no bridge
+17:48 The model that ate the desktop
+24:33 Four small boxes, and guessing ahead
+34:08 Where the milliseconds went
+45:22 When a box switches itself off
+53:08 Routing, judges and a cache that copies
+59:22 Three things to take away
+
+
+Sam: One request, with about three hundred twenty-six thousand tokens of context, some of it new. The model took eight minutes and forty seconds to read it.
+Sam: Only then could it write a single word back.
+Nora: Eight minutes, for one single request? I'd have assumed it had crashed.
+Sam: It hadn't crashed. Four DGX Sparks were running one engine across all of them. One Spark sat at sixty-one percent I O wait, with its GPU idle.
+Isla: Two of the others reported ninety-six percent GPU utilization. Those two were working hard, surely?
+Sam: They were working hard at waiting. That utilization was the communication library spinning while it waited for the slow box.
+Nora: Meanwhile the storage server was reading one and a half gigabytes a second off its drives. It delivered about ninety-seven megabytes a second to the Sparks.
+Isla: That's fifteen times more reading than delivering. Something in there is badly wrong.
+Sam: Hold that thought, Isla. The answer starts with a storage setting from September.
+Nora: Welcome to The Local Lab. I'm Nora.
+Sam: I'm Sam, and I'm glad you're here.
+Isla: I'm Isla. Quick note before we start: all three of us are AI-generated voices. Everything we talk about comes from Will Boyden's published write-ups and lab notes.
+Nora: This episode is about running big open models on hardware one person can own. Will's lab has a main workstation with two RTX PRO six thousand Blackwell cards.
+Nora: They're ninety-six gigabytes each.
+Isla: It also has four DGX Sparks, which are small boxes built around NVIDIA's GB10 chip. There's a second box with an RTX fifty-ninety, too.
+Nora: The theme that keeps coming up in the notes isn't speed, though. It's that a number can be true and still not measure what you think it measures.
+Sam: A storage benchmark that was reading RAM. A GPU copy that reported success and returned the wrong bytes.
+Isla: Random samples that came back as copies. A dashboard that showed zero because it was older than the config.
+Nora: All of them are coming up. We're keeping dates on things too, because a lot changed between September and late October.
+
+[2:55] A new chip and a rulebook that aged
+
+Nora: Vocabulary first, because we'll lean on it. Models read and write text in tokens, which are chunks of a few characters.
+Nora: Context windows and speeds are both counted in them. When we say seventy a second, we mean seventy tokens a second.
+Isla: Sam, you've got the other bit of jargon, haven't you?
+Sam: It's the number format. A big model's weights are stored at low precision so they fit. FP8 is eight bits per weight. NVFP4 is NVIDIA's four-bit format.
+Sam: It's half the memory again, and it's fast only if the chip has the right kernels to run it.
+Nora: That sounds like a very big if.
+Sam: That's this whole chapter, really. Those workstation cards are Blackwell, compute capability twelve point oh, which the tools call S-M one twenty.
+Sam: The lab keeps a short list of hardware rules for this chip.
+Isla: The quantization rule says prefer FP8, and use NVFP4 only for dense models.
+Isla: For mixture of experts models, it says vLLM falls back to a slow kernel called Marlin on this chip.
+Isla: Its advice is to use FP8, or use SGLang instead.
+Nora: Mixture of experts, quickly, for anyone who hasn't met it?
+Sam: It's a model where each layer holds many small expert networks, and only a few run at a time. Large total size, small active size.
+Sam: Nemotron three point five Lightning comes up all episode. It has thirty billion parameters, with about three billion active.
+Isla: In other words, mixture of experts plus NVFP4 on this card means the slow path.
+Nora: That was the rule, anyway. In September the lab tested it, with two NVFP4 checkpoints of near identical shape.
+Nora: Both were thirty billion with three billion active, and both were about twenty-one gigabytes.
+Isla: One was Lightning, and the other was Nemotron three Nano Omni. The lab tried three backend settings against them.
+Sam: The backend that serves one refuses to load the other. Lightning loaded only on Marlin.
+Sam: Omni loaded on vLLM's own CUTLASS backend, and answered correctly at sixty-five to ninety a second.
+Isla: Lightning on that same backend refused at startup. On the B twelve X backend, it crashed with a shape error.
+Nora: Refused loudly, though? A quiet failure would worry me far more.
+Sam: Loudly, at engine start. Neither one turned into an engine that serves wrong answers. The deciding factor was the checkpoint's quantization scheme, not the GPU.
+Sam: It's printed right there in the error.
+Isla: The finding's title says it roughly like this. The NVFP4 mixture of experts backend on this chip is a per-checkpoint fact, not a box-wide one.
+Nora: That makes the rule half right. It's true for some checkpoints and false for others. By October twenty-seventh, the notes call the Marlin rule stale outright.
+Sam: On the workstation cards, GLM five point three Flash picks the B twelve X backend.
+Sam: On the Sparks, which use a different chip, Super VL and DeepSeek also run native FP4 paths.
+Isla: Lightning's now the only NVFP4 mixture of experts engine still on Marlin. Moving it is saved as a follow-up.
+Nora: There's a second lesson hiding in the flags, isn't there?
+Sam: Verify the selection, not the flag. Asking vLLM for cutlass gets you a backend called vLLM CUTLASS. That's a different thing from FlashInfer's CUTLASS.
+Isla: That's the practical bit for me. The engine logs which backend it really chose, and the lab checks that line, not the config.
+Nora: This reminds me of Will's broker forensics post. In September he tried to fingerprint his own model fleet, using only what an ordinary client can see.
+Nora: Response headers, the model list, error messages. Every deployment name had NVFP4 in it.
+Isla: I'd call that case closed, then. It's NVFP4.
+Sam: That's exactly what the post refuses to say. A name is a string in a proxy config. From the client side, the weights can't be inspected.
+Nora: He logged it as confirmed at the naming layer, and unverifiable at the weights layer.
+Nora: He also asked the models themselves what engine and quantization they were running on.
+Isla: Let me guess. They had no idea at all.
+Sam: Every self-report scored zero. Models can't see their own serving stack. The headers and the benchmarks did all the work.
+Nora: Labeled NVFP4 isn't the same as is NVFP4. That's a good first rule for this episode.
+Isla: The post ends on the same idea. Fingerprint what you can, and mark the rest undetermined.
+
+[9:01] Two cards, no bridge
+
+Nora: The workstation has two of these cards. Why not just put one model across both?
+Sam: That's tensor parallel. You split each layer across the two cards, and they swap partial results at every layer.
+Sam: The catch is that these cards have no NVLink, no direct bridge.
+Isla: They talk over PCIe through the host instead. To be fast, one GPU writes straight into the other one's memory. That's called peer to peer.
+Nora: I'm guessing that didn't just work.
+Sam: In September it hung. The first collective operation froze. Both GPUs showed one hundred percent utilization, while drawing only about ninety-five to a hundred twenty watts.
+Isla: Memory was frozen, and there was no log progress for more than six minutes.
+Nora: Full utilization at a fraction of the power. That's the cold open all over again.
+Sam: Same lesson, different box. Turning peer to peer off got it running, through host shared memory. After that, the root cause turned up in the kernel log.
+Isla: It was page faults. Every single one came from one GPU writing into the other GPU's memory window.
+Nora: The platform was blocking the peer writes, then.
+Sam: Yes, and the next part I find genuinely alarming. The lab reproduced it on purpose with a small check script.
+Sam: A direct GPU to GPU copy of a quarter gigabyte test pattern completed and reported done.
+Isla: It had returned the wrong bytes, in both directions.
+Nora: Wait, no hang and no error? It just copied garbage?
+Sam: It reported success with silently corrupted data. The note says anything moving tensors between the GPUs with peer access on was unsafe, not just slow.
+Isla: That's the one that would keep me up at night. What was the fix?
+Nora: On September twenty-sixth, it was a kernel boot setting and a reboot.
+Nora: After that, the same check copied correctly both ways, at about fifty-three gigabytes a second, with zero faults.
+Isla: The practical rule went into the lab's description of the box. After any kernel or BIOS change, prove peer to peer still works.
+Nora: With the bridge working, the lab put one model across both cards. The same day the bridge was fixed, it became the lab's default.
+Sam: That's the model the lab calls flashnext. It's Qwen three point eight Flash Next, in NVFP4, served by SGLang.
+Sam: It ran at tensor parallel two, across both cards, with a window of one million.
+Isla: That's a million on a model trained for less, mind you.
+Sam: Its native window is two hundred sixty-two thousand one hundred forty-four. The million came from YaRN, at factor four.
+Sam: YaRN is a way to stretch a model's position encoding past what it was trained on.
+Nora: Why two cards, though? Was it just speed?
+Sam: Speed was part of it. Single stream on a short prompt went from one hundred seventy a second to two hundred forty-two.
+Isla: Long context was the bigger reason. On one card, at around three hundred eighty-five thousand, short answers derailed on five of nine test documents.
+Nora: At tensor parallel two, it was zero of twelve, between three hundred eighty-five and four hundred fifty thousand. Sam, what does derailed actually mean here?
+Sam: The lab has its own coherence suite. It hides facts deep in a long document, and asks questions with one right answer.
+Sam: Seventeen times twenty-three, that kind of thing.
+Isla: A derailment is when the model's asked for a number, and starts writing text that sounds like the document instead.
+Sam: Near one million, retrieval, reasoning and JSON held up. Two of four one-line answers derailed, though.
+Nora: The decision record says it plainly. Near one million, one-line answers are unreliable. I also saw twenty-six restarts in the notes.
+Sam: SGLang sizes its KV cache pool from whatever is free on the smaller card when it starts.
+Sam: That pool is the memory that holds the model's working state, for everything it has read.
+Isla: Lightning already lived on the second card, at about twenty-nine gigabytes. Start flashnext after Lightning, and it crash-looped twenty-six times on an error about unbalanced memory.
+Sam: Start flashnext first, then Lightning, and both fit. No single setting works for both orders.
+Nora: The start order is part of the configuration, then, and Docker's restart policy can't express it.
+Nora: A script enforces the order, and a boot unit runs that script after every Docker start.
+Isla: Three days later, the million went away, didn't it?
+Nora: It did, on September twenty-ninth. Will asked for sixteen parallel requests for agentic coding. He was also worried the stretched window was hurting accuracy.
+Nora: The first question was whether YaRN at factor four hurts ordinary short prompts.
+Nora: The lab ran GSM eight K, all thirteen hundred nineteen math questions, straight at the engine.
+Sam: Ninety-six point three six percent with YaRN. Ninety-six point two one without.
+Nora: That difference is basically nothing.
+Sam: It's a p value of point eight. YaRN wasn't measurably hurting short prompts, and the notes say not to claim otherwise.
+Isla: The case for the native window was different. Real traffic over about two and a half weeks had a median prompt of forty-six thousand.
+Isla: Only one real session went past two hundred sixty-two thousand.
+Nora: The coherence suite started missing from about three hundred eighty-five thousand.
+Nora: Cap the window at its native size, and no request can reach the region where the model gets flaky. The decision wasn't that YaRN is bad.
+Nora: It was that the length wasn't needed, and the length is where the risk lives.
+Sam: Right. Sixteen parallel had a surprise of its own, too. Raising the request limit alone did nothing.
+Isla: Wait, that sounds backwards to me. Why wouldn't it?
+Sam: This model is a hybrid with recurrent layers. Every running request needs slots in a separate state cache.
+Sam: SGLang allowed one running request per five slots, so twenty-four slots meant four requests.
+Isla: Sixteen requests need eighty slots. The lab set a hundred twelve, with spares to keep sessions cached.
+Nora: The KV cache wasn't the limit at all, then. The state cache was.
+Isla: Is flashnext still the default today, then?
+Nora: The lab's notes still name it as the default engine, at its native window.
+Nora: In practice, from mid-October something else holds both cards, and flashnext is down while it does.
+
+[17:48] The model that ate the desktop
+
+Nora: That something else is, most of the time, GLM. It's GLM five point three Flash, in an NVFP4 build, under vLLM.
+Nora: It runs at tensor parallel two on the same two cards, with a window of about one million.
+Sam: It was wired in on October ninth, and became the coding agent's default on October twelfth. The agent is opencode.
+Isla: Between October sixteenth and twenty-second, its default moved to a routed setup.
+Isla: After that it came back to this same local GLM, and that's where the latest notes have it.
+Nora: I'm guessing this is where it crashed.
+Sam: It crashed, after a while. The likely cause was the desktop.
+Isla: Hold on, the actual desktop? Windows and browsers?
+Sam: Since October fourteenth, the desktop renders on GPU zero, the Max-Q card. GLM pins its KV cache at a fixed number of bytes.
+Sam: At its earlier setting, it left about three gigabytes free on each card.
+Nora: The desktop's share of GPU zero grows with uptime, though. Over about two days, its use of GPU zero grew by well over a gigabyte.
+Nora: Free memory there fell below eighty megabytes, while the other card stayed flat.
+Isla: The model was fine, then, and the browser slowly crowded it out.
+Sam: That's the story the data points to. The note is explicit that it's inferred from the correlation, not proven.
+Nora: Isla, you'd want proof before you touched anything.
+Isla: I would, and the note doesn't pretend to have it. A crash on October twelfth also failed on GPU zero, from before the desktop moved there.
+Isla: That's part of why the cause stays an inference.
+Nora: The change came on October twenty-second, on Will's call. The KV pin came down from five point three billion bytes to four point three billion.
+Nora: That's about one gigabyte more free on each card.
+Isla: The note also advises turning off hardware acceleration in desktop apps. It frees memory on GPU zero at little cost. Did the smaller pin cost any context, though?
+Sam: A little. The engine now fits one million twenty-eight thousand and ninety-six. The router and the coding agent advertise nine hundred ninety-five thousand three hundred twenty-eight.
+Isla: That leaves thirty-two thousand for output.
+Sam: Here's the detail I like. Before that change, the router's alias advertised about one point two five million.
+Nora: That's more than the engine could even serve.
+Sam: It's more than the engine's own one million limit. That brings up a September finding I'd call my favourite small bug.
+Sam: The Omni model was being used as a judge.
+Isla: The checkpoint allows two hundred sixty-two thousand. The engine was serving two hundred sixty-two thousand. The router in front of it said thirty-two thousand seven hundred sixty-eight.
+Nora: That's eight times smaller. Which number wins?
+Sam: The router enforces its number, so callers were refused prompts the engine would have taken. Nothing errored on the engine, and nothing logged a mismatch.
+Isla: The engine's window had been raised later, and the router's half was never updated. The comment beside the router's value was accurate when it was written.
+Isla: It described a launch flag that had since changed.
+Nora: What did the note conclude?
+Sam: A context window is asserted in at least four places. The checkpoint, the engine flag, the router, and each client's defaults.
+Sam: Raising one raises none of the others, and the smallest one wins silently.
+Isla: If I'm changing a window, that's my checklist. At least four places, every time.
+Nora: GLM was the mirror image, with the router promising more than the engine.
+Sam: It's the same disease. Two files that both think they own one number.
+Nora: The lab also measured what GLM actually spends its time on. That was on October twenty-fourth, from fourteen days of metrics.
+Nora: It was mostly one request at a time, agentic. Median prompts were a hundred forty-four thousand, with ninety-eight percent served from the prefix cache.
+Isla: The prefix cache reuses work on the part of a prompt it has already seen. Decode is writing the answer, one step at a time.
+Isla: That was about eighty-three percent of request time, at about a hundred ninety a second single stream.
+Nora: The Max-Q card paces both. Under load it runs around two point two gigahertz, against two point six to two point eight on the Workstation card.
+Nora: A pair of cards moves at the speed of the slower one.
+Sam: Every step waits for both. One more trap turned up that day. The model's chat template honours reasoning effort only as low or high.
+Sam: Any other value, medium included, falls through to maximum.
+Isla: That's a nasty one, Sam. The effort line sits at the very top of the prompt, too.
+Isla: Changing it in the middle of a conversation throws away the whole cached prefix.
+Nora: Medium means maximum, then, and changing your mind mid-session means recomputing the whole prompt. The note's advice is to fix the effort once per session.
+
+[24:33] Four small boxes, and guessing ahead
+
+Nora: Let's go to the Sparks. What's a GB10, in practical terms?
+Sam: It's a small box with twenty Arm cores and a hundred twenty-eight gigabytes of memory. The CPU and the GPU share that memory.
+Sam: Two of Will's are from ASUS, and two from Gigabyte.
+Isla: Each one has one ConnectX seven port into a two hundred gigabit switch, with RDMA over Ethernet. The model files live on the main workstation.
+Isla: Every Spark mounts them read-only over NFS.
+Nora: Shared CPU and GPU memory sounds convenient, to be fair.
+Sam: It is, and it bites twice. You set the KV cache in bytes, not as a share of GPU memory.
+Sam: Anything that allocates GPU memory squeezes the Linux page cache too, because it's the same memory.
+Isla: Keep that one in your pocket for the next chapter.
+Nora: In mid-October they were running GLM five point three Flash across all four, at tensor parallel four, with a window of about one million.
+Nora: On October fifteenth, Will tried a published community stack built for exactly this setup. He tested it head to head against the old lane the same night.
+Isla: Single-stream decode speed rose forty-nine to a hundred ten percent, depending on the prompt.
+Isla: With parallel requests, the gain went from one point nine times at four requests to four point one times at thirty-two.
+Nora: That sounds almost too good. What did it cost?
+Sam: The window went from about one million to five hundred thousand. Thinking became always on, because the template has no switch for it.
+Sam: The note also says quality evals weren't run.
+Isla: I'd have wanted those quality evals before calling it, personally.
+Nora: That's fair, and the note doesn't hide it. Will preferred the trade. The Sparks also taught the lab not to trust a health check.
+Sam: Rank zero is the process on the first box that serves the API.
+Sam: It keeps answering its health check with a cheerful OK after a peer rank has died. Every completion then just hangs.
+Isla: Every lane on the Sparks is proven with a real completion instead. Seventeen times twenty-three. If it says three hundred ninety-one, it's serving.
+Nora: That's a lovely test, because you can check the answer in your head. Next come the Nemotron lanes.
+Nora: On October seventeenth, Lightning and Nemotron three point five Super VL went on, side by side, replacing GLM.
+Nora: Each one ran at tensor parallel four across all four Sparks.
+Sam: The Sparks run one family of lanes at a time. Lightning reached about two thousand three hundred forty a second in aggregate, at a hundred twenty-eight parallel requests.
+Isla: The setup turned up a memory trap, too. GB10 has no GPUDirect RDMA. NCCL is NVIDIA's library for moving data between GPUs.
+Sam: On GB10, every NCCL connection stages through about nine megabytes of pinned host memory.
+Isla: Nine megabytes doesn't sound like much to me.
+Sam: Uncapped, NCCL opened sixty-four channels over two network rails, times six communicators inside vLLM.
+Nora: That came to about twenty-two gigabytes pinned per box, for Lightning alone. Capping NCCL at eight channels brought it under three. That's twenty gigabytes of plumbing.
+Nora: Next came DeepSeek. On October twenty-third, Will asked for DeepSeek V four point one Flash, the October seventeenth release, in NVFP4.
+Nora: He wanted it as one engine across the Sparks and the workstation's two cards.
+Isla: That mixed lane is built, but it hasn't run yet. It waits on a host change and a reboot.
+Isla: The Sparks-only lane came first: one vLLM engine, tensor parallel four, with a one million window. How big is the model itself, Sam?
+Sam: The checkpoint is about four hundred gigabytes, in forty-eight shards. About eighty-three gigabytes of weights land on each box.
+Sam: On top of that, there's a KV pool fixed at about eight and a half gigabytes per box. It holds about two and a half million tokens.
+Isla: There are two Engram tables as well. They're big lookup tables of n-gram rows that the engine reads on every step.
+Sam: At tensor parallel four, they don't fit in memory beside the weights. The engine reads those rows straight out of the checkpoint files on the network share.
+Nora: On every step, over NFS. I can feel the cold open coming.
+Sam: You can see where it's going. The lane started from a published community recipe for four GB10 boxes.
+Nora: The first boot matched that recipe. It did sixty-seven point three a second on code, against the recipe's sixty-five to sixty-seven.
+Isla: It was in every client by October twenty-fourth.
+Nora: The recipe mentions something called DSpark, with five drafts. Isla, explain speculative decoding like I'm deciding whether to pay for it.
+Isla: A small drafter model guesses the next few tokens. The big model checks all of the guesses in one pass.
+Isla: Every guess it accepts is a step you didn't pay for separately.
+Sam: MTP is the same idea, with the drafting head built into the model itself. GLM on the workstation runs MTP with three drafts. DSpark is a separate drafter.
+Sam: NVIDIA ships one for Lightning, and DeepSeek has its own.
+Nora: How do you know it's working? It goes faster?
+Sam: That's exactly what a September finding warns against. A partly broken drafter can still look faster. The proof is the acceptance counters, by position.
+Isla: On Lightning with three drafts, the first guess was accepted seventy-four percent of the time. The second was fifty, and the third thirty-four.
+Sam: That steady decay is the signature of a drafter that genuinely works. A broken one reads zero, or flat.
+Nora: The speedup was about one point four five times, from a hundred twenty-four to a hundred eighty a second, with identical answers. The note keeps its caveat, though.
+Nora: That card was shared with another live engine.
+Isla: The ratio means something, then, and the absolute speed is only a floor.
+Nora: Why five drafts on DeepSeek? More guesses, more free steps?
+Sam: Each extra draft makes every verify step cost more, about four milliseconds per draft. The lab tried every count from three to seven.
+Isla: On an agent loop with thinking on, five was fastest, at about seventy-one a second. Three gave sixty-two, and seven gave fifty-three to fifty-eight.
+Isla: Seven only won on long writes, at thirty-two thousand of context.
+Sam: Heat got a vote too. In the first trial, seven drafts pushed the head box's system chip to ninety-one degrees Celsius. The guard stopped those runs.
+Nora: Three drafts did the same to a different Spark. It went back to five on October twenty-fifth.
+Isla: Were any of the numbers in this part wrong?
+Sam: One, and it's subtle. With thinking on, this vLLM streams the model's reasoning in a field named reasoning. The benchmark only timed the answer fields.
+Isla: It timed the first word of the answer, instead of the first piece of output. It also divided all the output by the answer's time alone.
+Sam: The first thinking-on run read seventy point two a second. Corrected, that same kind of run read fifty-nine.
+
+[34:08] Where the milliseconds went
+
+Nora: Back to the cold open. Eight minutes forty before the first word.
+Sam: The method is the point here. On October twenty-fourth, Will ran a normal agentic coding session on the DeepSeek lane, about a hundred requests.
+Sam: Afterwards he read vLLM's own counters for that window.
+Isla: Prompts were big, a median of a hundred eight thousand. Ninety-eight percent of that came from the prefix cache, though. Decode was eighty-nine percent of all request time.
+Nora: Reading the prompt was nearly free, then, and writing was everything.
+Sam: Each decode step took about seventy-nine milliseconds, and produced three point nine tokens. That's about forty-nine a second.
+Isla: The next test was a sweep. The same instruction went in after two thousand, thirty-two thousand, a hundred thousand and a hundred eighty thousand of context.
+Sam: Seventy-eight, seventy-eight, seventy-seven, eighty-two milliseconds a step.
+Nora: That's flat. It's not attention over a long context, is it?
+Sam: It's fixed per-step costs. The stall from the cold open is another story. To explain it, rewind to September, when storage got measured hard.
+Isla: The very first numbers were wrong. The benchmark used dd, with the flag that bypasses the cache. The dd on this box silently ignored that flag.
+Nora: The reads came out of RAM. A claimed twenty-two point seven gigabytes a second was really ten point nine.
+Nora: The tool didn't do what it was told, and didn't say so.
+Isla: Next, a ZFS setting that bypasses its cache lifted local reads from about eighteen to almost twenty-seven gigabytes a second.
+Sam: Served to a Spark over NFS, the same setting was six times slower. One point seven against ten point three five.
+Sam: It was applied and reverted the same day.
+Nora: The server's own benchmark said faster, and the client said six times slower.
+Isla: The rule it left is simple enough. Measure from the client.
+Nora: Next came a ceiling. Several Sparks reading together topped out around ten gigabytes a second in total. The first theory was the network card.
+Isla: A Spark's ConnectX seven is really two PCIe halves, about thirteen gigabytes a second each. That's plausible.
+Sam: The lab tried both halves at once, and the bytes split evenly across them.
+Nora: Did splitting the traffic fix it?
+Sam: It worked, and it added nothing. Doubling the NFS server threads added nothing either. Next, the lab profiled the server under real load.
+Isla: The NFS threads were burning eighteen to twenty-six cores' worth of CPU. ZFS's cache eviction took another two to four, all to move about nine gigabytes a second.
+Sam: The cache was churning. Every block of about a terabyte of model files went through a cache of about fifty gigabytes. Nobody would ever read it twice.
+Nora: It's like a librarian photocopying every book into the reading room before lending it, for books nobody comes back for.
+Sam: That's it exactly. The fix was one ZFS property: cache metadata only, not data. Three Sparks went from about nine to about fifteen point three gigabytes a second.
+Isla: That was counted at the network card, and reproduced in alternating runs.
+Nora: An earlier note had called the ceiling a kernel research project, and said stop here. That call was wrong. Isla, what's the lesson you'd take from that one?
+Isla: The note on the network theory owns up to it. It stopped at a plausible hardware cause after one raw test.
+Isla: Profile the server under real multi-client load before theorising, and count bytes at the network card, not what the client reports.
+Nora: Connect it to DeepSeek for me, Sam.
+Sam: Here's the twist. The settings on that dataset were one megabyte records, with only metadata cached. They're right for streaming four hundred gigabytes of weights.
+Sam: They're wrong for Engram rows.
+Isla: Those rows are a hundred thirty-six bytes each, at random offsets.
+Isla: Each box maps about fifty gigabytes of them, with only fourteen to eighteen gigabytes of page cache left beside the weights.
+Sam: Fresh n-grams keep landing on rows that aren't cached. Every miss costs a full one megabyte record read on the server.
+Sam: That's a hundred thirty to a hundred seventy NFS reads per decode step.
+Nora: September's fix became October's problem, then.
+Sam: For a different access pattern, yes. The stall had a self-inflicted part, too. A communication benchmark had just run.
+Sam: On GB10, GPU memory is page cache memory, so it evicted the warm rows.
+Isla: The notes now say never run a GPU memory benchmark on the Sparks while they're serving.
+Nora: What was the fix for the rows?
+Sam: Rewrite just the two Engram shard files with sixteen kilobyte records, and leave everything else alone.
+Isla: That was measured from a cold restart. Time to first output at a hundred eighty thousand of context went from about fifty seconds to about twenty-five.
+Nora: Reading new text went from fifteen to seventeen hundred a second, up to between twenty-five hundred and three thousand. What about the step time?
+Sam: Somewhat better. It went from about seventy-nine milliseconds to about seventy-five, and agent decode rose about eight percent. Engram was now about three milliseconds of the step.
+Isla: The stalls were gone. The steady cost wasn't.
+Nora: Where were the other seventy milliseconds, then?
+Sam: The lab used vLLM's profiler, over forty decode steps, on all four ranks. Every rank did the same GPU work, about seventy-two milliseconds a step.
+Sam: The biggest chunk was matrix multiplies, in a format called MXFP8.
+Isla: That chunk was twenty-five point eight milliseconds a step, at a hundred twelve microseconds a call.
+Isla: By the write-up's estimate, that's six to seven times slower than just reading their weights would take.
+Sam: Each call gets a tiny input, six rows for one verify step. The default kernel wasn't chosen for that shape.
+Nora: Choosing a kernel for a shape sounds like a job for a tuner.
+Sam: That's what FlashInfer's autotuner does. It was off, because the configuration the lane started from disables it. Turned on, it hung.
+Isla: Honestly, I'd have dropped it right there. Autotune deadlocks on this build, move on.
+Sam: That was the tempting verdict. The lever looked too big to drop after one hang, though.
+Nora: What did the second look find?
+Sam: Autotune runs two passes. The first is decode-sized. Rank zero tunes alone and broadcasts the results. That pass worked, and saved seventy-seven configurations.
+Isla: The second is prefill-sized, with all four ranks tuning in lockstep.
+Isla: At its end, rank zero sat inside a communication kernel, while the other three waited on a CPU process group.
+Sam: They waited for good. The boring cause was ruled out too: zero NFS reads, no I O wait. It wasn't storage.
+Nora: Somebody wrote a patch, I assume.
+Isla: There was no patch at all. vLLM already had a skip list for that second pass.
+Sam: List the three operations the first pass had already tuned, and the second pass finishes in about six seconds. The decode tunings load on every rank.
+Sam: Prefill keeps the default kernels.
+Nora: Give me the numbers, Sam.
+Sam: The MXFP8 multiply went from a hundred twelve microseconds a call to fifty-one. A decode step went from about seventy-five milliseconds to about sixty-one.
+Nora: Counting both fixes, that's from about seventy-nine down to sixty-one, roughly a quarter less time per step.
+Nora: The median turn of the warm agent loop with thinking on went from sixty-three point eight a second to seventy-eight point nine.
+Isla: Those are big numbers. What's the lesson here, then?
+Nora: Here's the lesson the way the notes put it. When a high-value trial fails, first measure what it would be worth.
+Nora: Next, localize the failure: which pass, which operation, which rank. Rule out the boring cause.
+Isla: Look for an existing knob before patching. Report it as failed at this step, trying that.
+Isla: Don't report that it won't work, unless the cause is understood and unfixable.
+Nora: Was there anything that didn't help?
+Sam: All measured, all reverted. A smaller KV pool, to leave more page cache, made no change.
+Sam: NCCL tuning was already near its floor, about nine milliseconds of a step. What's left needs code, not settings.
+
+[45:22] When a box switches itself off
+
+Nora: Heat next. The notes say the Sparks switch themselves off.
+Sam: In mid-October, under the GLM lane, one Spark switched itself off three times in thirty-nine hours. Off, not hung. It stayed off until someone pressed the button.
+Isla: Nothing was logged, either. No kernel warning, no out of memory error, no GPU error, and an empty crash store. The journal just stops.
+Nora: What was the first theory?
+Sam: Two of the freezes came during bursts of judge traffic. That was refuted.
+Sam: The evaluators were paused, and the third power-off still came at light load, with a single request running.
+Isla: With no logs, how do you diagnose anything at all?
+Sam: With metrics instead. Prometheus scraped every Spark every fifteen seconds: temperatures, power, clocks. Compare the dead box with its identical twin over its last minute.
+Nora: The one that died ended at ninety-four degrees on the SoC, the system chip, and eighty-six on the GPU.
+Nora: Its twin, same model, at the same power, was at eighty-nine and seventy-eight.
+Isla: Same power, and eight degrees hotter on the GPU. That's not subtle at all.
+Sam: The diagnosis matches a failure the GB10 community has documented. The embedded controller cuts power on a fast thermal or current spike, before Linux can log anything.
+Isla: Is that proven, or is it a strong guess?
+Sam: The note marks it as inference, not proof. These boards have no fan or power supply sensors to confirm it.
+Sam: A fourth power-off on October seventeenth fit the pattern, though.
+Isla: A prefill of five hundred thousand tokens took that box from eighty-five to ninety-two degrees on the SoC in fifteen seconds. Its twin survived the same work.
+Nora: On October seventeenth, Will chose a temporary GPU clock cap. The author of the community fix reported about twenty hard power-offs in three weeks before capping.
+Nora: There were none after, for about five percent of speed.
+Isla: On those numbers, I'd take that trade too. Which temperature should I actually watch, though?
+Sam: That's the measurement lesson. The SoC runs far above the GPU die.
+Sam: In the week to October twenty-sixth, three of the Sparks peaked around ninety-five degrees on the SoC.
+Isla: Their GPUs peaked at seventy-one to seventy-nine. On average under load, the SoC was eleven to fourteen degrees higher. The GPU temperature alone understates the risk.
+Nora: The obvious gauge was the wrong gauge, then. On October twenty-sixth, SoC panels went onto the Spark boards in Grafana.
+Nora: An alert now fires when any Spark's hottest thermal zone sits at ninety degrees or more for a minute.
+Isla: The alert's own comment is honest about its limits. One Spark's GPU once rose sixteen degrees in fifteen seconds, faster than the scrape.
+Isla: That's why it warns about sustained heat. It can't stop a power-off.
+Nora: What about the benchmarks? Were they running blind?
+Sam: Every DeepSeek benchmark ran under a guard.
+Sam: It samples all four boxes every five seconds, and stops the run at eighty-two degrees on the GPU or ninety on the SoC.
+Nora: There was also a misreading. The head box runs hottest, because it also runs the API server and the engine core.
+Nora: Some early readings said it idled at seventy-nine to eighty-one degrees.
+Sam: Re-measured, it idles at forty-five to fifty. The hot readings were taken a minute after a benchmark, with heat still in the box.
+Isla: Where does it all stand now?
+Sam: On October twenty-seventh, a pilot lane ran DeepSeek on SGLang instead. It was faster, and it cooked the boxes.
+Sam: A single stream took one box's hottest sensor from fifty-six to ninety-one degrees in forty-nine seconds.
+Nora: Sixteen parallel requests reached ninety-six point seven. At that point, at Will's request, the DeepSeek lanes went down to rest the Sparks.
+Isla: What was the GPU die doing while all that happened?
+Sam: Sixty-one to sixty-seven degrees. Whatever was hot, it mostly wasn't the GPU.
+Nora: Will's newest post traces it to three CPU threads per box, spinning at full speed. One is the scheduler waiting on the GPU.
+Nora: Two are NCCL threads polling the network.
+Sam: There's a wrong guess in it too. The recipe ships its own transport thread that spins by design, and it looked guilty.
+Sam: The engine's log showed it wasn't even running.
+Nora: Prove it's running before you patch it.
+Sam: That's the line. On an idle box, a thread spinning on a fast core made about five times the heat of one on an efficient core.
+Isla: There were two small changes. Pin NCCL's threads to the efficient cores.
+Isla: Make the scheduler wait with an Arm instruction that sleeps the core until the GPU writes, instead of spinning.
+Sam: Together they cut a single stream's heating rate by about sixty-two percent, for under two percent of decode speed.
+Nora: Why not the textbook fix, a blocking wait?
+Isla: On this hardware, each blocking wait came back about half a millisecond late. That would have cost five to fifteen percent of the speed.
+Nora: The post is careful about limits, too. Single streams only, measured as a trial, and under heavy concurrency the heat is still there.
+Nora: The cap on parallel requests stays.
+Isla: What about the big workstation cards?
+Nora: A September week of data there found that a utilization reading in the mid nineties wasn't throttling. Those minutes had the week's highest clocks.
+Isla: Utilization counts how much of the time any kernel is resident, not how hard the chip works.
+Sam: An aggressive fan curve also took eleven degrees off under load. That bought the Max-Q about seven and a half percent more clock, at the same power cap.
+Nora: Cooler silicon is faster silicon.
+Sam: That's the note's own phrase, Nora.
+
+[53:08] Routing, judges and a cache that copies
+
+Nora: Last chapter. Every client in the lab talks to one LiteLLM router. With all these models behind it, how does a request pick one?
+Sam: In front of some routes sits NVIDIA's Switchyard. It sends each call to the cheapest model that can handle it, and escalates the rest.
+Isla: The setup in Will's October twenty-fourth post works like this. Lightning on the RTX fifty-ninety box answers first.
+Isla: GLM on the two big cards takes the hard turns, and a judge model decides.
+Nora: How does the judge actually decide?
+Sam: It estimates the probability that the fast model completes the task. For tasks it rates as supported, point seven or above keeps the turn on Lightning.
+Isla: Below that, or if the verdict comes back garbled, it goes to GLM. It fails closed, toward the strong model. That's the direction I'd want it to fail.
+Nora: Did routing work the first time?
+Sam: Not even close, and that's a September story. Routing never escalated at all. Two bugs were stacked.
+Isla: With no classifier configured, every request got a confidence of zero, and fell through to the cheap tier.
+Sam: With a classifier attached, the judge was Lightning, a reasoning model. It spent its budget thinking, and returned an empty verdict. That also scored zero.
+Nora: A broken judge looks exactly like nothing to escalate, then. The two are indistinguishable.
+Isla: The October post found three more bugs, didn't it?
+Sam: It did. First, the Grafana board said escalations, zero, while Prometheus showed more than a hundred answers from the capable tier.
+Nora: The board was generated from the route config, and a route added that morning was newer than the board. That's our dashboard from the top of the show.
+Sam: Second, the fast tier answered empty. Every hard-task answer from Lightning was all thinking and no content.
+Nora: While the counters said the fast tier was doing its share.
+Isla: That's another of the post's lessons. Tier counters measure routing, not quality. Capture the answers and grade them.
+Nora: Why was it empty, though?
+Sam: The gateway talked to it in the Anthropic message format. The router's translation of that format drops the flag that turns thinking off.
+Sam: On the OpenAI format, the flag survives.
+Isla: Switched over, Lightning answered the hard tasks correctly in about three quarters of a second to just over a second.
+Isla: That's two and a half to four times faster than the big model.
+Nora: The wire format is behavior. That's the post's own line. Third, the judge looked backwards.
+Sam: It sent the question, what is forty-two, to GLM in every run. It kept all four hard tasks on Lightning.
+Sam: The packaged judge forecasts capability with a packaged rubric. It isn't a difficulty scorer, and that rubric didn't fit this stack.
+Isla: A two-sentence custom rubric moved escalations from three of twelve tasks to seven of twelve.
+Isla: Making GLM itself the judge didn't fix it, and cost one point seven seconds a call.
+Nora: The rubric is the product, then.
+Sam: The post says exactly that. It also says the judge isn't deterministic run to run, so any difference under about two tasks is noise.
+Isla: There was one clear win. Judging once per conversation, instead of on every request, made repeat turns roughly ten times faster.
+Nora: That brings us to the cache.
+Sam: The router keeps a one hour exact-match response cache. An identical request gets the first answer back. Same model, same messages, same settings. At any temperature.
+Nora: Wait. At temperature one I'm asking for randomness.
+Isla: You'd get a copy anyway. In a live check on October twenty-seventh, the same prompt went twice to Lightning at temperature one.
+Isla: It came back identical in two hundredths of a second.
+Sam: With a cache bypass in the request body, the two replies differed. Any repeated sampling within the hour is counting copies.
+Sam: That means pass at k, repeated trials, or a benchmark rerun.
+Nora: Did that actually distort a published number?
+Sam: It distorted a recorded one. On October twenty-fourth, Lightning was load-tested with AIPerf, NVIDIA's load testing tool. Eighty-four of its ninety-five requests that week were cache hits.
+Isla: Those latency and throughput figures described the cache, not the engine. On October twenty-seventh, with Will's yes, the wrapper started sending the bypass on every run.
+Isla: Two identical runs afterwards added no cache hits.
+Nora: Is the fix just a header?
+Sam: It's a field in the request body. The standard HTTP cache header is ignored.
+Isla: Here's the line from that note I'd put on a wall. When repeat outputs look too consistent, check identical outputs and cache hits first.
+
+[59:22] Three things to take away
+
+Nora: Three things to take away, and we'll take one each. First, a number is only as good as what produced it. Utilization that was really waiting.
+Nora: A benchmark that was reading RAM. A speed that timed the wrong field. Random samples that were copies. Before you trust a number, ask what physically made it.
+Sam: Second, find the real limit by looking where the work actually goes. The storage ceiling showed up in a CPU profile, not in a theory about network cards.
+Sam: The slow decode step showed up in a kernel profile. A context window lives in at least four places, and the smallest one wins without telling you.
+Isla: Third, when a lever fails once, find out where it failed before you drop it. That one's aimed at me.
+Isla: The autotune hang was one pass, on a known set of operations. The fix was a skip list that already existed.
+Sam: Here's a small bonus from the heat chapter. Watch the hottest part of the machine, not the most convenient one.
+Nora: The DeepSeek recipe and Will's posts on routing and on broker forensics are on his portfolio site.
+Nora: They link to his public projects, including the Nemo Console he watches the routing layer with.
+Isla: This is one of three episodes. One covers how the lab keeps every model and agent contained and observable.
+Sam: Another covers how Will ships and reviews his public tools, and where coding agents fit in.
+Nora: Thanks for listening to The Local Lab.

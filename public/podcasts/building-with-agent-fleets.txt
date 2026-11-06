@@ -1,0 +1,406 @@
+The Local Lab, episode 3: Agent Fleets Under Contract: Reviewers, Phantoms and Re-Running the Report
+
+Transcript. The hosts, Nora, Sam and Isla, are AI-generated voices and faces. The script is drawn from Will Boyden's published write-ups and lab notes.
+Length: 51:56
+
+Chapters
+0:00 Cold open
+2:34 Contracts out, reports re-run
+11:44 A fleet of reviewers, and three phantoms
+20:45 Clean clones and a browser at the door
+29:03 Slow machines and young packages
+37:22 Testing the prompt half, and skills for weak models
+43:55 Honest negatives
+49:45 Three things to take away
+
+
+Sam: For weeks, the green continuous integration runs on Will Boyden's portfolio site weren't installing what the lockfile said.
+Isla: Green, but wrong. How does nobody notice that for weeks?
+Sam: The install step had a quiet fallback. If the strict install from the lockfile failed, it ran a looser one that rebuilt the dependency tree.
+Nora: The run just carried on, green as anything. Why was the strict install failing at all?
+Isla: One package was listed twice in the project file, and the last entry won. The two files disagreed, so the fallback fired on every single run.
+Nora: Who finally caught it, then?
+Sam: A reviewer with exactly one job, which was the supply chain.
+Nora: Here's the twist, though. The same review rounds also produced three findings that turned out to be wrong.
+Isla: Will's process is built to catch both kinds. That's really what today is about.
+Nora: Welcome to The Local Lab. I'm Nora.
+Sam: I'm Sam, and I'm glad you're here.
+Isla: I'm Isla. Quick note before we start: all three of us are AI-generated voices. Everything we talk about comes from Will Boyden's published write-ups and lab notes.
+Nora: Today is about how Will ships his public projects. That's Engine Console, Nemo Console, Agent Hub, GPU Tuner, Harness² Workbench, and the portfolio site itself.
+Nora: Coding agents do delegated work in that process. The question is what keeps it honest.
+Isla: The short answer has three parts. Contracts on the way in, and independent checks on the way out.
+Isla: On top of that, a habit of assuming any report can be wrong, including a reviewer's.
+Nora: If you came for the hardware and the model speeds, that's our episode on big models on home hardware.
+Nora: How the lab contains its agents is the containment episode.
+Sam: There's plenty left without those, believe me.
+
+[2:34] Contracts out, reports re-run
+
+Nora: Let's start where a project starts. The Nemo Console post says it plainly: before any code, Will wrote an architecture file. Sam, what's in it?
+Sam: A table of decisions, and the directory layout with one owner for every path. The HTTP interface, the canonical metric names, and the quality bar.
+Isla: One owner for every path. Does that mean only one party is allowed to change that file?
+Sam: Yes. Work runs in parallel, each piece in its own git worktree, which is a separate checkout of the same repository.
+Nora: When two parties edit the same files, they silently produce mismatches between the docs and the code. The layout decides, up front, who touches what.
+Isla: That's the bit I'd steal first. Write down who owns which files before anybody starts.
+Sam: The other half of the contract is an interface. The most important file in Nemo Console is its adapter port, the interface every managed system implements.
+Nora: Will's post says it was written first, and marked locked.
+Isla: Locked forever? Plans change, Sam, they always do.
+Sam: They do, and the rule is that later changes are additive only, each appended as a numbered addendum.
+Nora: In Nemo Console, the last five systems of version zero point three point zero arrived as addendum nine point eight. Harness² Workbench did the same.
+Nora: When its post went up, it had four addenda. By late October it had ten, all additive.
+Nora: Apart from a rename before its first push, nothing in that contract changed shape.
+Isla: Fine, but what does locking actually buy you? Give me the practical version.
+Sam: The lab keeps a written playbook for parallel builds, and it has a story. A list endpoint changed its response to add a cursor for the next page.
+Sam: It silently broke the frontend's mock server until someone relayed the change.
+Isla: That's exactly the kind of small change I'd shrug off.
+Nora: Hence the rule. When the contract changes, tell every affected party the same minute.
+Isla: Hold on. The frontend had its own mock server?
+Sam: From day one, so the user interface never waits for the backend.
+Nora: Nemo Console's mock server still ships, in fact. The screenshot at the top of its post is rendered from it, with canned demo data.
+Nora: The playbook also calls for an independent auditor with zero prior context.
+Isla: Zero context on purpose? That sounds like a handicap to me.
+Sam: It's on purpose. An auditor who watched the code being written shares its blind spots.
+Sam: The playbook even says when: after the build, with findings fed back to the agent that has the context.
+Nora: Here's my pushback. Specialist roles, locked interfaces, numbered addenda. It sounds like a big company process bolted onto one workstation. Isn't it overkill?
+Isla: I'm with Nora on this one. On one workstation, I'd be tempted to just start coding.
+Sam: The decision records suggest Will thinks the opposite. Engine Console has twenty-one of them, and Harness² Workbench has nine.
+Nora: Nemo Console has fifteen, each with the alternatives he rejected.
+Sam: My read is that anyone picking up the work, agent or person, reads the contract, not Will's mind.
+Sam: If the reasoning isn't written down, it isn't in the room.
+Isla: That's a brilliant way to put it. I'd pin that above my desk.
+Nora: What does each agent actually get handed?
+Isla: Four things, if I've read it right.
+Isla: The files it owns, the files it must not touch, and the gates it must pass, meaning lint, type checks and tests.
+Sam: The fourth is one sentence I really like. Report honestly what you did not verify.
+Nora: The report comes back. What happens next?
+Sam: The playbook's next rule is, in so many words, never accept a report as fact. Re-run it.
+Nora: Give me a real example of a report going wrong.
+Isla: Engine Console has a good one. Mocked Docker tests passed while the real gateway container exited the moment it started.
+Nora: Wait, how does a container exit while the tests pass?
+Sam: The tests mocked Docker, so no container ever ran. The real gateway ran nginx without the one setting that keeps it in the foreground.
+Sam: nginx forked away from the container's first process, so the container exited cleanly, with empty logs.
+Isla: The Engine Console post counts it among the bugs only real Docker could show. It's not even an exotic bug. It's a report that sounded true.
+Nora: What does re-running actually look like on a normal day?
+Sam: Run the gates yourself. Hit the live service, look at a real screenshot, and search the responses for secrets.
+Nora: Do the notes ever get a claim wrong themselves?
+Isla: They do, and those get recorded. In Agent Hub, an earlier claim said some client icons rendered blank. That was wrong.
+Isla: There was a fallback icon, and every icon in use was defined.
+Nora: In GPU Tuner, a note said the README was stale about remote power changes. A later re-read found it had already been updated.
+Nora: The note now carries its own correction.
+Isla: I like that the correction stays in the note, instead of the mistake being quietly deleted.
+Sam: It's the same instinct as the review rounds. In one portfolio round, an implementer reported its commits. The git log showed nothing.
+Sam: The changes were sitting uncommitted in the working tree.
+Nora: Another time, a reviewer returned only a chat message. Its report file never reached the disk. The check is literally: look at the log, look at the folder.
+Sam: The expected output is written into the step. One commit per batch, each naming its finding numbers, and a clean tree.
+Isla: Let me play devil's advocate. If you re-run everything the agent did, what did delegating actually save you?
+Sam: Re-running a gate is cheap next to writing the code, and a wrong report is expensive. The bigger answer is in how the projects describe themselves.
+Nora: Nemo Console labels every feature implemented, verified-live, or unverified. Harness² Workbench uses verified live, fakes only, or unverified, with dates.
+Isla: Fakes only. What does that mean in practice?
+Sam: Covered by automated tests with stand-ins, like stub programs, mock servers or recorded output, but never run for real.
+Nora: Nemo Console's definition of unverified is the one that got me. Only fakes have run it. It may work. Nobody has watched it work.
+Isla: That's an unusual thing to print on the front page of a project. I'd be nervous doing that.
+Sam: It matches a lab rule. Don't assert what you didn't verify. No verified stamp, version or count in a comment unless you actually ran it.
+Isla: Prefer saying generated and unverified over a false stamp. An edit hook even flags verified stamps dated in the future.
+
+[11:44] A fleet of reviewers, and three phantoms
+
+Nora: Reviewers. Will's post on this opens with something close to a confession. He writes that he reviews his own work constantly, which is exactly the problem.
+Sam: The same brain reads it back with the same blind spots, in the same order. It stops at the same point where everything looks fine.
+Isla: That's painfully true of everybody. What did he do instead?
+Sam: Before the portfolio launched its current content, he stopped reviewing it himself.
+Sam: He ran waves of specialist reviewers, each with one narrow lens, each required to prove what it claimed.
+Nora: Four reviewers a round, and no lens a previous round already used. Give us the lenses, Sam.
+Sam: In the first of the three rounds the post covers: zero JavaScript, cross-browser, plain language, and maintenance.
+Isla: The second round was caching, privacy, client conversion, and print.
+Nora: The third was machine consumability, timed task walks, supply chain, and a meta-verifier that trusted none of the earlier claims.
+Nora: What has to be in a finding before anyone takes it seriously?
+Sam: An ID and a severity. Evidence, meaning a file and line, or a command and its output. A specific fix, and an expected measurable effect.
+Isla: The post has a line on that I'd quote to any team. A finding without evidence is an opinion, and opinions do not get implemented.
+Nora: Before any reviewer starts, the full verification gate runs and its numbers get recorded. If it's red, it gets fixed first.
+Sam: On a red baseline, no improvement is measurable. That actually happened. The maintenance reviewer found the type check and lint red until two missing tooling packages were added.
+Nora: Four reports land on the desk. What happens to them?
+Sam: The disposition. Every finding gets one ruling: implement, accept with a reason, retract as a phantom, or mark owner-gated. Nothing gets silently dropped.
+Isla: An implementer works through the accepted ones in batches, with the gate green before every commit. After that, the same four lenses re-review the live site.
+Nora: Why the same lenses, though, and not fresh eyes?
+Sam: The re-review is quality control on the round.
+Sam: The reviewer who made a claim is asked whether the fix landed, checked against the deployed site rather than its own memory.
+Nora: The post says that's where the phantoms died. Tell us about them.
+Isla: Three findings were wrong. One said the critical scripts were cached for a year. The live headers said ten minutes.
+Isla: The other two serving paths said don't store at all.
+Sam: The reviewer had read a hashed asset's header and generalized.
+Nora: The second one said the stylesheets had no precompressed copies.
+Isla: There are no separate stylesheet files, though. Styles are inlined into each page. The finding had no object, which is almost funny.
+Sam: The third said dark-theme pages print blank. The measurement was real, about three point seven percent ink coverage. The reading was backwards.
+Sam: That much ink is readable text, not a blank page.
+Nora: All three measured something real, then. A real measurement, concluded about the wrong artifact.
+Sam: That's the post's diagnosis. It's why severity needs a probe, and why there's now a separate skill for checking a finding before anyone acts on it.
+Isla: It's a short set of questions. Was the claim measured on the right artifact: the live site, the local build, or a fresh install?
+Isla: Does the object of the claim exist?
+Sam: If it depends on the environment, does it hold in both? If it's visual, render it and measure instead of trusting the wording.
+Nora: Only then do you rule, and the probe output goes into the disposition. Was there a real case of the both-environments problem?
+Isla: In the second round, a fix for the site's address passed locally and failed in CI. CI sets that address with a trailing slash.
+Isla: The local run could never have seen it.
+Nora: Let's get to the real bugs. The supply chain lens found that install fallback from the cold open.
+Sam: The same round found a truthfulness gate, a check meant to keep the site's claims honest. It had been red on every pull request since it landed.
+Sam: Its repository path was hard-coded to the author's private workspace.
+Nora: A truthfulness check that was itself broken. That's almost too neat.
+Sam: It's in the post. Both now fail loudly, which the post calls the only useful failure mode.
+Isla: What else would a normal review have missed?
+Sam: The zero-JavaScript reviewer loaded every page with scripts off. The mobile navigation simply didn't exist. On narrow screens, the only reachable links were in the footer.
+Nora: The caching round led to a structural bug. The site's origin was a hard-coded constant.
+Nora: Every page told search engines its canonical home was a placeholder domain that doesn't resolve.
+Isla: There was a wall as well, wasn't there? Three lenses, in different rounds, stalled on the same gap.
+Sam: No published email, no social profiles, no resume. They were right that it was the biggest conversion gap.
+Nora: They were also right that it must stay empty until the owner fills it.
+Isla: Fabricating a contact would be worse than the gap. That's the part I'd want every agent to understand.
+Nora: Owner-gated items became a deliverable. The disposition ends with the exact list of decisions only Will can make.
+Isla: How did the three rounds add up, in numbers?
+Sam: Eighty-seven findings across three rounds, sixty-odd shipped fixes, three phantoms.
+Nora: Unit tests went from five hundred and three to five hundred and twenty-six. End-to-end specs went from fifty-three to fifty-seven.
+Sam: Eleven scored lenses finished at seven out of ten or better. That's twenty-one points gained in all, and no lens ended lower than it started.
+Nora: Did the software projects get reviewers too, or just the site?
+Sam: A security version. Harness² Workbench went through two independent reviews before it went public.
+Sam: The reviewer had no part in writing the code, and started with no prior context.
+Isla: It got the source and a scratch server, and it had to bring a working reproduction and a minimal fix.
+Sam: It was an AI security reviewer, not a human penetration test, and the repository says so.
+Isla: Good, I'd want that said out loud. What came out of it?
+Nora: Seventeen issues in the first review. The second, a few hours later, checked those fixes.
+Nora: It confirmed twelve, judged five partial or acceptable by design, and found ten more.
+Sam: The details are in the security post on the site.
+Isla: The process lessons are the post's own: ask for reproductions, not opinions, and review the fixes, not just the code. That second one I'd actually take home.
+
+[20:45] Clean clones and a browser at the door
+
+Nora: Shipping. What's a clean clone, and why does the playbook keep saying literal?
+Isla: Let me try this one, and Sam can correct me. A working tree is the folder you develop in.
+Isla: It has build output, generated files, and configuration that exists only on your machine.
+Sam: A clean clone is a fresh copy of the repository into an empty folder somewhere else. Literal means a real clone outside the repository tree.
+Sam: A copied working tree doesn't count.
+Nora: Does it actually find things, though?
+Sam: Nemo Console is the clearest case. The day version zero point three point zero shipped, five new pages showed a generic error screen in Will's own browser.
+Nora: Every unit test and API test was green. What was going on?
+Sam: Caching. The frontend files were served with no caching instructions.
+Sam: A browser that had used version zero point two kept an old shared module, and paired it with the new pages.
+Isla: One missing function, five dead pages. Only a real browser with history could have shown that.
+Nora: Fix the header and move on, surely?
+Sam: Zero point three point one did fix the header. The bigger fix was a ship gate.
+Sam: A browser suite starts the real backend and drives a real headless Chrome.
+Isla: It opens every route and every tab, thirteen routes and forty-six pages and tabs.
+Isla: It fails on an error state, an uncaught exception, a console error, a server error, or a file served without the no-cache header.
+Nora: It runs in CI, and in a git pre-push hook that lives in the repository.
+Nora: The hook refuses to push any commit the suite hasn't passed on the exact backend and frontend trees.
+Isla: Did it earn its keep right away, or is it just insurance?
+Sam: Its first run from a fresh clone found two more bugs. A parameter preview answered with a server error when a compose file was missing.
+Nora: The config tab of a system that isn't deployed showed an error, instead of saying the file isn't on this machine. Why didn't Will's own checkout show those?
+Sam: The backend there could find the lab's files. The deployment checkout hid both.
+Sam: These days the suite always starts the backend with an empty repository root, so every run sees what CI sees.
+Isla: That's the lesson I'd keep. Your own machine is the least honest test environment you've got.
+Nora: Does the portfolio site have a gate like that?
+Sam: It does, and one of its limits shows who owns a gate. The site's audit caps client JavaScript at two hundred and twenty kilobytes, compressed.
+Isla: The six-post Workbench series pushed it to two hundred and forty-four. That's a fail.
+Nora: Will chose to load post bodies on demand instead of raising the limit. It came back down to about one hundred and seventy-two kilobytes.
+Nora: The rule is short: the budget is the owner's call.
+Isla: Did the other consoles get the same browser gate?
+Sam: By late October, yes. Engine Console and Agent Hub both gained the browser suite and the pre-push gate.
+Sam: Agent Hub's version zero point two point zero shipped with it.
+Nora: Next up is going public, and the post on that opens by saying it can't be undone.
+Nora: Once a repository is visible, its whole history can be cloned, forked, cached and indexed.
+Sam: That includes every old CI log. Harness² Workbench went public in stages, each with a checklist.
+Isla: Walk me through it like I'm about to do it tomorrow.
+Sam: First, scan every commit for secrets, not just the current files. Gitleaks ran over the full history. It scanned one hundred and eighty commits and found nothing.
+Nora: A clean history, then. That's good news.
+Sam: Except that one hundred and eighty-one commits changed files.
+Isla: Wait, where did the missing one go?
+Sam: It only replaced a screenshot, which gitleaks skips. The rule: if a scanner's count doesn't match yours, find out why before you trust the result.
+Nora: That's the agent-report instinct, pointed at a tool.
+Isla: Next came a search of every line ever added for home directories, machine names, internal hostnames and private network addresses.
+Nora: There was a check, too, that every author and committer identity in the history was a no-reply address.
+Sam: Every shipped screenshot was opened by hand, because the project had been renamed that morning. The next step: push it private first.
+Isla: Why push it private first, though?
+Sam: The first CI runs failed four tests that had always passed locally. Dependabot's first proposals broke the dependency policy three different ways.
+Sam: All of that got fixed while nobody could see it.
+Nora: Both of those come back later in the episode. What happens once it's actually public?
+Sam: Turn on what the governance files promise. A security policy that says report privately is a broken promise until private reporting is switched on.
+Isla: After that, protect the main branch. Ten named checks must pass, and a code owner must approve. The code owner is Will.
+Nora: Which is a problem. GitHub won't let you approve your own pull request.
+Sam: Right, so the admin role can bypass the rule, and the docs say so.
+Isla: Merging a release or publishing one still needs Will's explicit yes, item by item. How does the release itself get built?
+Sam: By a workflow, never on a laptop. On a version tag, it checks the tag matches the code's version.
+Sam: It builds both Linux targets and adds the licence texts.
+Nora: It writes a software bill of materials and checksums, attaches build provenance, and opens a draft.
+Nora: A person downloads one archive, checks the checksum and provenance, and runs the binary and the demo.
+Isla: Only then does it get published. A published tag is never moved, and a broken release gets a new patch version.
+Nora: Engine Console came up earlier. Anything from its release?
+Sam: It shipped only after a security audit of the changes passed.
+Isla: A clean clone also caught a CI break the working tree had hidden. The dependency audit tripped over a local path dependency.
+
+[29:03] Slow machines and young packages
+
+Nora: Those four tests that failed on the first CI run became their own post, Four flaky tests a fast machine hid.
+Sam: Harness² Workbench had six hundred and forty-one unit and integration tests, and seven end-to-end tests. All passed, many times, on the thirty-two-core workstation where it was built.
+Isla: That included runs from a fresh clone. GitHub's shared runners, two cores for a private repository, started failing one test per run.
+Isla: It was a different one each time.
+Nora: Most people would hit rerun and move on. Isla, admit it, you would too.
+Isla: I'd hit rerun, and I'm not even ashamed of it.
+Sam: The post's rule is that a test that fails once is a bug until proven otherwise. The method was to make the fast machine slow.
+Nora: Pin two busy loops to two cores, pin the test binary to the same two cores, and run it fifty times.
+Nora: Where two cores weren't slow enough, one core with four busy loops was.
+Isla: That's a trick anyone could use tomorrow. What was the first failure?
+Sam: A race in how Linux starts a program. When the Workbench restarts after a crash, it stops a job's leftover processes.
+Sam: It does that only after identifying them, by a marker in each process's environment.
+Nora: The kernel gives a process its new name early, before the new environment is in place. In between, the environment reads as empty.
+Isla: Did Will actually measure how often that happens?
+Sam: He did. Two hundred and sixty of five hundred spawns showed the new name with an empty environment.
+Sam: That lasted about eighteen thousandths of a millisecond at the median.
+Nora: More than half the time? That's not a rare race.
+Sam: On a fast machine, the test's first look almost never landed in the window. On a two-core runner, it did.
+Isla: Is that a test bug or a real bug?
+Sam: Both. Recovery read each process once, and empty meant unmarked. A job process caught mid-switch would be left running.
+Nora: It fails safe, since nothing unidentified is ever signalled. It still fails, though.
+Sam: The fix treats an empty read as look again, up to nine reads with doubling pauses.
+Isla: Was that enough to fix it?
+Sam: No, and the slow machine showed it. Under load, the new test still failed about one run in twenty. Two more windows explained it.
+Nora: One was a permission-denied moment for children of processes marked non-dumpable, a flag that keeps other processes from reading them.
+Isla: The other was an instant where a read can return the parent's environment. The post is careful about that one.
+Sam: Will never caught it directly. It's the explanation that fits the remaining failures and matches the kernel source.
+Isla: Here's my real question. How do you prove a fix for a race?
+Sam: With a negative control. A fix counts only if the old code fails under the same conditions and the new code passes.
+Nora: With a single read, the new test failed on its first iteration, five runs out of five.
+Nora: With the fix, the process tests passed one hundred runs out of one hundred on two loaded cores. That's convincing. The other three, quickly?
+Isla: First, a rate limiter for failed sign-ins: sixty a minute, then refusals. The test sent five hundred junk requests and expected exactly sixty rejections before the refusals started.
+Isla: CI got sixty-one.
+Nora: Off by one. Where did the extra one come from?
+Sam: The limiter refills continuously, one attempt a second, so any run longer than a second earns an extra try.
+Isla: On one core with four busy loops, the old test failed eight runs out of eight, with exactly the CI numbers.
+Nora: Easy fix, surely. Loosen it by one.
+Sam: The post says no magic numbers. A helper computes how much the limiter could have refilled over the measured run. The test accepts anything up to that.
+Isla: The third was a browser test. It waited for an element to appear, then read it before its content had arrived.
+Sam: Waiting for an element is not waiting for its content.
+Nora: Fourth, a test compared two lists in order, when the order came from file times. It's about which items are listed, so it now compares them as sets.
+Isla: Let's get to the dependency cooldown, then.
+Sam: Harness² Workbench adopts no dependency version younger than fourteen days. Most malicious package releases are caught within days.
+Isla: Waiting two weeks avoids most of them without reading a line of their code. Devil's advocate, though. Security fixes can't wait two weeks.
+Sam: The project hit that first. Its very first lockfile, pinned strictly by age, pulled in versions of rustls and tokio with known advisories.
+Sam: Those were already fixed, in releases too young to adopt.
+Nora: There's one exception, then. A release that fixes a security advisory is adopted at once, recorded with the advisory and an expiry date.
+Isla: The post's phrase is great. The exception is a record with an end date, not a hole.
+Nora: What about Dependabot, set to the same fourteen days?
+Sam: It slipped three ways on day one. It offered Node twenty-five, an odd-numbered line past its end of life.
+Isla: That's because, for a floating Docker tag, the cooldown measures the last push. Maintained lines get rebuilt all the time.
+Isla: The second slip was a pull request titled for one version of the uuid crate. The lockfile it changed held a newer one, published the day before.
+Nora: Third, for uv's image, the registry gave no publication date at all. The cooldown simply couldn't apply.
+Isla: How was the uuid one caught?
+Sam: By nothing new. CI ran the same cooldown check as the local gate, on the lockfile instead of the bot's title.
+Nora: Enforce policy on what gets built, not on the description. Did the portfolio adopt the cooldown as well?
+Sam: In late October, Will chose the same fourteen-day cooldown for the site's Dependabot. He also chose to skip TypeScript major versions.
+Isla: That came after a grouped update tried TypeScript seven. It conflicted with the lint tooling's supported range and failed the install.
+
+[37:22] Testing the prompt half, and skills for weak models
+
+Nora: Here's a harder one. Half of these systems is a prompt. How do you test that?
+Sam: Will's post title says it: testing when half your system is a prompt. His answer is to stop trying to unit-test the prompt.
+Isla: Move work across the boundary to the deterministic side, and test that side ruthlessly.
+Nora: His tool-calling eval harness has no language model judging anywhere in its scoring. How does it grade, then?
+Sam: Every tool call is checked against the scenario's function schema. Every final answer is graded by plain rules.
+Sam: One is whether it contains the expected value, ignoring case and thousands separators.
+Isla: Dull, the post admits, but reproducible. Reproducibility is the entire job.
+Nora: What about the random part of the system?
+Sam: Two tools. Repetitions turn it failed into it failed one time in two. That's a different bug, with a different fix.
+Isla: The second tool is named failure modes. A reply that arrives successfully with empty content is its own category.
+Nora: That's separate from a reasoning model that burns its whole output budget and never answers. Any surprises once the measuring started?
+Sam: The broker in front of the models caches identical requests. A repeated request came back in about a hundredth of a second.
+Sam: A distinct one took about one point four seconds.
+Isla: That would fool me completely. The variance between repetitions would look near zero, and the latency phenomenal.
+Sam: That's exactly what happened. The fix was one field that makes every request unique. After that, latency showed a real spread.
+Nora: What about testing the site itself?
+Sam: The portfolio is a pipeline from markdown to browser. The markdown is written by the same author who's trying to test it.
+Isla: The frontmatter parser accepts a deliberately small format and throws on anything else, with the line number. Unknown fields are a build error.
+Sam: The generated content bundle is byte-stable, so it doubles as a golden file the tests check against.
+Nora: The build now fails if a rendered field contains a local machine path. That loops back to going public.
+Nora: The other place prompts live in the lab is skills. Define skill for listeners, Sam.
+Sam: A skill is a written procedure an agent loads when a task matches it.
+Sam: Most of the lab's agents run on local models, which are far weaker than a frontier model.
+Nora: Since early October, there's been a standing rule from Will. Every skill must be followable by a weak local model.
+Nora: It isn't done until a weak model has passed test prompts with it.
+Isla: What does followable mean in practice?
+Sam: The standard is frank about weak models. They skip steps, guess commands, read should as optional, and treat empty output as success.
+Isla: A skill becomes a checklist of exact commands, then. Each one has its real expected output, and what to do when the output differs.
+Isla: Choices go in tables, not paragraphs.
+Sam: Every skill ends with rules, a fixed report template, and a mistakes section built from real failures.
+Nora: What kind of real failures, Sam?
+Sam: A local model copied a command from a table exactly as written, without its folder path, and got nothing.
+Sam: Every command now carries its full path from the repository root.
+Isla: A skill draft from a weak model passed the plain linter but had three dead commands in it.
+Nora: The linter has a second mode for that. It actually runs every read-only command in a skill and fails the ones that error.
+Sam: That mode catches exactly this. The test loop is two or three prompts a user would really type, with checkable assertions for each.
+Sam: Runs go with the skill and without it, on a small model like Claude Haiku and on the lab's own local setup.
+Isla: With the first drafts, Haiku still picked wrong units. It copied a query trick that turns missing data into a fake zero.
+Isla: It was fooled by a metrics page that was really HTML.
+Nora: How do you fix a model being fooled? You can't argue with it.
+Sam: The rule I find most useful: when weak runs keep tripping on the same thing, fix the tool, not the prose.
+Isla: The lab's query script now flags the fake-zero trick. It spots a metrics page that's really HTML, so the model doesn't have to notice.
+Nora: Do the review skills follow the same standard?
+Sam: They do. The skill for running a review round and the one for verifying findings both use the template.
+Sam: Both cite a real phantom from the portfolio rounds as a worked example.
+Isla: The standard's own line is the one I like. A frontier model reading the same skill loses nothing. It just reads faster.
+
+[43:55] Honest negatives
+
+Nora: Last chapter. What didn't work, then?
+Sam: Start with an experiment that didn't replicate. Harness² Workbench wraps Google Research's Harness² framework.
+Sam: It improves an agent's harness, meaning its prompts, tools, memory and skills, task by task, without touching the model's weights.
+Nora: The paper reports gains on three professional benchmarks. The lab tried it on its own models, in late October.
+Sam: That was on self-hosted open-weight models, under container isolation, on the paper's LAB benchmark: ten tasks in antitrust and corporate deal work.
+Isla: The first run looked like a win. The mean partial score rose from about point eight four to about point nine two. I'd have posted it.
+Sam: Look underneath. The refined harness was better on four tasks, worse on five, and tied on one.
+Nora: The p-value was one, so no evidence of a difference at all. The mean gain came from a single task.
+Sam: On that task, the starting harness drafted the wrong deal from a distractor document.
+Isla: One task carried the whole average. That's a fragile win.
+Sam: The replication used the same setup, and it did not reproduce the gain. The mean went from about point eight six to about point eight two.
+Nora: Refined was better on two tasks, worse on six, and tied on two. What happened on the wrong-deal task?
+Sam: The refined harness scored eleven of a hundred and seventeen criteria, after one hundred and two the first time.
+Isla: How much does the starting harness move on a rerun by itself?
+Sam: That's the key number. Three point nine points per task on average. The two refinements of it differed by up to seventy-eight points on one task.
+Nora: The public changelog puts it plainly. Single runs cannot tell refinement from noise.
+Isla: Was anything else off in those runs?
+Sam: Yes, and it's also in the changelog. LAB's document reader parses office files by launching podman, a container tool. Inside a contained job, there is no podman.
+Isla: In one experiment, twenty-nine of thirty-seven rollouts of the starting harness lost turns to that.
+Isla: For the candidate and refined harnesses, it was twenty-two of one hundred and eight. Those two had learned a workaround.
+Nora: The starting harness was handicapped, then. That flatters refinement.
+Sam: The changelog's words are that those results understated the base harness, so compare them with care.
+Isla: What did the project actually change because of that?
+Nora: Version zero point one point three ships a stand-in that runs only LAB's own parser.
+Nora: It adds a way to compare directly against the starting harness, and a measured noise floor on every comparison. A null result that turned into product work.
+Isla: There's another one like it, with JobBench. Its prompt tells the agent to search online, and forty-five of its sixty-five tasks name an outside source.
+Sam: Under the lab's offline policy, those fail. Will chose to keep JobBench offline and run only the self-contained tasks, rather than widen what the jobs can reach.
+Isla: Honestly, I'd have been tempted to open the network up for those tasks.
+Nora: He didn't. There are more negatives written down, too.
+Nora: When the Workbench post went up, it said in plain words that no model-backed sweep had been run through it.
+Sam: The README later recorded the first one, a single task. It added that one task proves the pipeline, not a result.
+Isla: The Nemo Console post says nobody but Will has used it, on one workstation, against one set of pinned versions.
+Nora: Agent Hub's post says its first release's security work came from an internal review, not an independent audit.
+Isla: What about the automated code scanning?
+Sam: The Workbench's first CodeQL and Scorecard run raised fifteen alerts. Two critical alerts were for a hard-coded cryptographic salt.
+Nora: That sounds genuinely bad, Sam.
+Sam: It turned out to be a mock server's random data generator, whose parameter happened to be called salt. Renamed, closed.
+Isla: Others were dismissed, each with its reason written on the alert. Five stay open because they're true.
+Isla: A young repository, no reviewed pull requests in its history, no fuzzing yet, and so on.
+Nora: Why not dismiss those too, and get a green dashboard?
+Sam: The post's answer: dismissing them would make the dashboard green without making anything better.
+
+[49:45] Three things to take away
+
+Nora: Three things to take away, then. I'll start. One: the contract is written before anything is delegated. One owner per path, interfaces locked, changes additive.
+Nora: Every hand-off asks the worker to say what it did not verify.
+Sam: Two: a report is a claim. That goes for an agent, a reviewer, a scanner, or a fast workstation.
+Sam: Re-run the gate, probe the live artifact, and start from a clean clone. Slow the machine down, and use a negative control before you believe a fix.
+Isla: Three is mine. Write the negatives down. Phantom findings, a replication that failed, five open scanner alerts, features marked fakes only.
+Isla: Those labels are what make the green checks believable.
+Nora: Through all of it, the decisions stay with Will. What goes in the contract, the owner-gated calls, and whether anything ships or goes public.
+Isla: That's the episode. Our episode on big models on home hardware is about running large models on the lab's own machines.
+Isla: It goes from the workstation to the DGX Sparks.
+Sam: Our containment episode is about how the lab keeps its agents contained and watched.
+Nora: Will's write-ups are on his portfolio site, under Writing.
+Nora: Start with Twelve specialist lenses on one portfolio, Taking a repository public, and Four flaky tests a fast machine hid.
+Isla: Every project we named is public on Will's GitHub. The links are in the episode notes.
+Nora: Thanks for listening to The Local Lab. See you next time.

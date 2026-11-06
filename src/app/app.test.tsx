@@ -25,8 +25,9 @@ describe('createApp (full tree)', () => {
     expect(html).toContain('<main');
     expect(html).toContain('<footer');
     expect(html).toContain('Projects');
-    /* Content-driven nav (R2-A A7): zero videos -> no Videos tab. */
-    expect(html).not.toContain('>Videos</a>');
+    /* Content-driven nav (R2-A A7): the Videos tab shows only when a recording exists. */
+    if (content.videos.length > 0) expect(html).toContain('>Videos</a>');
+    else expect(html).not.toContain('>Videos</a>');
   });
 
   it('renders a project detail route through the real router', () => {

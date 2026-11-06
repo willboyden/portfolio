@@ -245,9 +245,12 @@ describe('responsive', () => {
   /* The footer shipped with browser-default bullets and indents, a link label
    * broken over two lines and a 702 px (desktop) / 964 px (phone) height, and
    * every other spec passed (its links still met 44 px). Budgets: the fixed
-   * footer measured 388 px at 1280 and 618 px at 320. */
+   * footer measured 388 px at 1280 and 618 px at 320. 2026-11-06: the
+   * Videos tab (podcast episodes) adds a ninth sitemap link, a fifth 44 px
+   * row at 320 (706 px measured), so the phone budget moved 700 -> 760; the
+   * broken layout above (964 px) still fails it. */
   test('footer lists carry no bullets, no label wraps, and it stays compact', async ({ page, goto320, goto1280 }) => {
-    for (const [go, width, maxHeight] of [[goto320, 320, 700], [goto1280, 1280, 460]]) {
+    for (const [go, width, maxHeight] of [[goto320, 320, 760], [goto1280, 1280, 460]]) {
       await go('/writing');
       const problem = await page.evaluate(`
         return (() => {

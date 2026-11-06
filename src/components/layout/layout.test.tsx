@@ -20,6 +20,7 @@ import { ThemeProvider } from '@emotion/react';
 import { __sheetCss } from '@emotion-mini/core';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
 import { darkTheme, lightTheme } from 'app/theme/tokens';
+import { content } from 'app/content';
 
 import { Header } from './Header';
 import { Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
@@ -131,17 +132,20 @@ describe('Nav', () => {
       'About',
       'Contact',
     ]);
-    /* With zero videos/talks published, chrome hides those tabs (empty tabs
-     * read as inexperience) but keeps Now (recruiters check it). R9: AI
+    /* Sections with zero entries are hidden (empty tabs read as
+     * inexperience), Now always shows (recruiters check it). R9: AI
      * Engineering renders — 3 capabilities exist. */
     const labels = availableNavItems().map((i) => i.label);
-    expect(labels).not.toContain('Videos');
+    /* Content-driven: the tab appears once a recording is published. */
+    if (content.videos.length > 0) expect(labels).toContain('Videos');
+    else expect(labels).not.toContain('Videos');
     expect(labels).not.toContain('Talks');
     expect(labels).toContain('Now');
     expect(labels).toContain('AI Engineering');
     /* Rendered header chrome must match the filtered set. */
     const h = render(<Layout currentPath="/" />);
-    expect(h).not.toContain('>Videos</a>');
+    if (content.videos.length > 0) expect(h).toContain('>Videos</a>');
+    else expect(h).not.toContain('>Videos</a>');
     expect(h).toContain('>Now</a>');
     expect(h).toContain('>AI Engineering</a>');
   });

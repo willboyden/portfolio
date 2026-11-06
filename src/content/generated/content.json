@@ -1,5 +1,5 @@
 {
-  "contentHash": "2756ca8b264adbf7",
+  "contentHash": "2efee703f4161aab",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -1341,7 +1341,76 @@
       "excerpt": "Every team that ships an LLM feature eventually builds an eval harness, and every harness eventually answers the same question wrong: did …"
     }
   ],
-  "videos": [],
+  "videos": [
+    {
+      "slug": "the-local-lab-03-agent-fleets-under-contract",
+      "title": "The Local Lab, episode 3: Agent Fleets Under Contract: Reviewers, Phantoms and Re-Running the Report",
+      "summary": "Building software with fleets of coding and review agents: contracts out, reports re-run, reviewer lenses and the phantom findings they produce, clean clones, young packages held back by a cooldown, skills that weak models can follow, and the negative results worth publishing. The hosts are AI-generated voices, scripted from Will's write-ups and lab notes.",
+      "tags": [
+        "podcast",
+        "agents",
+        "code-review",
+        "ci",
+        "local-ai"
+      ],
+      "date": "2026-10-29",
+      "url": "https://willboyden.github.io/portfolio/podcasts/building-with-agent-fleets.mp3",
+      "provider": "podcast",
+      "duration": "52 min",
+      "speakers": [
+        "Nora (AI voice)",
+        "Sam (AI voice)",
+        "Isla (AI voice)"
+      ],
+      "event": "The Local Lab",
+      "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/building-with-agent-fleets.txt"
+    },
+    {
+      "slug": "the-local-lab-02-big-models-home-hardware",
+      "title": "The Local Lab, episode 2: Big Models, Home Hardware: What the Numbers Were Really Measuring",
+      "summary": "Running big open models on two workstation cards and four DGX Sparks, and the times the numbers measured something else: a new chip with a rulebook that aged, two cards with no bridge, a desktop that crowded out a model, heat that switched a box off, and a cache that copied answers. The hosts are AI-generated voices, scripted from Will's write-ups and lab notes.",
+      "tags": [
+        "podcast",
+        "local-inference",
+        "gpu",
+        "benchmarks",
+        "local-ai"
+      ],
+      "date": "2026-10-28",
+      "url": "https://willboyden.github.io/portfolio/podcasts/big-models-home-hardware.mp3",
+      "provider": "podcast",
+      "duration": "1 h 1 min",
+      "speakers": [
+        "Nora (AI voice)",
+        "Sam (AI voice)",
+        "Isla (AI voice)"
+      ],
+      "event": "The Local Lab",
+      "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/big-models-home-hardware.txt"
+    },
+    {
+      "slug": "the-local-lab-01-containment-first",
+      "title": "The Local Lab, episode 1: One Door, No Keys: Containment First in a Private AI Lab",
+      "summary": "How a private AI lab keeps its agents contained: one router as the only door for every model call, contained agents that never hold a real key, data an agent can't misread, a chat server split into trust domains, and why a passing check is not proof. The hosts are AI-generated voices, scripted from Will's write-ups and lab notes.",
+      "tags": [
+        "podcast",
+        "ai-security",
+        "agents",
+        "local-ai"
+      ],
+      "date": "2026-10-27",
+      "url": "https://willboyden.github.io/portfolio/podcasts/containment-first-ai-lab.mp3",
+      "provider": "podcast",
+      "duration": "45 min",
+      "speakers": [
+        "Nora (AI voice)",
+        "Sam (AI voice)",
+        "Isla (AI voice)"
+      ],
+      "event": "The Local Lab",
+      "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/containment-first-ai-lab.txt"
+    }
+  ],
   "talks": [],
   "aiCapabilities": [
     {
