@@ -1,5 +1,5 @@
 {
-  "contentHash": "dc01a5343c0c7ddc",
+  "contentHash": "2756ca8b264adbf7",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -844,7 +844,7 @@
       "date": "2026-11-05",
       "readingMinutes": 12,
       "series": "AI engineering notes",
-      "bodyHash": "55627b64174d",
+      "bodyHash": "8c3cd7fb024e",
       "excerpt": "NorthCUA (Nano, Mini and Pro) is a family of computer-use models from the NorthCUA team, built on Qwen3.5 and released under Apache-2.0 at …"
     },
     {

@@ -210,8 +210,14 @@ It loaded in about ten minutes from a network share, and vLLM chose the same Mar
 RTX PRO 6000 in the earlier tests. The sampled weight error after quantization is 9.2% on average and 9.6% at most
 (one expert in 64 measured in each of the 120 files that hold experts), against Mini's 9.5%. Weight error alone does
 not predict the damage, though: Nano had the same error as Mini and still lost grounding accuracy. My expectation
-that Pro behaves like Mini rests on their shared design, a mixture of experts quantized the same way, and that is an
-inference, not a measurement of Pro. A ScreenSpot-Pro run on Pro is under way, and its result will go on the card.
+that Pro's quantization costs as little as Mini's rests on their shared design, a mixture of experts quantized the
+same way, and that is an inference, not a measurement of Pro.
+
+I then ran the same ScreenSpot-Pro benchmark on Pro, with exactly the requests used for Mini and Nano. It scored
+**68.56%** (1,084 of 1,581): 82.7% on text targets and 45.7% on icons. Question by question that is 6.5 points
+better than Mini's quantization (95% interval 4.3 to 8.7 points; exact McNemar p < 0.001). The run took most of an
+afternoon, because the Sparks reached my temperature limits (GPU 86 °C, SoC 93 °C) every few minutes and the
+benchmark paused again and again to let them cool.
 
 ## Using them
 
@@ -225,6 +231,7 @@ been tried with this layout yet. llama.cpp and Ollama load GGUF files instead, a
 Mini already exist (linked from their cards). TensorRT-LLM's NVFP4 support is built around NVIDIA's own ModelOpt
 checkpoint layout, and I have not tried it with these files.
 
-I posted a short note about the Nano and Mini quantizations in the NorthCUA team's community tab:
-[Nano](https://huggingface.co/beipo-ai/NorthCUA-Nano/discussions/3) and
-[Mini](https://huggingface.co/beipo-ai/NorthCUA-Mini/discussions/3).
+I posted a short note about each quantization in the NorthCUA team's community tab:
+[Nano](https://huggingface.co/beipo-ai/NorthCUA-Nano/discussions/3),
+[Mini](https://huggingface.co/beipo-ai/NorthCUA-Mini/discussions/3) and
+[Pro](https://huggingface.co/beipo-ai/NorthCUA-Pro/discussions/2).
