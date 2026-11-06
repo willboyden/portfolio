@@ -1,0 +1,5 @@
+# Mechanical formatting commits that git blame should skip.
+# Use: git config blame.ignoreRevsFile .git-blame-ignore-revs (GitHub applies it automatically).
+
+# format: apply Prettier 3.9.10
+90849dcb14ab36df57d5e3ff3a9f249f17d4f647
