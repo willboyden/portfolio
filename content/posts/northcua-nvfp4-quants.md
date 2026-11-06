@@ -219,6 +219,35 @@ better than Mini's quantization (95% interval 4.3 to 8.7 points; exact McNemar p
 afternoon, because the Sparks reached my temperature limits (GPU 86 °C, SoC 93 °C) every few minutes and the
 benchmark paused again and again to let them cool.
 
+## Twice as fast with a drafter (added 2026-11-06)
+
+Speculative decoding makes generation faster without changing which model answers: a small drafter proposes several
+tokens, and the big model checks them all in one step, keeping the ones it agrees with. The usual drafter for a
+Qwen3.5 model is its own multi-token-prediction (MTP) layer, but the NorthCUA checkpoints ship without it: their
+configs set `mtp_num_hidden_layers` to 0 and contain no MTP weights. So I tried three replacements on each model,
+on the same eight requests (four computer-use steps with a screenshot and the Harness's `click` tool, two word
+problems, a short function and a copy-edit task), greedy, one request at a time:
+
+| Model, hardware | Without drafter | Base model's MTP layer, grafted back | Prompt lookup (n-gram) | DFlash drafter, 7 tokens |
+|:--|--:|--:|--:|--:|
+| Nano, one RTX PRO 6000 | 158 tok/s | 1.08× | 1.07× | **2.25×** |
+| Mini, one RTX PRO 6000 | 182 tok/s | 1.02× | 1.13× | **1.86×** |
+| Pro, four DGX Sparks | 24.4 tok/s | not tried | not tried | **2.03×** |
+
+The MTP layer from the base Qwen3.5 checkpoints loads cleanly once grafted back (I fetched only those tensors and
+quantized its experts like the rest), but its drafts were mostly rejected: it was trained on the base model's hidden
+states, and the fine-tune moved them. The DFlash drafters published by z-lab for the base models did much better,
+although they were not trained on NorthCUA's outputs either. With eight requests in flight the gain shrinks (1.68× for
+Nano, 1.34× for Mini), and it is smallest on computer-use steps, whose output is short and specific: 1.2 to 1.7×
+on Nano, 1.0 to 1.2× on Mini and 1.4 to 1.75× on Pro. Word problems and code gain 2 to 3.5×, copying text 4 to 5×.
+
+Speculative decoding is not bit-for-bit neutral: verifying several tokens at once uses slightly different GPU
+arithmetic, so a greedy answer can change where two tokens are nearly tied. Without the drafter, the same request
+always gave the same text. So I reran the three benchmarks on Mini and Nano with the drafter on. Nothing changed
+significantly: Mini scored 61.10% on ScreenSpot-Pro (62.05% without; paired p 0.20), 85.44% on GSM8K (87.04%; p
+0.11) and 78.74% on IFEval (the same), and Nano 14.23% (13.73%; p 0.13), 81.20% (81.65%; p 0.39) and 67.47%
+(68.95%; p 0.27). On Pro I measured only the speed. Each model card now has the one-line vLLM option.
+
 ## Using them
 
 Each model card has a vLLM command and Python examples that I ran against the served models: a screenshot question, a
