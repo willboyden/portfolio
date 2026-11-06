@@ -35,10 +35,17 @@ jobs:
       - name: XSS check (dangerouslySetInnerHTML allowlist)
         run: |
           FAIL=0
-          for f in $(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.tsx?$' || true); do
+          # "Introduced" = a file now has MORE uses than on the base branch.
+          # Counting (not grepping the whole file) keeps the reviewed uses from
+          # failing every PR that merely touches or reformats those files.
+          BASE=origin/${{ github.base_ref }}
+          for f in $(git diff --name-only "$BASE"...HEAD | grep -E '\.tsx?$' || true); do
             [ -f "$f" ] || continue
-            if grep -n 'dangerouslySetInnerHTML' "$f"; then
-              echo "::error::dangerouslySetInnerHTML introduced in $f — content must flow through the sanitize pipeline"
+            before=$(git show "$BASE:$f" 2>/dev/null | grep -c 'dangerouslySetInnerHTML' || true)
+            after=$(grep -c 'dangerouslySetInnerHTML' "$f" || true)
+            if [ "${after:-0}" -gt "${before:-0}" ]; then
+              grep -n 'dangerouslySetInnerHTML' "$f"
+              echo "::error::dangerouslySetInnerHTML introduced in $f ($before -> $after) — content must flow through the sanitize pipeline"
               FAIL=1
             fi
           done
