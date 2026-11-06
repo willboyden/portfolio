@@ -1,5 +1,5 @@
 {
-  "contentHash": "9727c5d0ecb53595",
+  "contentHash": "dc01a5343c0c7ddc",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -830,7 +830,7 @@
     {
       "slug": "northcua-nvfp4-quants",
       "title": "The first NVFP4 quants of NorthCUA on Hugging Face",
-      "summary": "NorthCUA is a new family of open computer-use models. On 2026-11-05 I published the first NVFP4 quantizations of NorthCUA-Nano and NorthCUA-Mini on Hugging Face, for vLLM: 18.8 GB down to 11.2 GB, and 70.2 GB down to 23.9 GB. This post covers what was quantized and why, a two-layer test that checks vLLM reads the format as written, the results against the original BF16 models, and the public timestamps behind \"first\".",
+      "summary": "NorthCUA is a new family of open computer-use models. On 2026-11-05 and 2026-11-06 I published the first NVFP4 quantizations of all three on Hugging Face, for vLLM: Nano 18.8 GB down to 11.2 GB, Mini 70.2 GB down to 23.9 GB, and the 397B Pro 794 GB down to 238 GB, the only quantization of Pro in any format as of 2026-11-06. This post covers what was quantized and why, a two-layer test that checks vLLM reads the format as written, benchmarks against the original BF16 models, Pro on four DGX Sparks, and the public timestamps behind \"first\".",
       "tags": [
         "quantization",
         "nvfp4",
@@ -842,9 +842,9 @@
         "hugging-face"
       ],
       "date": "2026-11-05",
-      "readingMinutes": 7,
+      "readingMinutes": 12,
       "series": "AI engineering notes",
-      "bodyHash": "6b9d2a93496e",
+      "bodyHash": "55627b64174d",
       "excerpt": "NorthCUA (Nano, Mini and Pro) is a family of computer-use models from the NorthCUA team, built on Qwen3.5 and released under Apache-2.0 at …"
     },
     {
