@@ -148,3 +148,12 @@ Each model card has a Docker command for vLLM and Python examples that I ran aga
 question, a request with thinking on, and a tool call. For computer use, run the models with the official
 [NorthCUA Harness](https://github.com/china-qijizhifeng/NorthCUA-Harness), and keep every GUI coordinate in the
 0–1000 grid the models were trained with.
+
+On other engines: these checkpoints are tested on vLLM only. SGLang reads compressed-tensors checkpoints but has not
+been tried with this layout yet. llama.cpp and Ollama load GGUF files instead, and GGUF quantizations of both
+originals already exist (linked from each card). TensorRT-LLM's NVFP4 support is built around NVIDIA's own ModelOpt
+checkpoint layout, and I have not tried it with these files.
+
+I posted a short note about each quantization in the NorthCUA team's community tab:
+[Nano](https://huggingface.co/beipo-ai/NorthCUA-Nano/discussions/3) and
+[Mini](https://huggingface.co/beipo-ai/NorthCUA-Mini/discussions/3).
