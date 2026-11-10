@@ -273,6 +273,14 @@ async function main() {
   const imageFailures = [];
   const collect = (collection, kind) => {
     for (const item of collection) {
+      if (Boolean(item.thumbnail) !== Boolean(item.thumbnailAlt)) {
+        imageFailures.push(`  file: ${kind}/${item.slug}.md\n  error: thumbnail and thumbnailAlt go together`);
+      }
+      if (item.thumbnail && !existsSync(join(PUBLIC_DIR, item.thumbnail.replace(/^\//, '')))) {
+        imageFailures.push(
+          `  file: ${kind}/${item.slug}.md\n  error: thumbnail "${item.thumbnail}" does not exist (looked for public${item.thumbnail})`,
+        );
+      }
       if (typeof item.html !== 'string') continue; // html is optional on some schemas
       for (const match of item.html.matchAll(imgRe)) {
         const src = match[1];

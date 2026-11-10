@@ -20,6 +20,7 @@ import { css, useTheme } from '@emotion/react';
 import { content, type Video } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
 import { formatDate, pluralize } from 'app/lib/format';
+import { withBase } from 'app/lib/seo';
 import { EmptyState, Heading, Icon, Tag, VisuallyHidden } from 'app/components/ui';
 
 /* -------------------------------------------------------------------------- */
@@ -131,12 +132,35 @@ const VideoRow = styled.li`
   }
 `;
 
+/* Cover image: a fixed 16:9 box beside the text; full width on phones, where
+ * the row wraps. width/height attributes reserve the space before it loads.
+ * A plain <img> with a css() class: styled.img drops loading/decoding (the
+ * vendored prop filter does not know them). */
+function thumbCls(theme: Tokens): string {
+  const t = theme;
+  return css({
+    flex: 'none',
+    width: '240px',
+    maxWidth: '100%',
+    height: 'auto',
+    aspectRatio: '16 / 9',
+    objectFit: 'cover',
+    borderRadius: t.radius.md,
+    border: `1px solid ${t.color.border}`,
+    background: t.color.border,
+    ['@media (max-width: ' + t.breakpoint.md + ')']: { width: '100%', maxWidth: '32rem' },
+  });
+}
+
 const RowMain = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${(p) => p.theme.space[2]};
   min-width: 0;
-  flex: 1 1 auto;
+  /* A fixed basis, not auto: with auto a long title asks for its full width and
+   * the row wraps the text below a cover image. 20rem fits beside the cover and
+   * the badges on desktop and wraps cleanly on phones. */
+  flex: 1 1 20rem;
 `;
 
 const TitleRow = styled.h3`
@@ -245,6 +269,18 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
   const theme = useTheme() as Tokens;
   return (
     <VideoRow data-testid="video-row">
+      {video.thumbnail && (
+        <img
+          src={withBase(video.thumbnail)}
+          alt={video.thumbnailAlt ?? ''}
+          width={640}
+          height={360}
+          loading="lazy"
+          decoding="async"
+          className={thumbCls(theme)}
+          data-testid="video-thumbnail"
+        />
+      )}
       <RowMain>
         <TitleRow>
           {isAudioProvider(video.provider) ? (

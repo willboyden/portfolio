@@ -1,5 +1,5 @@
 {
-  "contentHash": "b59e74da361dc6c7",
+  "contentHash": "dcd00642cf3bcc3d",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -1364,7 +1364,9 @@
       ],
       "event": "The Local Lab",
       "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/building-with-agent-fleets.txt",
-      "videoUrl": "https://www.youtube.com/watch?v=kciM_DEnsH0"
+      "videoUrl": "https://www.youtube.com/watch?v=kciM_DEnsH0",
+      "thumbnail": "/podcasts/building-with-agent-fleets.jpg",
+      "thumbnailAlt": "Episode 3 cover with the title Agent Fleets Under Contract and an AI-generated host at a microphone in front of monitors and a server rack"
     },
     {
       "slug": "the-local-lab-02-big-models-home-hardware",
@@ -1388,7 +1390,9 @@
       ],
       "event": "The Local Lab",
       "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/big-models-home-hardware.txt",
-      "videoUrl": "https://www.youtube.com/watch?v=e_4UJlWTfKc"
+      "videoUrl": "https://www.youtube.com/watch?v=e_4UJlWTfKc",
+      "thumbnail": "/podcasts/big-models-home-hardware.jpg",
+      "thumbnailAlt": "Episode 2 cover with the title Big Models, Home Hardware and an AI-generated host at a microphone beside a workstation and server racks"
     },
     {
       "slug": "the-local-lab-01-containment-first",
@@ -1411,7 +1415,9 @@
       ],
       "event": "The Local Lab",
       "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/containment-first-ai-lab.txt",
-      "videoUrl": "https://www.youtube.com/watch?v=nKEoWGHO6yg"
+      "videoUrl": "https://www.youtube.com/watch?v=nKEoWGHO6yg",
+      "thumbnail": "/podcasts/containment-first-ai-lab.jpg",
+      "thumbnailAlt": "Episode 1 cover with the title One Door, No Keys and an AI-generated host at a microphone in front of server racks"
     }
   ],
   "talks": [],

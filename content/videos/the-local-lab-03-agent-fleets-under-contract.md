@@ -16,4 +16,6 @@ speakers: [Nora (AI voice), Sam (AI voice), Isla (AI voice)]
 event: The Local Lab
 transcriptUrl: https://willboyden.github.io/portfolio/podcasts/building-with-agent-fleets.txt
 videoUrl: https://www.youtube.com/watch?v=kciM_DEnsH0
+thumbnail: /podcasts/building-with-agent-fleets.jpg
+thumbnailAlt: Episode 3 cover with the title Agent Fleets Under Contract and an AI-generated host at a microphone in front of monitors and a server rack
 ---

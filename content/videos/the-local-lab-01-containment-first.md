@@ -16,4 +16,6 @@ speakers: [Nora (AI voice), Sam (AI voice), Isla (AI voice)]
 event: The Local Lab
 transcriptUrl: https://willboyden.github.io/portfolio/podcasts/containment-first-ai-lab.txt
 videoUrl: https://www.youtube.com/watch?v=nKEoWGHO6yg
+thumbnail: /podcasts/containment-first-ai-lab.jpg
+thumbnailAlt: Episode 1 cover with the title One Door, No Keys and an AI-generated host at a microphone in front of server racks
 ---

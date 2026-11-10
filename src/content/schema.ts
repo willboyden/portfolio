@@ -133,6 +133,14 @@ export const VideoSchema = z
     /** The same episode as a video on its host (e.g. YouTube), linked from an
      * audio row as an external "Watch" link (no iframe). Absolute http(s). */
     videoUrl: SafeUrl.optional(),
+    /** A cover image committed under public/ (root-absolute path; the deploy
+     * base is added at render) and its alt text. build-content fails when the
+     * file is missing or only one of the pair is set. */
+    thumbnail: z
+      .string()
+      .regex(/^\/(?!.*\.\.)[a-z0-9/_.-]+\.(jpe?g|png|webp)$/, 'expected a root-absolute image path under public/')
+      .optional(),
+    thumbnailAlt: z.string().min(1).optional(),
   })
   .strict();
 

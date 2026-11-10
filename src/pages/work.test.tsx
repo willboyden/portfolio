@@ -360,6 +360,25 @@ describe('Videos audio rows', () => {
     expect(externalAnchors(html).length).toBe(3);
   });
 
+  it('shows the cover image with alt text, dimensions and lazy loading', () => {
+    const html = render(
+      <VideoRowItem video={{ ...EPISODE, thumbnail: '/podcasts/ep-1.jpg', thumbnailAlt: 'Episode one cover' }} />,
+      '/videos',
+    );
+    const img = /<img\b[^>]*data-testid="video-thumbnail"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(img).toContain('src="/podcasts/ep-1.jpg"');
+    expect(img).toContain('alt="Episode one cover"');
+    expect(img).toContain('width="640"');
+    expect(img).toContain('height="360"');
+    expect(img).toContain('loading="lazy"');
+    expect(img).toContain('decoding="async"');
+  });
+
+  it('renders no image when there is no thumbnail', () => {
+    const html = render(<VideoRowItem video={EPISODE} />, '/videos');
+    expect(html).not.toContain('<img');
+  });
+
   it('videoHostLabel names the host', () => {
     expect(videoHostLabel('https://www.youtube.com/watch?v=x')).toBe('YouTube');
     expect(videoHostLabel('https://youtu.be/x')).toBe('YouTube');

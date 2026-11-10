@@ -16,4 +16,6 @@ speakers: [Nora (AI voice), Sam (AI voice), Isla (AI voice)]
 event: The Local Lab
 transcriptUrl: https://willboyden.github.io/portfolio/podcasts/big-models-home-hardware.txt
 videoUrl: https://www.youtube.com/watch?v=e_4UJlWTfKc
+thumbnail: /podcasts/big-models-home-hardware.jpg
+thumbnailAlt: Episode 2 cover with the title Big Models, Home Hardware and an AI-generated host at a microphone beside a workstation and server racks
 ---

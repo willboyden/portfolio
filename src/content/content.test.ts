@@ -149,6 +149,12 @@ describe('schema behaviour (contract §4)', () => {
       VideoSchema.safeParse({ ...base, url: 'https://youtube.com/watch?v=x', provider: 'youtube', duration: '5:00' })
         .success,
     ).toBe(true);
+    const pod = { ...base, url: 'https://example.com/a.mp3', provider: 'podcast', duration: '5:00' };
+    expect(VideoSchema.safeParse({ ...pod, thumbnail: '/podcasts/a.jpg', thumbnailAlt: 'Cover' }).success).toBe(true);
+    for (const src of ['podcasts/a.jpg', 'https://example.com/a.jpg', '/podcasts/../a.jpg', '/podcasts/a.gif']) {
+      expect(VideoSchema.safeParse({ ...pod, thumbnail: src, thumbnailAlt: 'Cover' }).success).toBe(false);
+    }
+    expect(VideoSchema.safeParse({ ...pod, thumbnail: '/podcasts/a.jpg', thumbnailAlt: '' }).success).toBe(false);
     expect(TalkSchema.safeParse(base).success).toBe(false);
     expect(TalkSchema.safeParse({ ...base, event: 'e', location: 'l', abstract: 'a' }).success).toBe(true);
   });
