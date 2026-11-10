@@ -15,4 +15,5 @@ duration: 1 h 1 min
 speakers: [Nora (AI voice), Sam (AI voice), Isla (AI voice)]
 event: The Local Lab
 transcriptUrl: https://willboyden.github.io/portfolio/podcasts/big-models-home-hardware.txt
+videoUrl: https://www.youtube.com/watch?v=e_4UJlWTfKc
 ---

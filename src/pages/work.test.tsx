@@ -43,7 +43,7 @@ vi.mock('app/content', () => ({
 /* Import pages AFTER the mock so they bind the intercepted module. */
 import { Projects, ProjectCard, projectTagCounts, statusTone, visibleProjects } from './Projects';
 import { ProjectDetail, projectLinkEntries, relatedProjects } from './ProjectDetail';
-import { Videos, VideoRowItem, providerLabel, splitByDate, todayUtcIso } from './Videos';
+import { Videos, VideoRowItem, providerLabel, splitByDate, todayUtcIso, videoHostLabel } from './Videos';
 import { Talks, talkResourceEntries, talksByDate } from './Talks';
 
 /* -------------------------------------------------------------------------- */
@@ -331,7 +331,7 @@ describe('Videos audio rows', () => {
   it('plays on the page with download and transcript links, no external title link', () => {
     const html = render(<VideoRowItem video={EPISODE} />, '/videos');
     expect(html).toContain('data-testid="video-audio-player"');
-    expect(html).toContain('preload="none"');
+    expect(html).toContain('preload="metadata"');
     expect(html).toContain('src="https://example.com/ep-1.mp3"');
     expect(html).toContain('data-testid="video-download"');
     expect(html).toContain('data-testid="video-transcript"');
@@ -342,6 +342,30 @@ describe('Videos audio rows', () => {
     const anchors = externalAnchors(html);
     expect(anchors.length).toBe(2);
     for (const anchor of anchors) expect(anchor).not.toContain('target="_blank"');
+  });
+
+  it('links the video version in a new tab when there is one', () => {
+    const html = render(
+      <VideoRowItem video={{ ...EPISODE, videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk' }} />,
+      '/videos',
+    );
+    expect(html).toContain('data-testid="video-watch"');
+    expect(html).toContain('href="https://www.youtube.com/watch?v=abcdefghijk"');
+    expect(html).toContain('Watch the video on YouTube');
+    const watch = externalAnchors(html).filter((a) => a.includes('video-watch'));
+    expect(watch.length).toBe(1);
+    expect(watch[0]).toContain('target="_blank"');
+    expect(watch[0]).toContain('rel="noopener noreferrer"');
+    /* Download, transcript and watch: the title itself still does not link out. */
+    expect(externalAnchors(html).length).toBe(3);
+  });
+
+  it('videoHostLabel names the host', () => {
+    expect(videoHostLabel('https://www.youtube.com/watch?v=x')).toBe('YouTube');
+    expect(videoHostLabel('https://youtu.be/x')).toBe('YouTube');
+    expect(videoHostLabel('https://vimeo.com/1')).toBe('Vimeo');
+    expect(videoHostLabel('https://www.example.org/v')).toBe('example.org');
+    expect(videoHostLabel('not a url')).toBe('its host');
   });
 
   it('omits the transcript link when there is none', () => {

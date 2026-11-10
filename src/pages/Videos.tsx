@@ -70,6 +70,19 @@ export function isAudioProvider(provider: Video['provider']): boolean {
   return provider === 'podcast' || provider === 'audio';
 }
 
+/** Host name for an audio row's "Watch the video on …" link. */
+export function videoHostLabel(url: string): string {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return 'its host';
+  }
+  if (host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com')) return 'YouTube';
+  if (host === 'vimeo.com' || host.endsWith('.vimeo.com')) return 'Vimeo';
+  return host.replace(/^www\./, '');
+}
+
 /** TODAY under UTC — zone-pinned so server and client group identically. */
 export function todayUtcIso(now: Date = new Date()): string {
   const y = now.getUTCFullYear();
@@ -263,9 +276,10 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
         <Summary>{video.summary}</Summary>
         {isAudioProvider(video.provider) && (
           <AudioPlayerControls data-testid="video-audio">
-            {/* preload=none: audio is heavy and off the critical path; the
-             * browser fetches only when the visitor presses play. */}
-            <audio controls preload="none" src={video.url} data-testid="video-audio-player">
+            {/* preload=metadata: the browser reads only the first few kB, enough
+             * to show the length before play (preload=none showed no length, so
+             * the episodes looked empty). The audio itself loads on play. */}
+            <audio controls preload="metadata" src={video.url} data-testid="video-audio-player">
               <track kind="captions" />
             </audio>
             <a href={video.url} download className={downloadCls(theme)} data-testid="video-download">
@@ -276,6 +290,18 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
               <a href={video.transcriptUrl} className={downloadCls(theme)} data-testid="video-transcript">
                 Transcript
                 <VisuallyHidden>{` of ${video.title}`}</VisuallyHidden>
+              </a>
+            )}
+            {video.videoUrl && (
+              <a
+                href={video.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={downloadCls(theme)}
+                data-testid="video-watch"
+              >
+                Watch the video on {videoHostLabel(video.videoUrl)}
+                <VisuallyHidden>{` (${video.title}, opens in a new tab)`}</VisuallyHidden>
               </a>
             )}
           </AudioPlayerControls>

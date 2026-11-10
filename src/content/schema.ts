@@ -130,6 +130,9 @@ export const VideoSchema = z
      * (audio has no visible captions, so the transcript is the accessible
      * version). Absolute http(s), like `url`. */
     transcriptUrl: SafeUrl.optional(),
+    /** The same episode as a video on its host (e.g. YouTube), linked from an
+     * audio row as an external "Watch" link (no iframe). Absolute http(s). */
+    videoUrl: SafeUrl.optional(),
   })
   .strict();
 

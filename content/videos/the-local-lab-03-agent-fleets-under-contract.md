@@ -15,4 +15,5 @@ duration: 52 min
 speakers: [Nora (AI voice), Sam (AI voice), Isla (AI voice)]
 event: The Local Lab
 transcriptUrl: https://willboyden.github.io/portfolio/podcasts/building-with-agent-fleets.txt
+videoUrl: https://www.youtube.com/watch?v=kciM_DEnsH0
 ---

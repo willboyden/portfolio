@@ -15,4 +15,5 @@ duration: 45 min
 speakers: [Nora (AI voice), Sam (AI voice), Isla (AI voice)]
 event: The Local Lab
 transcriptUrl: https://willboyden.github.io/portfolio/podcasts/containment-first-ai-lab.txt
+videoUrl: https://www.youtube.com/watch?v=nKEoWGHO6yg
 ---
