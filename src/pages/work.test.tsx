@@ -374,6 +374,37 @@ describe('Videos audio rows', () => {
     expect(img).toContain('decoding="async"');
   });
 
+  it('links the cover to the video for pointer users only', () => {
+    const html = render(
+      <VideoRowItem
+        video={{
+          ...EPISODE,
+          thumbnail: '/podcasts/ep-1.jpg',
+          thumbnailAlt: 'Episode one cover',
+          videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
+        }}
+      />,
+      '/videos',
+    );
+    const link = /<a\b[^>]*data-testid="video-thumbnail-link"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(link).toContain('href="https://www.youtube.com/watch?v=abcdefghijk"');
+    expect(link).toContain('target="_blank"');
+    expect(link).toContain('rel="noopener noreferrer"');
+    expect(link).toContain('tabindex="-1"'); /* the text link is the keyboard route */
+    expect(link).toContain('aria-hidden="true"');
+    expect(html).toMatch(/data-testid="video-thumbnail-link"[^>]*>\s*<img\b[^>]*data-testid="video-thumbnail"/);
+    expect(html).toContain('data-testid="video-watch"');
+  });
+
+  it('does not link the cover when there is no video', () => {
+    const html = render(
+      <VideoRowItem video={{ ...EPISODE, thumbnail: '/podcasts/ep-1.jpg', thumbnailAlt: 'Episode one cover' }} />,
+      '/videos',
+    );
+    expect(html).toContain('data-testid="video-thumbnail"');
+    expect(html).not.toContain('video-thumbnail-link');
+  });
+
   it('renders no image when there is no thumbnail', () => {
     const html = render(<VideoRowItem video={EPISODE} />, '/videos');
     expect(html).not.toContain('<img');

@@ -135,20 +135,32 @@ const VideoRow = styled.li`
 /* Cover image: a fixed 16:9 box beside the text; full width on phones, where
  * the row wraps. width/height attributes reserve the space before it loads.
  * A plain <img> with a css() class: styled.img drops loading/decoding (the
- * vendored prop filter does not know them). */
-function thumbCls(theme: Tokens): string {
+ * vendored prop filter does not know them). The box is a link to the video
+ * when there is one. */
+function thumbBoxCls(theme: Tokens): string {
   const t = theme;
   return css({
     flex: 'none',
+    display: 'block',
     width: '240px',
     maxWidth: '100%',
+    borderRadius: t.radius.md,
+    ['@media (max-width: ' + t.breakpoint.md + ')']: { width: '100%', maxWidth: '32rem' },
+    '&[href]:hover img': { filter: 'brightness(1.08)', borderColor: t.color.accent },
+  });
+}
+
+function thumbImgCls(theme: Tokens): string {
+  const t = theme;
+  return css({
+    display: 'block',
+    width: '100%',
     height: 'auto',
     aspectRatio: '16 / 9',
     objectFit: 'cover',
     borderRadius: t.radius.md,
     border: `1px solid ${t.color.border}`,
     background: t.color.border,
-    ['@media (max-width: ' + t.breakpoint.md + ')']: { width: '100%', maxWidth: '32rem' },
   });
 }
 
@@ -269,18 +281,40 @@ export function VideoRowItem({ video }: { video: Video }): React.ReactNode {
   const theme = useTheme() as Tokens;
   return (
     <VideoRow data-testid="video-row">
-      {video.thumbnail && (
-        <img
-          src={withBase(video.thumbnail)}
-          alt={video.thumbnailAlt ?? ''}
-          width={640}
-          height={360}
-          loading="lazy"
-          decoding="async"
-          className={thumbCls(theme)}
-          data-testid="video-thumbnail"
-        />
-      )}
+      {video.thumbnail &&
+        (() => {
+          const cover = (
+            <img
+              src={withBase(video.thumbnail)}
+              alt={video.thumbnailAlt ?? ''}
+              width={640}
+              height={360}
+              loading="lazy"
+              decoding="async"
+              className={thumbImgCls(theme)}
+              data-testid="video-thumbnail"
+            />
+          );
+          /* Clicking the cover opens the video. Mouse and touch only: the
+           * "Watch the video on …" link below is the keyboard and screen-reader
+           * route, so this duplicate stays out of the tab order and the
+           * accessibility tree. */
+          return video.videoUrl ? (
+            <a
+              href={video.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              tabIndex={-1}
+              aria-hidden="true"
+              className={thumbBoxCls(theme)}
+              data-testid="video-thumbnail-link"
+            >
+              {cover}
+            </a>
+          ) : (
+            <div className={thumbBoxCls(theme)}>{cover}</div>
+          );
+        })()}
       <RowMain>
         <TitleRow>
           {isAudioProvider(video.provider) ? (
