@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="452" viewBox="0 0 620 452" font-family="Helvetica,Arial,sans-serif" font-size="13" role="img" aria-labelledby="t d"><title id="t">Layout of the DeepSeek-V4.1 engine with experts placed by popularity</title><desc id="d">The workstation's two RTX PRO 6000 cards run one vLLM engine at tensor parallel 2: the trunk of all 40 layers, the KV cache, the draft head and the 6,400 most-read experts. Four GB10 boxes each run an expert server with the other 8,960 experts and serve rows of the two Engram tables. For every layer the engine sends token rows and routing to the boxes and adds the partial sums they return.</desc>
+<rect width="620" height="452" fill="white"/>
+<text x="16.0" y="28.0" font-size="17" fill="#0b0b0b" text-anchor="start" font-weight="bold">One engine on the fast cards, expert servers on the boxes</text>
+<text x="16.0" y="49.0" font-size="14" fill="#52514e" text-anchor="start">DeepSeek-V4.1-Flash-1017 in vLLM; each routed expert is placed by how often it is read</text>
+<rect x="16" y="66" width="284" height="282" rx="10" fill="#fdf0ea" stroke="#efb79e"/>
+<text x="30.0" y="92.0" font-size="16" fill="#0b0b0b" text-anchor="start" font-weight="bold">Trunk · tensor parallel 2</text>
+<text x="30.0" y="113.0" font-size="14" fill="#52514e" text-anchor="start">one x86 workstation (1.79 TB/s per card)</text>
+<rect x="30" y="126" width="256" height="42" rx="6" fill="white" stroke="#efb79e"/>
+<text x="158.0" y="152.0" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="bold">RTX PRO 6000 (96 GB)</text>
+<rect x="30" y="176" width="256" height="42" rx="6" fill="white" stroke="#efb79e"/>
+<text x="158.0" y="202.0" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="bold">RTX PRO 6000 (96 GB)</text>
+<text x="30.0" y="246.0" font-size="14" fill="#0b0b0b" text-anchor="start">attention, norms, shared experts, router</text>
+<text x="30.0" y="266.0" font-size="14" fill="#0b0b0b" text-anchor="start">of all 40 layers</text>
+<text x="30.0" y="290.0" font-size="14" fill="#52514e" text-anchor="start">KV cache, draft head, sampler, API</text>
+<text x="30.0" y="318.0" font-size="14" fill="#0b0b0b" text-anchor="start" font-weight="bold">+ the 6,400 most-read experts (41.7%)</text>
+<text x="30.0" y="338.0" font-size="14" fill="#52514e" text-anchor="start">all-reduce between the cards: PCIe</text>
+<rect x="356" y="66" width="248" height="282" rx="10" fill="#eef4fc" stroke="#9fbfe6"/>
+<text x="370.0" y="92.0" font-size="16" fill="#0b0b0b" text-anchor="start" font-weight="bold">Expert servers</text>
+<text x="370.0" y="113.0" font-size="14" fill="#52514e" text-anchor="start">four GB10 boxes (273 GB/s each)</text>
+<rect x="370" y="126" width="100" height="42" rx="6" fill="white" stroke="#9fbfe6"/>
+<text x="420.0" y="152.0" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="bold">GB10 #1</text>
+<rect x="490" y="126" width="100" height="42" rx="6" fill="white" stroke="#9fbfe6"/>
+<text x="540.0" y="152.0" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="bold">GB10 #2</text>
+<rect x="370" y="176" width="100" height="42" rx="6" fill="white" stroke="#9fbfe6"/>
+<text x="420.0" y="202.0" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="bold">GB10 #3</text>
+<rect x="490" y="176" width="100" height="42" rx="6" fill="white" stroke="#9fbfe6"/>
+<text x="540.0" y="202.0" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="bold">GB10 #4</text>
+<text x="370.0" y="246.0" font-size="14" fill="#0b0b0b" text-anchor="start" font-weight="bold">the other 8,960 routed experts</text>
+<text x="370.0" y="266.0" font-size="14" fill="#52514e" text-anchor="start">(whole, or a quarter of each)</text>
+<text x="370.0" y="294.0" font-size="14" fill="#0b0b0b" text-anchor="start">rows of the two Engram tables,</text>
+<text x="370.0" y="314.0" font-size="14" fill="#0b0b0b" text-anchor="start">from each box's page cache</text>
+<text x="370.0" y="338.0" font-size="14" fill="#52514e" text-anchor="start">no attention, no KV cache, no API</text>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b0b0b"/></marker></defs>
+<line x1="303" y1="147" x2="352" y2="147" stroke="#0b0b0b" stroke-width="2" marker-end="url(#a)"/>
+<line x1="353" y1="197" x2="304" y2="197" stroke="#0b0b0b" stroke-width="2" marker-end="url(#a)"/>
+<text x="16.0" y="376.0" font-size="14" fill="#0b0b0b" text-anchor="start">→ in every layer: the rows and routing of tokens whose experts live on the boxes</text>
+<text x="16.0" y="400.0" font-size="14" fill="#0b0b0b" text-anchor="start">← partial sums, added to the cards' own before the layer's all-reduce</text>
+<text x="16.0" y="432.0" font-size="14" fill="#52514e" text-anchor="start">Both tiers work inside every layer at the same time. Link: NCCL over 200 Gb/s RoCE.</text>
+</svg>

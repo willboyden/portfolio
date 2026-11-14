@@ -1,5 +1,5 @@
 {
-  "contentHash": "1662eb3cceaeb064",
+  "contentHash": "57a089bed062bcd8",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -803,6 +803,32 @@
   ],
   "posts": [
     {
+      "slug": "hot-experts-on-the-fast-cards",
+      "title": "Hot experts on the fast cards: the five-machine engine, 1.6 times faster",
+      "summary": "DeepSeek-V4.1-Flash on the same four GB10 boxes and two RTX PRO 6000 cards now writes code 1.6 times faster on one stream and serves 16 requests 2.3 times faster. The fast cards run the trunk and each layer's most-read experts, the GB10 boxes serve the rest, and both tiers work at the same time.",
+      "tags": [
+        "vllm",
+        "deepseek",
+        "moe",
+        "tensor-parallelism",
+        "dgx-spark",
+        "gb10",
+        "rtx-pro-6000",
+        "local-inference",
+        "performance",
+        "benchmarking"
+      ],
+      "date": "2026-11-14",
+      "readingMinutes": 21,
+      "series": "AI engineering notes",
+      "relatedPosts": [
+        "one-model-across-five-machines",
+        "five-machine-engine-boot-time-and-minimax"
+      ],
+      "bodyHash": "f21566b47a47",
+      "excerpt": "Ten days ago I wrote about running one model as one vLLM engine across five machines: four GB10 boxes (DGX Spark class) and a workstation …"
+    },
+    {
       "slug": "nemo-relay-tracing-and-trace-views",
       "title": "Turning up NeMo Relay's tracing, and building a place to read it",
       "summary": "NeMo Relay, the gateway my coding agents talk to, can record far more than I had switched on. I turned on every capture level that has somewhere useful to go, routed each to the store that renders it best, and added five trace views to Nemo Console that read Relay's own files. Real captures found four bugs the fixtures never showed, and a review by a reviewer with no part in writing the change shaped the rest.",
@@ -846,7 +872,8 @@
       "readingMinutes": 7,
       "series": "AI engineering notes",
       "relatedPosts": [
-        "one-model-across-five-machines"
+        "one-model-across-five-machines",
+        "hot-experts-on-the-fast-cards"
       ],
       "bodyHash": "8b1beea404a1",
       "excerpt": "Yesterday's post, One model across five machines, described a small vLLM patch that gives each pipeline stage its own tensor-parallel size …"
@@ -886,14 +913,15 @@
         "local-inference"
       ],
       "date": "2026-11-04",
-      "readingMinutes": 20,
+      "readingMinutes": 21,
       "series": "AI engineering notes",
       "relatedPosts": [
         "dgx-spark-busy-polling-heat",
-        "five-machine-engine-boot-time-and-minimax"
+        "five-machine-engine-boot-time-and-minimax",
+        "hot-experts-on-the-fast-cards"
       ],
-      "bodyHash": "603687adc362",
-      "excerpt": "Update, 2026-11-05: a boot now takes 3.6 minutes instead of 16. The slow part was the workstation's own weight load, not the GB10 boxes' …"
+      "bodyHash": "3b0ffdbaaeeb",
+      "excerpt": "Update, 2026-11-14: the same machines now run this model 1.4 to 1.6 times faster on code and 2.3 times faster at 16 requests, with a …"
     },
     {
       "slug": "rewriting-three-python-services-in-rust",

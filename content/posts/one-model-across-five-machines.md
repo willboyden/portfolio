@@ -12,8 +12,10 @@ summary: >-
 tags: [vllm, deepseek, pipeline-parallelism, tensor-parallelism, dgx-spark, gb10, rtx-pro-6000, local-inference]
 date: 2026-11-04
 series: AI engineering notes
-relatedPosts: [dgx-spark-busy-polling-heat, five-machine-engine-boot-time-and-minimax]
+relatedPosts: [dgx-spark-busy-polling-heat, five-machine-engine-boot-time-and-minimax, hot-experts-on-the-fast-cards]
 ---
+
+> **Update, 2026-11-14:** the same machines now run this model 1.4 to 1.6 times faster on code and 2.3 times faster at 16 requests, with a different split: experts are placed by how often they are read, the most-read ones on the RTX PRO 6000s. The layer split described here stays the simpler way to bring up a new model. See [Hot experts on the fast cards](/writing/hot-experts-on-the-fast-cards).
 
 > **Update, 2026-11-05:** a boot now takes 3.6 minutes instead of 16. The slow part was the workstation's own weight load, not the GB10 boxes' NFS reads that "The page cache that would not stay warm" names as the cost of a restart; each rank now reads only the files that hold its layers. The same engine also runs a second model, MiniMax-M3.1-Flash. Both are in [The five-machine engine, a day later](/writing/five-machine-engine-boot-time-and-minimax).
 

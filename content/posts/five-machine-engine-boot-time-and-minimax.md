@@ -11,7 +11,7 @@ summary: >-
 tags: [vllm, minimax, deepseek, pipeline-parallelism, tensor-parallelism, speculative-decoding, dgx-spark, gb10, rtx-pro-6000, local-inference]
 date: 2026-11-05
 series: AI engineering notes
-relatedPosts: [one-model-across-five-machines]
+relatedPosts: [one-model-across-five-machines, hot-experts-on-the-fast-cards]
 ---
 
 Yesterday's post, [One model across five machines](/writing/one-model-across-five-machines), described a small vLLM
