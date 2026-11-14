@@ -1,5 +1,5 @@
 {
-  "contentHash": "dcd00642cf3bcc3d",
+  "contentHash": "1662eb3cceaeb064",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -802,6 +802,30 @@
     }
   ],
   "posts": [
+    {
+      "slug": "nemo-relay-tracing-and-trace-views",
+      "title": "Turning up NeMo Relay's tracing, and building a place to read it",
+      "summary": "NeMo Relay, the gateway my coding agents talk to, can record far more than I had switched on. I turned on every capture level that has somewhere useful to go, routed each to the store that renders it best, and added five trace views to Nemo Console that read Relay's own files. Real captures found four bugs the fixtures never showed, and a review by a reviewer with no part in writing the change shaped the rest.",
+      "tags": [
+        "observability",
+        "agents",
+        "opentelemetry",
+        "security",
+        "rust",
+        "testing",
+        "open-source"
+      ],
+      "date": "2026-11-14",
+      "readingMinutes": 8,
+      "relatedProject": "nemo-console",
+      "relatedPosts": [
+        "building-nemo-console",
+        "security-reviews-of-a-localhost-control-plane",
+        "rewriting-three-python-services-in-rust"
+      ],
+      "bodyHash": "e5ca7bd2a8e9",
+      "excerpt": "NeMo Relay is the gateway my coding agents talk to. Requests from opencode, and from Claude Code when I launch it through Relay, pass …"
+    },
     {
       "slug": "five-machine-engine-boot-time-and-minimax",
       "title": "The five-machine engine, a day later: a 3.6-minute boot and a second model",
