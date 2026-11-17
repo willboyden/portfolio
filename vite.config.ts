@@ -1,8 +1,22 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
+import { fontPreloadTags, fontStyleTag } from './src/theme/fonts.ts';
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
+const BASE = process.env.VITE_BASE ?? '/';
+
+/**
+ * The self-hosted fonts for `vite dev`. Production pages get the same tags from
+ * the prerenderer (prerender/entry.ts), which writes its own <head>; both read
+ * src/theme/fonts.ts, so the two cannot drift.
+ */
+const fontTags = {
+  name: 'portfolio-font-tags',
+  transformIndexHtml(html: string): string {
+    return html.replace('</head>', `    ${fontPreloadTags(BASE).join('\n    ')}\n    ${fontStyleTag(BASE)}\n  </head>`);
+  },
+};
 
 /**
  * Vendored Emotion is wired through `resolve.alias` rather than node_modules
@@ -12,13 +26,13 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 export default defineConfig({
   /* R8: base from env so CI (and any host) can build for sub-path
    * hosting without CLI flags; defaults to '/' for nginx root. */
-  base: process.env.VITE_BASE ?? '/',
+  base: BASE,
   /* R8D-1: bake the real origin into head tags (canonical/og:url/og:image/
    * JSON-LD) at build time; empty in dev/local builds → SITE.url fallback. */
   define: {
     'import.meta.env.SITE_URL': JSON.stringify(process.env.SITE_URL ?? ''),
   },
-  plugins: [react()],
+  plugins: [react(), fontTags],
   resolve: {
     alias: [
       { find: /^@emotion\/react$/, replacement: r('./vendor/emotion/react/src/index.ts') },
