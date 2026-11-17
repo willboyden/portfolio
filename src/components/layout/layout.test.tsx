@@ -13,17 +13,26 @@
  *     CDP e2e suite's job, not ours.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ThemeProvider } from '@emotion/react';
 import { __sheetCss } from '@emotion-mini/core';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
-import { darkTheme, lightTheme } from 'app/theme/tokens';
+import {
+  darkTheme,
+  lightTheme,
+  THEME_INFO,
+  THEME_NAMES,
+  themeColorVars,
+  themes,
+  type ThemeName,
+} from 'app/theme/tokens';
 import { content } from 'app/content';
 
 import { Header } from './Header';
-import { Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
+import { COLOPHON, Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
+import { setPrerenderDay } from 'app/lib/today';
 import { Layout, skipLinkClass } from './Layout';
 import { NAV_ITEMS, availableNavItems, decorateNavItems, isNavActive, normalizePath, type NavItem } from './Nav';
 import {
@@ -37,15 +46,16 @@ import {
   prevFocusIndex,
   shouldLockScroll,
 } from './MobileMenu';
-import { ThemeToggle, nextThemeLabel } from './ThemeToggle';
+import { ThemeOptions, ThemeToggle, themeAnnouncement, themeButtonLabel, themesOfMode } from './ThemeToggle';
 import {
+  applyThemeToDocument,
   DEFAULT_THEME,
-  THEME_STORAGE_KEY,
-  ThemePreferenceProvider,
   isThemeName,
   resolveThemeName,
   scrollBehaviorFor,
+  THEME_STORAGE_KEY,
   themeDocumentAttributes,
+  ThemePreferenceProvider,
 } from './ThemePreference';
 
 /* -------------------------------------------------------------------------- */
@@ -65,7 +75,7 @@ const routes: RouteDefinition[] = [
 ];
 
 /** Full provider stack the chrome expects: Emotion theme → preference → router. */
-function render(ui: ReactNode, theme: typeof darkTheme = darkTheme, prefTheme: 'dark' | 'light' = 'dark'): string {
+function render(ui: ReactNode, theme: typeof darkTheme = darkTheme, prefTheme: ThemeName = 'dark'): string {
   return renderToStaticMarkup(
     createElement(
       ThemeProvider,
@@ -286,20 +296,26 @@ describe('Header', () => {
     expect(html).toContain('Press Escape to close');
   });
 
-  it('the open dialog carries the same nav links and a theme toggle', () => {
+  it('the open dialog carries the same nav links and the full list of themes', () => {
     const html = render(<Header menuOpen currentPath="/about" />);
     const ids = testids(html);
     expect(ids.filter((id) => id === 'nav-link-about').length).toBe(2); /* desktop + dialog */
-    expect(ids.filter((id) => id === 'theme-toggle').length).toBe(2);
+    /* One button in the header; the dialog lists the themes inline instead. */
+    expect(ids.filter((id) => id === 'theme-toggle').length).toBe(1);
+    expect(ids.filter((id) => id === 'theme-options').length).toBe(1);
     expect(html).toContain('data-testid="nav-link-about"');
   });
 
-  it('theme toggle is a labelled button describing the action', () => {
+  it('theme control is a labelled button that names the theme in effect and discloses a panel', () => {
     const html = render(<Header />);
     const toggle = tags(html, 'button').find((t) => t.includes('data-testid="theme-toggle"'));
-    expect(toggle).toContain('aria-label="Switch to light theme"');
+    expect(toggle).toContain('aria-label="Theme: Night, matching your device. Choose a theme"');
+    expect(toggle).toContain('aria-expanded="false"');
+    expect(toggle).toMatch(/aria-controls="[^"]+"/);
     expect(toggle).toContain('data-theme="dark"');
     expect(toggle).toContain('type="button"');
+    /* Closed until pressed: the list is not in the page yet. */
+    expect(html).not.toContain('data-testid="theme-panel"');
   });
 
   it('theme toggle carries a polite live region naming the RESULT (R1-B F9)', () => {
@@ -319,16 +335,21 @@ describe('Header', () => {
     expect(announceIdx < btnStart || announceIdx > btnEnd).toBe(true);
     /* text names the CURRENT theme (result), not the action — tags() only
      * captures the opening tag, so match the span+text as emitted. */
-    expect(html).toMatch(/data-testid="theme-announcement"[^>]*>Dark theme</);
+    expect(html).toMatch(/data-testid="theme-announcement"[^>]*>Theme: Night, matching your device</);
   });
 
-  it('icons are aria-hidden so the label is not duplicated', () => {
+  it('the swatch on the button is decoration: aria-hidden, so the label is not duplicated', () => {
     const html = render(<Header />);
-    expect(html).toContain('aria-hidden="true"');
-    const svgs = tags(html, 'svg').filter((t) => t.includes('data-testid="icon-sun"'));
-    expect(svgs.length).toBe(1);
-    expect(svgs[0]).toContain('aria-hidden="true"');
-    expect(svgs[0]).toContain('focusable="false"');
+    const btnStart = html.indexOf('data-testid="theme-toggle"');
+    const inside = html.slice(btnStart, html.indexOf('</button>', btnStart));
+    expect(inside).toMatch(/<span aria-hidden="true" class="css-[a-z0-9]+"><\/span>/);
+    /* No text of its own inside the button: the aria-label is its whole name. */
+    expect(
+      inside
+        .replace(/<[^>]*>/g, '')
+        .replace(/^[^>]*>/, '')
+        .trim(),
+    ).toBe('');
   });
 
   it('no transient $-props leak into the DOM', () => {
@@ -415,7 +436,8 @@ describe('isEscape / scroll lock / aria state', () => {
     expect(ids.slice(0, 2)).toEqual(['menu-backdrop', 'mobile-menu']);
     expect(ids).toContain('menu-close');
     expect(ids).toContain('nav-list');
-    expect(ids).toContain('theme-toggle');
+    expect(ids).toContain('theme-options');
+    expect(ids.indexOf('theme-options')).toBeGreaterThan(ids.indexOf('nav-list'));
     expect(html).toContain('aria-label="Mobile"');
   });
 });
@@ -519,6 +541,24 @@ describe('Footer', () => {
     expect(html).toContain('2026');
   });
 
+  it('the year is the BUILD day\u2019s while the prerendered page is adopted (the two renders must agree)', () => {
+    /* Built on New Year's Eve, opened in January: the first browser render
+     * still says what the markup says; useToday corrects it right after. */
+    setPrerenderDay('2031-12-31');
+    try {
+      expect(render(<Footer />)).toContain('© 2031 William Boyden');
+    } finally {
+      setPrerenderDay(undefined);
+    }
+    /* A pinned `now` (tests, embeds) still wins. */
+    setPrerenderDay('2031-12-31');
+    try {
+      expect(render(<Footer now={new Date(2029, 5, 1)} />)).toContain('© 2029 William Boyden');
+    } finally {
+      setPrerenderDay(undefined);
+    }
+  });
+
   it('back-to-top link is present and points to #main', () => {
     const link = tags(html, 'a').find((t) => t.includes('data-testid="back-to-top"'));
     expect(link).toContain('href="#main"');
@@ -618,26 +658,131 @@ describe('theme preference helpers', () => {
     expect(themeDocumentAttributes('dark').metaContent).toBe('dark');
   });
 
-  it('toggle label describes the destination theme, and scroll honours reduced motion', () => {
-    expect(nextThemeLabel('dark')).toBe('Switch to light theme');
-    expect(nextThemeLabel('light')).toBe('Switch to dark theme');
+  it('applyThemeToDocument: a theme outside the stylesheet is put on <html> as inline variables, and cleared again', () => {
+    const vars = new Map<string, string>();
+    const attrs = new Map<string, string>();
+    const style = {
+      colorScheme: '',
+      setProperty: (name: string, value: string) => void vars.set(name, value),
+      removeProperty: (name: string) => vars.delete(name),
+    };
+    const meta = { setAttribute: () => undefined, getAttribute: () => null };
+    vi.stubGlobal('document', {
+      documentElement: { setAttribute: (k: string, v: string) => void attrs.set(k, v), style },
+      querySelector: () => meta,
+      querySelectorAll: () => [],
+      head: { appendChild: () => undefined },
+      createElement: () => meta,
+    });
+    try {
+      applyThemeToDocument('blueprint');
+      expect(attrs.get('data-theme')).toBe('blueprint');
+      expect(style.colorScheme).toBe('dark');
+      expect(Object.fromEntries(vars)).toEqual(themeColorVars(themes.blueprint));
+      /* To another generated theme: exactly the new one. */
+      applyThemeToDocument('manila');
+      expect(Object.fromEntries(vars)).toEqual(themeColorVars(themes.manila));
+      expect(style.colorScheme).toBe('light');
+      /* Back to a stylesheet theme: no inline colour is left to outrank it. */
+      applyThemeToDocument('light');
+      expect(vars.size).toBe(0);
+      expect(attrs.get('data-theme')).toBe('light');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('scroll honours reduced motion', () => {
     expect(scrollBehaviorFor(true)).toBe('auto');
     expect(scrollBehaviorFor(false)).toBe('smooth');
   });
 
-  it('ThemeToggle renders the light-theme variant under a light theme', () => {
-    const html = render(<ThemeToggle />, lightTheme, 'light');
-    expect(html).toContain('data-theme="light"');
-    expect(html).toContain('aria-label="Switch to dark theme"');
-    expect(html).toContain('data-testid="icon-moon"');
+  it('the button label and the announcement name the theme, and say when it follows the device', () => {
+    expect(themeButtonLabel('dark', true)).toBe('Theme: Night, matching your device. Choose a theme');
+    expect(themeButtonLabel('blueprint', false)).toBe('Theme: Blueprint. Choose a theme');
+    expect(themeAnnouncement('light', true)).toBe('Theme: Paper, matching your device');
+    expect(themeAnnouncement('ledger', false)).toBe('Theme: Ledger');
   });
 
-  it('the preference, not the palette, drives the toggle: dark pref + light palette', () => {
-    /* Regression guard for the ThemePreference split — the toggle reads the
+  it('ThemeToggle reflects a light theme', () => {
+    const html = render(<ThemeToggle />, lightTheme, 'light');
+    expect(html).toContain('data-theme="light"');
+    expect(html).toContain('aria-label="Theme: Paper, matching your device. Choose a theme"');
+  });
+
+  it('the preference, not the palette, drives the control: dark pref + light palette', () => {
+    /* Regression guard for the ThemePreference split — the control reads the
        preference store, so a light Emotion theme alone must not flip it. */
     const html = render(<ThemeToggle />, lightTheme, 'dark');
     expect(html).toContain('data-theme="dark"');
-    expect(html).toContain('data-testid="icon-sun"');
+    expect(html).toContain('Theme: Night');
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* The theme list                                                              */
+/* -------------------------------------------------------------------------- */
+
+describe('ThemeOptions (the list of themes)', () => {
+  const html = render(<ThemeOptions />);
+  const radios = tags(html, 'input');
+
+  it('is one native radio group: "Match device" first, then every theme once', () => {
+    expect(html).toMatch(/<fieldset[^>]*data-testid="theme-options"/);
+    expect(html).toContain('<legend');
+    expect(radios).toHaveLength(THEME_INFO.length + 1);
+    for (const radio of radios) expect(radio).toContain('type="radio"');
+    const names = new Set(radios.map((r) => /name="([^"]*)"/.exec(r)?.[1]));
+    expect(names.size).toBe(1); /* one group: arrow keys reach every option */
+    const values = radios.map((r) => /value="([^"]*)"/.exec(r)?.[1]);
+    expect(values[0]).toBe('system');
+    expect(values.slice(1).sort()).toEqual([...THEME_NAMES].sort());
+  });
+
+  it('lists the papers before the boards, each under its own label', () => {
+    const light = themesOfMode('light').map((t) => t.id);
+    const dark = themesOfMode('dark').map((t) => t.id);
+    expect(light.length + dark.length).toBe(THEME_INFO.length);
+    expect(light[0]).toBe('light');
+    expect(dark[0]).toBe('dark');
+    const at = (id: string): number => html.indexOf(`data-testid="theme-option-${id}"`);
+    for (const id of [...light, ...dark]) expect(at(id), id).toBeGreaterThan(-1);
+    expect(Math.max(...light.map(at))).toBeLessThan(Math.min(...dark.map(at)));
+    expect(html).toContain('>Light<');
+    expect(html).toContain('>Dark<');
+  });
+
+  it('every option names its theme in text and shows that theme\u2019s own paper, ink and highlighter', () => {
+    for (const info of THEME_INFO) {
+      const start = html.indexOf(`data-testid="theme-option-${info.id}"`);
+      const chunk = html.slice(start, html.indexOf('</label>', start));
+      expect(chunk, info.id).toContain(info.label);
+      const c = themes[info.id].color;
+      expect(chunk, info.id).toContain(`background:${c.bg}`);
+      expect(chunk, info.id).toContain(`border-color:${c.text}`);
+      expect(chunk, info.id).toContain(c.mark);
+      /* The swatch is decoration; the label text is the name. */
+      expect(chunk, info.id).toMatch(/<span aria-hidden="true"[^>]*style=/);
+    }
+  });
+
+  it('while following the device, "Match device" is the checked option; a picked theme checks its own', () => {
+    const checked = (markup: string): (string | undefined)[] =>
+      tags(markup, 'input')
+        .filter((r) => /\schecked(=""|\s|\/?>)/.test(r))
+        .map((r) => /value="([^"]*)"/.exec(r)?.[1]);
+    expect(checked(html)).toEqual(['system']);
+  });
+
+  it('an open ThemeToggle discloses the same list in a panel its button controls', () => {
+    const open = render(<ThemeToggle defaultOpen />);
+    const button = tags(open, 'button').find((t) => t.includes('data-testid="theme-toggle"')) ?? '';
+    expect(button).toContain('aria-expanded="true"');
+    const controls = /aria-controls="([^"]+)"/.exec(button)?.[1] ?? '';
+    expect(controls).not.toBe('');
+    expect(open).toContain(`id="${controls}"`);
+    expect(open).toContain('data-testid="theme-panel"');
+    expect(tags(open, 'input')).toHaveLength(THEME_INFO.length + 1);
   });
 });
 
@@ -646,32 +791,87 @@ describe('theme preference helpers', () => {
 /* -------------------------------------------------------------------------- */
 
 describe('styling resolves from tokens in both themes', () => {
+  /* The palette is asserted from the tokens, not from copied hexes: a palette
+   * change is made in tokens.ts (and judged by contrast.test.ts), and this
+   * suite keeps proving the chrome really reads those tokens. */
   it('dark chrome uses the dark palette', () => {
     render(<Layout currentPath="/" />, darkTheme);
     const sheet = __sheetCss();
-    expect(sheet).toContain('#0b0e14'); /* color.bg — header + shell */
-    expect(sheet).toContain('#eef1f8'); /* color.text */
-    expect(sheet).toContain('#7ea2ff'); /* color.focus — focus rings */
-    expect(sheet).toContain('color-mix(in srgb, #0b0e14 88%, transparent)');
+    expect(sheet).toContain(`background: ${darkTheme.color.bg}`); /* header + shell */
+    expect(sheet).toContain(`color: ${darkTheme.color.text}`);
+    expect(sheet).toContain(`outline: 2px solid ${darkTheme.color.focus}`); /* focus rings */
+    expect(sheet).not.toContain(lightTheme.color.bg);
   });
 
   it('light chrome uses the light palette', () => {
     render(<Layout currentPath="/" />, lightTheme);
     const sheet = __sheetCss();
-    /* R2-D V4 re-derived the light canvas: page bg is now #eef1f6. */
-    expect(sheet).toContain('#eef1f6');
-    expect(sheet).toContain('#101725');
-    expect(sheet).toContain('#2f5fe0');
-    expect(sheet).toContain('color-mix(in srgb, #eef1f6 88%, transparent)');
+    expect(sheet).toContain(`background: ${lightTheme.color.bg}`);
+    expect(sheet).toContain(`color: ${lightTheme.color.text}`);
+    expect(sheet).toContain(`outline: 2px solid ${lightTheme.color.focus}`);
+    expect(sheet).not.toContain(darkTheme.color.bg);
   });
 
-  it('backdrop blur is @supports-gated with an opaque fallback first', () => {
-    render(<Layout currentPath="/" />, darkTheme);
+  it('the header is opaque paper: no translucency, no backdrop blur', () => {
+    /* Text scrolling under a see-through bar costs contrast (R1-B F7 measured
+     * it), and the page is meant to read as a printed sheet. */
+    const html = render(<Layout currentPath="/" />, darkTheme);
     const sheet = __sheetCss();
-    expect(sheet).toContain('@supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)))');
-    /* Opaque background first, translucent one second: browsers without
-       color-mix/backdrop-filter keep the opaque value. */
-    expect(sheet).toMatch(/background: #0b0e14; background: color-mix/);
+    expect(sheet).not.toContain('backdrop-filter');
+    expect(sheet).not.toContain('color-mix');
+    const headerClass =
+      /<header[^>]*class="(css-[a-z0-9]+)"[^>]*data-testid="site-header"|<header[^>]*data-testid="site-header"[^>]*class="(css-[a-z0-9]+)"/.exec(
+        html,
+      );
+    const cls = headerClass?.[1] ?? headerClass?.[2] ?? '';
+    expect(cls).not.toBe('');
+    const rule = new RegExp(`\\.${cls} \\{([^}]*)\\}`).exec(sheet)?.[1] ?? '';
+    expect(rule).toContain(`background: ${darkTheme.color.bg}`);
+    expect(rule).toContain('position: sticky');
+  });
+
+  it('the current page is marked with a stroke of the highlighter, not by colour alone', () => {
+    const html = render(<Layout currentPath="/writing" />, lightTheme);
+    const sheet = __sheetCss();
+    expect(html).toMatch(
+      /aria-current="page"[^>]*data-testid="nav-link-writing"|data-testid="nav-link-writing"[^>]*aria-current="page"/,
+    );
+    expect(sheet).toContain(`box-shadow: inset 0 -3px 0 ${lightTheme.color.mark}`);
+  });
+
+  it('the footer colophon states only what the build can back up', async () => {
+    const html = render(<Layout currentPath="/" />, darkTheme);
+    expect(html).toContain('data-testid="footer-colophon"');
+    expect(html).toContain(COLOPHON);
+    /* "Set in IBM Plex": every shipped face is a Plex family. */
+    const { FONT_FACES } = await import('app/theme/fonts');
+    expect(FONT_FACES.length).toBeGreaterThan(0);
+    for (const face of FONT_FACES) expect(face.family.startsWith('IBM Plex')).toBe(true);
+    /* "No trackers, no cookies": nothing in the shipped source sets a cookie
+     * or loads an analytics script (the CSP allows only this origin's scripts
+     * and connections, which e2e 06-security asserts on the live server). */
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const offenders: string[] = [];
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) {
+          if (name !== 'generated') walk(full);
+          continue;
+        }
+        if (!/\.(ts|tsx|js)$/.test(name) || /\.test\.tsx?$/.test(name)) continue;
+        const text = readFileSync(full, 'utf8');
+        if (
+          /document\.cookie|navigator\.sendBeacon|googletagmanager|google-analytics|plausible\.io|posthog/i.test(text)
+        ) {
+          offenders.push(full);
+        }
+      }
+    };
+    walk(join(process.cwd(), 'src'));
+    walk(join(process.cwd(), 'public'));
+    expect(offenders).toEqual([]);
   });
 
   it('every transition is paired with a reduced-motion opt-out', () => {

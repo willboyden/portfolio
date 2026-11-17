@@ -23,13 +23,29 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { css, useTheme } from '@emotion/react';
 import { Link, useParams } from '@portfolio/router';
-import { Button, Container, Heading, Icon, Prose } from 'app/components/ui';
+import {
+  ArticleAfter,
+  ArticleBack,
+  ArticleBody,
+  ArticleFacts,
+  ArticleLayout,
+  ArticleMeta,
+  ArticleSep,
+  ArticleStandfirst,
+  ArticleTitle,
+  Button,
+  Container,
+  Heading,
+  Icon,
+  Prose,
+} from 'app/components/ui';
 import { content, getPost, postsByDate } from 'app/content';
 import { cachedPostBody, loadPostBody } from 'app/content/post-bodies';
-import { formatDate, formatReadingTime } from 'app/lib/format';
+import { formatDate, formatReadingTime, splitMetric } from 'app/lib/format';
 import { withBase } from 'app/lib/seo';
 import { useCopyToClipboard } from 'app/lib/hooks';
 import type { Tokens } from 'app/theme/tokens';
+import { dataText, markerUnderline } from 'app/theme/mixins';
 import { NotFound } from './NotFound';
 
 /* -------------------------------------------------------------------------- */
@@ -94,58 +110,45 @@ export function relatedProjectOf(
 /* Styles                                                                      */
 /* -------------------------------------------------------------------------- */
 
-const Article = styled.article`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[5]};
-  margin-block: ${(p) => p.theme.space[6]};
-`;
-
-const BackRow = styled.p`
+/* The post's key metric, shown as a reading: the figure on the highlighter,
+ * what it measures beside it (below it, in the margin). */
+const Reading = styled.p`
   margin: 0;
-`;
-
-const HeaderRow = styled.div`
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: ${(p) => p.theme.space[3]};
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: ${(p) => p.theme.space[1]} ${(p) => p.theme.space[3]};
 
-  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: ${(p) => p.theme.space[4]};
+  @media (min-width: ${(p) => p.theme.breakpoint.xl}) {
+    flex-direction: column;
+    gap: ${(p) => p.theme.space[2]};
   }
 `;
 
-const TitleBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[3]};
-  min-width: 0;
+const ReadingFigure = styled.span`
+  padding: 0.05em 0.3em;
+  background: ${(p) => p.theme.color.mark};
+  color: ${(p) => p.theme.color.markInk};
+  font-family: ${(p) => p.theme.font.sans};
+  font-variant-numeric: tabular-nums;
+  font-size: ${(p) => p.theme.font.sizes.xl};
+  line-height: ${(p) => p.theme.font.leading.snug};
+  white-space: nowrap;
+
+  @media (min-width: ${(p) => p.theme.breakpoint.xl}) {
+    font-size: ${(p) => p.theme.font.sizes['2xl']};
+  }
 `;
 
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
+const ReadingUnit = styled.span`
+  margin-left: 0.25em;
+  font-size: 0.6em;
+`;
+
+const ReadingLabel = styled.span`
   font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.snug};
   color: ${(p) => p.theme.color.textMuted};
-`;
-
-const Standfirst = styled.p`
-  margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
-  max-width: 60ch;
-`;
-
-const Sep = styled.span`
-  color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const ShareWrap = styled.div`
@@ -156,33 +159,30 @@ const ShareWrap = styled.div`
 `;
 
 const ShareStatus = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
+  font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.xs};
   color: ${(p) => p.theme.color.success};
   min-height: 1lh;
-`;
-
-const Body = styled.div`
-  border-top: 1px solid ${(p) => p.theme.color.border};
-  padding-top: ${(p) => p.theme.space[6]};
 `;
 
 const Pager = styled.nav`
   display: grid;
   grid-template-columns: 1fr;
   gap: ${(p) => p.theme.space[4]};
-  margin-block: ${(p) => p.theme.space[7]} ${(p) => p.theme.space[4]};
-  padding-top: ${(p) => p.theme.space[6]};
-  border-top: 1px solid ${(p) => p.theme.color.border};
+  margin-block: ${(p) => p.theme.space[6]} 0;
+  padding-top: ${(p) => p.theme.space[4]};
+  border-top: 2px solid ${(p) => p.theme.color.rule};
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     grid-template-columns: 1fr 1fr;
+    column-gap: ${(p) => p.theme.space[6]};
   }
 `;
 
 const PagerItem = styled.div<{ $align: 'start' | 'end' }>`
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: ${(p) => p.theme.space[1]};
   ${(p) => p.$align === 'end' && 'align-items: flex-end; text-align: end;'}
 `;
@@ -191,83 +191,77 @@ const PagerHint = styled.span`
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.space[1]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const PagerSpacer = styled.div``;
 
-/** R6-C C2: series badge as a link — pill styling that survives being an <a>.
- * 44px phone hit area (R3D-03 recipe): it's a primary navigation affordance,
- * and the e2e touch-target sweep caught the first cut at 24px. */
+/** R6-C C2: the series name as a link — a text link with the marker
+ * underline. 44px phone hit area (R3D-03 recipe): it's a primary navigation
+ * affordance, and the e2e touch-target sweep caught the first cut at 24px. */
 function seriesCls(theme: Tokens): string {
   const t = theme;
-  return css({
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: t.space[1],
-    padding: `0 ${t.space[2]}`,
-    minHeight: '28px',
-    ['@media (max-width: ' + t.breakpoint.md + ')']: {
-      minHeight: '44px',
-    },
-    borderRadius: t.radius.full,
-    background: t.color.accentSoft,
-    color: t.color.accent,
-    fontFamily: t.font.sans,
-    fontSize: t.font.sizes.xs,
-    fontWeight: t.font.weights.medium,
-    lineHeight: t.font.leading.none,
-    letterSpacing: t.font.tracking.normal,
-    textDecoration: 'none',
-    whiteSpace: 'nowrap',
-    transition: `color ${t.motion.fast} ${t.motion.ease}`,
-    '&:hover': { color: t.color.accent, textDecoration: 'underline', textUnderlineOffset: '2px' },
-    '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '2px' },
+  return css`
+    display: inline-flex;
+    align-items: center;
+    gap: ${t.space[2]};
+    min-height: 28px;
+    font-family: ${t.font.sans};
+    font-size: ${t.font.sizes.sm};
+    line-height: ${t.font.leading.snug};
+    color: ${t.color.accent};
+    ${markerUnderline(t)}
+    border-radius: ${t.radius.sm};
     /* R3D-01: series names are content — break rather than overflow. */
-    /* R7B-8: overflow-wrap break-word fallback before anywhere -- modern engines
-     * preferentially lay out content with `anywhere`; on Firefox \n\n     * ≤120 / Safari ≤15.3 the value is invalid and dropped, reintroducing unconstrained overflow for
-     * long tokens in headings and prose. */
-    'overflow-wrap': 'break-word',
-    overflowWrap: 'anywhere',
-  });
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+
+    &:hover {
+      background: ${t.color.mark};
+      color: ${t.color.markInk};
+      text-decoration-color: transparent;
+    }
+    &:focus-visible {
+      outline: 2px solid ${t.color.focus};
+      outline-offset: 2px;
+    }
+    @media (max-width: ${t.breakpoint.md}) {
+      min-height: 44px;
+    }
+  `;
 }
 
 const SeriesPos = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
-  color: ${(p) => p.theme.color.textMuted};
+  color: ${(p) => p.theme.color.textSubtle};
 `;
 
 /** R6-C C1: "read the case study" cross-link block at the end of a post. */
 const RelatedProjectBlock = styled.aside`
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space[2]};
+  align-items: flex-start;
+  gap: ${(p) => p.theme.space[1]};
   margin-block: ${(p) => p.theme.space[5]} 0;
-  padding: ${(p) => p.theme.space[4]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.md};
-  background: ${(p) => p.theme.color.bgSunken};
+  padding-top: ${(p) => p.theme.space[4]};
+  border-top: 1px solid ${(p) => p.theme.color.borderStrong};
 `;
 
 const RelatedProjectHint = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${(p) => p.theme.space[1]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const RelatedProjectTitle = styled.span`
-  font-size: ${(p) => p.theme.font.sizes.lg};
+  align-self: flex-start;
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.xl};
   font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.tight};
   color: ${(p) => p.theme.color.text};
   line-height: ${(p) => p.theme.font.leading.snug};
 `;
@@ -294,7 +288,7 @@ function relatedProjectCls(theme: Tokens): string {
     ['@media (max-width: ' + t.breakpoint.md + ')']: {
       minHeight: '44px',
     },
-    '&:hover .related-title': { color: t.color.accent },
+    '&:hover .related-title': { background: t.color.mark, color: t.color.markInk },
     '&:focus-visible': { outline: `2px solid ${t.color.focus}`, outlineOffset: '3px' },
   });
 }
@@ -309,9 +303,10 @@ function linkSkin(theme: Tokens, opts: { size: 'back' | 'pager' }) {
   return css({
     textDecoration: 'none',
     color: opts.size === 'back' ? t.color.textMuted : t.color.text,
-    fontFamily: opts.size === 'back' ? t.font.mono : t.font.sans,
+    fontFamily: opts.size === 'back' ? t.font.sans : t.font.serif,
     fontSize: opts.size === 'back' ? t.font.sizes.sm : t.font.sizes.lg,
     fontWeight: opts.size === 'back' ? t.font.weights.normal : t.font.weights.semibold,
+    letterSpacing: opts.size === 'back' ? t.font.tracking.normal : t.font.tracking.tight,
     lineHeight: t.font.leading.snug,
     display: opts.size === 'back' ? 'inline-flex' : 'block',
     alignItems: 'center',
@@ -322,7 +317,7 @@ function linkSkin(theme: Tokens, opts: { size: 'back' | 'pager' }) {
     ['@media (max-width: ' + t.breakpoint.md + ')']: {
       minHeight: '44px',
     },
-    '&:hover': { color: t.color.accent },
+    '&:hover': { background: t.color.mark, color: t.color.markInk },
     '&:focus-visible': {
       outline: `2px solid ${t.color.focus}`,
       outlineOffset: '2px',
@@ -393,6 +388,7 @@ export function PostDetail(): ReactNode {
   }
 
   const backCls = linkSkin(theme, { size: 'back' });
+  const keyMetric = post.keyMetric ? { ...splitMetric(post.keyMetric.value), label: post.keyMetric.label } : undefined;
   const pagerCls = linkSkin(theme, { size: 'pager' });
 
   const copyLink = async (): Promise<void> => {
@@ -411,48 +407,58 @@ export function PostDetail(): ReactNode {
       : '';
 
   return (
-    <Container size="prose" data-testid="post-page">
-      <Article data-testid="post-article">
-        <BackRow>
+    <Container data-testid="post-page">
+      <ArticleLayout data-testid="post-article">
+        <ArticleBack>
           <Link to="/writing" className={backCls} data-testid="back-to-writing">
             <Icon name="chevron-left" size={14} />
             All writing
           </Link>
-        </BackRow>
+        </ArticleBack>
 
-        <HeaderRow>
-          <TitleBlock>
-            <Heading level={1} data-testid="post-title">
-              {post.title}
-            </Heading>
-            <MetaRow data-testid="post-meta">
-              <time dateTime={post.date}>{formatDate(post.date, { style: 'long' })}</time>
-              <Sep aria-hidden="true">·</Sep>
-              <span>{formatReadingTime(post.readingMinutes)}</span>
-              {post.series !== undefined && (
-                <>
-                  <Sep aria-hidden="true">·</Sep>
-                  {/* R6-C C2: the badge is a real link to the writing index —
-                      the one narrative spine gets navigation — and announces
-                      the position in the series. */}
-                  <Link
-                    to="/writing"
-                    className={seriesCls(theme)}
-                    data-testid="series-badge"
-                    aria-label={`${post.series} — post ${seriesPos.index} of ${seriesPos.total}`}
-                  >
-                    {post.series}
-                    {seriesPos.total > 0 && (
-                      <SeriesPos aria-hidden="true">
-                        {seriesPos.index}/{seriesPos.total}
-                      </SeriesPos>
-                    )}
-                  </Link>
-                </>
-              )}
-            </MetaRow>
-            <Standfirst data-testid="post-standfirst">{post.summary}</Standfirst>
-          </TitleBlock>
+        <ArticleTitle>
+          <Heading level={1} data-testid="post-title">
+            {post.title}
+          </Heading>
+        </ArticleTitle>
+
+        <ArticleFacts>
+          <ArticleMeta data-testid="post-meta">
+            <time dateTime={post.date}>{formatDate(post.date, { style: 'long' })}</time>
+            <ArticleSep aria-hidden="true">·</ArticleSep>
+            <span>{formatReadingTime(post.readingMinutes)}</span>
+            {post.series !== undefined && (
+              <>
+                <ArticleSep aria-hidden="true">·</ArticleSep>
+                {/* R6-C C2: the series name is a real link to the writing
+                    index — the one narrative spine gets navigation — and
+                    announces the position in the series. */}
+                <Link
+                  to="/writing"
+                  className={seriesCls(theme)}
+                  data-testid="series-badge"
+                  aria-label={`${post.series} — post ${seriesPos.index} of ${seriesPos.total}`}
+                >
+                  {post.series}
+                  {seriesPos.total > 0 && (
+                    <SeriesPos aria-hidden="true">
+                      {seriesPos.index}/{seriesPos.total}
+                    </SeriesPos>
+                  )}
+                </Link>
+              </>
+            )}
+          </ArticleMeta>
+
+          {keyMetric !== undefined && (
+            <Reading data-testid="post-key-metric">
+              <ReadingFigure>
+                {keyMetric.figure}
+                {keyMetric.unit && <ReadingUnit>{keyMetric.unit}</ReadingUnit>}
+              </ReadingFigure>
+              <ReadingLabel>{keyMetric.label}</ReadingLabel>
+            </Reading>
+          )}
 
           <ShareWrap>
             <Button
@@ -470,64 +476,67 @@ export function PostDetail(): ReactNode {
               {shareMessage}
             </ShareStatus>
           </ShareWrap>
-        </HeaderRow>
+        </ArticleFacts>
 
-        <Body>
+        <ArticleStandfirst data-testid="post-standfirst">{post.summary}</ArticleStandfirst>
+
+        <ArticleBody>
           <Prose data-testid="post-prose">
             {/* key: a visit to another post starts from that post's own state. */}
             <PostBody key={post.slug} slug={post.slug} bodyHash={post.bodyHash} />
           </Prose>
-        </Body>
+        </ArticleBody>
 
         {(neighbours.previous !== undefined || neighbours.next !== undefined) && (
-          <Pager aria-label="Post navigation" data-testid="post-nav">
-            {neighbours.previous !== undefined ? (
-              <PagerItem $align="start">
-                <PagerHint>
-                  <Icon name="chevron-left" size={12} />
-                  Previous (newer)
-                </PagerHint>
-                <Link to={`/writing/${neighbours.previous.slug}`} className={pagerCls} data-testid="prev-post">
-                  {neighbours.previous.title}
-                </Link>
-              </PagerItem>
-            ) : (
-              <PagerSpacer aria-hidden="true" />
-            )}
-            {neighbours.next !== undefined ? (
-              <PagerItem $align="end">
-                <PagerHint>
-                  Next (older)
-                  <Icon name="chevron-right" size={12} />
-                </PagerHint>
-                <Link to={`/writing/${neighbours.next.slug}`} className={pagerCls} data-testid="next-post">
-                  {neighbours.next.title}
-                </Link>
-              </PagerItem>
-            ) : (
-              <PagerSpacer aria-hidden="true" />
-            )}
-          </Pager>
+          <ArticleAfter>
+            <Pager aria-label="Post navigation" data-testid="post-nav">
+              {neighbours.previous !== undefined ? (
+                <PagerItem $align="start">
+                  <PagerHint>
+                    <Icon name="chevron-left" size={12} />
+                    Previous (newer)
+                  </PagerHint>
+                  <Link to={`/writing/${neighbours.previous.slug}`} className={pagerCls} data-testid="prev-post">
+                    {neighbours.previous.title}
+                  </Link>
+                </PagerItem>
+              ) : (
+                <PagerSpacer aria-hidden="true" />
+              )}
+              {neighbours.next !== undefined ? (
+                <PagerItem $align="end">
+                  <PagerHint>
+                    Next (older)
+                    <Icon name="chevron-right" size={12} />
+                  </PagerHint>
+                  <Link to={`/writing/${neighbours.next.slug}`} className={pagerCls} data-testid="next-post">
+                    {neighbours.next.title}
+                  </Link>
+                </PagerItem>
+              ) : (
+                <PagerSpacer aria-hidden="true" />
+              )}
+            </Pager>
+          </ArticleAfter>
         )}
 
         {/* R6-C C1: posts are about work — close the loop to the case study. */}
         {relatedProject !== undefined && (
-          <RelatedProjectBlock data-testid="related-project">
-            <RelatedProjectHint>
-              <Icon name="arrow-right" size={12} />
-              The project behind this post
-            </RelatedProjectHint>
-            <Link
-              to={`/projects/${relatedProject.slug}`}
-              className={relatedProjectCls(theme)}
-              data-testid="related-project-link"
-            >
-              <RelatedProjectTitle className="related-title">{relatedProject.title}</RelatedProjectTitle>
-              <RelatedProjectSummary>{relatedProject.summary}</RelatedProjectSummary>
-            </Link>
-          </RelatedProjectBlock>
+          <ArticleAfter>
+            <RelatedProjectBlock data-testid="related-project">
+              <RelatedProjectHint>The project behind this post</RelatedProjectHint>
+              <Link
+                to={`/projects/${relatedProject.slug}`}
+                className={relatedProjectCls(theme)}
+                data-testid="related-project-link"
+              >
+                <RelatedProjectTitle className="related-title">{relatedProject.title}</RelatedProjectTitle>
+                <RelatedProjectSummary>{relatedProject.summary}</RelatedProjectSummary>
+              </Link>
+            </RelatedProjectBlock>
+          </ArticleAfter>
         )}
-      </Article>
+      </ArticleLayout>
     </Container>
   );
 }

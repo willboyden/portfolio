@@ -7,6 +7,7 @@ summary: >-
   assertions — behind 503 unit tests and 53 browser checks.
 tags: [testing, llm, evals, typescript, python]
 date: 2026-10-06
+keyMetric: "unit tests, plus 53 browser checks = 503"
 series: AI engineering notes
 relatedPosts: [duckdb-for-agent-workflows, eval-harness-silent-regressions]
 ---

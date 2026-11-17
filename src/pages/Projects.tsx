@@ -22,6 +22,7 @@ import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import { content, type Project, type ProjectMetric } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
+import { actionLink, dataText, filterChip, titleLink } from 'app/theme/mixins';
 import { formatPeriod, pluralize } from 'app/lib/format';
 import { Button, Card, EmptyState, Heading, Stack, Tag, type TagTone } from 'app/components/ui';
 
@@ -70,10 +71,8 @@ const MetaLine = styled.p`
   flex-wrap: wrap;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -82,9 +81,7 @@ const MetaLine = styled.p`
 const CardTitle = styled.h2`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xl};
-  font-weight: ${(p) => p.theme.font.weights.bold};
   line-height: ${(p) => p.theme.font.leading.snug};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
 
 const CardSummary = styled.p`
@@ -110,88 +107,78 @@ const CardFooter = styled.div`
  * vendored styled() prop allow-list silently drops `to` on component targets
  * (same rule Nav.tsx and Home.tsx follow). */
 function titleLinkClass(theme: Tokens): string {
-  return css({
-    color: theme.color.text,
-    textDecoration: 'none',
-    borderRadius: theme.radius.sm,
+  return css`
+    ${titleLink(theme)}
     /* WCAG 2.5.8 touch target (mirrors Home.tsx title link). */
-    display: 'inline-block',
-    minHeight: '28px',
-    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
-      minHeight: '44px' /* R3-D: primary card affordance at phone widths */,
-    },
-    '&:hover': {
-      color: theme.color.accent,
-      textDecoration: 'underline',
-      textUnderlineOffset: '3px',
-    },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
-  });
+    display: inline-block;
+    min-height: 28px;
+
+    @media (max-width: ${theme.breakpoint.md}) {
+      min-height: 44px; /* R3-D: primary card affordance at phone widths */
+    }
+  `;
 }
 
 function ctaLinkClass(theme: Tokens): string {
-  return css({
-    display: 'inline-flex',
-    alignItems: 'center',
-    minHeight: '28px',
-    color: theme.color.accent,
-    textDecoration: 'none',
-    borderRadius: theme.radius.sm,
-    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
-      minHeight: '44px',
-    },
-    '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
-  });
+  return css`
+    ${actionLink(theme)}
+  `;
 }
 
-/* Metrics strip: label/value pairs. A flex row of columns — wraps on narrow
- * cards, token gaps only. Rendered ONLY when metrics exist (empty array must
- * not leave a 0-height band in the card). */
-const MetricsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  /* R2-D V7: spread the strip so the last metric pins to the right edge */
-  justify-content: space-between;
-  gap: ${(p) => `${p.theme.space[2]} ${p.theme.space[5]}`};
-  padding: ${(p) => `${p.theme.space[2]} 0`};
+/* Metrics: a small specification table, label on the left and the measured
+ * value on the right, one hairline per row. Rendered ONLY when metrics exist
+ * (an empty array must not leave a bordered band in the card). */
+const MetricsRow = styled.dl`
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   border-top: 1px solid ${(p) => p.theme.color.border};
-  border-bottom: 1px solid ${(p) => p.theme.color.border};
 `;
 
 const MetricBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space['0']};
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  column-gap: ${(p) => p.theme.space[3]};
+  align-items: baseline;
+  padding-block: ${(p) => p.theme.space[1]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
 `;
 
-const MetricLabel = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
+const MetricLabel = styled.dt`
+  margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
+  line-height: ${(p) => p.theme.font.leading.snug};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
-const MetricValue = styled.span`
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
+const MetricValue = styled.dd`
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.snug};
   color: ${(p) => p.theme.color.text};
 `;
 
-/** Empty-safe metrics strip — returns null with no metrics, so callers never
- *  render a bare bordered band. Shared with ProjectDetail. */
+/** How many metrics an index card shows; the case study shows them all. */
+export const CARD_METRIC_LIMIT = 3;
+
+/** Empty-safe metrics table — returns null with no metrics, so callers never
+ *  render a bare bordered band. Shared with ProjectDetail. `limit` trims the
+ *  list for index cards (the rest are on the project's own page). */
 export function ProjectMetrics({
   metrics,
   testid = 'project-metrics',
+  limit,
 }: {
   metrics: ProjectMetric[] | undefined;
   testid?: string;
+  limit?: number;
 }): React.ReactNode {
   if (!metrics || metrics.length === 0) return null;
+  const shown = limit === undefined ? metrics : metrics.slice(0, limit);
   return (
     <MetricsRow data-testid={testid}>
-      {metrics.map((metric) => (
+      {shown.map((metric) => (
         <MetricBlock key={metric.label}>
           <MetricLabel>{metric.label}</MetricLabel>
           <MetricValue>{metric.value}</MetricValue>
@@ -225,10 +212,10 @@ export function ProjectCard({ project }: { project: Project }): React.ReactNode 
         </Link>
       </CardTitle>
       <CardSummary>{project.summary}</CardSummary>
-      <ProjectMetrics metrics={project.metrics} />
+      <ProjectMetrics metrics={project.metrics} limit={CARD_METRIC_LIMIT} />
       <Stack direction="row" wrap gap="2">
         {project.tags.slice(0, 5).map((tag) => (
-          <Tag key={tag} size="sm" tone="outline">
+          <Tag key={tag} size="sm">
             {tag}
           </Tag>
         ))}
@@ -258,8 +245,9 @@ const PageHeader = styled.header`
 const Lede = styled.p`
   margin: 0;
   max-width: 62ch;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
@@ -277,36 +265,16 @@ const FilterBar = styled.div`
 const MoreTags = styled.details`
   display: inline-block;
   min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
-
-  &[open] > summary {
-    color: ${(p) => p.theme.color.text};
-    border-color: ${(p) => p.theme.color.borderStrong};
-  }
 `;
 
 const MoreTagsSummary = styled.summary`
-  display: inline-flex;
-  align-items: center;
-  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
-  padding: ${(p) => `${p.theme.space['1']} ${p.theme.space[3]}`};
-  font-family: ${(p) => p.theme.font.sans};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.medium};
-  line-height: ${(p) => p.theme.font.leading.none};
-  border-radius: ${(p) => p.theme.radius.full};
-  border: 1px solid ${(p) => p.theme.color.border};
+  ${(p) => filterChip(p.theme, false)}
   color: ${(p) => p.theme.color.textMuted};
-  background: ${(p) => p.theme.color.bgElevated};
-  cursor: pointer;
+  border-style: dashed;
   list-style: none;
 
   &::-webkit-details-marker {
     display: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
   }
 `;
 
@@ -317,62 +285,23 @@ const MoreTagsBody = styled.div`
   margin-top: ${(p) => p.theme.space[2]};
 `;
 
-/* 44px hit area via token sums (Button 'sm' recipe: space5+space4+space1). */
+/* One selected-chip recipe site-wide (mixins.filterChip): a block of ink.
+ * Whole rule sets gated on $active — never a value-level ternary that
+ * resolves to false (the vendored Emotion rejects empty declarations). */
 const Chip = styled.button<{ $active: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: ${(p) => p.theme.space[2]};
-  /* R2-D V6: same control, same height as Writing chips + search input row. */
-  min-height: calc(${(p) => p.theme.space[6]} + ${(p) => p.theme.space[1]});
-
-  /* R3-D: filter chips are THE primary mobile interaction on this page —
-   * phone widths get the full 44px target (WCAG 2.5.5 territory). */
-  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
-    min-height: 44px;
-  }
-  padding: ${(p) => `${p.theme.space['1']} ${p.theme.space[3]}`};
-  font-family: ${(p) => p.theme.font.sans};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.medium};
-  line-height: ${(p) => p.theme.font.leading.none};
-  border-radius: ${(p) => p.theme.radius.full};
-  border: 1px solid ${(p) => p.theme.color.border};
-  cursor: pointer;
-  transition:
-    background ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
-    color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
-    border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  /* Whole declarations gated on $active — never a value-level ternary that
-   * resolves to false (the vendored Emotion rejects empty declarations). */
-  ${(p) =>
-    /* R2-D V5: one selected-chip recipe site-wide — solid accent + bg text
-     * (the Writing page's recipe; most legible, mirrors nav active). */
-    p.$active &&
-    `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent}; font-weight: ${p.theme.font.weights.semibold};`}
-  ${(p) =>
-    !p.$active &&
-    `background: ${p.theme.color.bgElevated}; color: ${p.theme.color.textMuted}; &:hover { color: ${p.theme.color.text}; border-color: ${p.theme.color.borderStrong}; }`}
-
-  &:focus-visible {
-    outline: 2px solid ${(p) => p.theme.color.focus};
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
+  ${(p) => filterChip(p.theme, p.$active)}
 `;
 
+/* Same colour as its label at full strength (a dimmed count fell under
+ * 4.5:1); the mono face and the size set it apart. */
 const ChipCount = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
-  color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const ResultCount = styled.p`
   margin: 0;
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textSubtle};
 `;
@@ -380,7 +309,7 @@ const ResultCount = styled.p`
 const Grid = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: ${(p) => p.theme.space[5]};
+  gap: ${(p) => p.theme.space[7]} ${(p) => p.theme.space[6]};
   margin-top: ${(p) => p.theme.space[5]};
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {

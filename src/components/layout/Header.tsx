@@ -1,12 +1,12 @@
 /**
- * Header — sticky, translucent site header with wordmark, desktop nav,
- * theme toggle, and the small-screen menu button + MobileMenu dialog.
+ * Header — sticky site header with wordmark, desktop nav, theme toggle, and
+ * the small-screen menu button + MobileMenu dialog.
  *
  * Layout notes
  * - `position: sticky; top: 0` + `z-index: theme.z.nav`.
- * - The blur is `@supports`-gated with a solid fallback colour underneath, so a
- *   browser without `backdrop-filter` gets an opaque bar rather than a
- *   see-through one (WCAG: text stays legible either way).
+ * - The bar is opaque paper with a hairline under it. It is deliberately not
+ *   a translucent blur: text scrolling under a see-through bar costs contrast
+ *   and the page is meant to read as a printed sheet.
  * - Desktop nav / mobile button swap purely on CSS breakpoints (`md`), so
  *   prerendered markup always contains both and hydration cannot disagree.
  * - `aria-expanded` / `aria-controls` on the button describe the dialog that
@@ -33,20 +33,9 @@ const Bar = styled.header`
    * notch would sit on the sticky header. env() is 0 outside notched
    * standalone, so the navHeight token still matches everywhere else. */
   padding-top: env(safe-area-inset-top);
-  /* Opaque first, translucent on top where supported — never transparent. */
   background: ${(p) => p.theme.color.bg};
-  background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 88%, transparent)`};
   border-bottom: 1px solid ${(p) => p.theme.color.border};
   font-family: ${(p) => p.theme.font.sans};
-
-  @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
-    backdrop-filter: blur(12px) saturate(140%);
-    -webkit-backdrop-filter: blur(12px) saturate(140%);
-    /* R1-B F7: at 72% opacity the header composites to ~rgb(79,81,86) over
-     * white content — nav text fell to 3.19:1 transiently. >=85% keeps every
-     * nav pair above AA regardless of what scrolls underneath. */
-    background: ${(p) => `color-mix(in srgb, ${p.theme.color.bg} 88%, transparent)`};
-  }
 `;
 
 const Inner = styled.div`
@@ -66,19 +55,23 @@ function wordmarkClass(tokens: ReturnType<typeof useThemeTokens>): string {
   return css`
     display: inline-flex;
     align-items: center;
-    gap: ${tokens.space[2]};
+    gap: ${tokens.space[3]};
     min-height: 44px;
-    padding: ${tokens.space[1]};
+    padding: ${tokens.space[1]} 0;
     border-radius: ${tokens.radius.sm};
-    font-family: ${tokens.font.mono};
-    font-size: ${tokens.font.sizes.md};
-    font-weight: ${tokens.font.weights.bold};
+    font-family: ${tokens.font.serif};
+    font-size: ${tokens.font.sizes.lg};
+    font-weight: ${tokens.font.weights.semibold};
     letter-spacing: ${tokens.font.tracking.tight};
+    white-space: nowrap;
     color: ${tokens.color.text};
     text-decoration: none;
 
     &:hover {
-      color: ${tokens.color.accent};
+      text-decoration: underline;
+      text-decoration-color: ${tokens.color.accentBorder};
+      text-decoration-thickness: 2px;
+      text-underline-offset: 0.25em;
     }
 
     &:focus-visible {
@@ -88,20 +81,19 @@ function wordmarkClass(tokens: ReturnType<typeof useThemeTokens>): string {
   `;
 }
 
+/* The monogram is a swatch of the highlighter: a small label, set like data. */
 const WordmarkMark = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: ${(p) => p.theme.radius.sm};
-  background: ${(p) => p.theme.color.accent};
-  /* R1-B F5: accentText (#fff) on accent is only 3.16:1 in dark — exactly the
-   * combo Button.tsx documents as rejected. bg-on-accent is the verified
-   * primary pair (6.11 dark / 5.16 light). */
-  color: ${(p) => p.theme.color.bg};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.bold};
+  padding: 0.3em 0.4em 0.22em;
+  background: ${(p) => p.theme.color.mark};
+  color: ${(p) => p.theme.color.markInk};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  font-weight: ${(p) => p.theme.font.weights.normal};
+  line-height: ${(p) => p.theme.font.leading.none};
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
 `;
 
 const DesktopNav = styled.nav`
@@ -141,7 +133,7 @@ const MenuButton = styled.button`
   min-width: 44px;
   min-height: 44px;
   padding: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[3]};
-  border: 1px solid ${(p) => p.theme.color.border};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   border-radius: ${(p) => p.theme.radius.md};
   background: transparent;
   color: ${(p) => p.theme.color.text};
@@ -151,8 +143,9 @@ const MenuButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: ${(p) => p.theme.color.surfaceHover};
-    border-color: ${(p) => p.theme.color.borderStrong};
+    background: ${(p) => p.theme.color.mark};
+    color: ${(p) => p.theme.color.markInk};
+    border-color: ${(p) => p.theme.color.markInk};
   }
 
   &:focus-visible {
@@ -173,7 +166,6 @@ const Bars = styled.span<{ $open: boolean }>`
     display: block;
     height: 2px;
     width: 100%;
-    border-radius: ${(p) => p.theme.radius.full};
     background: currentColor;
     transform-origin: center;
     transition:

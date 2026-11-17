@@ -8,6 +8,7 @@ summary: >-
   image. What each gap was, and how the project closed it.
 tags: [supply-chain, security, rust, open-source, developer-tools]
 date: 2026-10-24
+keyMetric: "minimum age of any dependency the project adopts = 14 days"
 series: Harness² Workbench
 relatedProject: harness2-workbench
 relatedPosts: [taking-a-repository-public, security-reviews-of-a-localhost-control-plane]

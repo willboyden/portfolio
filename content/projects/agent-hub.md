@@ -16,7 +16,7 @@ featured: true
 relatedPost: building-agent-hub
 links:
   source: "https://github.com/willboyden/agent-hub"
-stack: [Rust (axum, hyper, tokio), git, SQLite, LanceDB + Qdrant (knowledge plane), ES modules + web components (no npm)]
+stack: ["Rust (axum, hyper, tokio)", git, SQLite, LanceDB + Qdrant (knowledge plane), ES modules + web components (no npm)]
 highlights:
   - "0.3.0 rewrites the hub, hubctl and the knowledge service in Rust as a drop-in: the same bytes written into every client's files (PyYAML-exact YAML), 0 differences in 545 side-by-side cases against the last Python code, and three security fixes published as GHSA-7j23-gq83-5j4w"
   - "A git repository of declarative files is the source of truth; the hub compiles it into each client's native format (.claude/skills, .opencode/agent, AGENTS.md, Hermes and Turnstone stages) instead of being a service the agents query"

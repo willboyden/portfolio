@@ -21,80 +21,89 @@ const ROUTER_LINK = Link as unknown as 'a';
 /* -------------------------------------------------------------------------- */
 
 const Lede = styled.p`
-  margin: 0 0 ${(p) => p.theme.space[5]};
-  max-width: 62ch;
+  margin: ${(p) => p.theme.space[4]} 0 ${(p) => p.theme.space[5]};
+  max-width: 34em;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.xl};
-  font-weight: ${(p) => p.theme.font.weights.medium};
-  line-height: ${(p) => p.theme.font.leading.snug};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
+  line-height: 1.45;
   color: ${(p) => p.theme.color.text};
 `;
 
+/* The narrative is long-form text, so it is set in the reading serif. */
 const Paragraph = styled.p`
   margin: 0 0 ${(p) => p.theme.space[5]};
   max-width: 68ch;
-  font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  line-height: ${(p) => p.theme.font.leading.normal};
+  color: ${(p) => p.theme.color.text};
 
   &:last-of-type {
     margin-bottom: 0;
   }
 
   strong {
-    color: ${(p) => p.theme.color.text};
     font-weight: ${(p) => p.theme.font.weights.semibold};
   }
 `;
 
+/* A pulled sentence: serif italic beside a stroke of the highlighter. */
 const Figure = styled.aside`
   margin: ${(p) => `${p.theme.space[6]} 0`};
-  padding: ${(p) => p.theme.space[5]};
-  border-left: 3px solid ${(p) => p.theme.color.accent};
-  background: ${(p) => p.theme.color.bgElevated};
-  border-radius: 0 ${(p) => p.theme.radius.md} ${(p) => p.theme.radius.md} 0;
-  font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.normal};
+  padding: ${(p) => p.theme.space[1]} 0 ${(p) => p.theme.space[1]} ${(p) => p.theme.space[5]};
+  max-width: 62ch;
+  border-left: 3px solid ${(p) => p.theme.color.mark};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.xl};
+  line-height: 1.45;
   font-style: italic;
-  color: ${(p) => p.theme.color.textMuted};
+  color: ${(p) => p.theme.color.text};
 `;
 
 /* -------------------------------------------------------------------------- */
 /* Skills                                                                      */
 /* -------------------------------------------------------------------------- */
 
+/* A ruled two-column table: the area on the left, what I use on the right. */
 const SkillGrid = styled.dl`
+  margin: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: ${(p) => p.theme.space[5]};
-  margin: ${(p) => p.theme.space[2]} 0 0;
-
-  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: ${(p) => `${p.theme.space[6]} ${p.theme.space[8]}`};
-  }
+  max-width: 62rem;
 `;
 
 const SkillGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[2]};
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: ${(p) => p.theme.space[1]};
+  padding-block: ${(p) => p.theme.space[4]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
+
+  &:first-of-type {
+    padding-top: 0;
+  }
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: 11rem minmax(0, 1fr);
+    column-gap: ${(p) => p.theme.space[5]};
+    align-items: baseline;
+  }
 `;
 
 const SkillTerm = styled.dt`
   margin: 0;
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.lg};
   font-weight: ${(p) => p.theme.font.weights.semibold};
-  letter-spacing: ${(p) => p.theme.font.tracking.wider};
-  text-transform: uppercase;
-  color: ${(p) => p.theme.color.accent};
+  letter-spacing: ${(p) => p.theme.font.tracking.tight};
+  color: ${(p) => p.theme.color.text};
 `;
 
 const SkillDefinition = styled.dd`
   margin: 0;
+  max-width: 68ch;
   font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
@@ -105,37 +114,38 @@ const SkillDefinition = styled.dd`
 const PrincipleList = styled.ol`
   list-style: none;
   counter-reset: principle;
-  margin: ${(p) => p.theme.space[2]} 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space[5]};
-  max-width: 68ch;
+  max-width: 62rem;
 `;
 
 const Principle = styled.li`
   counter-increment: principle;
-  position: relative;
-  padding-left: ${(p) => `${p.theme.space[7]}`};
+  display: grid;
+  grid-template-columns: ${(p) => p.theme.space[6]} minmax(0, 1fr);
+  padding-block: ${(p) => p.theme.space[4]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
 
-  &::before {
-    content: counter(principle, decimal-leading-zero);
-    position: absolute;
-    left: 0;
-    top: 0;
-    font-family: ${(p) => p.theme.font.mono};
-    font-size: ${(p) => p.theme.font.sizes.sm};
-    font-weight: ${(p) => p.theme.font.weights.semibold};
-    color: ${(p) => p.theme.color.accent};
+  &:first-of-type {
+    padding-top: 0;
   }
 
-  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
-    padding-left: ${(p) => `${p.theme.space[8]}`};
+  &::before {
+    content: counter(principle) '.';
+    font-family: ${(p) => p.theme.font.mono};
+    font-variant-numeric: tabular-nums;
+    font-size: ${(p) => p.theme.font.sizes.sm};
+    color: ${(p) => p.theme.color.textSubtle};
+    /* Share the title's first baseline. */
+    line-height: calc(${(p) => p.theme.font.sizes.lg} * ${(p) => p.theme.font.leading.snug});
   }
 `;
 
 const PrincipleTitle = styled.p`
   margin: 0 0 ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
   font-weight: ${(p) => p.theme.font.weights.semibold};
   line-height: ${(p) => p.theme.font.leading.snug};
@@ -145,14 +155,16 @@ const PrincipleTitle = styled.p`
 
 const PrincipleBody = styled.p`
   margin: 0;
+  max-width: 68ch;
   font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
 const ClosingRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: ${(p) => p.theme.space[3]};
   margin-top: ${(p) => p.theme.space[6]};
 `;
@@ -242,12 +254,11 @@ export function About(): React.ReactNode {
     <>
       <Section id="intro" eyebrow="About" size="wide">
         <Heading level={1} data-testid="about-title" size="4xl">
-          Consultant by title, engineer by habit.
+          I&rsquo;m a technical consultant who still writes the code I recommend.
         </Heading>
-        <Stack gap="4" className="lede-block">
+        <Stack gap="0" className="lede-block">
           <Lede>
-            I am William Boyden — a technical consultant who came through full-stack web engineering and a data-science
-            degree, and who still writes the code he recommends.
+            I am William Boyden. I came to consulting through full-stack web engineering and a data-science degree.
           </Lede>
           <Paragraph>
             My path is the one I recommend to teams hiring for the fuzzy boundary between &ldquo;data&rdquo; and
@@ -275,12 +286,7 @@ export function About(): React.ReactNode {
         </Stack>
       </Section>
 
-      <Section
-        id="toolkit"
-        eyebrow="Toolkit"
-        title="What I actually reach for"
-        description="Tools are choices with consequences. These are mine, grouped the way problems arrive — not as an endorsement list."
-      >
+      <Section id="toolkit" title="Toolkit" description="The tools I use most, grouped by the kind of problem.">
         <SkillGrid data-testid="about-skills">
           {SKILL_AREAS.map((group) => (
             <SkillGroup key={group.area}>
@@ -293,15 +299,16 @@ export function About(): React.ReactNode {
 
       <Section
         id="how-i-work"
-        eyebrow="Method"
         title="How I work"
-        description="Four rules that have survived every engagement so far. They are also what you should hold me to."
+        description="Four rules I hold to on every engagement. Hold me to them too."
       >
         <PrincipleList data-testid="about-principles">
           {PRINCIPLES.map((principle) => (
             <Principle key={principle.title}>
-              <PrincipleTitle>{principle.title}</PrincipleTitle>
-              <PrincipleBody>{principle.body}</PrincipleBody>
+              <div>
+                <PrincipleTitle>{principle.title}</PrincipleTitle>
+                <PrincipleBody>{principle.body}</PrincipleBody>
+              </div>
             </Principle>
           ))}
         </PrincipleList>

@@ -9,6 +9,7 @@ summary: >-
   a 40+-payload adversarial matrix.
 tags: [security, llm, prompt-injection, python, testing]
 date: 2026-10-16
+keyMetric: "adversarial payloads in the test matrix = 40+"
 series: AI engineering notes
 relatedPosts: [testing-half-your-system-is-a-prompt]
 readingMinutes: 8

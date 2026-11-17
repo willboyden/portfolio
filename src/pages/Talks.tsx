@@ -111,8 +111,6 @@ const SummaryMain = styled.span`
 const EventName = styled.span`
   font-family: ${(p) => p.theme.font.mono};
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wider};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.accent};
 `;
 
@@ -253,8 +251,9 @@ const PageHeader = styled.header`
 const Lede = styled.p`
   margin: 0;
   max-width: 62ch;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
@@ -262,8 +261,6 @@ const MetaLine = styled.p`
   margin: 0;
   font-family: ${(p) => p.theme.font.mono};
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
 `;
 

@@ -119,6 +119,14 @@ async function loadCollection(dir, schema) {
           return m;
         });
       }
+      /* A post's key metric is authored on one line as `label = value`, the
+       * same form as a project's metrics (the frontmatter subset has no
+       * mappings). Authoring rule: the label must not contain '='. */
+      if (dir === 'posts' && typeof entry.keyMetric === 'string') {
+        const i = entry.keyMetric.indexOf('=');
+        if (i === -1) throw new Error('keyMetric must be written as `label = value`');
+        entry.keyMetric = { label: entry.keyMetric.slice(0, i).trim(), value: entry.keyMetric.slice(i + 1).trim() };
+      }
       if (dir === 'posts') {
         entry.html = renderMarkdown(body);
         entry.readingMinutes = readingMinutes(body);

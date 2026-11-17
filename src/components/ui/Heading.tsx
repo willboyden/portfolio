@@ -23,8 +23,9 @@ const defaultSize: Record<HeadingLevel, HeadingSize> = {
 function headingCss(theme: Tokens, size: HeadingSize): string {
   return css({
     margin: '0',
-    fontFamily: theme.font.sans,
-    fontWeight: theme.font.weights.bold,
+    /* The serif is the site's heading voice; 600 is the heaviest weight shipped. */
+    fontFamily: theme.font.serif,
+    fontWeight: theme.font.weights.semibold,
     lineHeight: theme.font.leading.tight,
     letterSpacing: theme.font.tracking.tight,
     color: theme.color.text,

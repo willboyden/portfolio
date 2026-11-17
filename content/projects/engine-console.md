@@ -16,7 +16,7 @@ featured: true
 relatedPost: building-engine-console
 links:
   source: "https://github.com/willboyden/engine-console"
-stack: [Rust (axum, hyper, tokio), SQLite (WAL), SSE, Prometheus + OTLP, rootless Docker, NVML, ES modules + web components (no npm)]
+stack: ["Rust (axum, hyper, tokio)", SQLite (WAL), SSE, Prometheus + OTLP, rootless Docker, NVML, ES modules + web components (no npm)]
 highlights:
   - "0.5.0 rewrites the hub and the node agent in Rust: one 4.7 MB node binary per architecture instead of a Python environment, the same wire protocol in both directions so machines move one at a time, and 0 differences in 674 side-by-side steps against the last Python code"
   - "A hub talks to a small agent on every machine (ecnode) over a restricted ssh key; the node does all Docker, GPU and file work and obeys a local policy file, so a bug in the hub can do at most what each machine's policy allows"

@@ -88,7 +88,7 @@ describe('vendored @emotion/styled', () => {
     const html = renderToStaticMarkup(h(ThemeProvider, { theme: darkTheme, children: h(Card, { children: 'x' }) }));
     const sheet = __sheetCss();
     expect(sheet).toContain('padding: 1rem');
-    expect(sheet).toContain('background: #151a26');
+    expect(sheet).toContain(`background: ${darkTheme.color.surface}`);
     expect(html).toMatch(/class="css-[a-z0-9]+"/);
   });
 

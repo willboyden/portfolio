@@ -38,11 +38,12 @@ const Page = styled.a<{ $current: boolean }>`
   padding: ${(p) => p.theme.space[2]};
   box-sizing: border-box;
   font-family: ${(p) => p.theme.font.mono};
+  font-variant-numeric: tabular-nums;
   font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.medium};
+  font-weight: ${(p) => p.theme.font.weights.normal};
   line-height: ${(p) => p.theme.font.leading.none};
   border-radius: ${(p) => p.theme.radius.md};
-  border: 1px solid ${(p) => p.theme.color.border};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   text-decoration: none;
   transition:
     background ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease},
@@ -54,7 +55,7 @@ const Page = styled.a<{ $current: boolean }>`
     `background: ${p.theme.color.accent}; color: ${p.theme.color.bg}; border-color: ${p.theme.color.accent};`}
   ${(p) =>
     !p.$current &&
-    `background: ${p.theme.color.surface}; color: ${p.theme.color.text}; &:hover { background: ${p.theme.color.accentSoft}; color: ${p.theme.color.accent}; border-color: ${p.theme.color.accentBorder}; }`}
+    `background: transparent; color: ${p.theme.color.text}; &:hover { background: ${p.theme.color.mark}; color: ${p.theme.color.markInk}; border-color: ${p.theme.color.markInk}; }`}
 
   &[aria-disabled='true'] {
     background: ${(p) => p.theme.color.bgSunken};

@@ -85,6 +85,35 @@ export function formatDate(iso: string, options: FormatDateOptions = {}): string
 }
 
 /**
+ * A date as data: "2026-11-14". Used wherever dates are a column in a list
+ * (a ledger sorts and scans best in ISO order). Accepts a date or an ISO
+ * datetime; returns '' for anything unparseable, like formatDate.
+ */
+export function formatIsoDate(iso: string): string {
+  const date = parseIsoUtc(iso);
+  if (!date) return '';
+  const year = String(date.getUTCFullYear()).padStart(4, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Split a metric value into its figure and its unit, so the unit can be set
+ * smaller: "16 → 3.6 min" -> ["16 → 3.6", "min"], "786 tok/s" -> ["786",
+ * "tok/s"]. A value with no trailing unit word ("1.6×", "4,508") is all figure.
+ */
+export function splitMetric(value: string): { figure: string; unit: string } {
+  const trimmed = value.trim();
+  const cut = trimmed.lastIndexOf(' ');
+  if (cut === -1) return { figure: trimmed, unit: '' };
+  const unit = trimmed.slice(cut + 1);
+  /* A unit has no digits; "3.6" after "16 →" is still part of the figure. */
+  if (/\d/.test(unit) || unit === '→') return { figure: trimmed, unit: '' };
+  return { figure: trimmed.slice(0, cut), unit };
+}
+
+/**
  * R7I-01: `2026-10-07` → `October 2026` (UTC-pinned, long month). Returns ''
  * for unparseable input — callers fall back rather than render "Invalid Date".
  * Used by /now so the "Last updated" stamp is derived from the newest shipped

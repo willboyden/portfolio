@@ -11,6 +11,7 @@ summary: >-
   BF16 models, Pro on four DGX Sparks, and the public timestamps behind "first".
 tags: [quantization, nvfp4, vllm, compressed-tensors, computer-use, moe, local-inference, hugging-face]
 date: 2026-11-05
+keyMetric: "NorthCUA Pro (397B), BF16 to NVFP4 = 794 → 238 GB"
 series: AI engineering notes
 ---
 

@@ -8,6 +8,7 @@ summary: >-
   wait for, and an order that came from file times.
 tags: [testing, rust, quality-gates, developer-tools]
 date: 2026-10-24
+keyMetric: "flaky tests that a fast workstation hid = 4"
 series: Harness² Workbench
 relatedProject: harness2-workbench
 relatedPosts: [building-harness2-workbench, taking-a-repository-public]

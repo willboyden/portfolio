@@ -34,10 +34,11 @@ import { Link, useLocation } from '@portfolio/router';
 import { withBase } from 'app/lib/seo';
 import { Button, Container, EmptyState, Heading, Icon, Pagination, Tag, VisuallyHidden } from 'app/components/ui';
 import { postsByDate, type Post } from 'app/content';
-import { formatDate, formatReadingTime, pluralize } from 'app/lib/format';
+import { formatIsoDate, formatReadingTime, pluralize } from 'app/lib/format';
 import { search } from 'app/lib/search';
 import { useDebouncedValue, useReducedMotion } from 'app/lib/hooks';
 import type { Tokens } from 'app/theme/tokens';
+import { dataText, titleLink } from 'app/theme/mixins';
 
 export const POSTS_PER_PAGE = 8;
 
@@ -219,12 +220,13 @@ const Toolbar = styled.div`
 `;
 
 const PageHeader = styled.header`
-  margin: ${(p) => p.theme.space[6]} 0;
+  margin: 0 0 ${(p) => p.theme.space[6]};
 `;
 
 const Lead = styled.p`
   margin: ${(p) => p.theme.space[3]} 0 0;
-  max-width: 68ch;
+  max-width: 62ch;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
@@ -232,6 +234,8 @@ const Lead = styled.p`
 
 const PostTitle = styled.h2`
   margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.xl};
+  line-height: ${(p) => p.theme.font.leading.snug};
 `;
 
 const SearchForm = styled.form`
@@ -263,7 +267,7 @@ const SearchInput = styled.input`
   font-size: ${(p) => p.theme.font.sizes.md};
   color: ${(p) => p.theme.color.text};
   background: ${(p) => p.theme.color.surface};
-  border: 1px solid ${(p) => p.theme.color.border};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   border-radius: ${(p) => p.theme.radius.md};
   transition: border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
 
@@ -271,7 +275,7 @@ const SearchInput = styled.input`
     color: ${(p) => p.theme.color.textSubtle};
   }
   &:hover {
-    border-color: ${(p) => p.theme.color.borderStrong};
+    border-color: ${(p) => p.theme.color.rule};
   }
   &:focus-visible {
     outline: 2px solid ${(p) => p.theme.color.focus};
@@ -279,13 +283,12 @@ const SearchInput = styled.input`
   }
 `;
 
-/* Topic cloud panel: a quiet surface under the search box. */
+/* Topic cloud: a ruled block under the search box, not a boxed panel. */
 const TopicPanel = styled.section`
-  margin-bottom: ${(p) => p.theme.space[4]};
-  padding: ${(p) => p.theme.space[3]} ${(p) => p.theme.space[4]};
-  background: ${(p) => p.theme.color.surface};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
+  margin-bottom: ${(p) => p.theme.space[5]};
+  padding: ${(p) => p.theme.space[3]} 0 ${(p) => p.theme.space[4]};
+  border-top: 1px solid ${(p) => p.theme.color.borderStrong};
+  border-bottom: 1px solid ${(p) => p.theme.color.borderStrong};
 `;
 
 const TopicHead = styled.div`
@@ -313,12 +316,11 @@ const HeadActions = styled.div`
 
 const TopicTitle = styled.h2`
   margin: 0;
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.semibold};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
-  color: ${(p) => p.theme.color.textSubtle};
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
+  color: ${(p) => p.theme.color.text};
 `;
 
 const TopicLabel = styled.div`
@@ -341,8 +343,10 @@ const Cloud = styled.ul`
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: center;
+  justify-content: flex-start;
   gap: ${(p) => p.theme.space[1]} ${(p) => p.theme.space[1]};
+  /* Words carry their own inline padding; pull the first one back to the rail. */
+  margin-inline-start: calc(-1 * ${(p) => p.theme.space[2]});
 `;
 
 const CLOUD_SIZES = { 1: 'sm', 2: 'md', 3: 'lg', 4: 'xl', 5: '2xl' } as const;
@@ -357,14 +361,11 @@ const CloudWord = styled.button<{ $weight: CloudEntry['weight']; $active: boolea
     align-items: center;
   }
   padding: ${(p) => p.theme.space[1]} ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.sans};
+  /* The cloud is set in the heading serif: bigger words are bigger topics,
+   * the way an index sets its main entries. */
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes[CLOUD_SIZES[p.$weight]]};
-  font-weight: ${(p) =>
-    p.$weight >= 4
-      ? p.theme.font.weights.bold
-      : p.$weight === 3
-        ? p.theme.font.weights.semibold
-        : p.theme.font.weights.medium};
+  font-weight: ${(p) => (p.$weight >= 3 ? p.theme.font.weights.semibold : p.theme.font.weights.normal)};
   line-height: ${(p) => p.theme.font.leading.none};
   letter-spacing: ${(p) => (p.$weight >= 4 ? p.theme.font.tracking.tight : p.theme.font.tracking.normal)};
   color: ${(p) => (p.$weight >= 3 ? p.theme.color.text : p.theme.color.textMuted)};
@@ -378,8 +379,8 @@ const CloudWord = styled.button<{ $weight: CloudEntry['weight']; $active: boolea
     border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
 
   &:hover {
-    color: ${(p) => p.theme.color.accent};
-    background: ${(p) => p.theme.color.accentSoft};
+    color: ${(p) => p.theme.color.markInk};
+    background: ${(p) => p.theme.color.mark};
   }
 
   ${(p) =>
@@ -397,12 +398,13 @@ const CloudWord = styled.button<{ $weight: CloudEntry['weight']; $active: boolea
   }
 `;
 
+/* The count takes its word's colour at full strength (a dimmed count fell
+ * under 4.5:1 on paper); it is set apart by size and face, not by fading. */
 const CloudCount = styled.span`
   font-family: ${(p) => p.theme.font.mono};
   font-size: ${(p) => p.theme.font.sizes.xs};
   font-weight: ${(p) => p.theme.font.weights.normal};
   letter-spacing: normal;
-  opacity: 0.75;
 `;
 
 /* Small text-style action ("Show all 62 topics", "Clear all"). One rule
@@ -418,13 +420,17 @@ function textButtonRules(t: Tokens): string {
   padding: 0 ${t.space[2]};
   font-family: ${t.font.sans};
   font-size: ${t.font.sizes.sm};
-  font-weight: ${t.font.weights.medium};
+  font-weight: ${t.font.weights.semibold};
   color: ${t.color.accent};
+  text-decoration: underline;
+  text-decoration-color: ${t.color.accentBorder};
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
   background: transparent;
   border: 1px solid transparent;
   border-radius: ${t.radius.md};
   cursor: pointer;
-  &:hover { background: ${t.color.accentSoft}; }
+  &:hover { background: ${t.color.mark}; color: ${t.color.markInk}; text-decoration-color: transparent; }
   &:focus-visible { outline: 2px solid ${t.color.focus}; outline-offset: 2px; }
   @media (max-width: ${t.breakpoint.md}) { min-height: 44px; }
   `;
@@ -448,7 +454,8 @@ const PhoneToggle = styled.button`
   display: none;
   @media (max-width: ${(p) => p.theme.breakpoint.md}) {
     display: inline-flex;
-    border-color: ${(p) => p.theme.color.accentBorder};
+    border-color: ${(p) => p.theme.color.borderStrong};
+    text-decoration: none;
   }
 `;
 
@@ -461,14 +468,12 @@ const ActiveBar = styled.div`
 `;
 
 const ActiveLabel = styled.span`
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
+/* A picked filter is a highlighted word with a remove mark. */
 const ActiveChip = styled.button`
   display: inline-flex;
   align-items: center;
@@ -480,14 +485,16 @@ const ActiveChip = styled.button`
   padding: 0 ${(p) => p.theme.space[2]} 0 ${(p) => p.theme.space[3]};
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
-  font-weight: ${(p) => p.theme.font.weights.medium};
-  color: ${(p) => p.theme.color.accent};
-  background: ${(p) => p.theme.color.accentSoft};
-  border: 1px solid ${(p) => p.theme.color.accentBorder};
-  border-radius: ${(p) => p.theme.radius.full};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.markInk};
+  background: ${(p) => p.theme.color.mark};
+  border: 1px solid ${(p) => p.theme.color.markInk};
+  border-radius: ${(p) => p.theme.radius.sm};
   cursor: pointer;
 
   &:hover {
+    background: ${(p) => p.theme.color.accent};
+    color: ${(p) => p.theme.color.bg};
     border-color: ${(p) => p.theme.color.accent};
   }
   &:focus-visible {
@@ -497,52 +504,92 @@ const ActiveChip = styled.button`
 `;
 
 const StatusLine = styled.p`
-  margin: 0 0 ${(p) => p.theme.space[4]};
-  font-family: ${(p) => p.theme.font.mono};
+  margin: 0 0 ${(p) => p.theme.space[3]};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
+/* The index is a ledger: one ruled row per post. From md up the date is its
+ * own column on the left and the post's key metric and length sit on the
+ * right; on a phone the three become one line above the title. */
 const PostList = styled.ul`
   list-style: none;
-  margin: 0;
+  margin: 0 0 ${(p) => p.theme.space[6]};
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[5]};
+  border-top: 2px solid ${(p) => p.theme.color.rule};
 `;
 
 const PostItem = styled.li`
   display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[2]};
-  padding: ${(p) => p.theme.space[4]};
-  background: ${(p) => p.theme.color.surface};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
-  transition: border-color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[3]};
+  padding-block: ${(p) => p.theme.space[5]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
 
-  &:hover {
-    border-color: ${(p) => p.theme.color.borderStrong};
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr) minmax(7rem, auto);
+    column-gap: ${(p) => p.theme.space[5]};
+    align-items: start;
   }
 `;
 
-const MetaLine = styled.p`
+const PostDate = styled.time`
+  ${(p) => dataText(p.theme)}
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textSubtle};
+  white-space: nowrap;
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    /* Sit on the title's first baseline. */
+    padding-top: 0.42em;
+  }
+`;
+
+const PostMain = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space[2]};
+  min-width: 0;
+
+  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
+    order: 3;
+    flex: 1 0 100%;
+  }
+`;
+
+const PostAside = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: ${(p) => p.theme.space[2]};
-  margin: 0;
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  color: ${(p) => p.theme.color.textMuted};
+  gap: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[3]};
+  ${(p) => dataText(p.theme)}
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  color: ${(p) => p.theme.color.textSubtle};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: ${(p) => p.theme.space[2]};
+    padding-top: 0.5em;
+    text-align: right;
+  }
 `;
 
-const Sep = styled.span`
+/** A post's key metric: a small reading, lightly highlighted. */
+const MetricChip = styled.span`
+  padding: 0 ${(p) => p.theme.space[2]};
+  line-height: 1.7;
+  white-space: nowrap;
+  background: ${(p) => p.theme.color.accentSoft};
+  color: ${(p) => p.theme.color.text};
+`;
+
+const SeriesNote = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.font.sizes.sm};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -561,22 +608,9 @@ const TagRow = styled.div`
 `;
 
 function titleLinkCss(theme: Tokens): string {
-  return css({
-    margin: 0,
-    fontFamily: theme.font.sans,
-    fontSize: theme.font.sizes.xl,
-    fontWeight: theme.font.weights.bold,
-    lineHeight: theme.font.leading.snug,
-    letterSpacing: theme.font.tracking.tight,
-    color: theme.color.text,
-    textDecoration: 'none',
-    '&:hover': { color: theme.color.accent },
-    '&:focus-visible': {
-      outline: `2px solid ${theme.color.focus}`,
-      outlineOffset: '2px',
-      borderRadius: theme.radius.sm,
-    },
-  });
+  return css`
+    ${titleLink(theme)}
+  `;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -727,7 +761,9 @@ export function Writing(): ReactNode {
             </HeadActions>
           </TopicHead>
           <TopicBody id="topic-body" $phoneOpen={phoneOpen} data-testid="tag-cloud-body">
-            <Cloud id="topic-cloud" role="group" aria-label="Filter posts by topic" data-testid="tag-cloud">
+            {/* A list, named: no role="group" here. A <ul> whose role is not
+             * "list" leaves its <li> children without a list to belong to. */}
+            <Cloud id="topic-cloud" aria-label="Filter posts by topic" data-testid="tag-cloud">
               {cloud.entries.map((entry) => (
                 <li key={entry.tag}>
                   <CloudWord
@@ -818,34 +854,33 @@ export function Writing(): ReactNode {
           <PostList id="post-list" data-testid="post-list">
             {pageData.items.map((post) => (
               <PostItem key={post.slug}>
-                <MetaLine>
-                  <time dateTime={post.date}>{formatDate(post.date)}</time>
-                  <Sep aria-hidden="true">·</Sep>
-                  <span>{formatReadingTime(post.readingMinutes)}</span>
-                  {post.series !== undefined && (
-                    <>
-                      <Sep aria-hidden="true">·</Sep>
-                      <Tag tone="accent" size="sm">
-                        {post.series}
-                      </Tag>
-                    </>
+                <PostDate dateTime={post.date}>{formatIsoDate(post.date)}</PostDate>
+                <PostMain>
+                  <PostTitle>
+                    <Link to={`/writing/${post.slug}`} className={linkCls} data-testid={`post-link-${post.slug}`}>
+                      {post.title}
+                    </Link>
+                  </PostTitle>
+                  <Summary>{post.summary}</Summary>
+                  {post.series !== undefined && <SeriesNote>Series: {post.series}</SeriesNote>}
+                  {post.tags.length > 0 && (
+                    <TagRow>
+                      {post.tags.map((tag) => (
+                        <Tag key={tag} size="sm" tone={selected.includes(tag) ? 'accent' : 'default'}>
+                          {tag}
+                        </Tag>
+                      ))}
+                    </TagRow>
                   )}
-                </MetaLine>
-                <PostTitle>
-                  <Link to={`/writing/${post.slug}`} className={linkCls} data-testid={`post-link-${post.slug}`}>
-                    {post.title}
-                  </Link>
-                </PostTitle>
-                <Summary>{post.summary}</Summary>
-                {post.tags.length > 0 && (
-                  <TagRow>
-                    {post.tags.map((tag) => (
-                      <Tag key={tag} size="sm" tone={selected.includes(tag) ? 'accent' : 'default'}>
-                        {tag}
-                      </Tag>
-                    ))}
-                  </TagRow>
-                )}
+                </PostMain>
+                <PostAside>
+                  {post.keyMetric !== undefined && (
+                    <MetricChip title={post.keyMetric.label} data-testid="post-metric">
+                      {post.keyMetric.value}
+                    </MetricChip>
+                  )}
+                  <span>{formatReadingTime(post.readingMinutes)}</span>
+                </PostAside>
               </PostItem>
             ))}
           </PostList>

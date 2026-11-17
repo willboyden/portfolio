@@ -8,6 +8,7 @@ summary: >-
   host-execution risk for you, and results are treated as untrusted.
 tags: [mcp, agents, security, rust, evals]
 date: 2026-10-24
+keyMetric: "MCP tools to plan, run and analyse harness2 sweeps = 42"
 series: Harness² Workbench
 relatedProject: harness2-workbench
 relatedPosts: [building-harness2-workbench, security-reviews-of-a-localhost-control-plane]

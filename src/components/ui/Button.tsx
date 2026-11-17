@@ -8,12 +8,14 @@ import { Spinner } from './Spinner';
 /**
  * Button — primary action control, polymorphic over button / a / router Link.
  *
- * Contrast (computed, see FINDINGS.md):
- *  - primary  text is color.bg on color.accent: dark 6.11:1, light 5.16:1.
- *    (accentText/#ffffff on the dark accent is only 3.16:1 — deliberately NOT
- *    used on solid accent for that reason.)
- *  - ghost / secondary text is color.accent on bg/surface: >= 5.16:1 both themes.
- *  - focus ring color.focus on bg: 7.82:1 dark / 5.16:1 light (>= 3:1 needed).
+ * Look: ink on paper, nearly square. A primary button is a block of ink, a
+ * secondary one is an ink outline, a ghost one is a text link (ink with the
+ * highlighter underline). Hovering any of them fills it with the highlighter.
+ *
+ * Contrast (gated in src/theme/contrast.test.ts):
+ *  - primary text is color.bg on color.accent, the same pair in both themes;
+ *  - hover text is color.markInk on color.mark;
+ *  - ghost / secondary text is ink on the page.
  *
  * Polymorphism note: the vendored styled `as` drops non-DOM props (`to`) from
  * component targets, which would break the router Link. So component targets
@@ -34,20 +36,23 @@ const iconSize: Record<ButtonSize, number> = { sm: 16, md: 18, lg: 20 };
 
 function buttonStyles(theme: Tokens, variant: ButtonVariant, size: ButtonSize) {
   const t = theme;
+  /* One hover for every variant: the highlighter. The border goes to markInk
+   * so the shape keeps a 3:1 edge on paper, where the fill alone is too light. */
+  const marked = { background: t.color.mark, color: t.color.markInk, borderColor: t.color.markInk };
   const tone =
     variant === 'primary'
       ? {
           background: t.color.accent,
           color: t.color.bg,
           borderColor: t.color.accent,
-          hover: { background: t.color.bgElevated, color: t.color.accent, borderColor: t.color.accent },
+          hover: marked,
         }
       : variant === 'secondary'
         ? {
-            background: t.color.bgElevated,
+            background: 'transparent',
             color: t.color.text,
-            borderColor: t.color.borderStrong,
-            hover: { background: t.color.accentSoft, color: t.color.accent, borderColor: t.color.accentBorder },
+            borderColor: t.color.rule,
+            hover: marked,
           }
         : variant === 'danger'
           ? {
@@ -60,7 +65,7 @@ function buttonStyles(theme: Tokens, variant: ButtonVariant, size: ButtonSize) {
               background: 'transparent',
               color: t.color.accent,
               borderColor: 'transparent',
-              hover: { background: t.color.accentSoft, color: t.color.accent, borderColor: t.color.accentBorder },
+              hover: marked,
             };
 
   return {
@@ -70,13 +75,18 @@ function buttonStyles(theme: Tokens, variant: ButtonVariant, size: ButtonSize) {
     gap: t.space[2],
     boxSizing: 'border-box' as const,
     minHeight: heights(t)[size],
-    paddingInline: size === 'sm' ? t.space[3] : size === 'lg' ? t.space[6] : t.space[5],
+    paddingInline:
+      variant === 'ghost' ? t.space[2] : size === 'sm' ? t.space[3] : size === 'lg' ? t.space[6] : t.space[5],
     fontFamily: t.font.sans,
     fontSize: size === 'sm' ? t.font.sizes.sm : t.font.sizes.md,
     fontWeight: t.font.weights.semibold,
     lineHeight: t.font.leading.none,
     letterSpacing: t.font.tracking.normal,
-    textDecoration: 'none',
+    /* A ghost button has no box, so it carries the link underline instead. */
+    textDecoration: variant === 'ghost' ? 'underline' : 'none',
+    textDecorationColor: variant === 'ghost' ? t.color.accentBorder : 'transparent',
+    textDecorationThickness: '2px',
+    textUnderlineOffset: '0.3em',
     cursor: 'pointer',
     /* R7B-6: WebKit required the -webkit- prefix until Safari 16.4 — without
      * it the declaration is dropped and button labels stay long-press-
@@ -88,7 +98,7 @@ function buttonStyles(theme: Tokens, variant: ButtonVariant, size: ButtonSize) {
     background: tone.background,
     color: tone.color,
     transition: `background ${t.motion.fast} ${t.motion.ease}, color ${t.motion.fast} ${t.motion.ease}, border-color ${t.motion.fast} ${t.motion.ease}, box-shadow ${t.motion.base} ${t.motion.ease}`,
-    '&:hover': tone.hover,
+    '&:hover': { ...tone.hover, textDecorationColor: 'transparent' },
     '&:active': { transform: 'translateY(1px)' },
     '&:focus-visible': {
       outline: `2px solid ${t.color.focus}`,

@@ -9,6 +9,7 @@ summary: >-
   the GB10 boxes serve the rest, and both tiers work at the same time.
 tags: [vllm, deepseek, moe, tensor-parallelism, dgx-spark, gb10, rtx-pro-6000, local-inference, performance, benchmarking]
 date: 2026-11-14
+keyMetric: "code on one stream, against the layer split = 1.6×"
 series: AI engineering notes
 relatedPosts: [one-model-across-five-machines, five-machine-engine-boot-time-and-minimax]
 ---

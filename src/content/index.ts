@@ -17,6 +17,7 @@ export type {
   Talk,
   ProjectLinks,
   ProjectMetric,
+  PostKeyMetric,
   AiCapability,
   AiProof,
   Recipe,
@@ -110,6 +111,14 @@ export function getProject(slug: string): Project | undefined {
 
 export function getPost(slug: string): Post | undefined {
   return content.posts.find((p) => p.slug === slug);
+}
+
+/** The newest posts that carry a key metric, newest first: the home page's
+ * "Recently measured" readings. */
+export function measuredPosts(limit: number): Post[] {
+  return postsByDate()
+    .filter((post) => post.keyMetric !== undefined)
+    .slice(0, limit);
 }
 
 /** Newest first; date-identical entries keep stable slug order. */

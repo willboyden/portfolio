@@ -8,6 +8,7 @@ summary: >-
   release work added licence texts for every crate compiled in.
 tags: [open-source, security, supply-chain, developer-tools, quality-gates]
 date: 2026-10-24
+keyMetric: "alerts raised by the first code scan = 15"
 series: Harness² Workbench
 relatedProject: harness2-workbench
 relatedPosts: [dependency-cooldown-and-dependabot, flaky-tests-a-fast-machine-hides]

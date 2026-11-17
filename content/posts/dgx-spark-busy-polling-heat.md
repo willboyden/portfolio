@@ -8,6 +8,7 @@ summary: >-
   their heating rate 60%, at 1 or 16 requests, for under 2% speed.
 tags: [gb10, dgx-spark, sglang, nccl, arm64, thermals, local-inference]
 date: 2026-10-27
+keyMetric: "heating rate of four GB10 boxes, for under 2% speed = −60%"
 series: AI engineering notes
 ---
 

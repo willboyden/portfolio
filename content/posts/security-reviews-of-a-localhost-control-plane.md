@@ -8,6 +8,7 @@ summary: >-
   21,000 rows a second. What broke, what held, and the fixes.
 tags: [security, rust, agents, testing, open-source]
 date: 2026-10-24
+keyMetric: "issues found by two independent reviews = 27"
 series: Harness² Workbench
 relatedProject: harness2-workbench
 relatedPosts: [building-harness2-workbench, mcp-server-for-an-agent-harness]

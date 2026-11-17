@@ -7,7 +7,8 @@
  * key is a build error, not a silent no-op — that is how content rot gets
  * caught at build time instead of at read time.
  */
-import { z } from 'zod';
+/* Explicit .ts: the content build loads this file with plain Node. */
+import { z } from '../lib/z.ts';
 
 /** `YYYY-MM-DD`, enforced as a string (JSON has no date type). */
 const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected a YYYY-MM-DD date');
@@ -71,11 +72,28 @@ export const ProjectSchema = z
   })
   .strict();
 
+/**
+ * The one number a post is about: "1.6×" + "code on one stream, against the
+ * layer split". It is shown as a reading beside the post's title wherever
+ * posts are listed, and the newest ones lead the home page.
+ *
+ * Authoring rule: only a figure the post itself states and explains, worded
+ * the way the post words it. A post with no such figure simply has none.
+ * The length caps are layout guards: the value sits in a narrow column.
+ */
+export const PostKeyMetricSchema = z
+  .object({
+    value: z.string().min(1).max(14, 'keep a key metric value to 14 characters'),
+    label: z.string().min(1).max(72, 'keep a key metric label to 72 characters'),
+  })
+  .strict();
+
 export const PostSchema = z
   .object({
     ...baseShape,
     readingMinutes: z.number().int().positive(),
     series: z.string().min(1).optional(),
+    keyMetric: PostKeyMetricSchema.optional(),
     /* R7D-01: heroImage removed — it was accepted by the schema but rendered
      * by no component (silent no-op surface). Unknown keys stay build errors
      * via .strict(), so re-adding a field requires wiring its renderer too. */
@@ -273,6 +291,7 @@ export type ProjectLinks = z.infer<typeof ProjectLinksSchema>;
 export type ProjectMetric = z.infer<typeof ProjectMetricSchema>;
 export type Project = z.infer<typeof ProjectSchema>;
 export type Post = z.infer<typeof PostSchema>;
+export type PostKeyMetric = z.infer<typeof PostKeyMetricSchema>;
 export type Video = z.infer<typeof VideoSchema>;
 export type Talk = z.infer<typeof TalkSchema>;
 

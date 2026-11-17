@@ -20,6 +20,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 import { __sheetCss } from '@emotion-mini/core';
+import { appTokens } from 'app/theme/tokens';
 import type { AiCapability } from './AiEngineering';
 
 /* Hoisted store — the mock factory below closes over this. */
@@ -287,7 +288,7 @@ describe('AiCapabilityDetail (SSR, via shims)', () => {
     const html = render(<LocalInference />, '/ai-engineering/local-inference');
     expect(html).toContain('Serves concurrent requests at 40 tok/s');
     /* The claim keeps its dash; the path is split into the mono code node. */
-    expect(html).toContain('Serves concurrent requests at 40 tok/s</span>');
+    expect(html).toContain('Serves concurrent requests at 40 tok/s</p>');
     expect(html).toContain('<code');
   });
 
@@ -361,10 +362,18 @@ describe('style invariants (emotion sheet)', () => {
     hasDecl(sheet, 'min-height: calc(2rem + 1rem)');
   });
 
-  it('subnav active state uses whole-declaration classes (no empty declarations)', () => {
-    render(<AiEngineeringHub />, '/ai-engineering/local-inference');
+  it('subnav marks the current section with a stroke of the highlighter, one class per state', () => {
+    const html = render(<AiEngineeringHub />, '/ai-engineering/local-inference');
     const sheet = __sheetCss();
-    expect(sheet).toContain('rgba(91, 140, 255, 0.14)'); /* accentSoft fill */
+    expect(sheet).toContain(`box-shadow: inset 0 -3px 0 ${appTokens.color.mark}`);
+    /* ONE class on each link (a base class plus an "active" class would leave
+     * the winner to stylesheet order). */
+    const links = [...html.matchAll(/<a\b[^>]*data-testid="ai-subnav-[^"]+"[^>]*>/g)].map((m) => m[0]);
+    expect(links.length).toBeGreaterThan(1);
+    for (const link of links) {
+      const cls = /class="([^"]*)"/.exec(link)?.[1] ?? '';
+      expect(cls.trim().split(/\s+/)).toHaveLength(1);
+    }
   });
 
   it('no transient $ props leak into the rendered DOM on any page', () => {

@@ -9,6 +9,7 @@ summary: >-
   bugs and a data-loss bug in the Python code.
 tags: [rust, python, testing, security, open-source]
 date: 2026-10-28
+keyMetric: "Python tests mapped to a Rust test or a written reason = 4,508"
 relatedPosts: [building-nemo-console, building-agent-hub, building-engine-console]
 ---
 

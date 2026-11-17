@@ -18,7 +18,7 @@ featured: true
 relatedPost: building-nemo-console
 links:
   source: "https://github.com/willboyden/nemo-console"
-stack: [Rust (axum, hyper, tokio), SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
+stack: ["Rust (axum, hyper, tokio)", SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
 highlights:
   - "0.6.0 adds a Getting started tab and a FAQ tab to every system page: numbered steps from install to first use, the system's problem codes and refusals explained, commands with a Copy button and links to the tab each step needs"
   - "0.5.0 adds the eleventh and twelfth systems: NVIDIA Model Optimizer (offline checkpoint compression, started as a background job whose verdict and size the console reads) and NVIDIA NeMo Gym (RL rollouts in a client whose only way out is a router broker; a network that is not internal blocks a run)"

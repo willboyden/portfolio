@@ -8,6 +8,7 @@ summary: >-
   tooling, and the packaging fallout of the sst to anomalyco move.
 tags: [ai-agents, opencode, developer-tools, changelog-forensics, effect]
 date: 2026-10-16
+keyMetric: "patch releases in five weeks = 32"
 relatedPosts: [eval-harness-silent-regressions, mcp-production-lessons]
 relatedProject: orchestrator
 ---

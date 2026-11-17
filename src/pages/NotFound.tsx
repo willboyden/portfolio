@@ -15,19 +15,16 @@ import { css, useTheme } from '@emotion/react';
 import { Link } from '@portfolio/router';
 import { Button, Container, Heading } from 'app/components/ui';
 import type { Tokens } from 'app/theme/tokens';
+import { inkLink } from 'app/theme/mixins';
 
 /* Router links take css() classes, never styled(Link) — the vendored styled()
  * prop allow-list drops `to` on component targets (see Nav.tsx / Home.tsx). */
 const ROUTER_LINK = Link as unknown as 'a';
 
 function textLinkClass(theme: Tokens): string {
-  return css({
-    color: theme.color.accent,
-    textDecoration: 'none',
-    borderRadius: theme.radius.sm,
-    '&:hover': { textDecoration: 'underline', textUnderlineOffset: '3px' },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
-  });
+  return css`
+    ${inkLink(theme)}
+  `;
 }
 
 const Shell = styled.div`
@@ -35,31 +32,34 @@ const Shell = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: ${(p) => p.theme.space[5]};
-  padding-block: ${(p) => `${p.theme.space[10]} ${p.theme.space[12]}`};
+  padding-block: ${(p) => `${p.theme.space[8]} ${p.theme.space[10]}`};
 `;
 
+/* The status code, set like every other reading on the site: a figure on the
+ * highlighter. It is decoration (aria-hidden); the h1 carries the meaning. */
 const Glyph = styled.p`
   margin: 0;
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes['5xl']};
-  font-weight: ${(p) => p.theme.font.weights.bold};
+  padding: 0.04em 0.22em;
+  background: ${(p) => p.theme.color.mark};
+  color: ${(p) => p.theme.color.markInk};
+  font-family: ${(p) => p.theme.font.sans};
+  font-variant-numeric: tabular-nums;
+  font-size: ${(p) => p.theme.font.sizes['4xl']};
+  font-weight: ${(p) => p.theme.font.weights.normal};
   line-height: ${(p) => p.theme.font.leading.none};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
-  color: ${(p) => p.theme.color.accentSoft};
+  letter-spacing: -0.02em;
   /* R7B-6: -webkit- prefix for Safari ≤16.3 */
   -webkit-user-select: none;
-  user-select: none;
-  /* The glyph is decoration; the h1 carries the meaning. Contrast rules are
-   * for text that communicates — this color is deliberately background-grade. */
   user-select: none;
 `;
 
 const Body = styled.p`
   margin: 0;
-  max-width: 56ch;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
+  max-width: 34em;
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.xl};
+  line-height: 1.45;
+  color: ${(p) => p.theme.color.text};
 `;
 
 const CtaRow = styled.div`
@@ -80,7 +80,7 @@ const TextLinkList = styled.ul`
 
 const TextLinkItem = styled.li`
   font-size: ${(p) => p.theme.font.sizes.sm};
-  font-family: ${(p) => p.theme.font.mono};
+  font-family: ${(p) => p.theme.font.sans};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -91,11 +91,11 @@ export function NotFound(): React.ReactNode {
       <Shell>
         <Glyph aria-hidden="true">404</Glyph>
         <Heading level={1} data-testid="notfound-title" size="3xl">
-          This page doesn&rsquo;t exist — yet.
+          This page doesn&rsquo;t exist.
         </Heading>
         <Body>
-          A 404 here usually means a link outlived a refactor or the address was mistyped. Neither is your problem to
-          solve — the three links below cover almost every path through this site.
+          A 404 here usually means a link outlived a refactor or the address was mistyped. The three links below cover
+          almost every path through this site.
         </Body>
         <CtaRow>
           <Button as={ROUTER_LINK} to="/" variant="primary" data-testid="notfound-cta-home">

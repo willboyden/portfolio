@@ -34,9 +34,8 @@ const Stamp = styled.p`
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
+  font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -49,82 +48,61 @@ const Dot = styled.span`
 `;
 
 const Intro = styled.p`
-  margin: ${(p) => p.theme.space[5]} 0 0;
-  max-width: 62ch;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
-`;
-
-const Panels = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: ${(p) => p.theme.space[5]};
-  align-items: start;
-
-  @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-`;
-
-const Panel = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[3]};
-  padding: ${(p) => p.theme.space[5]};
-  background: ${(p) => p.theme.color.surface};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
-`;
-
-const PanelTitle = styled.h2`
-  margin: 0;
+  margin: ${(p) => p.theme.space[4]} 0 0;
+  max-width: 34em;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.xl};
-  font-weight: ${(p) => p.theme.font.weights.bold};
-  line-height: ${(p) => p.theme.font.leading.snug};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
+  line-height: 1.45;
   color: ${(p) => p.theme.color.text};
 `;
 
+/* Each list is plain text under its section: a short rule for a bullet, a
+ * hairline between items. */
 const ItemList = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space[4]};
+  max-width: 46rem;
 `;
 
 const Item = styled.li`
   position: relative;
-  padding-left: ${(p) => p.theme.space[5]};
-  font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
+  padding: ${(p) => p.theme.space[3]} 0 ${(p) => p.theme.space[3]} ${(p) => p.theme.space[5]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  line-height: ${(p) => p.theme.font.leading.normal};
+  color: ${(p) => p.theme.color.text};
+
+  &:first-of-type {
+    padding-top: 0;
+  }
 
   &::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 0.65em;
-    width: ${(p) => p.theme.space[2]};
-    height: 1px;
-    background: ${(p) => p.theme.color.accent};
+    top: calc(${(p) => p.theme.space[3]} + 0.8em);
+    width: ${(p) => p.theme.space[3]};
+    height: 2px;
+    background: ${(p) => p.theme.color.mark};
+  }
+
+  &:first-of-type::before {
+    top: 0.8em;
   }
 
   strong {
-    color: ${(p) => p.theme.color.text};
     font-weight: ${(p) => p.theme.font.weights.semibold};
   }
-`;
-
-const FullPanel = styled(Panel)`
-  grid-column: 1 / -1;
 `;
 
 const ClosingRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: ${(p) => p.theme.space[3]};
   margin-top: ${(p) => p.theme.space[6]};
 `;
@@ -140,11 +118,11 @@ interface FocusItem {
 
 const FOCUS_AREAS: readonly FocusItem[] = [
   {
-    title: 'Local AI a team can actually operate',
+    title: 'Local AI a team can operate',
     detail:
       'A home lab of two RTX PRO 6000s, four DGX Sparks and an RTX 5090 ' +
       'serving open-weight models (GLM-5.3-Flash, DeepSeek-V4.1-Flash, ' +
-      'Nemotron) behind one router — and open-sourcing the operator tools ' +
+      'Nemotron) behind one router, and open-sourcing the operator tools ' +
       'it needed: Engine Console and GPU Tuner.',
   },
   {
@@ -152,7 +130,7 @@ const FOCUS_AREAS: readonly FocusItem[] = [
     detail:
       'A fast model answers first and an LLM judge sends the hard ' +
       'conversations to a bigger one. The work is measuring the answers, ' +
-      'not the counters — Nemo Console (ten NVIDIA systems since 0.3.0) watches the routing layer.',
+      'not the counters. Nemo Console (twelve NVIDIA systems since 0.5.0) watches the routing layer.',
   },
   {
     title: 'Agents that stay contained and observable',
@@ -168,17 +146,16 @@ const LEARNING: readonly string[] = [
     'speculative decoding, and the thermal limits of small boxes.',
   'Judge rubrics as a product: getting a routing judge to escalate the ' +
     'tasks the small model really cannot do, and nothing else.',
-  'Writing more, in the open — turning what the lab measured into posts ' +
+  'Writing more, in the open: turning what the lab measured into posts ' +
     'so the same lesson is written down once, properly.',
 ];
 
 const AVAILABLE_FOR: readonly string[] = [
-  'Technical due diligence and architecture reviews — a short, sharp ' +
+  'Technical due diligence and architecture reviews: a short ' +
     'engagement that ends in a written assessment your team can act on.',
   'Embedded consulting for data and platform work: 2–6 months, hands on ' +
     'keyboard, with an explicit handover plan from day one.',
-  'Rescuing stalled AI/data projects: honest evaluation, a scoped path to ' +
-    'production, or a credible recommendation to stop.',
+  'Rescuing stalled AI/data projects: an evaluation, a scoped path to ' + 'production, or a recommendation to stop.',
   'Workshop-style knowledge transfer on evaluation, pipeline design, and ' +
     'production-readiness for engineering teams.',
 ];
@@ -199,53 +176,46 @@ export function Now(): React.ReactNode {
         </Heading>
         <Stamp data-testid="now-stamp">
           <Dot aria-hidden="true" />
-          Updated when the picture changes — not on a calendar.
+          Updated when the picture changes, not on a calendar.
         </Stamp>
         <Intro>
-          A standing answer to &ldquo;what are you working on these days?&rdquo; — published in the spirit of
-          thenowpage.com, so you know what to expect from me before you get in touch.
+          A standing answer to &ldquo;what are you working on these days?&rdquo;, in the spirit of thenowpage.com, so
+          you know what to expect from me before you get in touch.
         </Intro>
       </Section>
 
-      <Section size="default" data-testid="now-panels">
-        <Panels>
-          <Panel aria-labelledby="now-focused-title">
-            <PanelTitle id="now-focused-title">Focused areas</PanelTitle>
-            <ItemList data-testid="now-focused">
-              {FOCUS_AREAS.map((focus) => (
-                <Item key={focus.title}>
-                  <strong>{focus.title}.</strong> {focus.detail}
-                </Item>
-              ))}
-            </ItemList>
-          </Panel>
+      <Section id="now-focused" title="Focused areas" data-testid="now-panels">
+        <ItemList data-testid="now-focused">
+          {FOCUS_AREAS.map((focus) => (
+            <Item key={focus.title}>
+              <strong>{focus.title}.</strong> {focus.detail}
+            </Item>
+          ))}
+        </ItemList>
+      </Section>
 
-          <Panel aria-labelledby="now-learning-title">
-            <PanelTitle id="now-learning-title">Currently learning</PanelTitle>
-            <ItemList data-testid="now-learning">
-              {LEARNING.map((line) => (
-                <Item key={line}>{line}</Item>
-              ))}
-            </ItemList>
-          </Panel>
+      <Section id="now-learning" title="Currently learning">
+        <ItemList data-testid="now-learning">
+          {LEARNING.map((line) => (
+            <Item key={line}>{line}</Item>
+          ))}
+        </ItemList>
+      </Section>
 
-          <FullPanel aria-labelledby="now-available-title">
-            <PanelTitle id="now-available-title">Available for</PanelTitle>
-            <ItemList data-testid="now-available">
-              {AVAILABLE_FOR.map((line) => (
-                <Item key={line}>{line}</Item>
-              ))}
-            </ItemList>
-            <ClosingRow>
-              <Button as={ROUTER_LINK} to="/contact" variant="primary" data-testid="now-cta-contact">
-                Working together
-              </Button>
-              <Button as={ROUTER_LINK} to="/about" variant="ghost" data-testid="now-cta-about">
-                Why this mix of work
-              </Button>
-            </ClosingRow>
-          </FullPanel>
-        </Panels>
+      <Section id="now-available" title="Available for">
+        <ItemList data-testid="now-available">
+          {AVAILABLE_FOR.map((line) => (
+            <Item key={line}>{line}</Item>
+          ))}
+        </ItemList>
+        <ClosingRow>
+          <Button as={ROUTER_LINK} to="/contact" variant="primary" data-testid="now-cta-contact">
+            Working together
+          </Button>
+          <Button as={ROUTER_LINK} to="/about" variant="ghost" data-testid="now-cta-about">
+            Why this mix of work
+          </Button>
+        </ClosingRow>
       </Section>
     </>
   );

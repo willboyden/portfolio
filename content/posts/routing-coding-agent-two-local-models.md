@@ -7,6 +7,7 @@ summary: >-
   bugs hid behind healthy-looking counters; here is how they were found.
 tags: [llm-routing, nemo-switchyard, litellm, grafana, benchmarking, local-llm]
 date: 2026-10-24
+keyMetric: "bugs hidden behind healthy-looking counters = 3"
 series: AI engineering notes
 relatedProject: nemo-console
 ---

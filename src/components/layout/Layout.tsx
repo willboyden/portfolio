@@ -119,7 +119,7 @@ export function Layout({
           the platform provider. */}
       <Global
         styles={{
-          '::selection': { background: tokens.color.accentSoft, color: tokens.color.text },
+          '::selection': { background: tokens.color.mark, color: tokens.color.markInk },
           '[id]': { scrollMarginTop: tokens.layout.navHeight },
         }}
       />

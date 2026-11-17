@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement, type ReactNode } from 'react';
 import { ThemeProvider } from '@emotion/react';
-import { __sheetCss } from '@emotion-mini/core';
+import { __resetSheet, __sheetCss } from '@emotion-mini/core';
 import { darkTheme, lightTheme, type Tokens } from 'app/theme/tokens';
 import {
   Button,
@@ -42,6 +42,10 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * Template-literal styles flatten as `prop: value`, object styles as
  * `prop:value` (verified). Match a declaration either way.
  */
+/** Declarations with the optional space after the colon removed, so one
+ * expectation matches object-style and template-style output alike. */
+const tight = (css: string): string => css.replace(/:\s+/g, ':');
+
 const hasDecl = (sheet: string, decl: string) => {
   const idx = decl.indexOf(': ');
   const prop = idx === -1 ? decl : decl.slice(0, idx);
@@ -154,8 +158,26 @@ describe('Button', () => {
   it('token colours resolve under the light theme too', () => {
     light(h(Button, { variant: 'secondary', children: 'x' }));
     const sheet = __sheetCss();
-    expect(sheet).toContain(lightTheme.color.borderStrong);
+    /* A secondary button is an ink outline. */
+    hasDecl(sheet, `border: 1px solid ${lightTheme.color.rule}`);
     hasDecl(sheet, `outline: 2px solid ${lightTheme.color.focus}`);
+  });
+
+  it('every variant but danger is filled with the highlighter on hover, text in markInk', () => {
+    for (const variant of ['primary', 'secondary', 'ghost'] as const) {
+      __resetSheet();
+      light(h(Button, { variant, children: 'x' }));
+      const hover = tight(/:hover \{([^}]*)\}/.exec(__sheetCss())?.[1] ?? '');
+      expect(hover, variant).toContain(`background:${lightTheme.color.mark}`);
+      expect(hover, variant).toContain(`color:${lightTheme.color.markInk}`);
+    }
+  });
+
+  it('a ghost button carries the link underline (it has no box to mark it as a control)', () => {
+    dark(h(Button, { variant: 'ghost', children: 'x' }));
+    const sheet = __sheetCss();
+    hasDecl(sheet, 'text-decoration: underline');
+    hasDecl(sheet, `text-decoration-color: ${darkTheme.color.accentBorder}`);
   });
 });
 
@@ -200,12 +222,22 @@ describe('Card', () => {
     expect(html).toContain('href="/projects/a"');
   });
 
-  it('interactive cards get hover lift + focus ring', () => {
+  it('interactive cards mark their rule on hover (ink line + highlighter band) and never move', () => {
     dark(h(Card, { interactive: true, children: 'x' }));
     const sheet = __sheetCss();
-    expect(sheet).toContain('transform: translateY(-2px)');
+    expect(sheet).toContain(`border-top-color: ${darkTheme.color.rule}`);
+    expect(sheet).toContain(`box-shadow: inset 0 3px 0 ${darkTheme.color.mark}`);
+    expect(sheet).not.toContain('translateY');
     expect(sheet).toContain(`outline: 2px solid ${darkTheme.color.focus}`);
     expect(sheet).toContain(REDUCED);
+  });
+
+  it('a card is an open entry under a rule: no fill, no radius, no shadow', () => {
+    dark(h(Card, { children: 'x' }));
+    const sheet = __sheetCss();
+    hasDecl(sheet, 'background: transparent');
+    expect(sheet).not.toContain('border-radius');
+    expect(sheet).not.toMatch(/box-shadow: (?!inset)/);
   });
 
   it('non-interactive cards do not carry the cursor:pointer rule', () => {
@@ -213,9 +245,9 @@ describe('Card', () => {
     expect(__sheetCss()).not.toContain('cursor: pointer');
   });
 
-  it('surface colour follows the theme', () => {
+  it('the rule colour follows the theme', () => {
     light(h(Card, { children: 'x' }));
-    expect(__sheetCss()).toContain(lightTheme.color.surface);
+    expect(__sheetCss()).toContain(`border-top: 1px solid ${lightTheme.color.borderStrong}`);
   });
 });
 
@@ -306,11 +338,32 @@ describe('Prose', () => {
     hasDecl(sheet, 'max-height: 80vh');
   });
 
-  it('tables get borders plus zebra rows', () => {
+  it('tables are ruled like a report: heavy rule above and below, thin under the header, no stripes', () => {
     dark(h(Prose, { children: null }));
     const sheet = __sheetCss();
-    expect(sheet).toMatch(/tbody tr:nth-child\(even\)/);
-    hasDecl(sheet, `border: 1px solid ${darkTheme.color.border}`);
+    /* The serializer writes a grouped selector ('th, td') as one rule per
+     * selector, so a selector can have several rules: read them all, in order. */
+    const rules = (selector: string): string[] =>
+      [...sheet.matchAll(new RegExp(`\\.css-[a-z0-9]+ ${selector} \\{([^}]*)\\}`, 'g'))].map((m) => tight(m[1] ?? ''));
+    const table = rules('table').join(';');
+    expect(table).toContain(`border-top:2px solid ${darkTheme.color.rule}`);
+    expect(table).toContain(`border-bottom:2px solid ${darkTheme.color.rule}`);
+    expect(table).toContain('font-variant-numeric:tabular-nums');
+    /* Cells: a hairline under each row... */
+    expect(rules('td').join(';')).toContain(`border-bottom:1px solid ${darkTheme.color.border}`);
+    /* ...and the header's own rule comes later, so its ink line wins. */
+    expect(rules('th').at(-1)).toContain(`border-bottom:1px solid ${darkTheme.color.rule}`);
+    expect(sheet).not.toMatch(/nth-child\(even\)/);
+    /* No vertical lines: cells never declare a full border. */
+    for (const cell of [...rules('th'), ...rules('td')]) expect(cell).not.toMatch(/(^|[;\s])border:/);
+  });
+
+  it('long-form text is set in the reading serif; tables stay in the interface sans', () => {
+    dark(h(Prose, { children: null }));
+    const sheet = __sheetCss();
+    const css = tight(sheet);
+    expect(css).toMatch(new RegExp(`\\.css-[a-z0-9]+ \\{[^}]*font-family:${escapeRe(darkTheme.font.serif)}`));
+    expect(css).toMatch(new RegExp(`table \\{[^}]*font-family:${escapeRe(darkTheme.font.sans)}`));
   });
 
   it('every generated selector is scoped to the wrapper (no chrome restyling)', () => {

@@ -13,13 +13,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { content } from 'app/content';
+import { content, measuredPosts } from 'app/content';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 
-import { Home } from './Home';
+import { Home, LAB_HARDWARE } from './Home';
 import { About } from './About';
 import { Now } from './Now';
 import { Contact } from './Contact';
@@ -103,16 +103,42 @@ describe('personal pages — shared invariants', () => {
 describe('Home', () => {
   const html = render(<Home />, '/');
 
-  it('h1 carries the name and the tagline reads as part of the same heading', () => {
-    const h1 = tags(html, 'h1')[0] ?? '';
-    expect(h1).toBeDefined();
-    expect(html).toContain('William Boyden');
-    expect(html).toContain('production realities back into the analysis');
+  it('h1 is the name; the statement under it says what the work is, with one marked phrase', () => {
+    expect(html).toMatch(/<h1[^>]*data-testid="home-title"[^>]*>William Boyden<\/h1>/);
+    const statement = /<p[^>]*data-testid="home-statement"[^>]*>([\s\S]*?)<\/p>/.exec(html)?.[1] ?? '';
+    expect(statement).toContain('AI engineer and technical consultant');
+    expect(statement).toContain('six-machine GPU lab');
+    expect(countOccurrences(statement, '<mark>')).toBe(1);
+    expect(statement).toContain('<mark>publish what I measure</mark>');
   });
 
-  it('eyebrow positions the three-hat consultant framing', () => {
-    expect(html).toContain('Technical consultant');
-    expect(html).toContain('Data scientist');
+  it('the hero keeps the full-stack and data-science background in plain words', () => {
+    expect(html).toContain('full-stack engineering and data science');
+    expect(html).toContain('services that survive production');
+  });
+
+  it('the lab note lists the machines the AI Engineering pages name', () => {
+    const note = /<aside[^>]*data-testid="home-lab-note"[^>]*>([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
+    for (const machine of LAB_HARDWARE) expect(note).toContain(machine);
+    /* Not a claim of its own: each one is in the published tech-stack capability. */
+    const stack = content.aiCapabilities.find((c) => c.slug === 'tech-stack')?.stack ?? [];
+    for (const machine of LAB_HARDWARE) {
+      const name = machine.replace(/^\d+× /, '');
+      expect(
+        stack.some((item) => item.includes(name)),
+        `${name} is not in the tech-stack capability's stack`,
+      ).toBe(true);
+    }
+  });
+
+  it('"Recently measured" shows the key metric of the newest posts that have one, each linking to its post', () => {
+    const measured = measuredPosts(4);
+    expect(measured.length).toBeGreaterThan(0);
+    expect(countOccurrences(html, 'data-testid="home-reading"')).toBe(measured.length);
+    for (const post of measured) {
+      expect(html).toContain(`href="/writing/${post.slug}"`);
+      expect(html).toContain(post.keyMetric?.label ?? '');
+    }
   });
 
   it('primary CTAs link to /projects and /contact', () => {
@@ -156,8 +182,9 @@ describe('Home', () => {
 describe('About', () => {
   const html = render(<About />, '/about');
 
-  it('h1 states the positioning', () => {
-    expect(html).toContain('Consultant by title, engineer by habit.');
+  it('h1 states the positioning in plain words', () => {
+    const h1 = /<h1[^>]*data-testid="about-title"[^>]*>([\s\S]*?)<\/h1>/.exec(html)?.[1] ?? '';
+    expect(h1).toContain('technical consultant who still writes the code I recommend');
   });
 
   it('narrative covers the real arc: full-stack roots, data-science degree, consulting now', () => {

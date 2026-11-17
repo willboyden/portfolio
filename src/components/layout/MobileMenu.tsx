@@ -19,7 +19,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Nav } from './Nav';
-import { ThemeToggle } from './ThemeToggle';
+import { ThemeOptions } from './ThemeToggle';
 
 /** id of the element the menu button points at with aria-controls. */
 export const MOBILE_MENU_ID = 'mobile-nav-dialog';
@@ -137,7 +137,7 @@ const Panel = styled.div`
   padding: calc(${(p) => p.theme.space[5]} + env(safe-area-inset-top)) ${(p) => p.theme.layout.gutter}
     calc(${(p) => p.theme.space[6]} + env(safe-area-inset-bottom));
   background: ${(p) => p.theme.color.bgElevated};
-  border-bottom: 1px solid ${(p) => p.theme.color.border};
+  border-bottom: 2px solid ${(p) => p.theme.color.rule};
   box-shadow: ${(p) => p.theme.shadow.lg};
   font-family: ${(p) => p.theme.font.sans};
   animation: slide-down ${(p) => p.theme.motion.base} ${(p) => p.theme.motion.easeOut};
@@ -169,10 +169,10 @@ const HeaderRow = styled.div`
 
 const Title = styled.h2`
   margin: 0;
+  font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.semibold};
-  letter-spacing: ${(p) => p.theme.font.tracking.wider};
-  text-transform: uppercase;
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -184,7 +184,7 @@ const CloseButton = styled.button`
   min-width: 44px;
   min-height: 44px;
   padding: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[3]};
-  border: 1px solid ${(p) => p.theme.color.border};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   border-radius: ${(p) => p.theme.radius.md};
   background: transparent;
   color: ${(p) => p.theme.color.text};
@@ -194,8 +194,9 @@ const CloseButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: ${(p) => p.theme.color.surfaceHover};
-    border-color: ${(p) => p.theme.color.borderStrong};
+    background: ${(p) => p.theme.color.mark};
+    color: ${(p) => p.theme.color.markInk};
+    border-color: ${(p) => p.theme.color.markInk};
   }
 
   &:focus-visible {
@@ -204,13 +205,17 @@ const CloseButton = styled.button`
   }
 `;
 
+/* No rule of its own: the last navigation row already closes with one, and a
+ * second line a few pixels below it read as an empty row. */
+const ThemeBlock = styled.div`
+  margin-top: ${(p) => p.theme.space[5]};
+`;
+
 const FooterRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.space[3]};
-  margin-top: ${(p) => p.theme.space[5]};
-  padding-top: ${(p) => p.theme.space[4]};
-  border-top: 1px solid ${(p) => p.theme.color.border};
+  margin-top: ${(p) => p.theme.space[3]};
 `;
 
 const Hint = styled.p`
@@ -385,8 +390,12 @@ export function MobileMenu({
 
         <Nav currentPath={currentPath} onNavigate={onClose} label="Mobile" id="mobile-nav-list" />
 
+        {/* Every theme, inline: on a phone the menu is where settings live. */}
+        <ThemeBlock>
+          <ThemeOptions />
+        </ThemeBlock>
+
         <FooterRow>
-          <ThemeToggle showLabel />
           <Hint>Press Escape to close</Hint>
         </FooterRow>
       </Panel>

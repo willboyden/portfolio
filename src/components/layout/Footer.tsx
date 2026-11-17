@@ -16,6 +16,8 @@ import { Link } from '@portfolio/router';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { withBase } from 'app/lib/seo';
+import { useToday, yearOf } from 'app/lib/today';
+import { markerHover } from 'app/theme/mixins';
 import { availableNavItems, normalizePath } from './Nav';
 import { useThemeTokens } from './ThemePreference';
 
@@ -39,8 +41,12 @@ export const SOCIAL_LINKS: readonly SocialLink[] = [
 
 export const RSS_HREF = withBase('/rss.xml');
 
+/** How the site is made, stated once in the footer. Keep it true: the layout
+ * tests check both halves against the font manifest and the source tree. */
+export const COLOPHON = 'Set in IBM Plex. No trackers, no cookies.';
+
 const Shell = styled.footer`
-  border-top: 1px solid ${(p) => p.theme.color.border};
+  border-top: 2px solid ${(p) => p.theme.color.rule};
   background: ${(p) => p.theme.color.bgSunken};
   color: ${(p) => p.theme.color.textMuted};
   font-family: ${(p) => p.theme.font.sans};
@@ -56,12 +62,12 @@ const Inner = styled.div`
   gap: ${(p) => p.theme.space[6]};
   max-width: ${(p) => p.theme.layout.maxWidth};
   margin: 0 auto;
-  padding: ${(p) => p.theme.space[8]} ${(p) => p.theme.layout.gutter} ${(p) => p.theme.space[6]};
+  padding: ${(p) => p.theme.space[7]} ${(p) => p.theme.layout.gutter} ${(p) => p.theme.space[5]};
 
   @media (max-width: ${(p) => p.theme.breakpoint.md}) {
     grid-template-columns: minmax(0, 1fr);
-    gap: ${(p) => p.theme.space[5]};
-    padding-top: ${(p) => p.theme.space[6]};
+    gap: ${(p) => p.theme.space[4]};
+    padding-top: ${(p) => p.theme.space[5]};
   }
 `;
 
@@ -73,6 +79,7 @@ const Identity = styled.div`
 
 const Name = styled.p`
   margin: 0;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
   font-weight: ${(p) => p.theme.font.weights.semibold};
   letter-spacing: ${(p) => p.theme.font.tracking.tight};
@@ -84,7 +91,7 @@ const Role = styled.p`
   font-size: ${(p) => p.theme.font.sizes.sm};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
-  max-width: ${(p) => p.theme.layout.maxWidthProse};
+  max-width: 34ch;
 `;
 
 /* Desktop: Sitemap (its own two columns) | More | Elsewhere on one row.
@@ -121,12 +128,12 @@ const SitemapList = styled(LinkList)`
 `;
 
 const Heading = styled.h2`
-  margin: 0 0 ${(p) => p.theme.space[2]};
-  font-size: ${(p) => p.theme.font.sizes.xs};
+  margin: 0 0 ${(p) => p.theme.space[1]};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.semibold};
-  letter-spacing: ${(p) => p.theme.font.tracking.wider};
-  text-transform: uppercase;
-  color: ${(p) => p.theme.color.textSubtle};
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
+  color: ${(p) => p.theme.color.text};
 `;
 
 const LinkLine = styled.li`
@@ -150,7 +157,15 @@ const BottomRow = styled.div`
 const Copy = styled.p`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xs};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textSubtle};
+`;
+
+/* The colophon: how the page was made, in one line. Every claim in it is
+ * checked by a test (src/components/layout/layout.test.tsx): the typeface is
+ * the one fonts.ts ships, and the bundle contains no tracker or cookie code. */
+const Colophon = styled.span`
+  display: block;
 `;
 
 /* R7A-6: was a <button onClick={toTop}> — dead without JS. Now a real anchor
@@ -162,18 +177,19 @@ const TopLink = styled.a`
   gap: ${(p) => p.theme.space[2]};
   min-height: 44px;
   padding: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[3]};
-  border: 1px solid ${(p) => p.theme.color.border};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   border-radius: ${(p) => p.theme.radius.md};
   background: transparent;
-  color: ${(p) => p.theme.color.textMuted};
+  color: ${(p) => p.theme.color.text};
   font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.sm};
   font-weight: ${(p) => p.theme.font.weights.medium};
   text-decoration: none;
 
   &:hover {
-    color: ${(p) => p.theme.color.text};
-    background: ${(p) => p.theme.color.surfaceHover};
+    color: ${(p) => p.theme.color.markInk};
+    background: ${(p) => p.theme.color.mark};
+    border-color: ${(p) => p.theme.color.markInk};
   }
 
   &:focus-visible {
@@ -203,25 +219,20 @@ export function linkClass(tokens: ReturnType<typeof useThemeTokens>): string {
     gap: ${tokens.space[2]};
     min-height: 44px;
     font-size: ${tokens.font.sizes.sm};
-    font-weight: ${tokens.font.weights.medium};
+    font-weight: ${tokens.font.weights.normal};
     color: ${tokens.color.textMuted};
     text-decoration: none;
     border-radius: ${tokens.radius.sm};
-    transition: color ${tokens.motion.fast} ${tokens.motion.ease};
 
-    &:hover {
-      color: ${tokens.color.accent};
-      text-decoration: underline;
-      text-underline-offset: 3px;
+    /* The link box is 44px tall for touch; the highlighter stroke belongs on
+       the words only, so it goes on the inner label. */
+    &:hover > span {
+      ${markerHover(tokens)}
     }
 
     &:focus-visible {
       outline: 2px solid ${tokens.color.focus};
       outline-offset: 2px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
     }
   `;
 }
@@ -257,7 +268,10 @@ export function Footer({
   email = '',
 }: FooterProps): ReactNode {
   const tokens = useThemeTokens();
-  const year = currentYear(now ?? new Date());
+  /* The year comes from useToday (the build's day while the prerendered page
+   * is being adopted, the real day after), unless a test pins `now`. */
+  const today = useToday();
+  const year = now ? currentYear(now) : yearOf(today);
   const classes = linkClass(tokens);
 
   /* R6-B: configured socials only. Unconfigured entries are DRAFT comment
@@ -285,7 +299,7 @@ export function Footer({
                     className={classes}
                     data-testid={`footer-link-${item.label.toLowerCase()}`}
                   >
-                    {item.label}
+                    <span>{item.label}</span>
                   </Link>
                 </LinkLine>
               ))}
@@ -297,18 +311,18 @@ export function Footer({
             <LinkList role="list" aria-labelledby="footer-more-heading" data-testid="footer-more">
               <LinkLine>
                 <a href={RSS_HREF} type="application/rss+xml" className={classes} data-testid="footer-rss">
-                  RSS feed
+                  <span>RSS feed</span>
                 </a>
               </LinkLine>
               <LinkLine>
                 <a href={withBase('/sitemap.xml')} className={classes} data-testid="footer-sitemap-link">
-                  Sitemap
+                  <span>Sitemap</span>
                 </a>
               </LinkLine>
               {email && (
                 <LinkLine>
                   <a href={`mailto:${email}`} className={classes} data-testid="footer-email">
-                    Email
+                    <span>Email</span>
                   </a>
                 </LinkLine>
               )}
@@ -331,7 +345,7 @@ export function Footer({
                       rel="noreferrer noopener"
                       data-testid={`footer-social-${entry.label.toLowerCase().replace(/\s+/g, '-')}`}
                     >
-                      {entry.label}
+                      <span>{entry.label}</span>
                     </a>
                   </LinkLine>
                 ))}
@@ -342,7 +356,10 @@ export function Footer({
       </Inner>
 
       <BottomRow>
-        <Copy data-testid="footer-copyright">{copyrightLine(name, year)}</Copy>
+        <Copy>
+          <span data-testid="footer-copyright">{copyrightLine(name, year)}</span>
+          <Colophon data-testid="footer-colophon">{COLOPHON}</Colophon>
+        </Copy>
         <TopLink href="#main" data-testid="back-to-top" aria-label="Back to top">
           <svg
             viewBox="0 0 24 24"

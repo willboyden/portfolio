@@ -15,3 +15,15 @@ export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { VisuallyHidden, type VisuallyHiddenProps } from './VisuallyHidden';
 export { Pagination, pageWindow, type PaginationProps } from './Pagination';
 export { Icon, type IconProps, type IconName } from './Icon';
+export {
+  ArticleLayout,
+  ArticleBack,
+  ArticleTitle,
+  ArticleFacts,
+  ArticleMeta,
+  ArticleSep,
+  ArticleStandfirst,
+  ArticleLead,
+  ArticleBody,
+  ArticleAfter,
+} from './Article';

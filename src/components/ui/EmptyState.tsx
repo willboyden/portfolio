@@ -10,13 +10,13 @@ import { Icon, type IconName } from './Icon';
 const Panel = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   gap: ${(p) => p.theme.space[3]};
-  padding: ${(p) => p.theme.space[8]} ${(p) => p.theme.space[5]};
-  border: 1px dashed ${(p) => p.theme.color.borderStrong};
-  border-radius: ${(p) => p.theme.radius.lg};
-  background: ${(p) => p.theme.color.bgElevated};
+  padding: ${(p) => p.theme.space[6]} ${(p) => p.theme.space[5]};
+  border-top: 1px solid ${(p) => p.theme.color.borderStrong};
+  border-bottom: 1px solid ${(p) => p.theme.color.borderStrong};
+  background: ${(p) => p.theme.color.bgSunken};
 `;
 
 const Glyph = styled.span`
@@ -26,14 +26,16 @@ const Glyph = styled.span`
 
 const Title = styled.p`
   margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.xl};
   font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.tight};
   color: ${(p) => p.theme.color.text};
 `;
 
 const Description = styled.p`
   margin: 0;
-  max-width: 46ch;
+  max-width: 58ch;
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};

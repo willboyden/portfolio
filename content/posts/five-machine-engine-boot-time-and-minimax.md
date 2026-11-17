@@ -10,6 +10,7 @@ summary: >-
   128 experts, where a draft model makes a single stream up to three times faster.
 tags: [vllm, minimax, deepseek, pipeline-parallelism, tensor-parallelism, speculative-decoding, dgx-spark, gb10, rtx-pro-6000, local-inference]
 date: 2026-11-05
+keyMetric: "first log line to a serving API = 16 → 3.6 min"
 series: AI engineering notes
 relatedPosts: [one-model-across-five-machines, hot-experts-on-the-fast-cards]
 ---

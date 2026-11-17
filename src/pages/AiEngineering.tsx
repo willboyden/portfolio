@@ -39,11 +39,23 @@ import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from '@portfolio/router';
 import * as contentModule from 'app/content';
 import { getPost, type Post } from 'app/content';
-import { formatDate, formatReadingTime } from 'app/lib/format';
+import { formatIsoDate, formatReadingTime } from 'app/lib/format';
 import { rebaseHtml } from 'app/lib/seo';
 import type { Tokens } from 'app/theme/tokens';
+import { actionLink, dataText, markerUnderline, titleLink } from 'app/theme/mixins';
 import { NotFound } from './NotFound';
-import { Button, Card, Container, EmptyState, Heading, Icon, Prose, Stack, Tag, type TagTone } from 'app/components/ui';
+import {
+  Button,
+  Card,
+  Container,
+  EmptyState,
+  Heading,
+  Prose,
+  Section,
+  Stack,
+  Tag,
+  type TagTone,
+} from 'app/components/ui';
 
 /* Button's component-target path keeps `to` intact (ui.test.tsx §polymorphic
  * `as`); the cast mirrors Home.tsx / About.tsx. */
@@ -200,22 +212,22 @@ export function splitProof(entry: string): { claim: string; repoPath: string | u
 
 /** Hub card title link — the card's real affordance (also the recipe cards). */
 export function cardLinkClass(theme: Tokens): string {
-  return css({
-    color: theme.color.text,
-    textDecoration: 'none',
-    borderRadius: theme.radius.sm,
-    display: 'inline-block',
-    minHeight: '28px',
-    ['@media (max-width: ' + theme.breakpoint.md + ')']: {
-      minHeight: '44px',
-    },
-    '&:hover': {
-      color: theme.color.accent,
-      textDecoration: 'underline',
-      textUnderlineOffset: '3px',
-    },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
-  });
+  return css`
+    ${titleLink(theme)}
+    display: inline-block;
+    min-height: 28px;
+
+    @media (max-width: ${theme.breakpoint.md}) {
+      min-height: 44px;
+    }
+  `;
+}
+
+/** A "go there" link under a card or a list ("How it works →"). */
+export function moreLinkClass(theme: Tokens): string {
+  return css`
+    ${actionLink(theme)}
+  `;
 }
 
 /** Detail crumb — standalone block-level nav link, 44px at phone widths. */
@@ -223,69 +235,58 @@ export function crumbClass(theme: Tokens): string {
   return css({
     display: 'inline-flex',
     alignItems: 'center',
-    fontFamily: theme.font.mono,
+    fontFamily: theme.font.sans,
     fontSize: theme.font.sizes.sm,
-    color: theme.color.textSubtle,
+    color: theme.color.textMuted,
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
     minHeight: '28px',
     ['@media (max-width: ' + theme.breakpoint.md + ')']: {
       minHeight: '44px',
     },
-    '&:hover': {
-      color: theme.color.accent,
-      textDecoration: 'underline',
-      textUnderlineOffset: '3px',
-    },
+    '&:hover': { background: theme.color.mark, color: theme.color.markInk, textDecoration: 'none' },
     '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
   });
 }
 
-/** Subsection nav link (hub + detail). aria-current renders upstream. */
-function subnavClass(theme: Tokens): string {
-  return css({
-    display: 'inline-flex',
-    alignItems: 'center',
-    minHeight: '44px',
-    padding: `${theme.space[1]} ${theme.space[3]}`,
-    fontFamily: theme.font.sans,
-    fontSize: theme.font.sizes.sm,
-    fontWeight: theme.font.weights.medium,
-    lineHeight: theme.font.leading.none,
-    borderRadius: theme.radius.full,
-    border: `1px solid ${theme.color.border}`,
-    textDecoration: 'none',
-    whiteSpace: 'nowrap',
-    color: theme.color.textMuted,
-    transition:
-      `color ${theme.motion.fast} ${theme.motion.ease}, ` +
-      `background ${theme.motion.fast} ${theme.motion.ease}, ` +
-      `border-color ${theme.motion.fast} ${theme.motion.ease}`,
-    '&:hover': {
-      color: theme.color.text,
-      borderColor: theme.color.borderStrong,
-    },
-    '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '2px' },
-    '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-  });
+/**
+ * Subsection nav link (hub + detail), in the same language as the site
+ * header: the current section carries a stroke of the highlighter under it.
+ * ONE class per state (never a base class plus an "active" class: two classes
+ * leave the winner to stylesheet order).
+ */
+function subnavClass(theme: Tokens, current: boolean): string {
+  return css`
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: ${theme.space[1]} 0;
+    font-family: ${theme.font.sans};
+    font-size: ${theme.font.sizes.sm};
+    font-weight: ${theme.font.weights.normal};
+    line-height: ${theme.font.leading.none};
+    text-decoration: none;
+    white-space: nowrap;
+    color: ${current ? theme.color.text : theme.color.textMuted};
+    box-shadow: inset 0 -3px 0 ${current ? theme.color.mark : 'transparent'};
+
+    &:hover {
+      color: ${theme.color.text};
+      box-shadow: inset 0 -3px 0 ${current ? theme.color.mark : theme.color.borderStrong};
+    }
+    &:focus-visible {
+      outline: 2px solid ${theme.color.focus};
+      outline-offset: 2px;
+    }
+  `;
 }
 
-/** Whole-declaration active state (never a value-level ternary — the vendored
- * Emotion rejects empty declarations). */
-function subnavActiveClass(theme: Tokens): string {
-  return css({
-    background: theme.color.accentSoft,
-    borderColor: theme.color.accentBorder,
-    color: theme.color.accent,
-    fontWeight: theme.font.weights.semibold,
-  });
-}
-
-/** Related-post card link (whole card is one <Link>), PostDetail pattern. */
+/** Related-post link (the whole entry is one <Link>), PostDetail pattern. */
 function relatedPostCls(theme: Tokens): string {
   return css({
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'flex-start',
     gap: theme.space[1],
     textDecoration: 'none',
     borderRadius: theme.radius.sm,
@@ -294,7 +295,7 @@ function relatedPostCls(theme: Tokens): string {
     ['@media (max-width: ' + theme.breakpoint.md + ')']: {
       minHeight: '44px',
     },
-    '&:hover .related-post-title': { color: theme.color.accent },
+    '&:hover .related-post-title': { background: theme.color.mark, color: theme.color.markInk },
     '&:focus-visible': { outline: `2px solid ${theme.color.focus}`, outlineOffset: '3px' },
   });
 }
@@ -313,42 +314,32 @@ const PageHeader = styled.header`
 const Lede = styled.p`
   margin: 0;
   max-width: 62ch;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
+/* A tab row on a hairline, like the header nav. */
 const SubNav = styled.nav`
   display: flex;
   flex-wrap: wrap;
-  gap: ${(p) => p.theme.space[2]};
-`;
-
-/** Section block — mirrors ProjectDetail's Block. */
-const Block = styled.section`
-  padding-block: ${(p) => p.theme.space[6]};
-
-  &:not(:last-of-type) {
-    border-bottom: 1px solid ${(p) => p.theme.color.border};
-  }
-`;
-
-const BlockTitle = styled.h2`
-  margin: 0 0 ${(p) => p.theme.space[4]};
-  font-size: ${(p) => p.theme.font.sizes['2xl']};
-  font-weight: ${(p) => p.theme.font.weights.bold};
-  line-height: ${(p) => p.theme.font.leading.tight};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
-  color: ${(p) => p.theme.color.text};
+  gap: 0 ${(p) => p.theme.space[5]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
 `;
 
 /** Hub grid: 1 col → 3 cols like the Projects grid. */
 const CardGrid = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: ${(p) => p.theme.space[5]};
+  gap: ${(p) => p.theme.space[7]} ${(p) => p.theme.space[6]};
+  margin-bottom: ${(p) => p.theme.space[8]};
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 `;
@@ -359,10 +350,8 @@ const CardMeta = styled.p`
   flex-wrap: wrap;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -371,9 +360,7 @@ const CardMeta = styled.p`
 const CardTitle = styled.h2`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xl};
-  font-weight: ${(p) => p.theme.font.weights.bold};
   line-height: ${(p) => p.theme.font.leading.snug};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
 
 const CardSummary = styled.p`
@@ -381,6 +368,20 @@ const CardSummary = styled.p`
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+/* On a hub card the stack is one run of text, set like data: twenty chips
+ * per card read as noise, a line reads as a parts list. */
+const StackLine = styled.p`
+  margin: 0;
+  ${(p) => dataText(p.theme)}
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  line-height: 1.7;
+  color: ${(p) => p.theme.color.textSubtle};
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -395,26 +396,60 @@ const CardFooter = styled.div`
   gap: ${(p) => p.theme.space[3]};
 `;
 
-/** Detail hero — same recipe as ProjectDetail's. */
+/* Detail head: the same data-sheet shape as a project page (facts in the
+ * margin column from `xl`, a compact row above the title below it). */
 const Hero = styled.header`
+  padding-block-end: ${(p) => p.theme.space[7]};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.xl}) {
+    display: grid;
+    grid-template-columns: ${(p) => p.theme.layout.marginCol} minmax(0, 1fr);
+    column-gap: ${(p) => p.theme.space[7]};
+    align-items: start;
+  }
+`;
+
+const HeroMain = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${(p) => p.theme.space[4]};
-  padding-block-end: ${(p) => p.theme.space[6]};
-  border-bottom: 1px solid ${(p) => p.theme.color.border};
+  min-width: 0;
 `;
 
 const DetailMeta = styled.p`
-  margin: 0;
+  margin: 0 0 ${(p) => p.theme.space[3]};
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.sm};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.xl}) {
+    margin: ${(p) => p.theme.space[3]} 0 0;
+    padding-top: ${(p) => p.theme.space[3]};
+    border-top: 1px solid ${(p) => p.theme.color.borderStrong};
+    flex-direction: column;
+    align-items: flex-start;
+
+    & > [aria-hidden='true'] {
+      display: none;
+    }
+  }
+`;
+
+const DetailLede = styled.p`
+  margin: 0;
+  max-width: 62ch;
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.xl};
+  line-height: 1.45;
+  color: ${(p) => p.theme.color.text};
+
+  @media (max-width: ${(p) => p.theme.breakpoint.sm}) {
+    font-size: ${(p) => p.theme.font.sizes.lg};
+  }
 `;
 
 /** How-it-works: a real ordered list — the sequence is the content. */
@@ -430,38 +465,33 @@ const StepsList = styled.ol`
 `;
 
 const StepItem = styled.li`
-  display: flex;
-  gap: ${(p) => p.theme.space[3]};
+  display: grid;
+  grid-template-columns: ${(p) => p.theme.space[6]} minmax(0, 1fr);
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.lg};
   color: ${(p) => p.theme.color.text};
   line-height: ${(p) => p.theme.font.leading.normal};
   counter-increment: step;
   word-break: break-word;
 
   &::before {
-    content: counter(step);
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: ${(p) => p.theme.radius.full};
-    border: 1px solid ${(p) => p.theme.color.accentBorder};
-    color: ${(p) => p.theme.color.accent};
-    font-family: ${(p) => p.theme.font.mono};
-    font-size: ${(p) => p.theme.font.sizes.xs};
-    margin-top: 0.05em;
+    content: counter(step) '.';
+    ${(p) => dataText(p.theme)}
+    font-size: ${(p) => p.theme.font.sizes.sm};
+    color: ${(p) => p.theme.color.textSubtle};
+    /* Share the first line's baseline with the step text. */
+    line-height: calc(${(p) => p.theme.font.sizes.lg} * ${(p) => p.theme.font.leading.normal});
   }
 `;
 
-/** Proof grid: 1 col → 2 cols at md. Each card = claim + mono repo path. */
+/** Proof: one ruled entry per claim, two columns from md. */
 const ProofGrid = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: ${(p) => p.theme.space[4]};
+  gap: ${(p) => p.theme.space[5]} ${(p) => p.theme.space[6]};
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -472,10 +502,8 @@ const ProofItem = styled.li`
   display: flex;
   flex-direction: column;
   gap: ${(p) => p.theme.space[2]};
-  padding: ${(p) => p.theme.space[4]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.md};
-  background: ${(p) => p.theme.color.bgSunken};
+  padding-top: ${(p) => p.theme.space[3]};
+  border-top: 1px solid ${(p) => p.theme.color.borderStrong};
   word-break: break-word;
 `;
 
@@ -484,36 +512,41 @@ const ProofClaim = styled.p`
   font-size: ${(p) => p.theme.font.sizes.md};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.text};
-  display: flex;
-  gap: ${(p) => p.theme.space[2]};
-
-  & > svg {
-    flex: none;
-    margin-top: ${(p) => p.theme.space[1]};
-    color: ${(p) => p.theme.color.accent};
-  }
 `;
 
 const ProofPath = styled.code`
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
   color: ${(p) => p.theme.color.textSubtle};
   overflow-wrap: anywhere;
 `;
 
-/** A proof's public repository link (GitHub), mono like the old path line. */
+/** A proof's public repository link (GitHub), set like data. */
 const ProofLink = styled.a`
   align-self: flex-start;
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
   color: ${(p) => p.theme.color.accent};
+  ${(p) => markerUnderline(p.theme)}
   overflow-wrap: anywhere;
-  text-underline-offset: 3px;
+
+  &:hover {
+    background: ${(p) => p.theme.color.mark};
+    color: ${(p) => p.theme.color.markInk};
+    text-decoration-color: transparent;
+  }
 
   &:focus-visible {
     outline: 2px solid ${(p) => p.theme.color.focus};
     outline-offset: 2px;
   }
+`;
+
+const ProofNote = styled.p`
+  margin: ${(p) => p.theme.space[5]} 0 0;
+  max-width: 68ch;
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const LimitsList = styled.ul`
@@ -526,65 +559,125 @@ const LimitsList = styled.ul`
   max-width: 68ch;
 `;
 
+/* A limit is marked with a plain grey rule: stated, not decorated. */
 const LimitItem = styled.li`
-  display: flex;
-  gap: ${(p) => p.theme.space[3]};
-  color: ${(p) => p.theme.color.textMuted};
+  position: relative;
+  padding-left: ${(p) => p.theme.space[5]};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.lg};
+  color: ${(p) => p.theme.color.text};
   line-height: ${(p) => p.theme.font.leading.normal};
   word-break: break-word;
 
-  & > svg {
-    flex: none;
-    margin-top: ${(p) => p.theme.space[1]};
-    color: ${(p) => p.theme.color.textSubtle};
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.8em;
+    width: ${(p) => p.theme.space[3]};
+    height: 2px;
+    background: ${(p) => p.theme.color.borderStrong};
   }
 `;
 
-/* Related-writing card (mirrors ProjectDetail's). */
+/* Comparisons: a disclosure per table, the table ruled like the ones in posts. */
+const Comparison = styled.details`
+  margin: 0;
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
+
+  &:first-of-type {
+    border-top: 1px solid ${(p) => p.theme.color.borderStrong};
+  }
+`;
+
+const ComparisonSummary = styled.summary`
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: ${(p) => p.theme.space[2]};
+  cursor: pointer;
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  color: ${(p) => p.theme.color.text};
+
+  &:hover {
+    background: ${(p) => p.theme.color.accentSoft};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.color.focus};
+    outline-offset: 2px;
+  }
+`;
+
+const ComparisonScroll = styled.div`
+  overflow-x: auto;
+  margin: ${(p) => p.theme.space[2]} 0 ${(p) => p.theme.space[5]};
+`;
+
+const ComparisonTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.snug};
+  font-variant-numeric: tabular-nums;
+  border-top: 2px solid ${(p) => p.theme.color.rule};
+  border-bottom: 2px solid ${(p) => p.theme.color.rule};
+
+  th,
+  td {
+    padding: ${(p) => p.theme.space[2]} ${(p) => p.theme.space[4]} ${(p) => p.theme.space[2]} 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid ${(p) => p.theme.color.border};
+  }
+
+  th {
+    font-weight: ${(p) => p.theme.font.weights.semibold};
+    border-bottom: 1px solid ${(p) => p.theme.color.rule};
+    vertical-align: bottom;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+`;
+
+/* Related-writing entry (mirrors ProjectDetail's). */
 const RelatedPostCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space[2]};
-  padding: ${(p) => p.theme.space[4]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.md};
-  background: ${(p) => p.theme.color.bgSunken};
-`;
-
-const RelatedPostHint = styled.span`
-  display: inline-flex;
-  align-items: center;
   gap: ${(p) => p.theme.space[1]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
-  color: ${(p) => p.theme.color.textSubtle};
+  max-width: 46rem;
+  padding-top: ${(p) => p.theme.space[3]};
+  border-top: 1px solid ${(p) => p.theme.color.borderStrong};
+
+  &:first-of-type {
+    padding-top: 0;
+    border-top: none;
+  }
 `;
 
 const RelatedPostTitle = styled.h3`
   margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  font-weight: ${(p) => p.theme.font.weights.semibold};
+  font-size: ${(p) => p.theme.font.sizes.xl};
   line-height: ${(p) => p.theme.font.leading.snug};
-  transition: color ${(p) => p.theme.motion.fast} ${(p) => p.theme.motion.ease};
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
 `;
 
 const RelatedPostMeta = styled.span`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  color: ${(p) => p.theme.color.textMuted};
+  ${(p) => dataText(p.theme)}
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  color: ${(p) => p.theme.color.textSubtle};
 `;
 
 const CrumbNav = styled.nav`
-  margin-bottom: ${(p) => p.theme.space[5]};
+  margin-bottom: ${(p) => p.theme.space[3]};
+
+  @media (min-width: ${(p) => p.theme.breakpoint.xl}) {
+    margin-bottom: 0;
+  }
 `;
 
 const CtaRow = styled.div`
@@ -592,6 +685,8 @@ const CtaRow = styled.div`
   flex-wrap: wrap;
   gap: ${(p) => p.theme.space[3]};
   margin-top: ${(p) => p.theme.space[2]};
+  padding-top: ${(p) => p.theme.space[6]};
+  border-top: 2px solid ${(p) => p.theme.color.rule};
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -617,12 +712,6 @@ export function SubsectionNav({ currentPath }: { currentPath?: string }): ReactN
   const location = useLocation();
   const path = currentPath ?? location.pathname;
   const inRecipes = path === LOCAL_RECIPES_PATH || path.startsWith(`${LOCAL_RECIPES_PATH}/`);
-  /* The active class only re-colours: it must be ADDED to the pill class, not
-   * replace it, or the current item loses its padding, border and 44px height
-   * (first visible on the Local recipes index, the first page whose own entry
-   * is in this nav). */
-  const pill = (current: boolean): string =>
-    current ? `${subnavClass(theme)} ${subnavActiveClass(theme)}` : subnavClass(theme);
   return (
     <SubNav aria-label="AI engineering sections" data-testid="ai-subnav">
       {aiSections().map((section) => {
@@ -632,7 +721,7 @@ export function SubsectionNav({ currentPath }: { currentPath?: string }): ReactN
           <Link
             key={section.slug}
             to={to}
-            className={pill(current)}
+            className={subnavClass(theme, current)}
             aria-current={current ? 'page' : undefined}
             data-testid={`ai-subnav-${section.slug}`}
           >
@@ -642,7 +731,7 @@ export function SubsectionNav({ currentPath }: { currentPath?: string }): ReactN
       })}
       <Link
         to={LOCAL_RECIPES_PATH}
-        className={pill(inRecipes)}
+        className={subnavClass(theme, inRecipes)}
         aria-current={path === LOCAL_RECIPES_PATH ? 'page' : inRecipes ? 'location' : undefined}
         data-testid="ai-subnav-local-recipes"
       >
@@ -652,18 +741,20 @@ export function SubsectionNav({ currentPath }: { currentPath?: string }): ReactN
   );
 }
 
-/** Stack chips + status Tag, shared by hub cards and the detail hero. */
-function CapabilityMeta({ capability }: { capability: AiCapability }): ReactNode {
+/** The stack: one line of text on a hub card (`compact`), flat tags in the
+ * detail head. Same content either way; same test id. */
+function CapabilityMeta({ capability, compact = false }: { capability: AiCapability; compact?: boolean }): ReactNode {
+  if (compact) {
+    return <StackLine data-testid="ai-stack">{capability.stack.join(' · ')}</StackLine>;
+  }
   return (
-    <>
-      <Stack direction="row" wrap gap="2" data-testid="ai-stack">
-        {capability.stack.map((tech) => (
-          <Tag key={tech} size="sm" tone="outline">
-            {tech}
-          </Tag>
-        ))}
-      </Stack>
-    </>
+    <Stack direction="row" wrap gap="2" data-testid="ai-stack">
+      {capability.stack.map((tech) => (
+        <Tag key={tech} size="sm">
+          {tech}
+        </Tag>
+      ))}
+    </Stack>
   );
 }
 
@@ -674,19 +765,14 @@ function RelatedWriting({ slugs }: { slugs: readonly string[] }): ReactNode {
   const posts = slugs.map((slug) => getPost(slug)).filter((p): p is Post => p !== undefined);
   if (posts.length === 0) return null;
   return (
-    <Block aria-labelledby="related-writing-title">
-      <BlockTitle id="related-writing-title">Related writing</BlockTitle>
-      <Stack direction="column" gap="3">
+    <Section id="related-writing" title="Related writing" description="The thinking behind this capability.">
+      <Stack direction="column" gap="4">
         {posts.map((post) => (
           <RelatedPostCard key={post.slug} data-testid="ai-related-post">
-            <RelatedPostHint>
-              <Icon name="arrow-right" size={12} />
-              The thinking behind this capability
-            </RelatedPostHint>
             <Link to={`/writing/${post.slug}`} className={relatedPostCls(theme)} data-testid="ai-related-post-link">
               <RelatedPostTitle className="related-post-title">{post.title}</RelatedPostTitle>
               <RelatedPostMeta>
-                <time dateTime={post.date}>{formatDate(post.date)}</time>
+                <time dateTime={post.date}>{formatIsoDate(post.date)}</time>
                 <span aria-hidden="true">·</span>
                 {formatReadingTime(post.readingMinutes)}
               </RelatedPostMeta>
@@ -694,7 +780,7 @@ function RelatedWriting({ slugs }: { slugs: readonly string[] }): ReactNode {
           </RelatedPostCard>
         ))}
       </Stack>
-    </Block>
+    </Section>
   );
 }
 
@@ -721,9 +807,9 @@ export function AiCapabilityCard({ capability }: { capability: AiCapability }): 
         </Link>
       </CardTitle>
       <CardSummary>{capability.oneLiner}</CardSummary>
-      <CapabilityMeta capability={capability} />
+      <CapabilityMeta capability={capability} compact />
       <CardFooter>
-        <Link to={href} className={cardLinkClass(theme)} data-testid={`ai-capability-cta-${capability.slug}`}>
+        <Link to={href} className={moreLinkClass(theme)} data-testid={`ai-capability-cta-${capability.slug}`}>
           How it works <span aria-hidden="true">→</span>
         </Link>
       </CardFooter>
@@ -744,14 +830,19 @@ const RecipeTeaserList = styled.ul`
 const RecipeTeaserItem = styled.li`
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: ${(p) => p.theme.space[1]};
-  font-size: ${(p) => p.theme.font.sizes.lg};
+  font-family: ${(p) => p.theme.font.serif};
+  font-size: ${(p) => p.theme.font.sizes.xl};
   font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.tight};
 `;
 
 const RecipeTeaserSummary = styled.span`
+  font-family: ${(p) => p.theme.font.sans};
   font-size: ${(p) => p.theme.font.sizes.md};
   font-weight: ${(p) => p.theme.font.weights.normal};
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
   max-width: 70ch;
@@ -762,8 +853,12 @@ function HubRecipes(): ReactNode {
   const recipes = aiRecipeList();
   if (recipes.length === 0) return null;
   return (
-    <Block aria-labelledby="ai-hub-recipes-title" data-testid="ai-hub-recipes">
-      <BlockTitle id="ai-hub-recipes-title">Local recipes</BlockTitle>
+    <Section
+      id="ai-hub-recipes"
+      title="Local recipes"
+      description="Exact, measured setups for running one model on my own hardware."
+      data-testid="ai-hub-recipes"
+    >
       <RecipeTeaserList>
         {recipes.map((recipe) => (
           <RecipeTeaserItem key={recipe.slug}>
@@ -778,10 +873,10 @@ function HubRecipes(): ReactNode {
           </RecipeTeaserItem>
         ))}
       </RecipeTeaserList>
-      <Link to={LOCAL_RECIPES_PATH} className={crumbClass(theme)} data-testid="ai-hub-recipes-all">
+      <Link to={LOCAL_RECIPES_PATH} className={moreLinkClass(theme)} data-testid="ai-hub-recipes-all">
         All local recipes <span aria-hidden="true">→</span>
       </Link>
-    </Block>
+    </Section>
   );
 }
 
@@ -795,8 +890,8 @@ export function AiEngineeringHub({ currentPath }: { currentPath?: string }): Rea
           AI engineering
         </Heading>
         <Lede>
-          What I build and operate end to end in my own lab — what each piece is, how it works, the proof, and its
-          honest limits. Linked proof points are public repositories.
+          What I build and operate end to end in my own lab: what each piece is, how it works, the proof, and its
+          limits. Linked proof points are public repositories.
         </Lede>
         <SubsectionNav currentPath={currentPath} />
       </PageHeader>
@@ -839,33 +934,37 @@ export function AiCapabilityDetail({ slug }: { slug: string }): ReactNode {
 
   return (
     <Container data-testid="ai-capability-detail">
-      <CrumbNav aria-label="Breadcrumb">
-        <Link to="/ai-engineering" className={crumbClass(theme)} data-testid="ai-detail-crumb">
-          ← All capabilities
-        </Link>
-      </CrumbNav>
-
       <Hero>
-        <DetailMeta>
-          <Tag tone={capabilityStatusTone(capability.status)} data-testid="ai-capability-status">
-            {capability.status}
-          </Tag>
-          <span aria-hidden="true">·</span>
-          <span>{capability.capability}</span>
-        </DetailMeta>
-        <Heading level={1} size="4xl" data-testid="ai-detail-title">
-          {capability.title}
-        </Heading>
-        <Lede>{capability.oneLiner}</Lede>
-        <CapabilityMeta capability={capability} />
+        <div>
+          <CrumbNav aria-label="Breadcrumb">
+            <Link to="/ai-engineering" className={crumbClass(theme)} data-testid="ai-detail-crumb">
+              ← All capabilities
+            </Link>
+          </CrumbNav>
+          <DetailMeta>
+            <Tag size="sm" tone={capabilityStatusTone(capability.status)} data-testid="ai-capability-status">
+              {capability.status}
+            </Tag>
+            <span aria-hidden="true">·</span>
+            <span>{capability.capability}</span>
+          </DetailMeta>
+        </div>
+        <HeroMain>
+          <Heading level={1} size="4xl" data-testid="ai-detail-title">
+            {capability.title}
+          </Heading>
+          <DetailLede>{capability.oneLiner}</DetailLede>
+          <CapabilityMeta capability={capability} />
+        </HeroMain>
       </Hero>
 
-      <Block aria-labelledby="how-it-works-title">
-        <BlockTitle id="how-it-works-title">How it works</BlockTitle>
+      <Section id="how-it-works" title="How it works">
         {capability.howItWorks.length > 0 ? (
           <StepsList data-testid="ai-how-it-works">
             {capability.howItWorks.map((step) => (
-              <StepItem key={step}>{step}</StepItem>
+              <StepItem key={step}>
+                <span>{step}</span>
+              </StepItem>
             ))}
           </StepsList>
         ) : (
@@ -880,20 +979,18 @@ export function AiCapabilityDetail({ slug }: { slug: string }): ReactNode {
             }
           />
         )}
-      </Block>
+      </Section>
 
       {capability.html !== undefined && capability.html !== '' && (
-        <Block aria-labelledby="in-depth-title">
-          <BlockTitle id="in-depth-title">In depth</BlockTitle>
+        <Section id="in-depth" title="In depth">
           <Prose data-testid="ai-in-depth">
             {/* Build-time rendered + sanitized markdown (same pipeline as posts). */}
             <div dangerouslySetInnerHTML={{ __html: rebaseHtml(capability.html) }} />
           </Prose>
-        </Block>
+        </Section>
       )}
 
-      <Block aria-labelledby="proof-title">
-        <BlockTitle id="proof-title">Proof</BlockTitle>
+      <Section id="proof" title="Proof">
         {capability.proof.length > 0 ? (
           <ProofGrid data-testid="ai-proof-grid">
             {capability.proof.map((entry) => {
@@ -906,10 +1003,7 @@ export function AiCapabilityDetail({ slug }: { slug: string }): ReactNode {
               const url = typeof entry === 'string' ? undefined : entry.url;
               return (
                 <ProofItem key={claim} data-testid="ai-proof-item">
-                  <ProofClaim>
-                    <Icon name="check" size={16} />
-                    <span>{claim}</span>
-                  </ProofClaim>
+                  <ProofClaim>{claim}</ProofClaim>
                   {url !== undefined && (
                     <ProofLink href={url} target="_blank" rel="noreferrer noopener" data-testid="ai-proof-link">
                       {url.replace(/^https?:\/\//, '')}
@@ -927,98 +1021,51 @@ export function AiCapabilityDetail({ slug }: { slug: string }): ReactNode {
             description="Verified results land here as they are validated against real repos. Nothing is claimed that cannot be traced."
           />
         )}
-        <p style={{ margin: `${theme.space[3]} 0 0` }}>
-          <small style={{ color: theme.color.textSubtle }}>
-            Linked items are public repositories. The rest runs in my private lab, and I am happy to walk you through
-            it.
-          </small>
-        </p>
-      </Block>
+        <ProofNote>
+          Linked items are public repositories. The rest runs in my private lab, and I am happy to walk you through it.
+        </ProofNote>
+      </Section>
 
       {/* R10: head-to-head comparisons — expandable tables, collapsed by
        * default (same pattern as the Talks page details). First row is the
        * header row. */}
       {capability.comparisons !== undefined && capability.comparisons.length > 0 && (
-        <Block aria-labelledby="comparisons-title">
-          <BlockTitle id="comparisons-title">Comparisons</BlockTitle>
+        <Section id="comparisons" title="Comparisons">
           {capability.comparisons.map((comparison) => (
-            <details
-              key={comparison.title}
-              data-testid="ai-comparison"
-              style={{
-                border: `1px solid ${theme.color.border}`,
-                borderRadius: theme.radius.md,
-                margin: `0 0 ${theme.space[3]}`,
-                padding: `${theme.space[2]} ${theme.space[3]}`,
-              }}
-            >
-              <summary
-                style={{
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  color: theme.color.text,
-                }}
-              >
-                {comparison.title}
-              </summary>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  margin: `${theme.space[2]} 0 0`,
-                  fontSize: theme.font.sizes.sm,
-                }}
-              >
-                <thead>
-                  <tr>
-                    {(comparison.rows[0] ?? []).map((header, hi) => (
-                      <th
-                        key={hi}
-                        scope="col"
-                        style={{
-                          textAlign: 'left',
-                          borderBottom: `1px solid ${theme.color.border}`,
-                          padding: theme.space[1],
-                        }}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparison.rows.slice(1).map((row, ri) => (
-                    <tr key={ri}>
-                      {row.map((cell, ci) => (
-                        <td
-                          key={ci}
-                          style={{
-                            borderBottom: `1px solid ${theme.color.border}`,
-                            padding: theme.space[1],
-                            verticalAlign: 'top',
-                          }}
-                        >
-                          {cell}
-                        </td>
+            <Comparison key={comparison.title} data-testid="ai-comparison">
+              <ComparisonSummary>{comparison.title}</ComparisonSummary>
+              <ComparisonScroll>
+                <ComparisonTable>
+                  <thead>
+                    <tr>
+                      {(comparison.rows[0] ?? []).map((header, hi) => (
+                        <th key={hi} scope="col">
+                          {header}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </details>
+                  </thead>
+                  <tbody>
+                    {comparison.rows.slice(1).map((row, ri) => (
+                      <tr key={ri}>
+                        {row.map((cell, ci) => (
+                          <td key={ci}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </ComparisonTable>
+              </ComparisonScroll>
+            </Comparison>
           ))}
-        </Block>
+        </Section>
       )}
 
-      <Block aria-labelledby="limits-title">
-        <BlockTitle id="limits-title">Limits</BlockTitle>
+      <Section id="limits" title="Limits">
         {capability.limits.length > 0 ? (
           <LimitsList data-testid="ai-limits">
             {capability.limits.map((limit) => (
-              <LimitItem key={limit}>
-                <Icon name="clock" size={16} />
-                <span>{limit}</span>
-              </LimitItem>
+              <LimitItem key={limit}>{limit}</LimitItem>
             ))}
           </LimitsList>
         ) : (
@@ -1028,7 +1075,7 @@ export function AiCapabilityDetail({ slug }: { slug: string }): ReactNode {
             description="Honest limits are being documented for this capability."
           />
         )}
-      </Block>
+      </Section>
 
       {capability.relatedPosts !== undefined && capability.relatedPosts.length > 0 && (
         <RelatedWriting slugs={capability.relatedPosts} />

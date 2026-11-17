@@ -12,11 +12,13 @@ import {
   formatDate,
   formatDateRange,
   formatDuration,
+  formatIsoDate,
   formatReadingTime,
   initials,
   parseIsoUtc,
   pluralize,
   slugify,
+  splitMetric,
   truncateAtWordBoundary,
 } from 'app/lib/format';
 
@@ -181,5 +183,45 @@ describe('initials', () => {
     expect(initials('Édouard Louis')).toBe('EL');
     expect(initials('🎉 Alex')).toBe('A');
     expect(initials('李明 王')).toBe('');
+  });
+});
+
+describe('formatIsoDate (dates as a column of data)', () => {
+  it('prints the UTC calendar day as YYYY-MM-DD', () => {
+    expect(formatIsoDate('2026-11-14')).toBe('2026-11-14');
+    expect(formatIsoDate('2026-03-04T23:59:59Z')).toBe('2026-03-04');
+    expect(formatIsoDate('2026-01-01T00:30:00+02:00')).toBe('2025-12-31');
+  });
+
+  it('is blank for something that is not a date, never "Invalid Date"', () => {
+    expect(formatIsoDate('')).toBe('');
+    expect(formatIsoDate('soon')).toBe('');
+  });
+
+  it('sorts as text in date order (the reason ledgers use it)', () => {
+    const days = ['2026-11-05', '2026-02-28', '2025-12-31', '2026-10-01'].map(formatIsoDate);
+    expect([...days].sort()).toEqual(['2025-12-31', '2026-02-28', '2026-10-01', '2026-11-05']);
+  });
+});
+
+describe('splitMetric (a reading as figure + unit)', () => {
+  it('separates the number from the unit that follows it', () => {
+    expect(splitMetric('786 tok/s')).toEqual({ figure: '786', unit: 'tok/s' });
+    expect(splitMetric('1.6×')).toEqual({ figure: '1.6×', unit: '' });
+    expect(splitMetric('794 → 238 GB')).toEqual({ figure: '794 → 238', unit: 'GB' });
+    expect(splitMetric('16 → 3.6 min')).toEqual({ figure: '16 → 3.6', unit: 'min' });
+  });
+
+  it('keeps a value with no unit, or no number, whole', () => {
+    expect(splitMetric('100%').figure + splitMetric('100%').unit).toContain('100');
+    const words = splitMetric('zero');
+    expect(`${words.figure}${words.unit ? ` ${words.unit}` : ''}`).toBe('zero');
+  });
+
+  it('never loses a character of the value', () => {
+    for (const value of ['786 tok/s', '2.35× at 16', '0.0001', '≤ 44 px', '5,486', '83.9 °C']) {
+      const { figure, unit } = splitMetric(value);
+      expect(`${figure}${unit ? ` ${unit}` : ''}`.replace(/\s+/g, ' '), value).toBe(value.replace(/\s+/g, ' '));
+    }
   });
 });

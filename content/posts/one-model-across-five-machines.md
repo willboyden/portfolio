@@ -11,6 +11,7 @@ summary: >-
   agentic coding loop runs 50% faster than on the best four-Spark setup I had.
 tags: [vllm, deepseek, pipeline-parallelism, tensor-parallelism, dgx-spark, gb10, rtx-pro-6000, local-inference]
 date: 2026-11-04
+keyMetric: "across 128 requests, one vLLM engine on five machines = 786 tok/s"
 series: AI engineering notes
 relatedPosts: [dgx-spark-busy-polling-heat, five-machine-engine-boot-time-and-minimax, hot-experts-on-the-fast-cards]
 ---

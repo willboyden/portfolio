@@ -8,16 +8,25 @@ The complete styling vocabulary for the portfolio. Page builders import
 - **Emotion only.** Every style is `@emotion/styled` or `css()` + className.
   No CSS files, no inline `style` props.
 - **Tokens only.** Every colour/spacing/radius/font value comes from
-  `p.theme` (`src/theme/tokens.ts`). Both themes are tested.
+  `p.theme` (`src/theme/tokens.ts`). Every theme is tested.
+- **Ink and one highlighter.** Text, links, borders and buttons use the ink
+  (`color.text` / `color.accent` / `color.rule`). `color.mark` is only ever a
+  fill behind `color.markInk` text: hover, selection, the current item, a
+  measured number. Shared looks come from `src/theme/mixins.ts` (`inkLink`,
+  `titleLink`, `actionLink`, `filterChip`, `label`, `dataText`), not from
+  copies.
+- **Flat.** No shadows, blur or hover lift; near-square corners
+  (`radius.sm`); hairline rules separate things.
 - **Transient props.** Styling-only props are `$`-prefixed so they never hit
   the DOM (verified by tests asserting the rendered HTML).
 - **Accessibility.** Interactive elements are keyboard reachable with a
   `:focus-visible` ring in `theme.color.focus`, hit areas are >= 44×44 px, and
   `prefers-reduced-motion` disables every transition/animation.
-- **Contrast.** All text pairs measured; primary button text is
-  `color.bg` on `color.accent` (6.11:1 dark / 5.16:1 light) — not
-  `accentText/#fff`, which fails at 3.16:1 on the dark accent. Full table in
-  `FINDINGS.md`.
+- **Contrast.** Every text/surface pair of every theme is measured
+  (`src/theme/contrast.test.ts`: 4.5:1 for text, 3:1 for control outlines and
+  focus rings), and the browser suite measures the text actually painted on
+  every kind of page under every theme. A count or a hint is set apart by
+  size and face, never by lowering its opacity.
 
 ## Components
 
@@ -37,6 +46,7 @@ The complete styling vocabulary for the portfolio. Page builders import
 | `VisuallyHidden` | `span` | canonical clip-rect hiding |
 | `Pagination` | `nav > ul` | `page`, `total`, `hrefFor`; `aria-current="page"`, disabled edges |
 | `Icon` | inline `svg` | `name` (19 glyphs), `size`, `label?` → `role=img` vs `aria-hidden` |
+| `ArticleLayout` + `ArticleBack` · `ArticleTitle` · `ArticleFacts` · `ArticleMeta` · `ArticleSep` · `ArticleStandfirst` · `ArticleLead` · `ArticleBody` · `ArticleAfter` | the long-form page: a ruled margin column beside the body from the `xl` breakpoint, one column below it | children; each part places itself in the grid |
 
 ## Polymorphism caveat (vendored Emotion)
 

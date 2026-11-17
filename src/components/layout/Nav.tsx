@@ -96,7 +96,7 @@ export function decorateNavItems(items: readonly NavItem[], currentPath: string)
 const List = styled.ul`
   display: flex;
   align-items: center;
-  gap: ${(p) => p.theme.space[1]};
+  gap: ${(p) => p.theme.space[5]};
   margin: 0;
   padding: 0;
   list-style: none;
@@ -105,7 +105,7 @@ const List = styled.ul`
   @media (max-width: ${(p) => p.theme.breakpoint.md}) {
     flex-direction: column;
     align-items: stretch;
-    gap: ${(p) => p.theme.space[1]};
+    gap: 0;
   }
 `;
 
@@ -114,48 +114,51 @@ const Item = styled.li`
 `;
 
 /**
- * One nav link. Active state is conveyed three ways — colour, a dot marker
- * (survives greyscale / colour vision deficiency) and `aria-current="page"` —
- * so it never depends on colour alone.
+ * One nav link. The current page is marked the way you would mark it on
+ * paper: a stroke of the highlighter under the word. It is conveyed three
+ * ways — the stroke (a shape, so it survives greyscale and colour vision
+ * deficiency), full-strength ink instead of muted, and `aria-current="page"`
+ * — so it never depends on colour alone. In the stacked mobile list the
+ * stroke runs down the left edge instead.
  */
 function navLinkClass(active: boolean, tokens: ReturnType<typeof useThemeTokens>): string {
   return css`
     display: flex;
     align-items: center;
-    gap: ${tokens.space[2]};
     min-height: 44px;
-    padding: ${tokens.space[2]} ${tokens.space[3]};
-    border-radius: ${tokens.radius.md};
+    padding: ${tokens.space[2]} 0;
     font-family: ${tokens.font.sans};
     font-size: ${tokens.font.sizes.sm};
-    font-weight: ${tokens.font.weights.medium};
+    font-weight: ${tokens.font.weights.normal};
     line-height: ${tokens.font.leading.snug};
     letter-spacing: ${tokens.font.tracking.normal};
     text-decoration: none;
     white-space: nowrap;
     color: ${active ? tokens.color.text : tokens.color.textMuted};
-    background: ${active ? tokens.color.accentSoft : 'transparent'};
+    box-shadow: inset 0 -3px 0 ${active ? tokens.color.mark : 'transparent'};
     transition:
       color ${tokens.motion.fast} ${tokens.motion.ease},
-      background-color ${tokens.motion.fast} ${tokens.motion.ease};
-
-    &::after {
-      content: '';
-      flex: none;
-      width: ${active ? '6px' : '0'};
-      height: 6px;
-      border-radius: ${tokens.radius.full};
-      background: ${active ? tokens.color.accent : 'transparent'};
-    }
+      box-shadow ${tokens.motion.fast} ${tokens.motion.ease};
 
     &:hover {
       color: ${tokens.color.text};
-      background: ${tokens.color.surfaceHover};
+      box-shadow: inset 0 -3px 0 ${active ? tokens.color.mark : tokens.color.borderStrong};
     }
 
     &:focus-visible {
       outline: 2px solid ${tokens.color.focus};
       outline-offset: 2px;
+    }
+
+    @media (max-width: ${tokens.breakpoint.md}) {
+      padding: ${tokens.space[2]} ${tokens.space[4]};
+      font-size: ${tokens.font.sizes.md};
+      border-bottom: 1px solid ${tokens.color.border};
+      box-shadow: inset 3px 0 0 ${active ? tokens.color.mark : 'transparent'};
+
+      &:hover {
+        box-shadow: inset 3px 0 0 ${active ? tokens.color.mark : tokens.color.borderStrong};
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {

@@ -7,6 +7,7 @@ summary: >-
   re-runs are free.
 tags: [data-engineering, clickhouse, etl, agents, python]
 date: 2026-10-04
+keyMetric: "rows in the payroll ETL = 279M"
 series: AI engineering notes
 relatedProject: gov-payroll-workbench
 ---

@@ -8,6 +8,7 @@ summary: >-
   and a real browser found.
 tags: [observability, security, fastapi, llm-routing, testing, open-source]
 date: 2026-10-26
+keyMetric: "NVIDIA systems in one console, in a month = 3 → 10"
 relatedProject: nemo-console
 relatedPosts: [routing-coding-agent-two-local-models, taking-a-repository-public]
 ---

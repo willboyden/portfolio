@@ -7,6 +7,7 @@ summary: >-
   owner can cross.
 tags: [ai-agents, review-methodology, quality-gates, supply-chain, portfolio]
 date: 2026-10-24
+keyMetric: "findings from three review rounds, three retracted = 87"
 readingMinutes: 7
 series: AI engineering notes
 ---

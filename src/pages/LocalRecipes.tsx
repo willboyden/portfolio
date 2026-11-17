@@ -20,12 +20,29 @@ import { useEffect, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { useTheme } from '@emotion/react';
 import { Link, useParams } from '@portfolio/router';
-import { Container, EmptyState, Heading, Prose, Stack, Tag } from 'app/components/ui';
+import {
+  ArticleBack,
+  ArticleBody,
+  ArticleFacts,
+  ArticleLayout,
+  ArticleLead,
+  ArticleMeta,
+  ArticleSep,
+  ArticleStandfirst,
+  ArticleTitle,
+  Container,
+  EmptyState,
+  Heading,
+  Prose,
+  Stack,
+  Tag,
+} from 'app/components/ui';
 import { getRecipe, recipesByDate, type Recipe } from 'app/content';
 import { cachedRecipeBody, loadRecipeBody } from 'app/content/recipe-bodies';
-import { formatDate, formatReadingTime } from 'app/lib/format';
+import { formatDate, formatIsoDate, formatReadingTime } from 'app/lib/format';
 import { withBase } from 'app/lib/seo';
 import type { Tokens } from 'app/theme/tokens';
+import { dataText } from 'app/theme/mixins';
 import { LOCAL_RECIPES_PATH, SubsectionNav, cardLinkClass, crumbClass } from './AiEngineering';
 import { NotFound } from './NotFound';
 
@@ -53,8 +70,9 @@ const PageHeader = styled.header`
 const Lede = styled.p`
   margin: 0;
   max-width: 62ch;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
@@ -75,17 +93,16 @@ const RecipeList = styled.ul`
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space[5]};
+  gap: ${(p) => p.theme.space[7]};
 `;
 
+/* One recipe: an open entry under a heavy rule, like a section of a manual. */
 const RecipeCard = styled.li`
   display: flex;
   flex-direction: column;
   gap: ${(p) => p.theme.space[3]};
-  padding: ${(p) => p.theme.space[5]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.md};
-  background: ${(p) => p.theme.color.bgSunken};
+  padding-top: ${(p) => p.theme.space[4]};
+  border-top: 2px solid ${(p) => p.theme.color.rule};
 `;
 
 const CardMeta = styled.p`
@@ -94,20 +111,16 @@ const CardMeta = styled.p`
   flex-wrap: wrap;
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
+  ${(p) => dataText(p.theme)}
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
 /* h2: the index goes h1 → card titles (no skipped level, a11y e2e). */
 const CardTitle = styled.h2`
   margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.xl};
-  font-weight: ${(p) => p.theme.font.weights.bold};
+  font-size: ${(p) => p.theme.font.sizes['2xl']};
   line-height: ${(p) => p.theme.font.leading.snug};
-  letter-spacing: ${(p) => p.theme.font.tracking.tight};
   overflow-wrap: anywhere;
 `;
 
@@ -119,11 +132,15 @@ const CardSummary = styled.p`
   color: ${(p) => p.theme.color.textMuted};
 `;
 
+/* A specification table: what it runs on, then what was measured. Two pairs
+ * per row from md up, one hairline per row. */
 const ResultGrid = styled.dl`
-  margin: 0;
+  margin: ${(p) => p.theme.space[2]} 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: ${(p) => p.theme.space[3]};
+  column-gap: ${(p) => p.theme.space[7]};
+  border-top: 1px solid ${(p) => p.theme.color.borderStrong};
+  max-width: 60rem;
 
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -131,86 +148,52 @@ const ResultGrid = styled.dl`
 `;
 
 const ResultItem = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[1]};
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  column-gap: ${(p) => p.theme.space[3]};
+  align-items: baseline;
+  padding-block: ${(p) => p.theme.space[2]};
+  border-bottom: 1px solid ${(p) => p.theme.color.border};
   min-width: 0;
 `;
 
 const ResultLabel = styled.dt`
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.snug};
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
-/* Specs (hardware / model / engine) read as text; measured results stand out. */
+/* Specs (hardware / model / engine) read as text; measured results are set
+ * as readings: larger, digits aligned. */
 const SpecValue = styled.dd`
   margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.md};
-  line-height: ${(p) => p.theme.font.leading.normal};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  line-height: ${(p) => p.theme.font.leading.snug};
   color: ${(p) => p.theme.color.text};
   overflow-wrap: anywhere;
 `;
 
 const ResultValue = styled.dd`
   margin: 0;
+  font-variant-numeric: tabular-nums;
   font-size: ${(p) => p.theme.font.sizes.lg};
   font-weight: ${(p) => p.theme.font.weights.semibold};
+  line-height: ${(p) => p.theme.font.leading.snug};
   color: ${(p) => p.theme.color.text};
   overflow-wrap: anywhere;
-`;
-
-const Article = styled.article`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space[5]};
-  margin-block: ${(p) => p.theme.space[6]};
-`;
-
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${(p) => p.theme.space[2]};
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.sm};
-  color: ${(p) => p.theme.color.textMuted};
-`;
-
-const Sep = styled.span`
-  color: ${(p) => p.theme.color.textSubtle};
-`;
-
-const Standfirst = styled.p`
-  margin: 0;
-  font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
-  color: ${(p) => p.theme.color.textMuted};
-  max-width: 60ch;
 `;
 
 const Glance = styled.section`
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space[4]};
-  padding: ${(p) => p.theme.space[5]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.md};
-  background: ${(p) => p.theme.color.bgSunken};
+  gap: ${(p) => p.theme.space[2]};
+  margin-top: ${(p) => p.theme.space[5]};
 `;
 
 const GlanceTitle = styled.h2`
   margin: 0;
   font-size: ${(p) => p.theme.font.sizes.xl};
-  font-weight: ${(p) => p.theme.font.weights.bold};
   line-height: ${(p) => p.theme.font.leading.tight};
-`;
-
-const Body = styled.div`
-  border-top: 1px solid ${(p) => p.theme.color.border};
-  padding-top: ${(p) => p.theme.space[6]};
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -274,8 +257,8 @@ export function LocalRecipesIndex({ currentPath }: { currentPath?: string }): Re
           {recipes.map((recipe) => (
             <RecipeCard key={recipe.slug} data-testid={`recipe-card-${recipe.slug}`}>
               <CardMeta>
-                <time dateTime={recipe.date}>{formatDate(recipe.date, { style: 'long' })}</time>
-                <Sep aria-hidden="true">·</Sep>
+                <time dateTime={recipe.date}>{formatIsoDate(recipe.date)}</time>
+                <span aria-hidden="true">·</span>
                 <span>{formatReadingTime(recipe.readingMinutes)}</span>
               </CardMeta>
               <CardTitle>
@@ -294,7 +277,7 @@ export function LocalRecipesIndex({ currentPath }: { currentPath?: string }): Re
                   {recipeStatusLabel(recipe.status)}
                 </Tag>
                 {recipe.tags.map((tag) => (
-                  <Tag key={tag} size="sm" tone="outline">
+                  <Tag key={tag} size="sm">
                     {tag}
                   </Tag>
                 ))}
@@ -322,48 +305,56 @@ export function RecipeDetailView({ slug }: { slug: string }): ReactNode {
   const recipe = getRecipe(slug);
   if (!recipe) return <NotFound />;
   return (
-    <Container size="prose" data-testid="recipe-page">
-      <Article data-testid="recipe-article">
-        <CrumbNav aria-label="Breadcrumb">
-          <Link to="/ai-engineering" className={crumbClass(theme)} data-testid="recipe-crumb-ai">
-            AI engineering
+    <Container data-testid="recipe-page">
+      <ArticleLayout data-testid="recipe-article">
+        <ArticleBack>
+          <CrumbNav aria-label="Breadcrumb">
+            <Link to="/ai-engineering" className={crumbClass(theme)} data-testid="recipe-crumb-ai">
+              AI engineering
+            </Link>
+            <CrumbSep aria-hidden="true">/</CrumbSep>
+            <Link to={LOCAL_RECIPES_PATH} className={crumbClass(theme)} data-testid="recipe-crumb-recipes">
+              Local recipes
+            </Link>
+          </CrumbNav>
+        </ArticleBack>
+
+        <ArticleTitle>
+          <Heading level={1} data-testid="recipe-title">
+            {recipe.title}
+          </Heading>
+        </ArticleTitle>
+
+        <ArticleFacts>
+          <ArticleMeta data-testid="recipe-meta">
+            <time dateTime={recipe.date}>{formatDate(recipe.date, { style: 'long' })}</time>
+            <ArticleSep aria-hidden="true">·</ArticleSep>
+            <span>{formatReadingTime(recipe.readingMinutes)}</span>
+            <ArticleSep aria-hidden="true">·</ArticleSep>
+            <Tag size="sm" tone={recipe.status === 'in-use' ? 'accent' : 'outline'}>
+              {recipeStatusLabel(recipe.status)}
+            </Tag>
+          </ArticleMeta>
+          <Link to={LOCAL_RECIPES_PATH} className={crumbClass(theme)} data-testid="recipe-back">
+            <span aria-hidden="true">←</span>&nbsp;All local recipes
           </Link>
-          <CrumbSep aria-hidden="true">/</CrumbSep>
-          <Link to={LOCAL_RECIPES_PATH} className={crumbClass(theme)} data-testid="recipe-crumb-recipes">
-            Local recipes
-          </Link>
-        </CrumbNav>
+        </ArticleFacts>
 
-        <Heading level={1} data-testid="recipe-title">
-          {recipe.title}
-        </Heading>
-        <MetaRow data-testid="recipe-meta">
-          <time dateTime={recipe.date}>{formatDate(recipe.date, { style: 'long' })}</time>
-          <Sep aria-hidden="true">·</Sep>
-          <span>{formatReadingTime(recipe.readingMinutes)}</span>
-          <Sep aria-hidden="true">·</Sep>
-          <Tag size="sm" tone={recipe.status === 'in-use' ? 'accent' : 'outline'}>
-            {recipeStatusLabel(recipe.status)}
-          </Tag>
-        </MetaRow>
-        <Standfirst data-testid="recipe-standfirst">{recipe.summary}</Standfirst>
+        <ArticleLead>
+          <ArticleStandfirst data-testid="recipe-standfirst">{recipe.summary}</ArticleStandfirst>
+          <Glance aria-labelledby="recipe-glance-title">
+            <GlanceTitle id="recipe-glance-title">At a glance</GlanceTitle>
+            <AtAGlance recipe={recipe} withResults />
+          </Glance>
+        </ArticleLead>
 
-        <Glance aria-labelledby="recipe-glance-title">
-          <GlanceTitle id="recipe-glance-title">At a glance</GlanceTitle>
-          <AtAGlance recipe={recipe} withResults />
-        </Glance>
-
-        <Body>
+        <ArticleBody>
           <Prose data-testid="recipe-prose">
             {/* key: a visit to another recipe starts from that recipe's own state. */}
             <RecipeBody key={recipe.slug} slug={recipe.slug} bodyHash={recipe.bodyHash} />
           </Prose>
-        </Body>
-
-        <Link to={LOCAL_RECIPES_PATH} className={crumbClass(theme)} data-testid="recipe-back">
-          <span aria-hidden="true">←</span>&nbsp;All local recipes
-        </Link>
-      </Article>
+        </ArticleBody>
+      </ArticleLayout>
     </Container>
   );
 }

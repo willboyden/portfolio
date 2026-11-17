@@ -7,6 +7,7 @@ summary: >-
   Plus the DDL shapes that fail loudly.
 tags: [duckdb, analytics, agents, python, performance]
 date: 2026-09-15
+keyMetric: "100K inserts, one of 14 benchmarks = 27 ms"
 series: AI engineering notes
 relatedProject: duckdb-mcp
 ---
