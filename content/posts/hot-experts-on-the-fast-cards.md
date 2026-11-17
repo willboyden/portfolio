@@ -14,6 +14,14 @@ series: AI engineering notes
 relatedPosts: [one-model-across-five-machines, five-machine-engine-boot-time-and-minimax]
 ---
 
+> **Update, 2026-11-17:** a draft count that follows each request, and a better way to measure a small change.
+>
+> The draft head also scores its own drafts. With the engine's adaptive verification, a step verifies only the drafts whose chance of being kept is worth the row they cost: a request that is writing predictable text keeps all five, one that is not gets one or two, and the tokens that come out are the same. It needs a price list of what a step costs by its number of rows. The engine's own list comes from dummy passes, on which a row looks free on this layout, so I measured one on agent loops.
+>
+> Two starts of the lane could not tell me what it is worth. One pair of starts said +14% at one agent and the next pair said -5%: two starts differ by up to 10% by themselves, before anyone touches the desktop. So the engine now measures it itself. Every 128 draft steps it switches between the two policies and counts each step's time and tokens, so both meet the same lane in the same minute. With agent loops and thinking at its highest setting: no difference at one request (-0.0%, 95% interval -4.7 to +4.7), +6% at two, -4% at three to four, and about a tenth at five to eight (+9.6%, and +11.0% on a second start, interval +6.9 to +15.2). Parallel essays gain far more: +31% at 16 requests and +51% at 64, between two starts, which is well beyond what two starts differ by. With few requests a row costs about half of what my price list says, and about 16 ms of a 20 ms step do not depend on the drafts at all, so there is little to save there.
+>
+> So it is an option that trims only from five requests in a step, and the lane I use every day still verifies every draft. One more lesson for the list at the end: a change worth a few percent is measured inside one start, and read by its interval.
+
 > **Update, 2026-11-16:** three things have changed since these numbers were measured.
 >
 > The placement now follows the sessions. "What's next" names a placement that follows the running sessions; it was built the same evening, though not as the per-step cache sketched there, which would have needed about 92 promotions per step. Instead a reserve, the coldest 15% of the experts on the fast cards, is also loaded on every GB10 box, and the engine trades reserve experts for the cold ones the sessions read, a few per second, between two decode steps. After five minutes of code, a decode step of code went from 23.4 ms to 21.0 ms, and the correctness checks pass after 1,500 swaps.

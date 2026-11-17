@@ -1,5 +1,5 @@
 {
-  "contentHash": "9c322132de27cd83",
+  "contentHash": "1fe4c4766c0d94b3",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -838,7 +838,7 @@
         "benchmarking"
       ],
       "date": "2026-11-14",
-      "readingMinutes": 23,
+      "readingMinutes": 25,
       "series": "AI engineering notes",
       "keyMetric": {
         "value": "1.6×",
@@ -848,8 +848,8 @@
         "one-model-across-five-machines",
         "five-machine-engine-boot-time-and-minimax"
       ],
-      "bodyHash": "7d7b7bcabed7",
-      "excerpt": "Update, 2026-11-16: three things have changed since these numbers were measured. The placement now follows the sessions. \"What's next\" …"
+      "bodyHash": "0c7534fbbe32",
+      "excerpt": "Update, 2026-11-17: a draft count that follows each request, and a better way to measure a small change. The draft head also scores its own …"
     },
     {
       "slug": "nemo-relay-tracing-and-trace-views",
@@ -944,7 +944,7 @@
         "local-inference"
       ],
       "date": "2026-11-04",
-      "readingMinutes": 21,
+      "readingMinutes": 22,
       "series": "AI engineering notes",
       "keyMetric": {
         "value": "786 tok/s",
@@ -955,8 +955,8 @@
         "five-machine-engine-boot-time-and-minimax",
         "hot-experts-on-the-fast-cards"
       ],
-      "bodyHash": "89fb8173bde2",
-      "excerpt": "Update, 2026-11-16: where the open items of this post went. Per-rank checkpoint files were not needed: a boot takes 3.6 minutes since each …"
+      "bodyHash": "b4528b2362d6",
+      "excerpt": "Update, 2026-11-17: the table of settings below lists DSpark's adaptive verification as unsafe on this layout, because it re-assigns draft …"
     },
     {
       "slug": "rewriting-three-python-services-in-rust",

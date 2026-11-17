@@ -16,6 +16,8 @@ series: AI engineering notes
 relatedPosts: [dgx-spark-busy-polling-heat, five-machine-engine-boot-time-and-minimax, hot-experts-on-the-fast-cards]
 ---
 
+> **Update, 2026-11-17:** the table of settings below lists DSpark's adaptive verification as unsafe on this layout, because it re-assigns draft slots from the draft head's confidences, which only the last stage has. On the layout that followed, where the whole trunk runs on one pair of cards, it does run, and I measured what it is worth: see the note on [the tiered post](/writing/hot-experts-on-the-fast-cards).
+
 > **Update, 2026-11-16:** where the open items of this post went. Per-rank checkpoint files were not needed: a boot takes 3.6 minutes since each rank reads only the files that hold its layers (second note below). The decode re-runs on the fixed build were dropped for the two small test layouts, whose models I do not run; hybrid models on a mixed layout are still open. The one-hour run was repeated on the tuned profile: 101 rounds at 16 requests, none failed, 250 tok/s on average. And attention replay, which the table of DeepSeek's rules lists as off for a stage that starts at layer 20, has worked there since the evening this was published: a long new prompt reaches its first token 9 to 14% sooner, and the 128-request test reached 891 tok/s.
 
 > **Update, 2026-11-14:** the same machines now run this model 1.4 to 1.6 times faster on code and 2.3 times faster at 16 requests, with a different split: experts are placed by how often they are read, the most-read ones on the RTX PRO 6000s. The layer split described here stays the simpler way to bring up a new model. See [Hot experts on the fast cards](/writing/hot-experts-on-the-fast-cards).
