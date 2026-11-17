@@ -1,5 +1,5 @@
 {
-  "contentHash": "1fe4c4766c0d94b3",
+  "contentHash": "4340598dcaf00752",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -848,7 +848,7 @@
         "one-model-across-five-machines",
         "five-machine-engine-boot-time-and-minimax"
       ],
-      "bodyHash": "0c7534fbbe32",
+      "bodyHash": "192a57578be2",
       "excerpt": "Update, 2026-11-17: a draft count that follows each request, and a better way to measure a small change. The draft head also scores its own …"
     },
     {
