@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
-"""Generate OG/social images (1200x630 PNG) with the site's visual identity.
+"""Generate the site's share images and touch icon in its own visual identity.
 
 Usage:
-  python3 scripts/gen_media.py                 # default OG card + hero variants
-  python3 scripts/gen_media.py --title "X" --out public/og/x.png   # one card
+  python3 scripts/gen_media.py                 # the default set (see DEFAULT_SET)
+  python3 scripts/gen_media.py --title "X" --subtitle "Y" --kicker writing --out public/og/x.png
 
-Identity: deep-space bg #0b0e14, violet accent #7c5cff (peak of the mark),
-green status dot, big confident type. Uses system DejaVu (offline-safe).
+Identity (README "Design: a lab notebook, typeset"): paper, ink and one
+highlighter, set in IBM Plex. The colours are the Paper theme's
+(src/theme/tokens.ts: lightTheme) and the type is read straight from the
+site's own font files in public/fonts/, so a card looks like the page it
+links to. Needs Pillow built with WOFF2 support (the published wheels are).
+
+The name and the address printed on every card are NAME and ADDRESS below;
+src/media.test.ts pins the name against the site's own configuration, so a
+card can never again go out under a placeholder.
+
+public/favicon.svg is not drawn here: it is a static file, the same mark cut
+down to what survives at 16 pixels: the W, as an outline, on the highlighter.
 """
 from __future__ import annotations
 
 import argparse
-import textwrap
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -20,113 +29,171 @@ ROOT = Path(__file__).resolve().parent.parent
 # Canonical assets live in public/ so vite copies them into dist/ (dist is
 # wiped on every build).
 OUT = ROOT / "public"
+FONTS = OUT / "fonts"
 
-BG = (11, 14, 20)
-INK = (238, 241, 248)
-MUTED = (154, 165, 187)
-ACCENT = (124, 92, 255)
-GREEN = (74, 222, 128)
-GRID = (22, 27, 38)
+NAME = "William Boyden"
+ADDRESS = "willboyden.github.io/portfolio"
+MONOGRAM = "WB"
 
-FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-FONT_REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-FONT_MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+# The Paper theme (src/theme/tokens.ts: lightTheme).
+PAPER = (251, 251, 249)  # color.bg        #fbfbf9
+INK = (22, 22, 26)  # color.text      #16161a
+MUTED = (74, 74, 69)  # color.textMuted #4a4a45
+MARK = (255, 214, 10)  # color.mark      #ffd60a
+HAIRLINE = (220, 218, 210)  # color.border    #dcdad2
 
+SERIF_SEMIBOLD = FONTS / "IBMPlexSerif-SemiBold-Latin1.woff2"
+SERIF = FONTS / "IBMPlexSerif-Regular-Latin1.woff2"
+SANS_SEMIBOLD = FONTS / "IBMPlexSans-SemiBold-Latin1.woff2"
+MONO = FONTS / "IBMPlexMono-Regular-Latin1.woff2"
 
-def font(path: str, size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(path, size)
-
-
-def grid(draw: ImageDraw.ImageDraw) -> None:
-    for x in range(0, 1200, 60):
-        draw.line((x, 0, x, 630), fill=GRID, width=1)
-    for y in range(0, 630, 60):
-        draw.line((0, y, 1200, y), fill=GRID, width=1)
+WIDTH, HEIGHT = 1200, 630
+MARGIN = 80
 
 
-def spark(draw: ImageDraw.ImageDraw, origin=(860, 300), scale=1.0) -> None:
-    """The logo mark, blown up: M14 44 L26 20 L32 32 L38 20 L50 44."""
-    pts = [(14, 44), (26, 20), (32, 32), (38, 20), (50, 44)]
-    ox, oy = origin
-    pts = [(ox + (x - 32) * scale * 3, oy + (y - 32) * scale * 3) for x, y in pts]
-    draw.line(pts, fill=ACCENT, width=max(4, int(14 * scale)), joint="curve")
-    cx, cy = pts[-1]
-    r = max(6, int(9 * scale))
-    draw.ellipse((cx - r, cy + 12 * scale - r, cx + r, cy + 12 * scale + r), fill=GREEN)
+def font(path: Path, size: int) -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(str(path), size)
 
 
-def wrap(draw: ImageDraw.ImageDraw, text: str, fnt, width: int, max_lines: int = 4) -> list[str]:
-    words = text.split()
+def wrap(draw: ImageDraw.ImageDraw, text: str, fnt, width: int, max_lines: int) -> list[str]:
+    """Greedy word wrap. Stops the run if the text does not fit: a card with
+    its title cut off is worse than no card."""
     lines: list[str] = []
-    cur = ""
-    for w in words:
-        trial = (cur + " " + w).strip()
-        if draw.textlength(trial, font=fnt) <= width or not cur:
-            cur = trial
+    current = ""
+    for word in text.split():
+        trial = f"{current} {word}".strip()
+        if draw.textlength(trial, font=fnt) <= width or not current:
+            current = trial
         else:
-            lines.append(cur)
-            cur = w
-            if len(lines) == max_lines:
-                break
-    if cur and len(lines) < max_lines:
-        lines.append(cur)
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    if len(lines) > max_lines:
+        raise SystemExit(f"gen_media: {text!r} needs {len(lines)} lines, the card has room for {max_lines}")
     return lines
 
 
-def card(title: str, subtitle: str, kicker: str, out: Path) -> Path:
-    img = Image.new("RGB", (1200, 630), BG)
+def monogram(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], size: int) -> None:
+    """The site's mark: the two initials in ink on a block of highlighter."""
+    draw.rectangle(box, fill=MARK)
+    cx = (box[0] + box[2]) / 2
+    cy = (box[1] + box[3]) / 2
+    draw.text((cx, cy), MONOGRAM, font=font(SERIF_SEMIBOLD, size), fill=INK, anchor="mm")
+
+
+def card(title: str, subtitle: str, kicker: str, out: Path, mark: str = "") -> Path:
+    """One 1200x630 share card. `mark` is a phrase of the title to run the
+    highlighter behind (it must sit on one line)."""
+    img = Image.new("RGB", (WIDTH, HEIGHT), PAPER)
     draw = ImageDraw.Draw(img)
-    grid(draw)
-    # logo lives bottom-right in its own zone — verified clear of text
-    # (first pass overlapped the headline; fixed per vision review)
-    spark(draw, origin=(1020, 540), scale=1.6)
 
-    # accent rule
-    draw.rectangle((80, 84, 150, 90), fill=ACCENT)
+    # Header: the mark and the name, then a full-width ink rule.
+    monogram(draw, (MARGIN, 60, MARGIN + 68, 128), 32)
+    draw.text((MARGIN + 88, 94), NAME, font=font(SANS_SEMIBOLD, 30), fill=INK, anchor="lm")
+    draw.text((WIDTH - MARGIN, 94), kicker, font=font(MONO, 24), fill=MUTED, anchor="rm")
+    draw.rectangle((MARGIN, 152, WIDTH - MARGIN, 154), fill=INK)
 
-    k = font(FONT_MONO, 28)
-    draw.text((80, 118), kicker.upper(), font=k, fill=(190, 198, 214))
-
-    big = font(FONT_BOLD, 72)
+    # Title: serif, ink, with one phrase highlighted.
+    lines = wrap(draw, title, font(SERIF_SEMIBOLD, 70), WIDTH - 2 * MARGIN, max_lines=3)
+    big = font(SERIF_SEMIBOLD, 70)
+    line_height = 88
     y = 190
-    for line in wrap(draw, title, big, 980, max_lines=3):
-        draw.text((80, y), line, font=big, fill=INK)
-        y += 88
+    marked = False
+    for line in lines:
+        if mark and mark in line:
+            before = line[: line.index(mark)]
+            x0 = MARGIN + draw.textlength(before, font=big)
+            x1 = x0 + draw.textlength(mark, font=big)
+            draw.rectangle((x0 - 8, y + 14, x1 + 8, y + line_height - 2), fill=MARK)
+            marked = True
+        draw.text((MARGIN, y), line, font=big, fill=INK)
+        y += line_height
+    if mark and not marked:
+        raise SystemExit(f"gen_media: the phrase to highlight, {mark!r}, is not on one line of {title!r}")
 
-    sub = font(FONT_REG, 34)
-    y += 18
-    for line in wrap(draw, subtitle, sub, 920, max_lines=2):
-        draw.text((80, y), line, font=sub, fill=(203, 210, 224))
-        y += 48
+    # Standfirst.
+    sub = font(SERIF, 32)
+    y += 16
+    for line in wrap(draw, subtitle, sub, WIDTH - 2 * MARGIN - 40, max_lines=2):
+        draw.text((MARGIN, y), line, font=sub, fill=MUTED)
+        y += 46
+    if y > 536:
+        raise SystemExit(f"gen_media: {title!r} and its standfirst run into the footer (y={y})")
 
-    # footer strip (kept left of the logo zone)
-    f = font(FONT_MONO, 24)
-    draw.text((80, 560), "alexrivera.dev  —  consulting · engineering · data", font=f, fill=(120, 130, 152))
+    # Footer: a hairline and the address, as data.
+    draw.rectangle((MARGIN, 546, WIDTH - MARGIN, 546), fill=HAIRLINE)
+    draw.text((MARGIN, 580), ADDRESS, font=font(MONO, 24), fill=MUTED, anchor="lm")
 
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out, "PNG", optimize=True)
     return out
 
 
+def touch_icon(out: Path, size: int = 180) -> Path:
+    """The home-screen icon: the mark, full bleed (the device rounds it)."""
+    img = Image.new("RGB", (size, size), MARK)
+    draw = ImageDraw.Draw(img)
+    monogram(draw, (0, 0, size, size), round(size * 0.47))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out, "PNG", optimize=True)
+    return out
+
+
+# (title, standfirst, kicker, file under public/, phrase to highlight)
+DEFAULT_SET = [
+    (
+        "I run open-weight models on a six-machine GPU lab and publish what I measure.",
+        "AI engineer and technical consultant.",
+        "portfolio",
+        "og-default.png",
+        "publish what I measure.",
+    ),
+    (
+        "Selected work",
+        "Open-source tools built for the lab, each with its repository, its tests and the numbers that judged it.",
+        "projects",
+        "og/projects.png",
+        "work",
+    ),
+    (
+        "Writing",
+        "Engineering and data-science notes, written for the teammate who has to maintain what I built.",
+        "writing",
+        "og/writing.png",
+        "Writing",
+    ),
+    (
+        "AI engineering",
+        "Local inference, agent harnesses, routing and evaluation on hardware I run myself, with the measurements.",
+        "ai-engineering",
+        "og/ai-engineering.png",
+        "engineering",
+    ),
+]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--title", default="William Boyden — Technical Consultant")
-    ap.add_argument("--subtitle", default="Full-stack engineering and data science for teams that ship.")
+    ap.add_argument("--title", default="")
+    ap.add_argument("--subtitle", default="")
     ap.add_argument("--kicker", default="portfolio")
+    ap.add_argument("--mark", default="", help="a phrase of the title to highlight")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
     written = []
-    if not args.out:
-        # default set: home card + a per-section card
-        written.append(card(args.title, args.subtitle, "portfolio", OUT / "og-default.png"))
-        written.append(card("Selected work", "Systems I designed, shipped, and stood behind.", "projects", OUT / "og" / "projects.png"))
-        written.append(card("Writing", "Field notes from consulting engagements and the tools behind them.", "writing", OUT / "og" / "writing.png"))
+    if args.out:
+        if not args.title:
+            raise SystemExit("gen_media: --out needs --title")
+        written.append(card(args.title, args.subtitle, args.kicker, Path(args.out), args.mark))
     else:
-        written.append(card(args.title, args.subtitle, args.kicker, Path(args.out)))
+        for title, subtitle, kicker, name, mark in DEFAULT_SET:
+            written.append(card(title, subtitle, kicker, OUT / name, mark))
+        written.append(touch_icon(OUT / "apple-touch-icon.png"))
 
     for p in written:
-        print(f"wrote {p} ({p.stat().st_size // 1024} kB)")
+        print(f"wrote {p.relative_to(ROOT)} ({p.stat().st_size // 1024} kB)")
 
 
 if __name__ == "__main__":
