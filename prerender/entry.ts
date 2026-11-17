@@ -14,8 +14,9 @@
  */
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { renderToString } from 'react-dom/server';
 import { createApp } from '../src/app/App.tsx';
+import { setPrerenderDay, todayUtcIso } from '../src/lib/today.ts';
 import { __sheetCss, __resetSheet } from '@emotion-mini/core';
 import { buildHead, SITE } from '../src/lib/seo.ts';
 import { metaFor } from '../src/lib/route-meta.ts';
@@ -25,6 +26,8 @@ import { primeRecipeBody } from '../src/content/recipe-bodies.ts';
 import { primePostBody } from '../src/content/post-bodies.ts';
 import { primeKnowledgeGraph } from '../src/content/knowledge-graph.ts';
 import { availableNavItems } from '../src/components/layout/Nav';
+import { fontPreloadTags, fontStyleTag } from '../src/theme/fonts.ts';
+import { darkTheme, lightTheme } from '../src/theme/tokens.ts';
 
 /* Local recipes: a recipe's body is not in the client bundle
  * (src/content/recipe-bodies.ts), but its prerendered page carries it — for
@@ -71,6 +74,11 @@ function withBase(path: string): string {
   // $FlowFixMe $TSIgnoreMe — import.meta.env available at runtime via Vite build.
   const base = (import.meta.env as Record<string, unknown>).BASE_URL ?? '/';
   return base.replace(/\/$/, '') + path;
+}
+
+/** The hosting base as Vite baked it in ('/' or '/portfolio/'). */
+function baseUrl(): string {
+  return String((import.meta.env as Record<string, unknown>).BASE_URL ?? '/');
 }
 
 export function prerenderPaths(): string[] {
@@ -143,6 +151,10 @@ export const siteMeta = {
   url: SITE.url.replace(/\/$/, ''),
 };
 
+/** Page background per theme, for the web manifest (scripts/prerender.mjs):
+ * read from the tokens so the splash colour can never drift from the page. */
+export const themeColors = { light: lightTheme.color.bg, dark: darkTheme.color.bg };
+
 export const feedItems = content.posts
   .slice()
   .sort((a, b) => (a.date < b.date ? 1 : -1))
@@ -157,9 +169,18 @@ export const feedItems = content.posts
 
 const CLIENT_SCRIPT = '/src/main.tsx';
 
+/* The day this build renders "as of": every date-dependent piece of markup
+ * (the footer's year, upcoming/past lists) uses it, and it is stamped on
+ * <html data-built> so the browser's first render can use the same day while
+ * it adopts the page (src/lib/today.ts). */
+export const BUILD_DAY: string = todayUtcIso();
+setPrerenderDay(BUILD_DAY);
+
 export function renderRoute(path: string): { html: string; cssErrors: string[] } {
   __resetSheet();
-  const body = renderToStaticMarkup(createApp(path));
+  /* renderToString, not renderToStaticMarkup: the browser ADOPTS this markup
+   * (src/app/boot.ts), and React needs its text-boundary markers for that. */
+  const body = renderToString(createApp(path));
   const css = __sheetCss();
 
   /* Emotion collected raw CSS text; catch anything that serialized wrong. */
@@ -190,27 +211,34 @@ export function renderRoute(path: string): { html: string; cssErrors: string[] }
     .map((item) => `<a href="${withBase(item.to)}" class="nav-link">${item.label}</a>`)
     .join('');
 
+  /* The page template. Its notes live HERE, not as HTML comments: a comment
+   * in the template is shipped in every page, and the home page's HTML has to
+   * stay inside one network round trip (about 14 kB compressed).
+   *
+   * - R7A-8: without JS the page defaults dark (the :root tokens);
+   *   theme-init.js resolves the palette at runtime. The theme-color media
+   *   pairs cover browser chrome only, not the page background (accepted).
+   * - Type: IBM Plex, self-hosted (src/theme/fonts.ts). Two files are
+   *   preloaded for the first screen; the rest load when a page uses them.
+   * - R7A-1/R7A-2: without JS the menu button, search form and tag chips are
+   *   inert controls. The <noscript> style hides them and reveals the static
+   *   mobile nav after #root, so handheld no-JS users keep full navigation. */
   const html = `<!doctype html>
-<html lang="en">
+<html lang="en" data-built="${BUILD_DAY}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- R7A-8: Without JS the page defaults dark (the :root tokens);
-         theme-init.js resolves the light/dark palette at runtime. The
-         theme-color media pairs cover browser chrome only, not the page
-         background — an accepted trade-off (R7A-8 disposition: accept). -->
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="${darkTheme.color.bg}" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="${lightTheme.color.bg}" />
 ${head}
     <link rel="icon" href="${withBase('/favicon.svg')}" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="${withBase('/apple-touch-icon.png')}" />
     <link rel="manifest" href="${withBase('/site.webmanifest')}" />
-${preloads ? preloads + '\n' : ''}    <script src="${withBase('/theme-init.js')}"></script>
+${preloads ? preloads + '\n' : ''}    ${fontPreloadTags(baseUrl()).join('\n    ')}
+    ${fontStyleTag(baseUrl())}
+    <script src="${withBase('/theme-init.js')}"></script>
     <script src="${withBase('/spa-gate.js')}"></script>
     <style id="emotion-prerender">${css}</style>
-    <!-- R7A-1/R7A-2: without JS the menu button, search form and tag chips
-         are inert controls — hide them and reveal the static mobile nav so
-         handheld no-JS users keep full navigation. -->
     <noscript><style>
       [data-testid="menu-button"] { display: none !important; }
       [data-testid="post-search-form"] { display: none !important; }
@@ -220,9 +248,8 @@ ${preloads ? preloads + '\n' : ''}    <script src="${withBase('/theme-init.js')}
     </style></noscript>
   </head>
   <body>
-    <div id="root">${body}</div>
+    <div id="root" data-prerendered="${path}">${body}</div>
 
-    <!-- R7A-1: static mobile nav — revealed when JS is disabled via noscript CSS -->
     <nav class="static-mobile-nav" aria-label="Primary">
       ${staticNav}
     </nav>

@@ -159,6 +159,21 @@ export function withBase(path: string): string {
   return import.meta.env.BASE_URL.replace(/\/$/, '') + path;
 }
 
+/**
+ * An address ON THIS SITE as a same-origin path; any other address unchanged.
+ *
+ * Content names its own files by their public address (a podcast's MP3, its
+ * transcript). Loading them by that address only works where the page itself
+ * is served from that origin: a local preview, a staging copy or a fork loads
+ * them cross-origin, and the page's own Content-Security-Policy (media-src
+ * 'self') refuses that. As a path, the file comes from wherever the page did.
+ */
+export function sameOriginPath(url: string): string {
+  const site = SITE.url;
+  if (url === site || url === `${site}/`) return withBase('/');
+  return url.startsWith(`${site}/`) ? withBase(url.slice(site.length)) : url;
+}
+
 /** Root-absolute src/href values inside build-rendered markdown ("/posts/x.svg",
  * "/writing/y") get the deploy base too — the markdown pipeline cannot know it,
  * and without it every in-body image and link 404s under /portfolio/. */

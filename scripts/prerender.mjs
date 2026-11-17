@@ -90,7 +90,7 @@ function applyLimit(paths) {
 }
 
 async function writeArtifacts(mod) {
-  const { siteMeta, feedItems, sitemapPaths, sitemapDates } = mod;
+  const { siteMeta, feedItems, sitemapPaths, sitemapDates, themeColors } = mod;
   /* R2C-1: origin comes from the app's own SITE.url (via siteMeta) — never a
    * divergent env default. URL FORM matches canonicals exactly (no forced
    * trailing slash): '/' stays '/', '/writing' stays '/writing'. */
@@ -233,8 +233,8 @@ ${items.join('\n')}
          * actually resolves for most first-time mobile users (system light)
          * — dark hard-coded here meant a dark splash flashing to light.
          * PNG icon included: some Android launchers reject SVG-only icons. */
-        background_color: '#eef1f6',
-        theme_color: '#eef1f6',
+        background_color: themeColors.light,
+        theme_color: themeColors.light,
         icons: [
           { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },

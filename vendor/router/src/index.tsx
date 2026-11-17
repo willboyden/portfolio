@@ -58,7 +58,12 @@ export function parseLocation(href: string): Location {
   const queryIndex = beforeHash.indexOf('?');
   const pathname = queryIndex === -1 ? beforeHash : beforeHash.slice(0, queryIndex);
   const search = queryIndex === -1 ? '' : beforeHash.slice(queryIndex);
-  return { pathname: pathname || '/', search, hash };
+  /* One spelling per page. A page is prerendered as `/writing/a-post` and
+   * served at `/writing/a-post/`; if the two reached components differently,
+   * anything that prints or compares the path would render one thing on the
+   * server and another in the browser, and the browser ADOPTS the server's
+   * markup (hydration keeps attributes as they are). */
+  return { pathname: normalize(pathname), search, hash };
 }
 
 function normalize(path: string): string {
@@ -120,7 +125,10 @@ export function resolveRoute(routes: RouteDefinition[], pathname: string): Route
   return catchAll ? { path: '*', params: {} } : null;
 }
 
-function readBrowserLocation(): Location {
+/** The app-relative location in the address bar (hosting base stripped).
+ * Exported for the boot code, which decides how to take the page over from
+ * the same reading the router's first render uses. */
+export function readBrowserLocation(): Location {
   if (typeof window === 'undefined') return { pathname: '/', search: '', hash: '' };
   /* R8 (GitHub Pages): the site can be served under a sub-path
    * (github.io/<repo>/). Vite injects import.meta.env.BASE_URL at build time

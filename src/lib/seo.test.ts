@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SITE, absoluteUrl, buildHead, escapeHtml, joinUrl, pageMeta } from 'app/lib/seo';
+import { SITE, absoluteUrl, buildHead, escapeHtml, joinUrl, pageMeta, sameOriginPath, withBase } from 'app/lib/seo';
 
 describe('SITE constants', () => {
   it('pinned values', () => {
@@ -209,5 +209,28 @@ describe('buildHead', () => {
     expect(tags.some((t) => t.includes('article:published_time'))).toBe(true);
     const site = buildHead(pageMeta({ title: 'About', description: 'd', path: '/about' }));
     expect(site.some((t) => t.includes('article:published_time'))).toBe(false);
+  });
+});
+
+describe('sameOriginPath', () => {
+  it('turns an address on this site into a path the page loads from its own origin', () => {
+    expect(sameOriginPath(`${SITE.url}/podcasts/episode.mp3`)).toBe(withBase('/podcasts/episode.mp3'));
+    expect(sameOriginPath(`${SITE.url}/podcasts/episode.txt`)).toBe(withBase('/podcasts/episode.txt'));
+    expect(sameOriginPath(SITE.url)).toBe(withBase('/'));
+    expect(sameOriginPath(`${SITE.url}/`)).toBe(withBase('/'));
+  });
+
+  it('leaves every other address exactly as it is', () => {
+    for (const url of [
+      'https://example.com/ep-1.mp3',
+      'https://www.youtube.com/watch?v=abc',
+      /* The site's origin as a PREFIX of another host is not this site. */
+      `${SITE.url}.evil.example/x.mp3`,
+      `${SITE.url}x/y.mp3`,
+      '/already/a/path.mp3',
+      '',
+    ]) {
+      expect(sameOriginPath(url), url).toBe(url);
+    }
   });
 });

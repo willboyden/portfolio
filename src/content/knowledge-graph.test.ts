@@ -8,6 +8,7 @@ import {
   adjacency,
   cachedKnowledgeGraph,
   knowledgeGraphUrl,
+  knowledgeGraphOnce,
   loadKnowledgeGraph,
   primeKnowledgeGraph,
   resetKnowledgeGraphForTests,
@@ -75,6 +76,39 @@ describe('loadKnowledgeGraph', () => {
   it('uses a primed graph without fetching', async () => {
     primeKnowledgeGraph(graph);
     await expect(loadKnowledgeGraph('h1', reply(500, null))).resolves.toBe(cachedKnowledgeGraph());
+  });
+});
+
+describe('knowledgeGraphOnce (the promise a component waits on)', () => {
+  it('is the same promise on every call for one content hash, and fetches once', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+      calls += 1;
+      return { ok: true, status: 200, json: async () => graph };
+    };
+    const first = knowledgeGraphOnce('h1', fetcher);
+    const second = knowledgeGraphOnce('h1', fetcher);
+    /* A component re-rendering while it waits must get the SAME promise, or
+     * every render would start waiting again. */
+    expect(second).toBe(first);
+    await expect(first).resolves.toMatchObject({ contentHash: 'h1' });
+    expect(knowledgeGraphOnce('h1', fetcher)).toBe(first);
+    expect(calls).toBe(1);
+  });
+
+  it('never rejects: a load that failed settles to undefined', async () => {
+    await expect(knowledgeGraphOnce('h1', reply(500, null))).resolves.toBeUndefined();
+    /* Settled is settled: the failed answer is kept for this hash. */
+    await expect(knowledgeGraphOnce('h1', reply(200, graph))).resolves.toBeUndefined();
+  });
+
+  it('another content hash starts another load, and the test reset forgets the promise', async () => {
+    const failed = knowledgeGraphOnce('h1', reply(404, null));
+    resetKnowledgeGraphForTests();
+    const again = knowledgeGraphOnce('h1', reply(200, graph));
+    expect(again).not.toBe(failed);
+    await expect(again).resolves.toMatchObject({ contentHash: 'h1' });
+    await expect(failed).resolves.toBeUndefined();
   });
 });
 

@@ -4,8 +4,9 @@
  * prerendered HTML and hydrated client markup agree.
  */
 import { StrictMode, createElement, useEffect, type ComponentType, type ReactNode } from 'react';
+import { useIsomorphicLayoutEffect } from 'app/lib/hooks';
 import { RouterProvider, Outlet, useLocation, useParams, type RouteDefinition } from '@portfolio/router';
-import { retirePrerenderedTag } from '@emotion/react';
+import { completeStyleBoot } from '@emotion/react';
 import { applyDocumentMeta } from 'app/lib/seo';
 import { metaFor } from 'app/lib/route-meta';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
@@ -55,11 +56,16 @@ export const routes: RouteDefinition[] = [
 ];
 
 function Shell(): ReactNode {
-  /* R1A-10: after the first client commit (styles live in the client sheet),
-   * retire the prerendered critical-CSS copy. No unstyled window: it happens
-   * after commit, and on prerender/server this effect never runs. */
-  useEffect(() => {
-    retirePrerenderedTag();
+  /* R1A-10: the prerendered stylesheet styles the page until the first client
+   * commit; then the client's sheet takes over, written once (or not at all
+   * when it is the same text). A LAYOUT effect, so it happens before the
+   * browser paints that commit; on prerender/server it never runs. */
+  useIsomorphicLayoutEffect(() => {
+    completeStyleBoot();
+    /* The app's first commit is in the document: say so where tools can see
+     * it (src/main.tsx sets data-boot when it starts; the browser suite waits
+     * for this before it touches the page). */
+    document.documentElement.setAttribute('data-ready', '');
   }, []);
   /* R2C-3: SPA navigations must update <title>/description/canonical — the
    * values come from the SAME metaFor() the prerender used, so DOM and static

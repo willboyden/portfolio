@@ -12,7 +12,8 @@
  * every *.test.* file. A module no test reaches has zero unit coverage.
  *
  * Documented exceptions (exercised by the build/e2e pipeline instead, never
- * wildcards): src/main.tsx — the browser bootstrap the CDP suite boots.
+ * wildcards): src/main.tsx and src/app/start.tsx — the browser bootstrap the
+ * CDP suite boots.
  * vendor/markdown/.smoke* — scratch, excluded from the walk.
  */
 import { describe, expect, it } from 'vitest';
@@ -109,7 +110,14 @@ const reachable = new Set<string>();
 }
 
 /** Modules exercised by the build+e2e pipeline, not unit tests. Exact list. */
-const PIPELINE_ONLY = new Set([join(SRC, 'main.tsx'), join(SRC, 'vite-env.d.ts')]);
+const PIPELINE_ONLY = new Set([
+  /* The entry script and the start module it imports: together the browser
+   * bootstrap. Both run on import and need a real document; the browser suite
+   * exercises them on every page (e2e/specs/13-boot.e2e.mjs). */
+  join(SRC, 'main.tsx'),
+  join(SRC, 'app', 'start.tsx'),
+  join(SRC, 'vite-env.d.ts'),
+]);
 
 describe('coverage inventory — every src/ module is exercised by tests', () => {
   const srcModules = SOURCE_FILES.filter((f) => f.startsWith(SRC_PREFIX));

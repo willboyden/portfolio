@@ -15,7 +15,7 @@
  * The home page shows the same explorer (KnowledgeGraphPreview), smaller and
  * without the full list, which stays on /graph.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { Link, useNavigate } from '@portfolio/router';
 import { Button, EmptyState, Heading, Spinner } from 'app/components/ui';
@@ -23,7 +23,7 @@ import { contentHash } from 'app/content';
 import {
   adjacency,
   cachedKnowledgeGraph,
-  loadKnowledgeGraph,
+  knowledgeGraphOnce,
   type GraphNode,
   type GraphNodeType,
   type KnowledgeGraph as Graph,
@@ -48,14 +48,20 @@ export interface TypeInfo {
 
 /** Display order and look of each node type. */
 export const TYPE_INFO: Record<GraphNodeType, TypeInfo> = {
+  /* Colour: the three main kinds of page take the three categorical data
+   * colours (tokens.series1..3, checked on every pair for colour-vision
+   * deficiency). Every other kind is a neutral: sections are ink and the
+   * largest dots, the small kinds are grey, topics are the smallest and
+   * lightest. A kind is never told apart by hue alone: the legend names it,
+   * and so do the tooltip and the side panel. */
   section: { label: 'Section', group: 'Sections', radius: 9, color: 'text' },
-  project: { label: 'Project', group: 'Projects', radius: 6.5, color: 'accent' },
-  capability: { label: 'AI capability', group: 'AI Engineering', radius: 6.5, color: 'warning' },
-  recipe: { label: 'Local recipe', group: 'Local recipes', radius: 6, color: 'danger' },
-  post: { label: 'Post', group: 'Writing', radius: 5.5, color: 'success' },
+  project: { label: 'Project', group: 'Projects', radius: 6.5, color: 'series1' },
+  capability: { label: 'AI capability', group: 'AI Engineering', radius: 6.5, color: 'series3' },
+  recipe: { label: 'Local recipe', group: 'Local recipes', radius: 6, color: 'textMuted' },
+  post: { label: 'Post', group: 'Writing', radius: 5.5, color: 'series2' },
   series: { label: 'Series', group: 'Series', radius: 6, color: 'textMuted' },
-  talk: { label: 'Talk', group: 'Talks', radius: 5.5, color: 'focus' },
-  video: { label: 'Video', group: 'Videos', radius: 5.5, color: 'focus' },
+  talk: { label: 'Talk', group: 'Talks', radius: 5.5, color: 'textMuted' },
+  video: { label: 'Video', group: 'Videos', radius: 5.5, color: 'textMuted' },
   topic: { label: 'Topic', group: 'Topics', radius: 3, color: 'textSubtle' },
 };
 
@@ -195,8 +201,9 @@ const PageHeader = styled.header`
 const Lede = styled.p`
   margin: 0;
   max-width: 66ch;
+  font-family: ${(p) => p.theme.font.serif};
   font-size: ${(p) => p.theme.font.sizes.lg};
-  line-height: ${(p) => p.theme.font.leading.relaxed};
+  line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textMuted};
 `;
 
@@ -204,8 +211,6 @@ const MetaLine = styled.p`
   margin: 0;
   font-family: ${(p) => p.theme.font.mono};
   font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
   color: ${(p) => p.theme.color.textSubtle};
 `;
 
@@ -227,11 +232,14 @@ const SearchInput = styled.input`
   width: 100%;
   box-sizing: border-box;
   padding: ${(p) => `${p.theme.space[2]} ${p.theme.space[3]}`};
-  border: 1px solid ${(p) => p.theme.color.border};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   border-radius: ${(p) => p.theme.radius.md};
   background: ${(p) => p.theme.color.surface};
   color: ${(p) => p.theme.color.text};
   font: inherit;
+  &:hover {
+    border-color: ${(p) => p.theme.color.rule};
+  }
   &:focus-visible {
     outline: 2px solid ${(p) => p.theme.color.focus};
     outline-offset: 2px;
@@ -298,14 +306,19 @@ const Toggle = styled.button`
   align-items: center;
   gap: ${(p) => p.theme.space[2]};
   padding: ${(p) => `${p.theme.space[1]} ${p.theme.space[3]}`};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.full};
-  background: ${(p) => p.theme.color.surface};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
+  border-radius: ${(p) => p.theme.radius.sm};
+  background: transparent;
   color: ${(p) => p.theme.color.text};
   font: inherit;
   font-size: ${(p) => p.theme.font.sizes.sm};
   cursor: pointer;
+  &:hover {
+    border-color: ${(p) => p.theme.color.rule};
+    background: ${(p) => p.theme.color.accentSoft};
+  }
   &[aria-pressed='false'] {
+    border-style: dashed;
     color: ${(p) => p.theme.color.textSubtle};
     background: transparent;
     text-decoration: line-through;
@@ -336,8 +349,7 @@ const CanvasWrap = styled.div<{ $compact: boolean }>`
   position: relative;
   min-height: ${(p) => (p.$compact ? '360px' : '420px')};
   height: ${(p) => (p.$compact ? 'min(60vh, 520px)' : 'min(70vh, 640px)')};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
+  border: 1px solid ${(p) => p.theme.color.borderStrong};
   background: ${(p) => p.theme.color.bgSunken};
   overflow: hidden;
 `;
@@ -352,8 +364,7 @@ const LoadingBox = styled.p`
   margin: 0;
   min-height: 360px;
   height: min(60vh, 520px);
-  border: 1px dashed ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
+  border: 1px dashed ${(p) => p.theme.color.borderStrong};
   background: ${(p) => p.theme.color.bgSunken};
   color: ${(p) => p.theme.color.textSubtle};
   font-size: ${(p) => p.theme.font.sizes.sm};
@@ -407,10 +418,10 @@ const Panel = styled.aside<{ $compact?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${(p) => p.theme.space[3]};
-  padding: ${(p) => p.theme.space[4]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.lg};
-  background: ${(p) => p.theme.color.surface};
+  /* An open column under a rule, like every other block on the site. The
+   * inline padding keeps focus rings and the scrollbar off the edge. */
+  padding: ${(p) => p.theme.space[3]} ${(p) => p.theme.space[2]} ${(p) => p.theme.space[2]} 0;
+  border-top: 2px solid ${(p) => p.theme.color.rule};
   align-self: start;
   @media (min-width: ${(p) => p.theme.breakpoint.lg}) {
     max-height: ${(p) => (p.$compact ? 'min(60vh, 520px)' : 'min(70vh, 640px)')};
@@ -426,11 +437,11 @@ const PanelText = styled.p`
 
 const GroupTitle = styled.h3`
   margin: ${(p) => p.theme.space[2]} 0 0;
-  font-family: ${(p) => p.theme.font.mono};
-  font-size: ${(p) => p.theme.font.sizes.xs};
-  letter-spacing: ${(p) => p.theme.font.tracking.wide};
-  text-transform: uppercase;
-  color: ${(p) => p.theme.color.textSubtle};
+  font-family: ${(p) => p.theme.font.sans};
+  font-size: ${(p) => p.theme.font.sizes.sm};
+  font-weight: ${(p) => p.theme.font.weights.semibold};
+  letter-spacing: ${(p) => p.theme.font.tracking.normal};
+  color: ${(p) => p.theme.color.text};
 `;
 
 const LinkList = styled.ul`
@@ -470,17 +481,18 @@ const ChipButton = styled.button`
     min-height: 44px;
   }
   padding: ${(p) => `2px ${p.theme.space[2]}`};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.full};
+  border: 1px solid transparent;
+  border-radius: ${(p) => p.theme.radius.sm};
   background: ${(p) => p.theme.color.bgSunken};
-  color: ${(p) => p.theme.color.textMuted};
-  font: inherit;
-  font-size: ${(p) => p.theme.font.sizes.sm};
+  color: ${(p) => p.theme.color.text};
+  font-family: ${(p) => p.theme.font.mono};
+  font-size: ${(p) => p.theme.font.sizes.xs};
+  line-height: ${(p) => p.theme.font.leading.normal};
   cursor: pointer;
   &:hover,
   &:focus-visible {
-    color: ${(p) => p.theme.color.text};
-    border-color: ${(p) => p.theme.color.accentBorder};
+    background: ${(p) => p.theme.color.mark};
+    color: ${(p) => p.theme.color.markInk};
   }
 `;
 
@@ -515,7 +527,7 @@ const Entries = styled.ul`
   padding: 0;
   list-style: none;
   display: grid;
-  gap: ${(p) => p.theme.space[3]};
+  gap: ${(p) => p.theme.space[4]} ${(p) => p.theme.space[7]};
   grid-template-columns: minmax(0, 1fr);
   @media (min-width: ${(p) => p.theme.breakpoint.md}) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -523,9 +535,8 @@ const Entries = styled.ul`
 `;
 
 const Entry = styled.li`
-  padding: ${(p) => p.theme.space[3]};
-  border: 1px solid ${(p) => p.theme.color.border};
-  border-radius: ${(p) => p.theme.radius.md};
+  padding-top: ${(p) => p.theme.space[3]};
+  border-top: 1px solid ${(p) => p.theme.color.border};
   & > a {
     font-weight: 600;
     color: ${(p) => p.theme.color.accent};
@@ -1035,38 +1046,46 @@ function Explorer({ graph, showList = true, level = 2, compact = false }: Explor
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
-/** The graph: primed (prerender, tests) or fetched once; `failed` if it could not load. */
+/**
+ * The graph, for rendering.
+ *
+ * During the prerender (and in tests) it is primed, so this answers at once
+ * and the page is rendered with the whole explorer in it. In the browser the
+ * graph is a separate file: the first call starts the one fetch and WAITS
+ * for it (React `use`). Under a <Suspense> boundary that means:
+ *  - while the prerendered page is being adopted, React leaves the explorer's
+ *    server markup exactly as it is until the file is here, then attaches to
+ *    it: no flash to a loading state, and the first render matches the markup;
+ *  - after an in-app navigation, the boundary's fallback (the loading state)
+ *    shows until the file is here.
+ * A load that failed gives `failed: true`.
+ */
 export function useKnowledgeGraph(): { graph: Graph | undefined; failed: boolean } {
-  const [graph, setGraph] = useState<Graph | undefined>(() => cachedKnowledgeGraph());
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    if (graph) return;
-    let live = true;
-    loadKnowledgeGraph(contentHash).then(
-      (g) => {
-        if (live) setGraph(g);
-      },
-      () => {
-        if (live) setFailed(true);
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [graph]);
-  return { graph, failed };
+  const ready = cachedKnowledgeGraph();
+  if (ready) return { graph: ready, failed: false };
+  /* No graph and no browser: a server render that was not primed. There is
+   * nothing to wait for; the caller renders its loading state. */
+  if (typeof window === 'undefined') return { graph: undefined, failed: false };
+  const loaded = use(knowledgeGraphOnce(contentHash));
+  return { graph: loaded, failed: loaded === undefined };
 }
 
-/**
- * The explorer for the home page: the same graph, search and links panel, a
- * smaller canvas, no full list (that stays on /graph). Sits inside a section
- * whose title is an h2, so the panel's headings start at h3.
- */
-export function KnowledgeGraphPreview(): ReactNode {
+function PreviewLoading(): ReactNode {
+  return (
+    <div data-testid="home-graph">
+      <LoadingBox role="status">Loading the graph…</LoadingBox>
+    </div>
+  );
+}
+
+function PreviewBody(): ReactNode {
   const { graph, failed } = useKnowledgeGraph();
   if (graph) {
     return (
-      <div data-testid="home-graph">
+      /* data-await: this markup was rendered FROM the graph file, which the
+       * bundle does not carry. The boot code reads the mark and fetches the
+       * file before it adopts the page (src/main.tsx). */
+      <div data-testid="home-graph" data-await="knowledge-graph">
         <Explorer graph={graph} showList={false} level={3} compact />
       </div>
     );
@@ -1078,20 +1097,51 @@ export function KnowledgeGraphPreview(): ReactNode {
       </PanelText>
     );
   }
+  return <PreviewLoading />;
+}
+
+/**
+ * The explorer for the home page: the same graph, search and links panel, a
+ * smaller canvas, no full list (that stays on /graph). Sits inside a section
+ * whose title is an h2, so the panel's headings start at h3.
+ */
+export function KnowledgeGraphPreview(): ReactNode {
   return (
-    <div data-testid="home-graph">
-      <LoadingBox role="status">Loading the graph…</LoadingBox>
-    </div>
+    <Suspense fallback={<PreviewLoading />}>
+      <PreviewBody />
+    </Suspense>
   );
 }
 
-export function KnowledgeGraph(): ReactNode {
+/** "N pages · N shared topics · N connections", once the graph is here. */
+function GraphCount(): ReactNode {
+  const { graph } = useKnowledgeGraph();
+  if (!graph) return null;
+  const pages = graph.nodes.filter((n) => n.type !== 'topic' && n.type !== 'section' && n.type !== 'series').length;
+  const topics = graph.nodes.filter((n) => n.type === 'topic').length;
+  return (
+    <MetaLine data-testid="graph-count" data-await="knowledge-graph">
+      {pages} pages · {topics} shared topics · {graph.edges.length} connections
+    </MetaLine>
+  );
+}
+
+function GraphBody(): ReactNode {
   const { graph, failed } = useKnowledgeGraph();
+  if (graph) return <Explorer graph={graph} />;
+  if (failed) {
+    return (
+      <EmptyState
+        icon="search"
+        title="The graph did not load"
+        description="Reload the page to try again; every page is also listed under Projects, Writing and AI Engineering."
+      />
+    );
+  }
+  return <Spinner label="Loading the graph" />;
+}
 
-  const pages =
-    graph?.nodes.filter((n) => n.type !== 'topic' && n.type !== 'section' && n.type !== 'series').length ?? 0;
-  const topics = graph?.nodes.filter((n) => n.type === 'topic').length ?? 0;
-
+export function KnowledgeGraph(): ReactNode {
   return (
     <>
       <PageHeader>
@@ -1103,23 +1153,13 @@ export function KnowledgeGraph(): ReactNode {
           and tools they share and by the pages that reference each other. Pick a node to get links to every page
           connected to it. The graph is rebuilt from the site&apos;s content on every update.
         </Lede>
-        {graph && (
-          <MetaLine data-testid="graph-count">
-            {pages} pages · {topics} shared topics · {graph.edges.length} connections
-          </MetaLine>
-        )}
+        <Suspense fallback={null}>
+          <GraphCount />
+        </Suspense>
       </PageHeader>
-      {graph ? (
-        <Explorer graph={graph} />
-      ) : failed ? (
-        <EmptyState
-          icon="search"
-          title="The graph did not load"
-          description="Reload the page to try again; every page is also listed under Projects, Writing and AI Engineering."
-        />
-      ) : (
-        <Spinner label="Loading the graph" />
-      )}
+      <Suspense fallback={<Spinner label="Loading the graph" />}>
+        <GraphBody />
+      </Suspense>
     </>
   );
 }

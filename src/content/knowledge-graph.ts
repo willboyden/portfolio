@@ -11,7 +11,7 @@
  *      URL versioned by content.json's contentHash, which changes whenever any
  *      content does.
  */
-import { z } from 'zod';
+import { z } from 'app/lib/z';
 import { withBase } from 'app/lib/seo';
 
 export const GRAPH_NODE_TYPES = [
@@ -101,6 +101,26 @@ export async function loadKnowledgeGraph(
   return cached;
 }
 
+/* One load per content hash, shared by everything that waits for the graph. */
+let pending: { hash: string; promise: Promise<KnowledgeGraph | undefined> } | undefined;
+
+/**
+ * The graph as ONE promise per content hash, for components that wait for it
+ * (React's `use`): the same promise on every render, so waiting on it never
+ * starts a second fetch. It never rejects: a load that failed settles to
+ * `undefined`, and the component shows its "did not load" state.
+ */
+export function knowledgeGraphOnce(
+  contentHash: string,
+  fetcher?: (url: string) => Promise<Pick<Response, 'ok' | 'status' | 'json'>>,
+): Promise<KnowledgeGraph | undefined> {
+  if (pending?.hash !== contentHash) {
+    const load = fetcher ? loadKnowledgeGraph(contentHash, fetcher) : loadKnowledgeGraph(contentHash);
+    pending = { hash: contentHash, promise: load.catch(() => undefined) };
+  }
+  return pending.promise;
+}
+
 /** Neighbours of each node (indexes), and each node's degree. */
 export function adjacency(graph: KnowledgeGraph): number[][] {
   const out = graph.nodes.map((): number[] => []);
@@ -114,4 +134,5 @@ export function adjacency(graph: KnowledgeGraph): number[][] {
 /** Reset the cache (tests only). */
 export function resetKnowledgeGraphForTests(): void {
   cached = undefined;
+  pending = undefined;
 }

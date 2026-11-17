@@ -16,6 +16,7 @@ import {
   serializeStyles,
   __sheetCss,
   adoptPrerenderedTag,
+  completeStyleBoot,
   retirePrerenderedTag,
   type StyleObject,
   type StyleValue,
@@ -182,7 +183,7 @@ export function adoptPrerenderedStyleSheet(): void {
 }
 
 /** Re-export: remove the retired prerender tag after first client commit. */
-export { retirePrerenderedTag };
+export { completeStyleBoot, retirePrerenderedTag };
 
 /* Emotion also exports `withEmotionCache` / `CacheProvider`; the app never used
  * them, and a no-op shim here would only hide mistakes, so they are omitted. */

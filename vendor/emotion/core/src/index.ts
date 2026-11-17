@@ -42,7 +42,23 @@ export interface Sheet {
   /** class name -> flattened rule text, insertion ordered (dedupe + prerender). */
   inserted: Map<string, string>;
   container: HTMLElement | null;
+  /**
+   * The sheet's <style>. Without a prerendered page it holds every recorded
+   * rule and is rewritten as rules arrive. On a prerendered page it is the
+   * ADOPTED tag: the page's own stylesheet, which is never written to again.
+   */
   tag: HTMLStyleElement | null;
+  /** The adopted tag's text: the rules the document had from the first byte. */
+  base?: string | null;
+  /** Rules the client registered that the base does not contain, in order. */
+  late?: Map<string, string>;
+  /** The second <style>, holding only `late` (created when the first one is written). */
+  lateTag?: HTMLStyleElement | null;
+  /**
+   * True from adoption until the app's first commit (`completeStyleBoot`):
+   * late rules are recorded but not yet written.
+   */
+  booting?: boolean;
 }
 
 const SHEET_KEY = '__emotionMiniSheet__';
@@ -62,66 +78,142 @@ export function sheetToCss(inserted: Map<string, string>): string {
   return [...inserted.values()].join('\n');
 }
 
+/*
+ * How rules reach the document.
+ *
+ * A <style> has no cheap "add one rule" for arbitrary rule text: assigning its
+ * text makes the browser parse all of it again. Writing the whole sheet for
+ * every new rule is therefore quadratic, and on a prerendered page it is also
+ * wrong: the page arrives fully styled, and replacing its stylesheet with "the
+ * rules the client has registered so far" un-styles whatever the client has
+ * not rendered yet (a part of the page that is adopted later, or everything
+ * while a first render is spread over several tasks).
+ *
+ * So on a prerendered page the adopted stylesheet is a fixed BASE. A rule the
+ * client registers is looked up in the base text; names are content hashes,
+ * so a rule the server rendered is found there verbatim and costs nothing.
+ * Only a rule the base lacks is LATE: those live in a second, small <style>
+ * after the base, and only that one is ever rewritten.
+ */
 function writeRule(sheet: Sheet, key: string, styles: string): void {
   /* Always record: during prerender the sheet is the CSS extraction source. */
   if (sheet.inserted.get(key) === styles) return;
   sheet.inserted.set(key, styles);
   if (typeof document === 'undefined') return;
 
+  if (typeof sheet.base === 'string') {
+    const late = (sheet.late ??= new Map<string, string>());
+    if (sheet.base.includes(styles)) {
+      /* The document already has it. (If this key was late under another
+       * text, that text goes.) */
+      if (late.delete(key) && !sheet.booting) writeLate(sheet);
+      return;
+    }
+    late.set(key, styles);
+    /* Boot: hold late rules until the first commit, then write them once. */
+    if (!sheet.booting) writeLate(sheet);
+    return;
+  }
+
+  writeSheet(sheet);
+}
+
+/** No prerendered sheet: put every recorded rule in the document as one <style>. */
+function writeSheet(sheet: Sheet): void {
   const container = sheet.container ?? document.head;
   if (!sheet.tag || !container.contains(sheet.tag)) {
     sheet.tag = document.createElement('style');
     sheet.tag.setAttribute('data-emotion', 'mini');
     container.appendChild(sheet.tag);
   }
-  sheet.tag.textContent = sheetToCss(sheet.inserted);
+  setText(sheet.tag, sheetToCss(sheet.inserted));
+}
+
+/** Prerendered sheet: write the rules it lacks into the second <style>. */
+function writeLate(sheet: Sheet): void {
+  const css = sheetToCss(sheet.late ?? new Map());
+  if (!sheet.lateTag) {
+    if (css === '') return;
+    const container = sheet.container ?? document.head;
+    sheet.lateTag = document.createElement('style');
+    /* Its own value, so "the page's stylesheet" still names exactly one tag. */
+    sheet.lateTag.setAttribute('data-emotion', 'mini-late');
+    /* After the base: a late rule wins a tie against a prerendered one, as a
+     * rule registered later always has. */
+    container.appendChild(sheet.lateTag);
+  }
+  setText(sheet.lateTag, css);
+}
+
+/** Assigning text makes the browser parse it again even when it is unchanged. */
+function setText(tag: HTMLStyleElement, css: string): void {
+  if (tag.textContent !== css) tag.textContent = css;
 }
 
 /** Test/prerender helper: forget all generated CSS. */
 export function __resetSheet(): void {
   const sheet = getSheet();
   sheet.inserted.clear();
+  sheet.booting = false;
+  sheet.base = null;
+  sheet.late?.clear();
+  if (sheet.lateTag) sheet.lateTag.textContent = '';
   if (sheet.tag) sheet.tag.textContent = '';
 }
 
 /**
- * R1A-10 fix: on boot, adopt the prerendered <style id="emotion-prerender">
- * as the client sheet's tag instead of minting a second one. Without this the
- * shipped page carries the full critical CSS twice until/unless dedupe
- * (identical bytes, but ~2x CSS bytes in DevTools and a second tag).
+ * R1A-10: on boot, adopt the prerendered <style id="emotion-prerender"> as the
+ * sheet's tag instead of minting a second copy of the same rules (the page
+ * would carry its critical CSS twice).
  *
- * Safe because names are content-hashes: the client regenerates byte-identical
- * rules, so overwriting textContent on first registration converges to the
- * same sheet. The id attribute is dropped on adoption so a later
- * document.getElementById can't double-target the live tag.
+ * From here on that tag's text is the BASE (see writeRule): it is never
+ * written to, so nothing the server styled can lose its styles, however late
+ * the client gets to it. Adoption also starts BOOT: until `completeStyleBoot`
+ * (the app's first commit), rules the base lacks are recorded and not written.
+ *
+ * The id is dropped on adoption so a later getElementById cannot target the
+ * live tag as if it were a stale copy.
  */
 export function adoptPrerenderedTag(el: HTMLElement | null): void {
   if (!el || typeof document === 'undefined') return;
   const sheet = getSheet();
-  if (!sheet.tag) {
-    el.removeAttribute('id');
-    el.setAttribute('data-emotion', 'mini');
-    sheet.tag = el as HTMLStyleElement;
-    /* inserted stays empty; the first registerStyle overwrites textContent
-     * with the client-generated (identical) sheet. */
-    return;
-  }
-  /* The client sheet already exists (module-scope css()/keyframes() run during
-   * import evaluation, before main's body). The prerender copy is dead weight
-   * — the replace-render regenerates every rule into the live tag — but it
-   * must NOT be removed before React's first commit or the window between
-   * script-exec and first paint is unstyled. Tag it for removal by the app's
-   * root effect (runs after first commit, styles guaranteed in place). */
-  if (sheet.tag !== el) el.setAttribute('data-emotion-retire', '');
+  /* A tag the client made before adoption (a module-scope css()/keyframes()
+   * during import evaluation) is surplus: its rules are recorded, and the
+   * ones the base lacks are carried over as late rules just below. */
+  if (sheet.tag && sheet.tag !== el) sheet.tag.remove();
+  el.removeAttribute('id');
+  el.setAttribute('data-emotion', 'mini');
+  sheet.tag = el as HTMLStyleElement;
+  const base = el.textContent ?? '';
+  sheet.base = base;
+  sheet.late = new Map([...sheet.inserted].filter(([, styles]) => !base.includes(styles)));
+  sheet.lateTag = null;
+  sheet.booting = true;
 }
 
-/** Remove the retired prerender <style> — call from a post-commit effect. */
-export function retirePrerenderedTag(): void {
+/**
+ * End of boot. Call it once the app's first commit is in the document, from a
+ * LAYOUT effect: that runs before the browser paints, so a rule that only the
+ * client registered is in place for the first frame that needs it. When the
+ * client registered nothing the page did not already have (the usual case),
+ * this writes nothing at all.
+ */
+export function completeStyleBoot(): void {
   if (typeof document === 'undefined') return;
+  const sheet = getSheet();
+  if (sheet.booting) {
+    sheet.booting = false;
+    if (typeof sheet.base === 'string') writeLate(sheet);
+    else writeSheet(sheet);
+  }
+  /* Tags marked by older adoption code; nothing marks them any more. */
   for (const el of Array.from(document.querySelectorAll('style[data-emotion-retire]'))) {
     el.remove();
   }
 }
+
+/** The earlier name of `completeStyleBoot`, kept for callers written against it. */
+export const retirePrerenderedTag: () => void = completeStyleBoot;
 
 /** Test/prerender helper: CSS generated so far, insertion ordered. */
 export function __sheetCss(): string {
