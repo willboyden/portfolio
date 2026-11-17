@@ -128,6 +128,10 @@ The site has one idea and keeps to it: **paper, ink, and one highlighter**.
 The shared looks live in `src/theme/mixins.ts` (links, chips, labels, data
 text) and the primitives in `src/components/ui/` (see its README).
 
+A few of the redesign's decisions are a matter of taste and can be taken back
+one by one: `REDESIGN.md` lists them, with a switch (`src/site-choices.ts`),
+the old wording, or the one command for each.
+
 ### Themes
 
 Twelve themes, every one the same idea in different materials. A theme is a

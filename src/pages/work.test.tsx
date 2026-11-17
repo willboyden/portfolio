@@ -21,6 +21,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
+import { __resetSheet, __sheetCss } from '@emotion-mini/core';
+import { CHOICES } from 'app/site-choices';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 import type { Project, SiteContent, Talk, Video } from 'app/content';
 /* The real library, read straight from the build artifact (the module below is mocked). */
@@ -542,6 +544,30 @@ describe('Videos helpers', () => {
     expect(providerLabel('youtube')).toBe('YouTube');
     expect(providerLabel('vimeo')).toBe('Vimeo');
     expect(providerLabel('other')).toBe('Other');
+  });
+
+  it('phone rows: a small cover beside the title, or a full-width cover with that choice off', () => {
+    const video = (generated.videos as Video[])[0];
+    if (!video) return;
+    __resetSheet();
+    render(<VideoRowItem video={video} compact />, '/videos');
+    const compact = __sheetCss();
+    expect(compact).toContain('8.25rem');
+    expect(compact).toMatch(/display:\s*contents/);
+
+    __resetSheet();
+    render(<VideoRowItem video={video} compact={false} />, '/videos');
+    const wide = __sheetCss();
+    /* The layout from before the redesign: no grid, and the cover takes the
+     * row's width (up to 32rem). */
+    expect(wide).not.toContain('8.25rem');
+    expect(wide).not.toMatch(/display:\s*contents/);
+    expect(wide).toMatch(/max-width:\s*32rem/);
+
+    /* Left alone, a row follows the site's switch (src/site-choices.ts). */
+    __resetSheet();
+    render(<VideoRowItem video={video} />, '/videos');
+    expect(__sheetCss()).toBe(CHOICES.smallVideoCoversOnPhones ? compact : wide);
   });
 
   it('only the first cover on the page is fetched with the page; the rest wait until scrolled near', () => {

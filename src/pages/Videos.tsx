@@ -22,6 +22,7 @@ import { content, type Video } from 'app/content';
 import type { Tokens } from 'app/theme/tokens';
 import { formatDate, pluralize } from 'app/lib/format';
 import { todayUtcIso, useToday } from 'app/lib/today';
+import { CHOICES } from 'app/site-choices';
 import { sameOriginPath, withBase } from 'app/lib/seo';
 import { EmptyState, Heading, Icon, Tag, VisuallyHidden } from 'app/components/ui';
 
@@ -130,7 +131,36 @@ const VideoList = styled.ul`
   padding: 0;
 `;
 
-const VideoRow = styled.li<{ $cover: boolean }>`
+/** The phone layout of a row when small covers are on (src/site-choices.ts). */
+function compactPhoneRow(theme: Tokens, cover: boolean): string {
+  return `
+  @media (max-width: ${theme.breakpoint.md}) {
+    display: grid;
+    grid-template-columns: ${cover ? '8.25rem minmax(0, 1fr)' : 'minmax(0, 1fr)'};
+    column-gap: ${theme.space[3]};
+    row-gap: ${theme.space[2]};
+    align-items: start;
+
+    & > [data-part='main'] {
+      display: contents;
+    }
+    & > [data-part='main'] > * {
+      grid-column: 1 / -1;
+    }
+    & > [data-part='main'] > h3 {
+      grid-column: ${cover ? '2' : '1 / -1'};
+      grid-row: 1;
+      align-self: center;
+    }
+    & > [data-part='aside'] {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+  `;
+}
+
+const VideoRow = styled.li<{ $cover: boolean; $compact: boolean }>`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -147,29 +177,7 @@ const VideoRow = styled.li<{ $cover: boolean }>`
    * six rows a very long page, and made a picture, not the words, the largest
    * thing on the first screen.) The row's main column dissolves into the grid
    * so its parts can be placed one by one. */
-  @media (max-width: ${(p) => p.theme.breakpoint.md}) {
-    display: grid;
-    grid-template-columns: ${(p) => (p.$cover ? '8.25rem minmax(0, 1fr)' : 'minmax(0, 1fr)')};
-    column-gap: ${(p) => p.theme.space[3]};
-    row-gap: ${(p) => p.theme.space[2]};
-    align-items: start;
-
-    & > [data-part='main'] {
-      display: contents;
-    }
-    & > [data-part='main'] > * {
-      grid-column: 1 / -1;
-    }
-    & > [data-part='main'] > h3 {
-      grid-column: ${(p) => (p.$cover ? '2' : '1 / -1')};
-      grid-row: 1;
-      align-self: center;
-    }
-    & > [data-part='aside'] {
-      grid-column: 1 / -1;
-      grid-row: 2;
-    }
-  }
+  ${(p) => (p.$compact ? compactPhoneRow(p.theme as Tokens, p.$cover) : '')}
 `;
 
 /* Cover image: a fixed 16:9 box beside the text; full width on phones, where
@@ -177,7 +185,7 @@ const VideoRow = styled.li<{ $cover: boolean }>`
  * A plain <img> with a css() class: styled.img drops loading/decoding (the
  * vendored prop filter does not know them). The box is a link to the video
  * when there is one. */
-function thumbBoxCls(theme: Tokens): string {
+function thumbBoxCls(theme: Tokens, compact: boolean): string {
   const t = theme;
   return css({
     flex: 'none',
@@ -185,8 +193,11 @@ function thumbBoxCls(theme: Tokens): string {
     width: '240px',
     maxWidth: '100%',
     borderRadius: t.radius.md,
-    /* Phones: the small cover of the ledger row (see VideoRow). */
-    ['@media (max-width: ' + t.breakpoint.md + ')']: { width: '100%', gridColumn: '1', gridRow: '1' },
+    /* Phones: the small cover of the ledger row (see compactPhoneRow), or,
+     * with that choice off, a cover as wide as the screen. */
+    ['@media (max-width: ' + t.breakpoint.md + ')']: compact
+      ? { width: '100%', gridColumn: '1', gridRow: '1' }
+      : { width: '100%', maxWidth: '32rem' },
     '&[href]:hover img': { borderColor: t.color.rule, boxShadow: `0 0 0 3px ${t.color.mark}` },
   });
 }
@@ -390,10 +401,19 @@ export function LazyAudio({ src }: { src: string }): React.ReactNode {
   );
 }
 
-export function VideoRowItem({ video, first = false }: { video: Video; first?: boolean }): React.ReactNode {
+export function VideoRowItem({
+  video,
+  first = false,
+  compact = CHOICES.smallVideoCoversOnPhones,
+}: {
+  video: Video;
+  first?: boolean;
+  /** Small cover beside the title on phones; defaults to the site's choice. */
+  compact?: boolean;
+}): React.ReactNode {
   const theme = useTheme() as Tokens;
   return (
-    <VideoRow data-testid="video-row" $cover={Boolean(video.thumbnail)}>
+    <VideoRow data-testid="video-row" $cover={Boolean(video.thumbnail)} $compact={compact}>
       {video.thumbnail &&
         (() => {
           const cover = (
@@ -423,13 +443,13 @@ export function VideoRowItem({ video, first = false }: { video: Video; first?: b
               rel="noopener noreferrer"
               tabIndex={-1}
               aria-hidden="true"
-              className={thumbBoxCls(theme)}
+              className={thumbBoxCls(theme, compact)}
               data-testid="video-thumbnail-link"
             >
               {cover}
             </a>
           ) : (
-            <div className={thumbBoxCls(theme)}>{cover}</div>
+            <div className={thumbBoxCls(theme, compact)}>{cover}</div>
           );
         })()}
       <RowMain data-part="main">

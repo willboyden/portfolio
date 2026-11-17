@@ -8,6 +8,7 @@
  */
 import raw from './generated/content.json';
 import { SiteContentSchema } from './schema';
+import { CHOICES, type SiteChoices } from '../site-choices';
 import type { Project, Post, SiteContent, AiCapability, Recipe } from './schema';
 
 export type {
@@ -53,7 +54,18 @@ function validate(): SiteContent {
   return site;
 }
 
-export const content: SiteContent = validate();
+/**
+ * The content as the pages see it. With the headline-numbers choice off
+ * (src/site-choices.ts) every post arrives without its `keyMetric`, so each
+ * page takes the path it already takes for a post that has none: no block on
+ * the home page, no chip in the lists, no figure in a post's margin.
+ */
+export function withChoices(site: SiteContent, choices: SiteChoices = CHOICES): SiteContent {
+  if (choices.headlineNumbers) return site;
+  return { ...site, posts: site.posts.map(({ keyMetric: _hidden, ...post }) => post) };
+}
+
+export const content: SiteContent = withChoices(validate());
 
 /** content.json's fingerprint (validated with the rest above). Versions files built
  * from this exact content, such as the knowledge graph (./knowledge-graph.ts). */

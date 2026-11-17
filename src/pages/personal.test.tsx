@@ -14,6 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { content, measuredPosts } from 'app/content';
+import { CHOICES } from 'app/site-choices';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
@@ -133,6 +134,14 @@ describe('Home', () => {
 
   it('"Recently measured" shows the key metric of the newest posts that have one, each linking to its post', () => {
     const measured = measuredPosts(4);
+    if (!CHOICES.headlineNumbers) {
+      /* The owner switched headline numbers off (src/site-choices.ts): the
+       * block is gone, and so is every chip. */
+      expect(measured).toEqual([]);
+      expect(html).not.toContain('data-testid="home-measured-section"');
+      expect(html).not.toContain('data-testid="post-metric"');
+      return;
+    }
     expect(measured.length).toBeGreaterThan(0);
     expect(countOccurrences(html, 'data-testid="home-reading"')).toBe(measured.length);
     for (const post of measured) {
