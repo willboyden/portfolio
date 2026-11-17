@@ -1,5 +1,5 @@
 {
-  "contentHash": "58971f1eee6d2163",
+  "contentHash": "9c322132de27cd83",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -611,7 +611,7 @@
       "metrics": [
         {
           "label": "database",
-          "value": "23 tables, ~279M rows"
+          "value": "23 tables, ~279M rows when built; the warehouse holds 48 tables and ~446M rows today"
         },
         {
           "label": "probe datasets",
@@ -645,12 +645,13 @@
         "Credentials from environment only; no secret ever printed or written to disk",
         "Single-file dashboard, zero network requests, data embedded as a JS const so it opens over file://",
         "Trace explorer drills into the observations parent/child tree with latency, usage and I/O previews",
-        "Verified broker behaviour endpoint by endpoint: health/projects OK, traces/observations/sessions/scores all 403 — failure recorded, nothing fabricated"
+        "Verified broker behaviour endpoint by endpoint: health/projects OK, traces/observations/sessions/scores all 403 — failure recorded, nothing fabricated",
+        "Built against Langfuse 3.200.0. The lab's server has been version 4 since 2026-10-31, and version 4 dropped the trace-list endpoint the fetch script pages through, so the pipeline needs a port to the observations API before it can run there"
       ],
       "stack": [
         "Python",
         "Langfuse SDK v4.14.3",
-        "Langfuse 3.200.0",
+        "Langfuse 3.200.0 (the server it was built against)",
         "vanilla JS/CSS"
       ],
       "relatedPost": "langfuse-observability-pragmatic",
@@ -1401,15 +1402,15 @@
         "python"
       ],
       "date": "2026-10-04",
-      "readingMinutes": 4,
+      "readingMinutes": 5,
       "series": "AI engineering notes",
       "keyMetric": {
         "value": "279M",
         "label": "rows in the payroll ETL"
       },
       "relatedProject": "gov-payroll-workbench",
-      "bodyHash": "b1294f9ce6e4",
-      "excerpt": "A human analyst learns the hard way that a table's grain is not what its name suggests. An agent never learns it — it queries whatever you …"
+      "bodyHash": "82b15d15e892",
+      "excerpt": "Update, 2026-11-16: the warehouse had 23 tables when this work was done. It holds 48 tables and about 446 million rows today; the lessons …"
     },
     {
       "slug": "langfuse-observability-pragmatic",

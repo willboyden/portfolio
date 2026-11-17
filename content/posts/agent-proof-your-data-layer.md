@@ -12,6 +12,8 @@ series: AI engineering notes
 relatedProject: gov-payroll-workbench
 ---
 
+> **Update, 2026-11-16:** the warehouse had 23 tables when this work was done. It holds 48 tables and about 446 million rows today; the lessons are unchanged.
+
 A human analyst learns the hard way that a table's grain is not what its name
 suggests. An agent never learns it — it queries whatever you give it,
 confidently, every time. I built an analytics pipeline over the `gov_payroll`

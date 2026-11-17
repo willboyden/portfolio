@@ -20,7 +20,7 @@ highlights:
   - "Two coverage traps caught before they lied — QCEW carries 9 aggregation levels per county (~9x overstate unless filtered to agglvl_code 70) and federal awards store cumulative modifications (~12x overstate until deduped to final obligation per award)"
   - "KPIs are recomputed from the rows at build time, never hardcoded; the single index.html embeds data as a JSON island and opens over file:// with zero network requests"
 metrics:
-  - database = 23 tables, ~279M rows
+  - database = 23 tables, ~279M rows when built; the warehouse holds 48 tables and ~446M rows today
   - probe datasets = 14, each under 0.3 s server-side
   - dashboard = 1 self-contained HTML file
 ---
