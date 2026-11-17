@@ -13,7 +13,18 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useTheme } from '@emotion/react';
 import { __resetSheet, __sheetCss } from '@emotion-mini/core';
-import { darkTheme, lightTheme, themeToCssVars, type ThemeName } from 'app/theme/tokens';
+import {
+  STYLESHEET_THEMES,
+  THEME_INFO,
+  THEME_INLINE_VARS,
+  darkTheme,
+  lightTheme,
+  themeColorVars,
+  themeToCssVars,
+  themes,
+  type ThemeName,
+} from 'app/theme/tokens';
+import { ThemePreferenceProvider, __resetThemePreference } from 'app/components/layout/ThemePreference';
 import {
   AppThemeProvider,
   THEME_INIT_SCRIPT_STORAGE_KEY,
@@ -164,10 +175,24 @@ describe('buildGlobalStyles via <Global> in the provider', () => {
 /* themeInitScript — the prerender no-flash snippet, executed for real        */
 /* -------------------------------------------------------------------------- */
 
+/** An inline style: plain properties (colorScheme) plus custom properties,
+ * which the scripts set through setProperty. The methods sit on the prototype
+ * so comparing two styles compares their contents. */
+class FakeStyle {
+  [key: string]: unknown;
+  vars: Record<string, string> = {};
+  setProperty(name: string, value: string): void {
+    this.vars[name] = value;
+  }
+  removeProperty(name: string): void {
+    delete this.vars[name];
+  }
+}
+
 interface FakeDocument {
   documentElement: {
     attrs: Record<string, string>;
-    style: Record<string, string>;
+    style: FakeStyle;
     setAttribute(k: string, v: string): void;
   };
 }
@@ -175,7 +200,7 @@ interface FakeDocument {
 function fakeDocument(): FakeDocument {
   const el = {
     attrs: {} as Record<string, string>,
-    style: {} as Record<string, string>,
+    style: new FakeStyle(),
     setAttribute(k: string, v: string) {
       el.attrs[k] = v;
     },
@@ -323,5 +348,120 @@ describe('themeInitScript', () => {
     expect(ThemePrefSchema.safeParse(sample).success).toBe(true);
     const { doc } = runInitScript({ stored: JSON.stringify(sample) });
     expect(doc.documentElement.attrs['data-theme']).toBe('light');
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Every theme, before paint                                                   */
+/* -------------------------------------------------------------------------- */
+
+describe('pre-paint script and the full theme list', () => {
+  const shipped = readFileSync(new URL('../../public/theme-init.js', import.meta.url), 'utf8');
+
+  /** Run either copy of the script against a fake document. */
+  function run(script: string, stored: string | null, systemDark = false): FakeDocument {
+    const doc = fakeDocument();
+    const storage = { getItem: (_k: string) => stored };
+    const windowStub = { matchMedia: (q: string) => ({ matches: q.includes('dark') ? systemDark : false }) };
+    new Function('document', 'window', 'localStorage', script)(doc, windowStub, storage);
+    return doc;
+  }
+
+  for (const [name, script] of [
+    ['inline themeInitScript', themeInitScript],
+    ['public/theme-init.js', shipped],
+  ] as const) {
+    it(`${name}: a stored theme of any name is stamped before paint, with its mode as color-scheme`, () => {
+      for (const info of THEME_INFO) {
+        const doc = run(script, JSON.stringify({ theme: info.id }), info.mode === 'light');
+        expect(doc.documentElement.attrs['data-theme'], info.id).toBe(info.id);
+        expect(doc.documentElement.style.colorScheme, info.id).toBe(info.mode);
+      }
+    });
+
+    it(`${name}: an id that is not a theme falls back to the device, never to an unstyled attribute`, () => {
+      for (const bad of ['solarized', 'constructor', 'toString', '__proto__', 'hasOwnProperty', '', 'system']) {
+        const dark = run(script, JSON.stringify({ theme: bad }), true);
+        expect(dark.documentElement.attrs['data-theme'], bad).toBe('dark');
+        expect(dark.documentElement.style.colorScheme, bad).toBe('dark light');
+        const light = run(script, JSON.stringify({ theme: bad }), false);
+        expect(light.documentElement.attrs['data-theme'], bad).toBe('light');
+      }
+      /* A non-string theme value is ignored the same way. */
+      expect(run(script, JSON.stringify({ theme: 7 }), true).documentElement.attrs['data-theme']).toBe('dark');
+      expect(run(script, JSON.stringify({ theme: null }), false).documentElement.attrs['data-theme']).toBe('light');
+    });
+  }
+
+  it('both copies resolve every stored value to the same theme (the two cannot drift)', () => {
+    const cases: (string | null)[] = [
+      null,
+      'dark',
+      'light',
+      '{oops',
+      ...THEME_INFO.map((info) => JSON.stringify({ theme: info.id })),
+      JSON.stringify({ theme: 'retired-theme' }),
+    ];
+    for (const stored of cases) {
+      for (const systemDark of [true, false]) {
+        const a = run(themeInitScript, stored, systemDark).documentElement;
+        const b = run(shipped, stored, systemDark).documentElement;
+        expect(b.attrs, String(stored)).toEqual(a.attrs);
+        expect(b.style, String(stored)).toEqual(a.style);
+      }
+    }
+  });
+
+  for (const [name, script] of [
+    ['inline themeInitScript', themeInitScript],
+    ['public/theme-init.js', shipped],
+  ] as const) {
+    it(`${name}: a stored theme the stylesheet does not hold gets its colours as inline variables, before paint`, () => {
+      for (const info of THEME_INFO) {
+        const style = run(script, JSON.stringify({ theme: info.id }), info.mode === 'light').documentElement.style;
+        if (STYLESHEET_THEMES.includes(info.id)) {
+          expect(style.vars, `${info.id} is in the stylesheet: no inline colours`).toEqual({});
+        } else {
+          expect(style.vars, info.id).toEqual(themeColorVars(themes[info.id]));
+          expect(style.vars['--c-bg'], info.id).toBe(themes[info.id].color.bg);
+        }
+      }
+    });
+
+    it(`${name}: following the device, or a stored id that is not a theme, sets no inline colours`, () => {
+      for (const stored of [null, 'dark', 'light', '{oops', JSON.stringify({ theme: 'retired-theme' })]) {
+        for (const systemDark of [true, false]) {
+          expect(run(script, stored, systemDark).documentElement.style.vars, String(stored)).toEqual({});
+        }
+      }
+    });
+  }
+
+  it('every theme the script can stamp is styled: by the stylesheet (Night, Paper) or by its inline variables', () => {
+    renderToStaticMarkup(h(AppThemeProvider, { children: null }));
+    const sheet = __sheetCss();
+    /* Night is the page default on :root; Paper has the one theme block. */
+    expect(sheet).toContain(`--c-bg:${themes.dark.color.bg}`);
+    expect(sheet).toContain('[data-theme=light]');
+    expect(sheet).toContain(`--c-bg:${themes.light.color.bg}`);
+    for (const info of THEME_INFO) {
+      if (STYLESHEET_THEMES.includes(info.id)) continue;
+      /* Not in the stylesheet (that is what keeps the pages small)... */
+      expect(sheet, info.id).not.toContain(`[data-theme=${info.id}]`);
+      /* ...so the table must have it. */
+      expect(THEME_INLINE_VARS[info.id]?.['--c-bg'], info.id).toBe(themes[info.id].color.bg);
+    }
+  });
+
+  it('the global stylesheet is the same text whatever theme is in effect (it is registered once)', () => {
+    const sheets = (['dark', 'light', 'blueprint', 'ledger'] as const).map((name) => {
+      __resetSheet();
+      __resetThemePreference();
+      renderToStaticMarkup(
+        h(ThemePreferenceProvider, { defaultTheme: name, children: h(AppThemeProvider, { children: null }) }),
+      );
+      return __sheetCss();
+    });
+    expect(new Set(sheets).size).toBe(1);
   });
 });

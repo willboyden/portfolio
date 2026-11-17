@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { RefObject } from 'react';
-import type { ThemeName } from 'app/theme/tokens';
+import { applyThemeVars, isKnownTheme, themeMode, type ThemeName } from 'app/theme/tokens';
 import { themeStore, THEME_STORAGE_KEY, ThemePrefSchema, getItem } from './storage';
 import type { ThemePref, ThemePreference } from './storage';
 
@@ -307,7 +307,7 @@ export function useDebouncedValue<T>(value: T, delayMs = 200): T {
 
 /** Resolve a preference + system setting to a concrete theme. Pure, testable. */
 export function resolveTheme(pref: ThemePreference | undefined, systemDark: boolean): ThemeName {
-  if (pref === 'dark' || pref === 'light') return pref;
+  if (pref !== undefined && pref !== 'system' && isKnownTheme(pref)) return pref;
   return systemDark ? 'dark' : 'light';
 }
 
@@ -345,7 +345,8 @@ export function useThemeNameState(): ThemeNameState {
     if (typeof document !== 'undefined') {
       try {
         document.documentElement.setAttribute('data-theme', name);
-        document.documentElement.style.colorScheme = name;
+        document.documentElement.style.colorScheme = themeMode(name);
+        applyThemeVars(document.documentElement.style, name);
       } catch {
         /* detached document during unmount */
       }
@@ -353,6 +354,8 @@ export function useThemeNameState(): ThemeNameState {
   }, []);
 
   const cycle = useCallback((): void => {
+    /* system → Paper → Night → system. From any other named theme the next
+     * step is back to the device setting. */
     const next: ThemePreference = preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
     if (next === 'system') {
       themeStore.remove();
@@ -361,6 +364,7 @@ export function useThemeNameState(): ThemeNameState {
           const name = resolveTheme('system', systemDark);
           document.documentElement.setAttribute('data-theme', name);
           document.documentElement.style.colorScheme = 'dark light';
+          applyThemeVars(document.documentElement.style, name);
         } catch {
           /* ignore */
         }

@@ -12,7 +12,15 @@
  */
 
 import type { CSSProperties } from 'react';
-import { darkTheme, lightTheme, themeToCssVars, type Tokens } from 'app/theme/tokens';
+import {
+  fontFamilyMono,
+  lightTheme,
+  STYLESHEET_THEMES,
+  themeColorVars,
+  themes,
+  themeToCssVars,
+  type Tokens,
+} from 'app/theme/tokens';
 
 /** Style-object shape accepted by the vendored Emotion <Global>. */
 export type StyleLeaf = string | number;
@@ -51,18 +59,40 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
       MozOsxFontSmoothing: 'grayscale',
       textRendering: 'optimizeLegibility',
     },
-    h1: { fontSize: theme.font.sizes['4xl'], lineHeight: theme.font.leading.tight, margin: 0 },
-    h2: { fontSize: theme.font.sizes['3xl'], lineHeight: theme.font.leading.tight, margin: 0 },
-    h3: { fontSize: theme.font.sizes['2xl'], lineHeight: theme.font.leading.snug, margin: 0 },
-    h4: { fontSize: theme.font.sizes.xl, lineHeight: theme.font.leading.snug, margin: 0 },
+    /* Headings are the serif voice everywhere, including page-level styled
+     * h2/h3 that only set a size: they inherit the family and weight from here. */
+    'h1, h2, h3, h4': {
+      fontFamily: theme.font.serif,
+      fontWeight: theme.font.weights.semibold,
+      letterSpacing: theme.font.tracking.tight,
+      margin: 0,
+    },
+    h1: { fontSize: theme.font.sizes['4xl'], lineHeight: theme.font.leading.tight },
+    h2: { fontSize: theme.font.sizes['3xl'], lineHeight: theme.font.leading.tight },
+    h3: { fontSize: theme.font.sizes['2xl'], lineHeight: theme.font.leading.snug },
+    h4: { fontSize: theme.font.sizes.xl, lineHeight: theme.font.leading.snug },
     p: { marginTop: 0, marginBottom: '1em' },
+    /* A link is ink with a highlighter underline: the underline, not a hue,
+     * is what marks it. Components that are links but look like something
+     * else (nav items, buttons, titles) switch the underline off themselves. */
     a: {
       color: 'var(--c-accent, ' + theme.color.accent + ')',
+      textDecorationLine: 'underline',
       textDecorationColor: 'var(--c-accent-border, ' + theme.color.accentBorder + ')',
-      textDecorationThickness: 'from-font',
+      textDecorationThickness: '2px',
+      textUnderlineOffset: '0.2em',
     },
     'a:hover': {
-      textDecoration: 'underline',
+      textDecorationColor: 'var(--c-accent, ' + theme.color.accent + ')',
+    },
+    /* <mark>: the highlighter, used for one phrase or one number at a time. */
+    mark: {
+      background: 'var(--c-mark, ' + theme.color.mark + ')',
+      color: 'var(--c-mark-ink, ' + theme.color.markInk + ')',
+      padding: '0 0.14em',
+      margin: '0 -0.06em',
+      WebkitBoxDecorationBreak: 'clone',
+      boxDecorationBreak: 'clone',
     },
     code,
     kbd,
@@ -89,20 +119,27 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
      * `var(--c-*)` component reference to the right palette at frame one —
      * no React, no module execution, no flash. */
     ':root': cssVars,
-    /* R3-A #1: UNQUOTED attribute values — `dark`/`light` are valid CSS
+    /* R3-A #1: UNQUOTED attribute values — theme ids are valid CSS
      * identifiers, so no quoting is needed and the vendored serializer's
      * quote-escaping can't corrupt the selector (quoted forms serialize to
      * `[data-theme=\'dark\']`, which per CSS Syntax matches the literal
      * string "'dark'" — broken in spec-strict engines).
      *
-     * R3C-12: emit ONLY the block for the palette that DIFFERS from the
+     * R3C-12: one block per STYLESHEET theme (Night, Paper) except the
      * rendered one. `:root` already carries the rendered palette's concrete
-     * values, so the same-palette data-theme block would re-declare all 38
-     * props byte-identically (~1 kB per page wasted). An attribute that
-     * matches no block simply falls through to `:root` — same values. */
-    ...(theme === lightTheme
-      ? { ':root[data-theme=dark]': themeToCssVars(darkTheme) as Record<string, string> }
-      : { ':root[data-theme=light]': themeToCssVars(lightTheme) as Record<string, string> }),
+     * values, so its own block would re-declare them byte for byte; an
+     * attribute that matches no block simply falls through to `:root`. Each
+     * block holds only what differs between themes (colours and shadows).
+     *
+     * The other themes are NOT here: they are applied as inline custom
+     * properties on <html> (tokens.ts: applyThemeVars; the pre-paint script
+     * has the same table), which keeps ten palettes out of every page. */
+    ...Object.fromEntries(
+      STYLESHEET_THEMES.filter((name) => themes[name] !== theme).map((name) => [
+        `:root[data-theme=${name}]`,
+        themeColorVars(themes[name]) as Record<string, string>,
+      ]),
+    ),
 
     /* Focus: visible by DEFAULT (contract §5). We style :focus-visible and
      * deliberately do NOT remove :focus outlines for pointer users on
@@ -115,8 +152,8 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
 
     /* Selection ------------------------------------------------------------ */
     '::selection': {
-      background: 'var(--c-accent-soft, ' + theme.color.accentSoft + ')',
-      color: 'var(--c-text, ' + theme.color.text + ')',
+      background: 'var(--c-mark, ' + theme.color.mark + ')',
+      color: 'var(--c-mark-ink, ' + theme.color.markInk + ')',
     },
 
     /* R6-B: every pressable control gets physical press feedback. Sites
@@ -163,7 +200,11 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
      * destinations (R8D-8). */
     '@media print': {
       ':root': themeToCssVars(lightTheme) as Record<string, StyleLeaf>,
-      '[data-theme]': themeToCssVars(lightTheme) as Record<string, StyleLeaf>,
+      /* !important: a theme applied as inline custom properties on <html>
+       * would otherwise outrank this block, and a dark one prints blank. */
+      '[data-theme]': Object.fromEntries(
+        Object.entries(themeColorVars(lightTheme)).map(([key, value]) => [key, `${value} !important`]),
+      ) as Record<string, StyleLeaf>,
       '[data-testid="menu-button"], [data-testid="back-to-top"], [data-testid="theme-toggle"], [data-testid="skip-link"]':
         {
           display: 'none',
@@ -185,19 +226,19 @@ export function buildGlobalStyles(theme: Tokens): GlobalStylesObject {
 }
 
 /* Media/typography defaults hoisted to keep the function readable. */
-const monoStack = "'JetBrains Mono var', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+const monoStack = fontFamilyMono;
 const code: Record<string, string | number> = {
   fontFamily: monoStack,
-  fontSize: '0.9375em',
+  fontSize: '0.9em',
   background: 'var(--c-bg-sunken, rgba(127,127,127,0.12))',
-  padding: '0.125em 0.3em',
-  borderRadius: '4px',
+  padding: '0.1em 0.3em',
+  borderRadius: '2px',
 };
 const kbd: Record<string, string | number> = {
   fontFamily: monoStack,
   fontSize: '0.875em',
   border: '1px solid var(--c-border, #888)',
-  borderRadius: '4px',
+  borderRadius: '2px',
   padding: '0.1em 0.35em',
 };
 const pre: Record<string, string | number> = {

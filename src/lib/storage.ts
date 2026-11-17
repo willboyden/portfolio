@@ -13,13 +13,18 @@
  *    the build.
  */
 
-import { z } from 'zod';
+import { z } from './z';
+import { THEME_NAMES, type ThemeName } from 'app/theme/tokens';
 
-export type ThemePreference = 'system' | 'dark' | 'light';
+/** 'system' follows the device between the two default themes; anything else
+ * is a theme the visitor picked by name. */
+export type ThemePreference = 'system' | ThemeName;
 
-/** The preference record persisted by AppThemeProvider (pinned shape). */
+/** The preference record persisted by AppThemeProvider (pinned shape). A
+ * stored id that is not a current theme fails the parse and is evicted, so a
+ * theme that is ever retired falls back to the device setting. */
 export const ThemePrefSchema = z.object({
-  theme: z.enum(['system', 'dark', 'light']),
+  theme: z.enum(['system', ...THEME_NAMES] as [ThemePreference, ...ThemePreference[]]),
 });
 export type ThemePref = z.infer<typeof ThemePrefSchema>;
 

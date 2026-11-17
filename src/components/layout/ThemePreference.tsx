@@ -36,7 +36,17 @@ import {
   type ReactNode,
 } from 'react';
 import { useTheme } from '@emotion/react';
-import { themes, type ThemeName, type Tokens } from 'app/theme/tokens';
+import {
+  applyThemeVars,
+  darkTheme,
+  isKnownTheme,
+  lightTheme,
+  themeMode,
+  themes,
+  type ThemeMode,
+  type ThemeName,
+  type Tokens,
+} from 'app/theme/tokens';
 
 /* Re-exported so consumers of the preference module have the theme types to
  * hand without importing tokens directly. */
@@ -57,7 +67,7 @@ export const DEFAULT_THEME: ThemeName = 'dark';
 export type ThemeSource = 'default' | 'storage' | 'system' | 'user';
 
 export function isThemeName(value: unknown): value is ThemeName {
-  return value === 'dark' || value === 'light';
+  return isKnownTheme(value);
 }
 
 /**
@@ -88,7 +98,9 @@ export function themeDocumentAttributes(name: ThemeName): {
     /* R3-A F9: `data-emotion-theme` removed — zero consumers in app or
      * vendor (grep-verified); `data-theme` is the only theme marker. */
     rootAttributes: { 'data-theme': name },
-    metaContent: name,
+    /* `color-scheme` is the page's MODE (light or dark): native controls and
+     * scrollbars follow it. The theme's own id goes in data-theme. */
+    metaContent: themeMode(name),
   };
 }
 
@@ -105,10 +117,19 @@ function readStoredTheme(): string | null {
      * tolerate a bare string written by older builds or other tabs. */
     if (raw === 'dark' || raw === 'light') return raw;
     const parsed = JSON.parse(raw) as { theme?: unknown };
-    return parsed && (parsed.theme === 'dark' || parsed.theme === 'light') ? parsed.theme : null;
+    return parsed && isKnownTheme(parsed.theme) ? parsed.theme : null;
   } catch {
     /* Private mode / disabled storage: treat as "no preference". */
     return null;
+  }
+}
+
+function clearStoredTheme(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(THEME_STORAGE_KEY);
+  } catch {
+    /* Private mode: there was nothing stored to remove. */
   }
 }
 
@@ -157,16 +178,21 @@ function watchSystemPreference(onChange: (name: ThemeName) => void): () => void 
 }
 
 /**
- * Mirror the preference onto the document so CSS outside React, the browser
- * chrome (form controls, scrollbars, `color-scheme`), and the prerendered shell
- * all agree with the React tree.
+ * Mirror a theme onto the document: the data-theme attribute the stylesheet
+ * keys on, `color-scheme` (the theme's mode), and the browser-UI colour.
+ * `explicit` is true when the visitor picked this theme by name: the browser
+ * UI then takes this theme's page colour whatever the device setting; while
+ * following the device, each `theme-color` tag keeps its own default.
  */
-export function applyThemeToDocument(name: ThemeName): void {
+export function applyThemeToDocument(name: ThemeName, explicit = true): void {
   if (typeof document === 'undefined') return;
   const { rootAttributes, metaContent } = themeDocumentAttributes(name);
   const root = document.documentElement;
   for (const [key, value] of Object.entries(rootAttributes)) root.setAttribute(key, value);
-  root.style.colorScheme = name;
+  root.style.colorScheme = metaContent;
+  /* Night and Paper are in the stylesheet; any other theme is its colours as
+   * inline custom properties (and moving back clears them). */
+  applyThemeVars(root.style, name);
   let meta = document.querySelector('meta[name="color-scheme"]');
   if (!meta) {
     meta = document.createElement('meta');
@@ -174,6 +200,12 @@ export function applyThemeToDocument(name: ThemeName): void {
     document.head.appendChild(meta);
   }
   meta.setAttribute('content', metaContent);
+  if (typeof document.querySelectorAll !== 'function') return;
+  for (const tag of Array.from(document.querySelectorAll('meta[name="theme-color"]'))) {
+    const media = tag.getAttribute('media') ?? '';
+    const fallback = media.includes('dark') ? darkTheme.color.bg : lightTheme.color.bg;
+    tag.setAttribute('content', explicit ? themes[name].color.bg : fallback);
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -225,9 +257,31 @@ export function setThemePreference(name: ThemeName, source: ThemeSource = 'user'
   if (!isThemeName(name)) return;
   if (snapshot.themeName === name && snapshot.resolvedFrom === source) return;
   snapshot = { themeName: name, resolvedFrom: source };
-  writeStoredTheme(name);
-  applyThemeToDocument(name);
+  /* Only a choice is remembered. A theme that merely follows the device
+   * ('system') is not written, or the first change of the device setting
+   * would freeze the site on it. */
+  if (isExplicitChoice(source)) writeStoredTheme(name);
+  applyThemeToDocument(name, isExplicitChoice(source));
   emit();
+}
+
+/** True when the theme in effect is one the visitor picked (not the device's). */
+export function isExplicitChoice(source: ThemeSource): boolean {
+  return source === 'user' || source === 'storage';
+}
+
+function followDevice(): void {
+  const system = readSystemPreference();
+  const themeName = resolveThemeName({ stored: null, system });
+  snapshot = { themeName, resolvedFrom: system === undefined ? 'default' : 'system' };
+  applyThemeToDocument(themeName, false);
+  emit();
+}
+
+/** Forget the stored choice and go back to following the device. */
+export function clearThemePreference(): void {
+  clearStoredTheme();
+  followDevice();
 }
 
 /**
@@ -271,7 +325,12 @@ function attachCrossTabSync(): void {
   window.addEventListener('storage', (event: StorageEvent) => {
     if (event.key !== THEME_STORAGE_KEY) return;
     const name = parseThemeStorage(event.newValue);
-    if (name) adoptExternalTheme(name);
+    if (name) {
+      adoptExternalTheme(name);
+      return;
+    }
+    /* Another tab went back to "match device": follow it here too. */
+    if (event.newValue === null && isExplicitChoice(snapshot.resolvedFrom)) followDevice();
   });
 }
 attachCrossTabSync();
@@ -291,6 +350,12 @@ export interface ThemePreferenceValue extends ThemeSnapshot {
   toggleTheme: () => void;
   /** Tokens for `themeName` — the narrow API the platform provider consumes. */
   activeTheme: Tokens;
+  /** 'system' while following the device, else the theme picked by name. */
+  preference: 'system' | ThemeName;
+  /** Pick a theme by name, or 'system' to follow the device again. */
+  setPreference: (preference: 'system' | ThemeName) => void;
+  /** Light or dark: the mode of the theme in effect. */
+  mode: ThemeMode;
 }
 
 const ThemePreferenceContext = createContext<ThemePreferenceValue | null>(null);
@@ -317,8 +382,8 @@ export function ThemePreferenceProvider({
   /* Make sure the document matches the store even when React's first paint came
    * from the server snapshot (prerender) and no interaction happened. */
   useEffect(() => {
-    applyThemeToDocument(snapshot.themeName);
-  }, [current.themeName]);
+    applyThemeToDocument(snapshot.themeName, isExplicitChoice(snapshot.resolvedFrom));
+  }, [current.themeName, current.resolvedFrom]);
 
   useEffect(() => {
     if (!followSystem) return undefined;
@@ -330,10 +395,16 @@ export function ThemePreferenceProvider({
   }, [followSystem]);
 
   const setThemeName = useCallback((name: ThemeName) => setThemePreference(name, 'user'), []);
+  /* Flip between the two default themes by MODE: from any dark theme to
+   * Paper, from any light theme to Night. */
   const toggleTheme = useCallback(
-    () => setThemePreference(snapshot.themeName === 'dark' ? 'light' : 'dark', 'user'),
+    () => setThemePreference(themeMode(snapshot.themeName) === 'dark' ? 'light' : 'dark', 'user'),
     [],
   );
+  const setPreference = useCallback((preference: 'system' | ThemeName) => {
+    if (preference === 'system') clearThemePreference();
+    else setThemePreference(preference, 'user');
+  }, []);
 
   const value = useMemo<ThemePreferenceValue>(
     () => ({
@@ -342,8 +413,11 @@ export function ThemePreferenceProvider({
       setThemeName,
       toggleTheme,
       activeTheme: themes[current.themeName],
+      preference: isExplicitChoice(current.resolvedFrom) ? current.themeName : 'system',
+      setPreference,
+      mode: themeMode(current.themeName),
     }),
-    [current.themeName, current.resolvedFrom, setThemeName, toggleTheme],
+    [current.themeName, current.resolvedFrom, setThemeName, toggleTheme, setPreference],
   );
 
   return <ThemePreferenceContext.Provider value={value}>{children}</ThemePreferenceContext.Provider>;

@@ -24,7 +24,19 @@
 
 import { createContext, createElement, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { Global, ThemeProvider as EmotionThemeProvider, useTheme } from '@emotion/react';
-import { appTokens, darkTheme, lightTheme, themes, type ThemeName, type Tokens } from 'app/theme/tokens';
+import {
+  applyThemeVars,
+  appTokens,
+  darkTheme,
+  lightTheme,
+  STYLESHEET_ROOT_THEME,
+  THEME_INLINE_VARS,
+  THEME_MODES,
+  themeMode,
+  themes,
+  type ThemeName,
+  type Tokens,
+} from 'app/theme/tokens';
 import { buildGlobalStyles } from './global-styles';
 import { useReducedMotion as useReducedMotionImpl, useThemeNameState } from 'app/lib/hooks';
 import { useThemePreferenceIfPresent } from 'app/components/layout/ThemePreference';
@@ -46,7 +58,7 @@ export { THEME_INIT_SCRIPT_STORAGE_KEY };
  * Embed as: `<script>${themeInitScript}</script>` placed after <meta> tags
  * and before any <link rel=stylesheet> / module script.
  */
-export const themeInitScript = `(function(){try{var d=document.documentElement;var k='${THEME_INIT_SCRIPT_STORAGE_KEY}';var p=null;try{var r=localStorage.getItem(k);if(r){if(r==='dark'||r==='light'){p=r}else{p=JSON.parse(r).theme}}}catch(e){}var t;if(p==='dark'||p==='light'){t=p;d.style.colorScheme=p}else{t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.style.colorScheme='dark light'}d.setAttribute('data-theme',t)}catch(e){}})();`;
+export const themeInitScript = `(function(){try{var d=document.documentElement;var k='${THEME_INIT_SCRIPT_STORAGE_KEY}';var m=${JSON.stringify(THEME_MODES)};var v=${JSON.stringify(THEME_INLINE_VARS)};var p=null;try{var r=localStorage.getItem(k);if(r){if(r==='dark'||r==='light'){p=r}else{p=JSON.parse(r).theme}}}catch(e){}var t;if(typeof p==='string'&&Object.prototype.hasOwnProperty.call(m,p)){t=p;d.style.colorScheme=m[p]}else{t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.style.colorScheme='dark light'}d.setAttribute('data-theme',t);if(Object.prototype.hasOwnProperty.call(v,t)){var s=v[t];for(var n in s){if(Object.prototype.hasOwnProperty.call(s,n)){d.style.setProperty(n,s[n])}}}}catch(e){}})();`;
 
 /* -------------------------------------------------------------------------- */
 /* Context                                                                     */
@@ -101,7 +113,7 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
       themeName: chrome.themeName,
       preference: chrome.resolvedFrom === 'user' ? chrome.themeName : 'system',
       setThemeName: chrome.setThemeName,
-      cycle: () => chrome.setThemeName(chrome.themeName === 'dark' ? 'light' : 'dark'),
+      cycle: () => chrome.setThemeName(themeMode(chrome.themeName) === 'dark' ? 'light' : 'dark'),
     };
   }, [chrome, platform]);
   const themeName: ThemeName = forcedTheme ?? controller.themeName;
@@ -111,7 +123,13 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
    * theme-init attribute resolves the real colors at frame one). The concrete
    * palette still drives <Global> (:root values + both data-theme blocks). */
   const theme: Tokens = appTokens;
-  const concreteTheme: Tokens = themes[forcedTheme ?? controller.themeName];
+  /* The global stylesheet does NOT follow the theme in effect: it always has
+   * Night on :root and Paper under [data-theme=light], and every other theme
+   * is inline custom properties on <html> (tokens.ts). So this text is the
+   * same on the server, on the first client render and after any theme
+   * change, and it is registered once. (`forcedTheme` still puts that
+   * theme's values on :root, for a tree rendered outside the app.) */
+  const concreteTheme: Tokens = themes[forcedTheme ?? STYLESHEET_ROOT_THEME];
   const globalStyles = useMemo(() => buildGlobalStyles(concreteTheme), [concreteTheme]);
 
   useEffect(() => {
@@ -121,7 +139,9 @@ export function AppThemeProvider({ children, forcedTheme }: AppThemeProviderProp
     if (typeof document === 'undefined' || chrome) return;
     try {
       document.documentElement.setAttribute('data-theme', themeName);
-      document.documentElement.style.colorScheme = controller.preference === 'system' ? 'dark light' : themeName;
+      document.documentElement.style.colorScheme =
+        controller.preference === 'system' ? 'dark light' : themeMode(themeName);
+      applyThemeVars(document.documentElement.style, themeName);
     } catch {
       /* document detached mid-unmount */
     }
