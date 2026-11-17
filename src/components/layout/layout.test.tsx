@@ -31,7 +31,7 @@ import {
 import { content } from 'app/content';
 
 import { Header } from './Header';
-import { COLOPHON, Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
+import { Footer, SOCIAL_LINKS, currentYear, copyrightLine } from './Footer';
 import { setPrerenderDay } from 'app/lib/today';
 import { Layout, skipLinkClass } from './Layout';
 import { NAV_ITEMS, availableNavItems, decorateNavItems, isNavActive, normalizePath, type NavItem } from './Nav';
@@ -839,39 +839,12 @@ describe('styling resolves from tokens in both themes', () => {
     expect(sheet).toContain(`box-shadow: inset 0 -3px 0 ${lightTheme.color.mark}`);
   });
 
-  it('the footer colophon states only what the build can back up', async () => {
+  it('the footer ends with the copyright line and nothing else (no colophon)', () => {
     const html = render(<Layout currentPath="/" />, darkTheme);
-    expect(html).toContain('data-testid="footer-colophon"');
-    expect(html).toContain(COLOPHON);
-    /* "Set in IBM Plex": every shipped face is a Plex family. */
-    const { FONT_FACES } = await import('app/theme/fonts');
-    expect(FONT_FACES.length).toBeGreaterThan(0);
-    for (const face of FONT_FACES) expect(face.family.startsWith('IBM Plex')).toBe(true);
-    /* "No trackers, no cookies": nothing in the shipped source sets a cookie
-     * or loads an analytics script (the CSP allows only this origin's scripts
-     * and connections, which e2e 06-security asserts on the live server). */
-    const { readdirSync, readFileSync, statSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const offenders: string[] = [];
-    const walk = (dir: string): void => {
-      for (const name of readdirSync(dir)) {
-        const full = join(dir, name);
-        if (statSync(full).isDirectory()) {
-          if (name !== 'generated') walk(full);
-          continue;
-        }
-        if (!/\.(ts|tsx|js)$/.test(name) || /\.test\.tsx?$/.test(name)) continue;
-        const text = readFileSync(full, 'utf8');
-        if (
-          /document\.cookie|navigator\.sendBeacon|googletagmanager|google-analytics|plausible\.io|posthog/i.test(text)
-        ) {
-          offenders.push(full);
-        }
-      }
-    };
-    walk(join(process.cwd(), 'src'));
-    walk(join(process.cwd(), 'public'));
-    expect(offenders).toEqual([]);
+    expect(html).toContain('data-testid="footer-copyright"');
+    expect(html).not.toContain('footer-colophon');
+    const footer = html.slice(html.indexOf('<footer'));
+    expect(footer).not.toMatch(/IBM|Plex|trackers|cookies/);
   });
 
   it('every transition is paired with a reduced-motion opt-out', () => {

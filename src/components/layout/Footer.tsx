@@ -41,10 +41,6 @@ export const SOCIAL_LINKS: readonly SocialLink[] = [
 
 export const RSS_HREF = withBase('/rss.xml');
 
-/** How the site is made, stated once in the footer. Keep it true: the layout
- * tests check both halves against the font manifest and the source tree. */
-export const COLOPHON = 'Set in IBM Plex. No trackers, no cookies.';
-
 const Shell = styled.footer`
   border-top: 2px solid ${(p) => p.theme.color.rule};
   background: ${(p) => p.theme.color.bgSunken};
@@ -159,13 +155,6 @@ const Copy = styled.p`
   font-size: ${(p) => p.theme.font.sizes.xs};
   line-height: ${(p) => p.theme.font.leading.normal};
   color: ${(p) => p.theme.color.textSubtle};
-`;
-
-/* The colophon: how the page was made, in one line. Every claim in it is
- * checked by a test (src/components/layout/layout.test.tsx): the typeface is
- * the one fonts.ts ships, and the bundle contains no tracker or cookie code. */
-const Colophon = styled.span`
-  display: block;
 `;
 
 /* R7A-6: was a <button onClick={toTop}> — dead without JS. Now a real anchor
@@ -358,7 +347,6 @@ export function Footer({
       <BottomRow>
         <Copy>
           <span data-testid="footer-copyright">{copyrightLine(name, year)}</span>
-          <Colophon data-testid="footer-colophon">{COLOPHON}</Colophon>
         </Copy>
         <TopLink href="#main" data-testid="back-to-top" aria-label="Back to top">
           <svg
