@@ -16,6 +16,8 @@ relatedProject: nemo-console
 relatedPosts: [building-nemo-console, security-reviews-of-a-localhost-control-plane, rewriting-three-python-services-in-rust]
 ---
 
+> **Update, 2026-11-16:** both next steps at the end of this post are done. A routed model call proved the logs row on 2026-11-15, and it showed that the check's own log queries had been looking in the wrong place: a mark's name is stored as structured metadata, not in the text of the record, so the old filters always counted zero. The gateway now runs Relay's newer release, and the Capture tab shows what it adds: the gateway process's CPU, memory, open files and disk, and the routing plugin's requests, failures and overhead, for every role, plus Relay's runtime diagnostics as counts and codes for admins. All of it is on main and still not in a tagged release.
+
 NeMo Relay is the gateway my coding agents talk to. Requests from opencode,
 and from Claude Code when I launch it through Relay, pass through it on their
 way to a model, and Relay can

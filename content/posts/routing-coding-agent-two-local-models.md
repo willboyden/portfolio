@@ -12,6 +12,8 @@ series: AI engineering notes
 relatedProject: nemo-console
 ---
 
+> **Update, 2026-11-16:** two things have changed since. The route's large tier is now NVIDIA's FP4 build of GLM-5.3-Flash (since 2026-10-30). And opencode no longer defaults to the route id this post argues for: since 2026-11-02 it names that build's plain alias, so its calls are not counted per route. The two-tier route is still offered in every client, and it is the default of my sandboxed local Claude Code.
+
 My workstation runs a coding agent (opencode) on local models: a fast
 30B-class model — Nemotron Lightning on an RTX 5090 — answers first, and a
 bigger GLM-5.3-Flash spanning two RTX PRO 6000s takes the turns the fast

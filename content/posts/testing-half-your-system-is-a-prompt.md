@@ -12,6 +12,8 @@ series: AI engineering notes
 relatedPosts: [duckdb-for-agent-workflows, eval-harness-silent-regressions]
 ---
 
+> **Update, 2026-11-16:** the numbers here are those of October. The same approach now carries 1,097 unit tests and 101 browser checks in 13 spec files.
+
 The honest architecture of most AI systems is: a deterministic shell, a
 stochastic core, and a prompt holding them together. Testing advice usually
 fails at the boundary: teams either unit-test the shell and pretend that

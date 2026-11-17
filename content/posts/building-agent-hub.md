@@ -14,6 +14,8 @@ relatedPosts: [building-engine-console, building-nemo-console]
 ---
 
 > **Update, 2026-10-28:** since 0.3.0 the hub, `hubctl` and the knowledge service are Rust, a drop-in for the FastAPI version described here, and three security bugs found during the rewrite are fixed ([GHSA-7j23-gq83-5j4w](https://github.com/willboyden/agent-hub/security/advisories/GHSA-7j23-gq83-5j4w)). How the rewrite was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
+>
+> **Update, 2026-11-16:** what this post lists as added on the main branch shipped as 0.2.0, and three releases followed. 0.3.0 brought a DeepSeek Harness adapter along with the Rust rewrite. 0.4.0 added Getting started and FAQ tabs and a config-file editor. 0.5.0 compiles the hub's own checks to WebAssembly, so the editor applies the server's rules in the browser and a draft of the env file never leaves the tab. Two limits named below are narrower since 0.2.0: the floor's re-check of rendered files also covers the TOML blocks of MCP servers, and an unfinished security scan only warns when its single reason is that the skill mentions local paths it does not bundle. The test counts below are the Python suites'. Details on the [project page](/projects/agent-hub).
 
 I run several agent clients side by side: Claude Code, opencode, Hermes Agent
 in a container, and Turnstone. Each one keeps its instructions, skills,

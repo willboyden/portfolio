@@ -12,6 +12,8 @@ readingMinutes: 7
 series: AI engineering notes
 ---
 
+> **Update, 2026-11-16:** the wall described near the end has moved. The site now links LinkedIn, GitHub and Hugging Face, and by my decision it publishes no email address. The gate has grown with the site, to 1,097 unit tests and 101 browser tests, and the site itself was redesigned in November with twelve themes.
+
 I review my own work constantly, which is exactly the problem. The same brain
 that wrote the code reads it back with the same blind spots, in the same order,
 and stops at the same "looks fine." So before this portfolio launched its

@@ -11,6 +11,8 @@ series: AI engineering notes
 relatedProject: langfuse-dashboard
 ---
 
+> **Update, 2026-11-16:** the lab's Langfuse has been version 4 since 2026-10-31. Version 4 removed the trace-list endpoint this dashboard's fetch script pages through (the observations endpoint it also uses remains), so the closing claim no longer holds as written: even with the read paths allowed, the script would first have to take its traces from the observations API. The broker's block on data reads is unchanged, and deliberate.
+
 Every LLM observability demo opens on a gorgeous trace explorer with data in
 it. Nobody demos the part where the dashboard is the deliverable and the data
 plane refuses to cooperate. I built that dashboard for the traces of project

@@ -13,6 +13,8 @@ keyMetric: "Python tests mapped to a Rust test or a written reason = 4,508"
 relatedPosts: [building-nemo-console, building-agent-hub, building-engine-console]
 ---
 
+> **Update, 2026-11-16:** the three services are now at Nemo Console 0.10.0, Agent Hub 0.5.0 and Engine Console 0.7.1, all still Rust, and the comparison against the last Python code still runs in each. Nemo Console's now reports 1,348 of 1,393 cases equal and 45 documented differences, because the console has since grown past the Python version on purpose. Agent Hub and Engine Console took the idea one step further in November: their Rust checks are compiled to WebAssembly and run in the browser, so a form validates with the same code as the server. What the last section says about Engine Console still holds: its Rust code has not yet run real GPU launches, remote machines or arm64 hardware.
+
 [Nemo Console](https://github.com/willboyden/nemo-console),
 [Agent Hub](https://github.com/willboyden/agent-hub) and
 [Engine Console](https://github.com/willboyden/engine-console) are three local

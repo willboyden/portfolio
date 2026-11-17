@@ -1,10 +1,10 @@
 ---
-# Facts from the public README, CHANGELOG, RELEASE-NOTES and releases v0.3.1 (2026-10-24), v0.4.0 (2026-10-28),
-# v0.5.0 (2026-11-03) and v0.6.0 (2026-11-04), github.com/willboyden/nemo-console. Checked 2026-11-04.
-title: Nemo Console — one page for twelve NVIDIA AI systems
+# Facts from the public README, CHANGELOG and RELEASE-NOTES, github.com/willboyden/nemo-console: releases v0.3.1
+# (2026-10-24) to v0.10.0 (2026-11-05), and the Unreleased section of the CHANGELOG on main. Checked 2026-11-16.
+title: Nemo Console — one page for thirteen NVIDIA AI systems
 slug: nemo-console
 summary: >-
-  A local console that monitors, configures and tests twelve NVIDIA systems,
+  A local console that monitors, configures and tests thirteen NVIDIA systems,
   from routing and serving to GPU telemetry, sandboxes, guardrails, evals,
   model compression and RL rollouts. Config edits are validated, backed up and
   rolled back if the system comes up unhealthy, and every page has its own
@@ -18,12 +18,15 @@ featured: true
 relatedPost: building-nemo-console
 links:
   source: "https://github.com/willboyden/nemo-console"
-stack: ["Rust (axum, hyper, tokio)", SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no npm)]
+stack: ["Rust (axum, hyper, tokio)", SQLite (WAL), SSE, Docker, systemd, Prometheus, ES modules + web components (no runtime dependencies)]
 highlights:
-  - "0.6.0 adds a Getting started tab and a FAQ tab to every system page: numbered steps from install to first use, the system's problem codes and refusals explained, commands with a Copy button and links to the tab each step needs"
+  - "On main since 0.10.0, not yet in a tagged release: a trace explorer for NeMo Relay (five tabs read from the files Relay writes: traces as a waterfall, an icicle and a span table, whole agent sessions with their context growth, analytics, trajectories and capture levels), run history with an A/B compare on the eight run-based pages, and charts on every system page"
+  - "0.10.0 adds a thirteenth system, NVIDIA Flare, NVIDIA's research-prototype inference server: its targets, starts that are refused while a target's GPUs look busy, probes and read-only lane files; the changelog labels it unverified on hardware, since no package had been served yet"
+  - "0.8.0 and 0.9.0 add a config editor: a Form view with a typed control and an info button per setting, where an edit rewrites only that value's characters so comments and layout survive, a Text view, and an Edit checks panel that updates as you type; the server's validator still decides"
+  - "0.6.0 adds a Getting started tab and a FAQ tab to every system page, and 0.7.0 to the console's own pages: numbered steps from install to first use, the system's problem codes and refusals explained, commands with a Copy button and links to the tab each step needs"
   - "0.5.0 adds the eleventh and twelfth systems: NVIDIA Model Optimizer (offline checkpoint compression, started as a background job whose verdict and size the console reads) and NVIDIA NeMo Gym (RL rollouts in a client whose only way out is a router broker; a network that is not internal blocks a run)"
   - "0.4.0 rewrites the backend in Rust as a drop-in: same API, settings, database and launcher; all 936 Python tests mapped to Rust tests, and 1,392 of 1,393 side-by-side cases against the last Python backend identical (the one difference documented)"
-  - "Twelve systems since v0.5.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf, Model Optimizer), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, NeMo Gym, Data Designer)"
+  - "Thirteen systems since v0.10.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, Flare, DCGM, AIPerf, Model Optimizer), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, NeMo Gym, Data Designer)"
   - "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view"
   - "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets"
   - "Security checks surface as problems with one exact fix: a DCGM exporter older than 4.8.3 (CVE-2026-47483) or an open /debug/pprof, an OpenShell sandbox network that is not internal, a Guardrails server that can reach the internet"
@@ -33,11 +36,11 @@ highlights:
   - "Every claim in the docs is labelled implemented, verified-live or unverified; an independent security review of the 0.3.0 additions found no high-severity issue and every finding was fixed"
   - "A browser end-to-end test (the real backend and a headless Chrome, every page and tab) runs in CI and in a pre-push hook that refuses code it has not passed"
 metrics:
-  - systems managed = 12 (since v0.5.0)
-  - backend tests = 862 passed from a clean clone
-  - frontend tests = 128 passed
-  - browser end-to-end = every page and tab (77 views) in headless Chrome, gating every push
-  - latest release = v0.6.0 (2026-11-04), backend in Rust
+  - systems managed = 13 (since v0.10.0)
+  - backend tests = 883 passed from a clean clone (v0.10.0)
+  - frontend tests = 160 passed (v0.10.0)
+  - browser end-to-end = every page and tab (92 views at v0.10.0) in headless Chrome, gating every push
+  - latest release = v0.10.0 (2026-11-05), backend in Rust
 ---
 
 My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a
@@ -47,7 +50,64 @@ NeMo Evaluator, Model Optimizer, NeMo Gym). Each is configured differently — T
 YAML, CSV, compose files, systemd units — and a bad edit to a routing file takes
 routing down for every agent at once. Nemo Console puts them on one page: see
 what each system is doing, change its config with a diff and an automatic
-rollback, run its checks, and send a test request through it.
+rollback, run its checks, and send a test request through it. The thirteenth
+system, NVIDIA Flare, has its page and its launcher but has not served a model
+here yet.
+
+## On main since 0.10.0
+
+Three things are merged and running in my lab, and wait for the next tagged
+release.
+
+**A trace explorer for NeMo Relay.** Relay writes what agents did through it
+to files on the machine. Five new tabs on the Relay page read them: a trace as
+a waterfall, an icicle and a span table that share one selection; every trace
+of an agent session on one timeline, with the context growing call by call;
+analytics; trajectories step by step; and a Capture tab that says which of
+Relay's capture levels are on and what a reader of the traces is missing.
+Viewers get metadata only. Prompts and completions are a separate admin view
+with secrets scrubbed, and it can be switched off. The charts are
+dependency-free SVG, so the Content-Security-Policy did not change. The story
+is in
+[Turning up NeMo Relay's tracing, and building a place to read it](/writing/nemo-relay-tracing-and-trace-views).
+
+![A trace in Nemo Console: an agent run with its turns, model calls, tool calls and a subagent as a waterfall. Rendered from the repository's mock server, so the data is a canned demo](/posts/nemo-relay-traces/trace-waterfall.png)
+
+**Run history.** The eight pages that run something (AIPerf, NeMo Evaluator,
+NeMo Gym, Model Optimizer, SkillEvaluator, Data Designer, GPU diagnostics and
+Guardrails checks) keep their runs: a verdict timeline, the trend of any
+recorded number across runs, and an A/B compare of two runs that marks each
+difference better or worse.
+
+**Charts on every system page.** One route returns up to twelve metrics for 15
+minutes, an hour, a day or a week, each bucket's maximum beside its average.
+On top of it: a heatmap of every GPU on every machine, a decisions-and-models
+tab for Switchyard, latency split into queue, prefill and decode for Dynamo,
+percentile curves for load tests, and a summary of the audit log.
+
+## What 0.10.0 added
+
+NVIDIA Flare, a thirteenth system: NVIDIA's research-prototype inference
+server, on workstation GPUs and on DGX Sparks. Everything goes through a lab
+launcher that defines the targets, refuses to start while a target's GPUs look
+busy and never stops another engine. The page shows each target and whether its
+GPUs are free, Flare's own counters while it serves, and actions to check a
+start, start, stop and probe. The changelog says plainly what is unverified: no
+Flare package had been prepared or served on any target yet, so the start paths
+are written against upstream's documentation.
+
+## What 0.8.0 and 0.9.0 added
+
+A config editor. TOML and YAML files open in a Form view with one section per
+table and a typed control per value: switches, drop-downs for fixed choices,
+number fields that refuse anything else. An edit rewrites only that value's
+characters, so comments and layout survive and the diff shows exactly what
+changed. A Text view sits beside it, and an Edit checks panel updates as you
+type: syntax errors with their line, each file's schema rules, cross-references
+between routes, and secret-looking values the backend would refuse. The
+server's validator still decides on Check and before every Apply. Since 0.9.0
+every setting has an info button that says what it is, what changing it does,
+the values it accepts and when a change takes effect.
 
 ## What 0.6.0 added
 
@@ -71,7 +131,9 @@ in the shared page frame, so a future system gets them too. A test checks that
 every system has a guide and an FAQ and that every link points at a tab or page
 that exists; the browser test now opens 77 pages and tabs instead of 53. The
 answers were written from the console's operations guide and feature matrix,
-not re-checked against every live system.
+not re-checked against every live system. 0.7.0 gave the console's own pages
+(Overview, Audit and Settings) the same two tabs; by 0.10.0 the browser test
+opens 92 pages and tabs.
 
 ## What 0.5.0 added
 

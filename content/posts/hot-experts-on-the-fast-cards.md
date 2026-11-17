@@ -14,6 +14,16 @@ series: AI engineering notes
 relatedPosts: [one-model-across-five-machines, five-machine-engine-boot-time-and-minimax]
 ---
 
+> **Update, 2026-11-16:** three things have changed since these numbers were measured.
+>
+> The placement now follows the sessions. "What's next" names a placement that follows the running sessions; it was built the same evening, though not as the per-step cache sketched there, which would have needed about 92 promotions per step. Instead a reserve, the coldest 15% of the experts on the fast cards, is also loaded on every GB10 box, and the engine trades reserve experts for the cold ones the sessions read, a few per second, between two decode steps. After five minutes of code, a decode step of code went from 23.4 ms to 21.0 ms, and the correctness checks pass after 1,500 swaps.
+>
+> The lane is set up for agent loops, which is what I mostly run. The KV cache went from 8 to 16 GiB per card (about 4.6 million tokens), paid for with experts (5,486 on the fast cards instead of 6,400), and the engine drafts five tokens at every request count. One stream pays for that: code is at about 199 tok/s today against the 218 in the tables below. In return, 32 agent loops that share a cached prompt write 603 tok/s in total, 64 write 816 and 128 write 1,005.
+>
+> Reading a new prompt got faster. A prefill layer call now serves the GB10 boxes two at a time, which reads 13 to 15% more prompt tokens per second: the first token at 12K / 49K / 194K prompt tokens comes after 1.8 / 7.0 / 28.5 s on the sliced layout.
+>
+> The ratios against the layer split below are those of 2026-11-14; the layer split has not been measured again under the new settings. A second model family runs in this layout since 2026-11-16: see the note on [the MiniMax post](/writing/five-machine-engine-boot-time-and-minimax).
+
 Ten days ago I wrote about [running one model as one vLLM engine across five machines](/writing/one-model-across-five-machines):
 four GB10 boxes (DGX Spark class) and a workstation with two RTX PRO 6000 cards, with DeepSeek-V4.1-Flash-1017 split
 between them by layer. It works. A profile of it also showed what it wastes: on a single stream the two fastest

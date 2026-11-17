@@ -12,6 +12,8 @@ keyMetric: "heating rate of four GB10 boxes, for under 2% speed = −60%"
 series: AI engineering notes
 ---
 
+> **Update, 2026-11-16:** the open measurement at the end was made the next day. With 16 requests in flight for 15 minutes on the fixed lane, the hottest box settled at 83.9 °C (it moved 0.8 °C over the last three minutes), at 251 tok/s, with 566 requests and no errors. What still heats a box fast is one very long new prompt: a request of about 390,000 tokens passed with the hottest sensor at 82.8 °C, and one of about 760,000 was stopped by the guard at 88 °C. The vLLM lane was never measured before and after; the cross-machine engine that came later sets the same pinning on every box. This story is also a short video on the [Videos page](/videos).
+
 I run DeepSeek-V4.1-Flash-1017 as one engine across four GB10 machines (DGX Spark class: a 20-core Arm CPU and a
 Blackwell GPU on one package, 128 GB of shared memory). On SGLang, with MiaAI-Lab's
 [four-Spark recipe](https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-DGX-Sparks), it decoded an agentic coding loop at

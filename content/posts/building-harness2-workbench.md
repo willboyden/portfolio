@@ -13,6 +13,8 @@ relatedProject: harness2-workbench
 relatedPosts: [mcp-server-for-an-agent-harness, security-reviews-of-a-localhost-control-plane]
 ---
 
+> **Update, 2026-11-16:** the gap this post ends on is partly closed. A model-backed sweep has been run through the Workbench: one LAB task on self-hosted open-weight models, in container isolation, with preview, run, judging and the report all completing. It proves the pipeline, not a result, and JobBench, WorkBuddy-Bench and Vertex AI are still unverified. Five releases followed 0.1.0: offline install bundles (0.1.1), fair LAB measurements under container isolation and comparisons against the starting harness with a measured noise floor (0.1.3), cloud judges behind a synthetic-data confirmation, Hermes Agent and Turnstone as LAB executors and exports between four frameworks (0.1.4), and help panels with a server configuration editor (0.2.0). The counts in the text are 0.1.0's; today there are 43 MCP tools, 52 REST operations, nine decision records and 776 unit and integration tests. Details on the [project page](/projects/harness2-workbench).
+
 In October 2026 Google Research released
 [harness2](https://github.com/google-research/harness2), the code behind the
 paper *Harness²: Recursive Agent Harnessing for an Open World*. A **harness**

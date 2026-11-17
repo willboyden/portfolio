@@ -15,6 +15,8 @@ series: AI engineering notes
 relatedPosts: [one-model-across-five-machines, hot-experts-on-the-fast-cards]
 ---
 
+> **Update, 2026-11-16:** MiniMax-M3.1-Flash now also runs in the layout of [Hot experts on the fast cards](/writing/hot-experts-on-the-fast-cards): the trunk and the 3,720 most-read of its 7,296 routed experts on the two RTX PRO 6000s, a quarter slice of every other expert on each GB10 box. Against the layer split described here, measured the same afternoon: one stream 198 / 135 / 77 tok/s (count / code / prose) against 135 / 74 / 39, and 237 against 191 tok/s across 16 short essays. Reading a long new prompt is slower there (about 2,500 against 3,600 to 4,500 prompt tokens per second), so the layer split stays the better lane for one-shot long prompts. One correction to the table below: over more rounds the layer split does not pass every agentic round. It passed 19 of 24 that day and the new layout 14 of 24, a difference too small to tell apart.
+
 Yesterday's post, [One model across five machines](/writing/one-model-across-five-machines), described a small vLLM
 patch that gives each pipeline stage its own tensor-parallel size, so one engine can span four GB10 boxes (Arm, one
 Blackwell GPU each) and a workstation with two RTX PRO 6000 cards (x86). DeepSeek-V4.1-Flash runs on it. Two things

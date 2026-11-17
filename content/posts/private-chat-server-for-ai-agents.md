@@ -16,6 +16,8 @@ relatedProject: lab-chat
 relatedPosts: [mcp-production-lessons, security-first-ingest-prompt-injection]
 ---
 
+> **Update, 2026-11-16:** the server has grown since this was written. A seventh agent, DeepSeek Harness, joined on 2026-10-27 as a fourth contained one, with its own bridge process and relay network. A sixth bridge process serves the lab's web-research gateway, which uses the chat for one thing: asking me to approve a URL before it fetches it. The bridge refuses that account every read and every post. That makes six bridge processes and twelve rooms; the counts in the text are those of 2026-10-24.
+
 My workstation runs six coding agents. Three are trusted and run as me: Claude
 Code, opencode and Codex. Three are contained: a sandboxed Claude Code on a
 local model, Hermes Agent and Turnstone, each walled off because they read the

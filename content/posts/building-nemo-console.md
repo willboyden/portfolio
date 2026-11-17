@@ -16,6 +16,8 @@ relatedPosts: [routing-coding-agent-two-local-models, taking-a-repository-public
 > **Update, 2026-10-28:** since 0.4.0 the backend is Rust, a drop-in for the FastAPI version described here. How that was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
 >
 > **Update, 2026-11-04:** 0.5.0 added NVIDIA Model Optimizer and NeMo Gym (twelve systems), and 0.6.0 gives every system page a Getting started tab and a FAQ tab. Both are described on the [project page](/projects/nemo-console).
+>
+> **Update, 2026-11-16:** the console now covers thirteen systems (0.10.0 added NVIDIA Flare), and 0.8.0 and 0.9.0 gave it a config editor with a form view, live edit checks and an explanation on every setting. Two things the last section calls open are done: the container and unit names of my deployment have been settings since 0.4.0, and an opt-in probe now notices a running engine that does not answer. The numbers below are those of 0.3.1; the backend is Rust now, so its gates are cargo tests and a parity run against the last Python backend. On main, not yet in a release: a trace explorer for NeMo Relay ([its own post](/writing/nemo-relay-tracing-and-trace-views)), run history and charts on every system page. The [project page](/projects/nemo-console) has the details.
 
 My lab runs a small stack of NVIDIA software around its models. NeMo
 Switchyard routes requests between a fast model and a large one, NeMo Relay is

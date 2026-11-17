@@ -14,6 +14,8 @@ relatedPosts: [building-nemo-console, building-agent-hub]
 ---
 
 > **Update, 2026-10-28:** since 0.5.0 the hub and the `ecnode` node agent are Rust, a drop-in for the Python version described here, with the same wire protocol. How that was checked: [Rewriting three Python services in Rust without breaking them](/writing/rewriting-three-python-services-in-rust).
+>
+> **Update, 2026-11-16:** three releases since. 0.6.0 added a Config files page, Getting started and FAQ tabs and a rule-scored tool-calling quality suite. 0.7.0 runs the hub's own engine adapters in the page as WebAssembly, so the launch form shows the exact command; the frontend has one build step since then and still no runtime dependencies. 0.7.1 fixes a 413 answer that could arrive as a connection reset. The "not done yet" near the end is done: since 0.5.0 a browser suite opens every page against the real hub and node before every push. The test counts below are the Python suites'; each of those tests is now mapped to a Rust test or marked not applicable, and there are 23 decision records. Read "verified live" with one thing in mind: those runs were made with the Python version and have not been repeated with the Rust code. Details on the [project page](/projects/engine-console).
 
 Serving models locally means living with several inference engines. vLLM,
 SGLang, TensorRT-LLM, llama.cpp and Ollama each have their own flags, images,

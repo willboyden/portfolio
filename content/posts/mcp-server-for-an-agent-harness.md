@@ -14,6 +14,8 @@ relatedProject: harness2-workbench
 relatedPosts: [building-harness2-workbench, security-reviews-of-a-localhost-control-plane]
 ---
 
+> **Update, 2026-11-16:** the server has 43 tools now. 0.1.3 added `choose_split`, which saves a split of exactly the tasks you list, and since 0.1.4 `export_harness` can also write a Hermes Agent home or a Turnstone bundle. The "only rule of its own" described below has a sibling since 0.1.4: judging with a cloud model needs a person's confirmation that the data is synthetic, and the MCP server will not pass a model's confirmation on unless it was started with a flag that allows it.
+
 Google Research's harness2 is a tool for improving AI agents, so it is
 natural to want an AI agent to drive it: set up a benchmark, preview a sweep, estimate its cost,
 start it, wait, read the results and export the harness that won.

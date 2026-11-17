@@ -1,5 +1,5 @@
 {
-  "contentHash": "90c067138dafb033",
+  "contentHash": "58971f1eee6d2163",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -17,17 +17,20 @@
       "date": "2026-10-24",
       "role": "Design and implementation",
       "status": "active",
-      "period": "Oct 2026",
+      "period": "Oct–Nov 2026",
       "highlights": [
         "Every harness2 operation as a queued job with live logs, cancellation, a timeout and, for runs, an optional spend guard: install at the tested commit, the offline demo, benchmark setup and checks, previews, sweeps in both recursion modes, judging, reports, splits, pipelines and the Codex bridge",
-        "Everything harness2 writes, browsable: task scores, the eight-component harness of every candidate, the diff to the adopted harness, rollouts, experience libraries, the improver's own audit trail, sign-test comparisons, and exports to an OpenCode or Codex project",
+        "Everything harness2 writes, browsable: task scores, the eight-component harness of every candidate, the diff to the adopted harness, rollouts, experience libraries, the improver's own audit trail, sign-test comparisons, and exports to an OpenCode or Codex project, a Hermes Agent home or a Turnstone bundle",
         "One Rust server owns jobs, state and access: API tokens and browser sessions with viewer, operator and admin roles, single sign-on behind a trusted proxy, write-only secrets, a hash-chained audit log, Prometheus metrics and OpenTelemetry traces",
-        "An MCP server with 42 tools that forwards each caller's own token, holds no power of its own, and refuses to let a model accept host-execution risk on a person's behalf",
+        "An MCP server with 43 tools that forwards each caller's own token, holds no power of its own, and refuses to let a model accept host-execution risk on a person's behalf",
         "Container isolation for untrusted work: each step in a runner image with every capability dropped, no new privileges and an internal network whose only exit is an allowlisting egress proxy",
         "Defensive reading of what jobs write: files opened without blocking or following links, per-request byte and sweep budgets with cancellation, a 64 MiB response cap and about 1 MiB log pages",
         "Two independent security reviews (27 findings, most with a working reproduction) and a documentation pass; each fixed, or narrowed and recorded in a STRIDE threat model",
         "Supply chain held to a 14-day cooldown checked on every push, SHA-pinned Actions, cargo-deny, gitleaks, CodeQL and Scorecard, an SBOM and provenance in the release workflow, and the licence texts of every crate compiled in",
-        "A feature matrix that labels every feature verified live, fakes only or unverified, including that no model-backed sweep has been run through it yet"
+        "A feature matrix that labels every feature verified live, fakes only or unverified, including how little is proven on real models: the README records one model-backed sweep, a single LAB task on self-hosted open-weight models, which proves the pipeline, not a result",
+        "0.1.3 makes LAB measurements fair under container isolation and compares a refinement with the harness it started from, beside a measured noise floor: in one ten-task rerun the same starting harness moved 3.9 points per task on average",
+        "0.1.4 adds cloud judges behind a confirmation that the data is synthetic, Hermes Agent and Turnstone as LAB executors when the installed harness2 ships them, and exports that convert a harness between the OpenCode, Codex, Hermes Agent and Turnstone layouts",
+        "0.1.1 adds offline install bundles (export, verify, import) for a host whose Workbench and jobs must not reach the internet; 0.2.0 adds Getting started and a FAQ on every page, an (i) explanation on form fields and a read-only server configuration editor for administrators"
       ],
       "stack": [
         "Rust",
@@ -46,15 +49,15 @@
       "metrics": [
         {
           "label": "REST API",
-          "value": "49 operations, OpenAPI 3.1"
+          "value": "52 operations, OpenAPI 3.1"
         },
         {
           "label": "MCP",
-          "value": "42 tools, 3 resource forms, 3 prompts"
+          "value": "43 tools, 3 resource forms, 3 prompts"
         },
         {
           "label": "tests",
-          "value": "641 unit and integration, plus 7 end-to-end against a real server and the real harness2 demo"
+          "value": "776 unit and integration, plus 8 end-to-end against a real server and the real harness2 demo"
         },
         {
           "label": "security reviews",
@@ -62,7 +65,7 @@
         },
         {
           "label": "documentation",
-          "value": "about 72,000 words and 8 decision records"
+          "value": "about 82,000 words and 9 decision records"
         },
         {
           "label": "harness2 tested against",
@@ -70,17 +73,17 @@
         },
         {
           "label": "release",
-          "value": "0.1.0 (24 October 2026), x86_64 and aarch64 Linux"
+          "value": "0.2.0 (5 November 2026), x86_64 and aarch64 Linux"
         }
       ],
       "relatedPost": "building-harness2-workbench",
       "featured": true,
-      "html": "<p><a href=\"https://github.com/google-research/harness2\">harness2</a> is Google Research's\nframework for <strong>recursive agent harnessing</strong>: it improves the system around a\nmodel (its prompts, guardrails, memory, tool guidance, subagents, skills,\nscripts and plugins) task by task, without touching the model's weights. It is\na research framework, driven from a terminal with environment variables, long\nruns and results as files.</p>\n<p>Harness² Workbench is what goes around it when more than one person, or an AI\nagent, needs to use it safely. It drives harness2 through its own command line\nand reads what it writes, never modifying it. It is unofficial and not\naffiliated with Google; the method belongs to the paper's authors.</p>\n<p><img src=\"/posts/harness2-workbench/dashboard.png\" alt=\"The Workbench dashboard on a real server: harness2 installed at the tested commit, environment checks with their fixes, and the finished demo jobs\" /></p>\n<h2 id=\"what-makes-it-more-than-a-ui\">What makes it more than a UI</h2>\n<ul>\n<li><strong>One enforcement point.</strong> The web UI, the REST API and the MCP server all\ngo through the same server, which checks roles on every call and writes the\naudit log. An AI agent never has more than the rights of its token.</li>\n<li><strong>Honest isolation.</strong> Host mode runs executors as the Workbench's own user,\nwhich makes a hostile executor an administrator, and the README says so in\nbold. Container mode exists for exactly that case.</li>\n<li><strong>Hostile-input reading.</strong> A job controls the files the Workbench reads\nback, so the readers have limits on type, size, total, time and\nconcurrency. The security reviews showed why each one is needed.</li>\n<li><strong>Proof over claims.</strong> Every feature is labelled verified live, fakes only or\nunverified, and the limits are written down: only harness2's free offline\ndemo has been run end to end; model-backed sweeps are parsed against\nrecorded output.</li>\n</ul>\n<h2 id=\"try-it\">Try it</h2>\n<p><a href=\"https://github.com/willboyden/harness2-workbench/releases/tag/v0.1.0\">Version 0.1.0</a>\nhas archives for x86_64 and aarch64 Linux, with checksums, an SBOM and build\nprovenance. The README's first quick start goes from a harness2 checkout to\nthe free offline demo, which needs no credentials and no network.</p>\n<p><img src=\"/posts/harness2-workbench/task-diff.png\" alt=\"What changed in a harness: the diff between a task&#39;s base harness and the one harness2 adopted, from a real demo run\" /></p>\n<h2 id=\"the-series\">The series</h2>\n<p>The full story is in six posts: the\n<a href=\"/writing/building-harness2-workbench\">architecture</a>, the\n<a href=\"/writing/mcp-server-for-an-agent-harness\">MCP server</a>, the\n<a href=\"/writing/security-reviews-of-a-localhost-control-plane\">two security reviews</a>,\nthe <a href=\"/writing/dependency-cooldown-and-dependabot\">dependency cooldown and Dependabot</a>,\n<a href=\"/writing/flaky-tests-a-fast-machine-hides\">four flaky tests</a> and\n<a href=\"/writing/taking-a-repository-public\">taking the repository public</a>.</p>"
+      "html": "<p><a href=\"https://github.com/google-research/harness2\">harness2</a> is Google Research's\nframework for <strong>recursive agent harnessing</strong>: it improves the system around a\nmodel (its prompts, guardrails, memory, tool guidance, subagents, skills,\nscripts and plugins) task by task, without touching the model's weights. It is\na research framework, driven from a terminal with environment variables, long\nruns and results as files.</p>\n<p>Harness² Workbench is what goes around it when more than one person, or an AI\nagent, needs to use it safely. It drives harness2 through its own command line\nand reads what it writes, never modifying it. It is unofficial and not\naffiliated with Google; the method belongs to the paper's authors.</p>\n<p><img src=\"/posts/harness2-workbench/dashboard.png\" alt=\"The Workbench dashboard on a real server: harness2 installed at the tested commit, environment checks with their fixes, and the finished demo jobs\" /></p>\n<h2 id=\"what-makes-it-more-than-a-ui\">What makes it more than a UI</h2>\n<ul>\n<li><strong>One enforcement point.</strong> The web UI, the REST API and the MCP server all\ngo through the same server, which checks roles on every call and writes the\naudit log. An AI agent never has more than the rights of its token.</li>\n<li><strong>Honest isolation.</strong> Host mode runs executors as the Workbench's own user,\nwhich makes a hostile executor an administrator, and the README says so in\nbold. Container mode exists for exactly that case.</li>\n<li><strong>Hostile-input reading.</strong> A job controls the files the Workbench reads\nback, so the readers have limits on type, size, total, time and\nconcurrency. The security reviews showed why each one is needed.</li>\n<li><strong>Proof over claims.</strong> Every feature is labelled verified live, fakes only or\nunverified, and the limits are written down. Besides harness2's free offline\ndemo, the README records one model-backed sweep run end to end: one LAB task,\nin container isolation, behind an egress allowlist that held only a gateway\nto self-hosted open-weight models. In its own words, one task proves the\npipeline, not a result.</li>\n</ul>\n<h2 id=\"try-it\">Try it</h2>\n<p><a href=\"https://github.com/willboyden/harness2-workbench/releases/tag/v0.2.0\">Version 0.2.0</a>\nhas archives for x86_64 and aarch64 Linux, with checksums, an SBOM and build\nprovenance. The README's first quick start goes from a harness2 checkout to\nthe free offline demo, which needs no credentials and no network.</p>\n<p><img src=\"/posts/harness2-workbench/task-diff.png\" alt=\"What changed in a harness: the diff between a task&#39;s base harness and the one harness2 adopted, from a real demo run\" /></p>\n<h2 id=\"what-011-to-020-added\">What 0.1.1 to 0.2.0 added</h2>\n<p><strong>The first model-backed run, and what it broke (0.1.1).</strong> The first sweep on\nreal models ended with every rollout at zero turns: the executor fetched a\nmodel catalogue at start-up and crashed on the egress proxy's refusal. The\nserver now switches those downloads off for OpenAI-compatible profiles, and the\nsame task then ran end to end: preview, run, judging of the refined and the\nstarting harness, and the report. The release also added offline install\nbundles, so a host with no internet can receive a complete harness2\ninstallation with a checksum.</p>\n<p><strong>Fair measurements (0.1.3).</strong> Under container isolation, LAB's document reader\ncould not start its own container, so every read of a .docx, .pdf, .pptx or\n.xlsx file failed until the agent found a way around it. Refined harnesses had\nlearned the workaround and starting harnesses had not, so refinement got credit\nfor fixing the environment. The runner image now carries a stand-in that runs\nonly LAB's own parser. A comparison can also take a sweep's starting harness as\none side, and it shows a noise floor: how far the same starting harness moves\nbetween runs on the compared tasks.</p>\n<p><strong>More executors and judges (0.1.4).</strong> A profile's judge can be a cloud model,\nand judging then asks for confirmation that the experiment's data is generated\nor synthetic, because a cloud judge sees every task and every output it\ngrades. When the installed harness2 ships them, Hermes Agent and Turnstone are\noffered as LAB executors beside OpenCode and Codex. Export turns any harness\ninto an OpenCode project, a Codex project, a Hermes Agent home or a Turnstone\nbundle, and refuses what a framework has no counterpart for.</p>\n<p><strong>Help on the page (0.2.0).</strong> Every page has a Getting started and FAQ panel,\nform fields explain themselves through an (i) button, and administrators get a\nserver configuration editor that validates a draft with the server's own\nloader and never writes the file.</p>\n<h2 id=\"the-series\">The series</h2>\n<p>The full story is in six posts: the\n<a href=\"/writing/building-harness2-workbench\">architecture</a>, the\n<a href=\"/writing/mcp-server-for-an-agent-harness\">MCP server</a>, the\n<a href=\"/writing/security-reviews-of-a-localhost-control-plane\">two security reviews</a>,\nthe <a href=\"/writing/dependency-cooldown-and-dependabot\">dependency cooldown and Dependabot</a>,\n<a href=\"/writing/flaky-tests-a-fast-machine-hides\">four flaky tests</a> and\n<a href=\"/writing/taking-a-repository-public\">taking the repository public</a>.</p>"
     },
     {
       "slug": "lab-chat",
       "title": "lab-chat — a private chat server for AI agents",
-      "summary": "A self-hosted Matrix server where six coding agents notify me, ask for approval, and hand work to each other, where lab alerts land, and where I chat with a sandboxed Hermes agent. No agent holds a chat credential: they call an MCP bridge that runs one sandbox per trust domain, and the chat Hermes goes through a proxy that holds its token and allowlists the API. Nothing leaves the workstation.",
+      "summary": "A self-hosted Matrix server where seven coding agents notify me, ask for approval, and hand work to each other, where lab alerts land, and where I chat with a sandboxed Hermes agent. No agent holds a chat credential: they call an MCP bridge that runs one sandbox per trust domain, and the chat Hermes goes through a proxy that holds its token and allowlists the API. Nothing leaves the workstation.",
       "tags": [
         "mcp",
         "agents",
@@ -92,11 +95,12 @@
       "date": "2026-10-24",
       "role": "Design, implementation and security review",
       "status": "active",
-      "period": "2026-10",
+      "period": "Oct–Nov 2026",
       "highlights": [
         "Closed by construction — federation, registration, guests, URL previews and stats reporting are off, and Synapse plus its database sit on an internal Docker network with no route to the internet, the LAN or DNS; one nginx gateway publishes Element and the client API on loopback and answers 404 for federation and the admin API",
         "Agents never hold a Matrix token — a 6-tool MCP bridge (notify, ask_human/get_answer, post, read, list_rooms) maps each client's own token, or for containers the private network it calls from, to exactly one chat account",
-        "One sandbox per trust domain — trusted host agents, the sandboxed local Claude Code, Hermes and Turnstone each get their own bridge process in an srt sandbox with no network and read access to only their own bot tokens; the code runs from hash-checked copies outside the repo the agents can write",
+        "One sandbox per trust domain — trusted host agents, the sandboxed local Claude Code, Hermes, Turnstone, DeepSeek Harness and the web-research gateway each get their own bridge process in an srt sandbox with no network and read access to only their own bot tokens; the code runs from hash-checked copies outside the repo the agents can write",
+        "Approvals for web research in the same place — the lab's research gateway asks me in its own room before it fetches a URL I typed; because it handles untrusted web pages, the bridge refuses that account every read and every post",
         "Room rules enforced twice — one rooms.json drives both the bridge's ACL and Synapse's membership and power levels, so contained agents can neither read nor post in trusted rooms even with a valid token",
         "Built for prompt injection — only messages the server authenticated as the human count as instructions; other agents' text comes back labelled [UNTRUSTED trust:account] with terminal escapes and bidi characters stripped, agent posts are notices (bots don't answer them, so no reply loops), and writes and pings to the human are rate-limited",
         "Lab alerts in the same place — Prometheus fires into Alertmanager, which posts firing and resolved alerts to an #alerts room over an internal network with exactly two members",
@@ -113,25 +117,25 @@
         "Anthropic srt sandbox",
         "rootless Docker",
         "Prometheus Alertmanager 0.34",
-        "mitmproxy 12.2 (token broker)",
+        "mitmproxy 12.3 (token broker)",
         "Hermes Agent Matrix gateway"
       ],
       "metrics": [
         {
           "label": "agent clients",
-          "value": "6 (Claude Code, opencode, Codex, sandboxed Claude Code, Hermes, Turnstone)"
+          "value": "7 (Claude Code, opencode, Codex, sandboxed Claude Code, Hermes, Turnstone, DeepSeek Harness)"
         },
         {
           "label": "sandboxed bridge domains",
-          "value": "4"
+          "value": "6"
         },
         {
           "label": "rooms",
-          "value": "10 (trusted, contained, alerts, chat-hermes, one ask room per agent)"
+          "value": "12 (trusted, contained, alerts, chat-hermes, one ask room per agent and one for the research gateway)"
         },
         {
           "label": "offline bridge tests",
-          "value": "23 (mutation-checked)"
+          "value": "29"
         },
         {
           "label": "security reviews",
@@ -144,8 +148,8 @@
     },
     {
       "slug": "nemo-console",
-      "title": "Nemo Console — one page for twelve NVIDIA AI systems",
-      "summary": "A local console that monitors, configures and tests twelve NVIDIA systems, from routing and serving to GPU telemetry, sandboxes, guardrails, evals, model compression and RL rollouts. Config edits are validated, backed up and rolled back if the system comes up unhealthy, and every page has its own getting-started guide and FAQ.",
+      "title": "Nemo Console — one page for thirteen NVIDIA AI systems",
+      "summary": "A local console that monitors, configures and tests thirteen NVIDIA systems, from routing and serving to GPU telemetry, sandboxes, guardrails, evals, model compression and RL rollouts. Config edits are validated, backed up and rolled back if the system comes up unhealthy, and every page has its own getting-started guide and FAQ.",
       "tags": [
         "llm-routing",
         "nemo-switchyard",
@@ -159,10 +163,13 @@
       "status": "active",
       "period": "Sep–Nov 2026",
       "highlights": [
-        "0.6.0 adds a Getting started tab and a FAQ tab to every system page: numbered steps from install to first use, the system's problem codes and refusals explained, commands with a Copy button and links to the tab each step needs",
+        "On main since 0.10.0, not yet in a tagged release: a trace explorer for NeMo Relay (five tabs read from the files Relay writes: traces as a waterfall, an icicle and a span table, whole agent sessions with their context growth, analytics, trajectories and capture levels), run history with an A/B compare on the eight run-based pages, and charts on every system page",
+        "0.10.0 adds a thirteenth system, NVIDIA Flare, NVIDIA's research-prototype inference server: its targets, starts that are refused while a target's GPUs look busy, probes and read-only lane files; the changelog labels it unverified on hardware, since no package had been served yet",
+        "0.8.0 and 0.9.0 add a config editor: a Form view with a typed control and an info button per setting, where an edit rewrites only that value's characters so comments and layout survive, a Text view, and an Edit checks panel that updates as you type; the server's validator still decides",
+        "0.6.0 adds a Getting started tab and a FAQ tab to every system page, and 0.7.0 to the console's own pages: numbered steps from install to first use, the system's problem codes and refusals explained, commands with a Copy button and links to the tab each step needs",
         "0.5.0 adds the eleventh and twelfth systems: NVIDIA Model Optimizer (offline checkpoint compression, started as a background job whose verdict and size the console reads) and NVIDIA NeMo Gym (RL rollouts in a client whose only way out is a router broker; a network that is not internal blocks a run)",
         "0.4.0 rewrites the backend in Rust as a drop-in: same API, settings, database and launcher; all 936 Python tests mapped to Rust tests, and 1,392 of 1,393 side-by-side cases against the last Python backend identical (the one difference documented)",
-        "Twelve systems since v0.5.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, DCGM, AIPerf, Model Optimizer), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, NeMo Gym, Data Designer)",
+        "Thirteen systems since v0.10.0, grouped as routing (NeMo Switchyard, NeMo Relay), engines and load (Dynamo, Flare, DCGM, AIPerf, Model Optimizer), safety and sandboxing (NeMo Guardrails, OpenShell) and evaluation and data (SkillEvaluator, NeMo Evaluator, NeMo Gym, Data Designer)",
         "One adapter per system behind a system-agnostic core; the UI renders from descriptors (status, metrics, config files, parameters, actions, playground), so each new system was one adapter file plus a small view",
         "Config edits validate, diff, back up, write atomically, restart the system and roll back on their own if it comes up unhealthy — Switchyard and Relay routes, the DCGM exporter's field list, NeMo Guardrails rails and the AIPerf and Evaluator presets",
         "Security checks surface as problems with one exact fix: a DCGM exporter older than 4.8.3 (CVE-2026-47483) or an open /debug/pprof, an OpenShell sandbox network that is not internal, a Guardrails server that can reach the internet",
@@ -179,7 +186,7 @@
         "Docker",
         "systemd",
         "Prometheus",
-        "ES modules + web components (no npm)"
+        "ES modules + web components (no runtime dependencies)"
       ],
       "links": {
         "source": "https://github.com/willboyden/nemo-console"
@@ -187,33 +194,33 @@
       "metrics": [
         {
           "label": "systems managed",
-          "value": "12 (since v0.5.0)"
+          "value": "13 (since v0.10.0)"
         },
         {
           "label": "backend tests",
-          "value": "862 passed from a clean clone"
+          "value": "883 passed from a clean clone (v0.10.0)"
         },
         {
           "label": "frontend tests",
-          "value": "128 passed"
+          "value": "160 passed (v0.10.0)"
         },
         {
           "label": "browser end-to-end",
-          "value": "every page and tab (77 views) in headless Chrome, gating every push"
+          "value": "every page and tab (92 views at v0.10.0) in headless Chrome, gating every push"
         },
         {
           "label": "latest release",
-          "value": "v0.6.0 (2026-11-04), backend in Rust"
+          "value": "v0.10.0 (2026-11-05), backend in Rust"
         }
       ],
       "relatedPost": "building-nemo-console",
       "featured": true,
-      "html": "<p>My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a\nDCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails\nserver and six NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,\nNeMo Evaluator, Model Optimizer, NeMo Gym). Each is configured differently — TOML,\nYAML, CSV, compose files, systemd units — and a bad edit to a routing file takes\nrouting down for every agent at once. Nemo Console puts them on one page: see\nwhat each system is doing, change its config with a diff and an automatic\nrollback, run its checks, and send a test request through it.</p>\n<h2 id=\"what-060-added\">What 0.6.0 added</h2>\n<p>Twelve systems means twelve sets of rules to remember: which actions spend\ntokens, why a start is refused, what a problem code means. Each system page now\nends with two tabs that answer that on the page itself. Getting started says\nwhat the system is and walks from install to first use in numbered steps; a\nstep that needs a command shows it with a Copy button (the console never runs\nit) and a button that opens the tab the step talks about.</p>\n<p><img src=\"/posts/nemo-console/getting-started.png\" alt=\"The Getting started tab of the Dynamo page: what the system is, then numbered steps, each with a button that opens the tab it needs. Rendered from the repository&#39;s mock server, so the data is a canned demo\" /></p>\n<p>The FAQ tab collects the system's common questions, mostly the problem codes\nand refusals its status and actions can show, and below them the questions\nthat apply on every page. A filter narrows the list and opens what matches.</p>\n<p><img src=\"/posts/nemo-console/faq.png\" alt=\"The FAQ tab of the NeMo Guardrails page: the system&#39;s own questions, then the questions about the console, with a filter and Expand all. Rendered from the mock server\" /></p>\n<p>The text is one plain-text file shown as text only, and the tabs are added once\nin the shared page frame, so a future system gets them too. A test checks that\nevery system has a guide and an FAQ and that every link points at a tab or page\nthat exists; the browser test now opens 77 pages and tabs instead of 53. The\nanswers were written from the console's operations guide and feature matrix,\nnot re-checked against every live system.</p>\n<h2 id=\"what-050-added\">What 0.5.0 added</h2>\n<p>Two more systems, both driven through a lab wrapper and both running their\nwork in the background so a closed tab never stops it. Model Optimizer\ncompresses a pinned checkpoint offline: the console validates the recipe file,\nstarts a job that takes a GPU for hours, then reads its verdict, output size and\ncompression ratio; it never stops a running job. NeMo Gym runs reinforcement\nlearning rollouts in a client whose only way out is a router broker: the console\nchecks that containment, runs a small scored smoke rollout and keeps the\nrewards. A client network that is not internal marks the system down and blocks\na run.</p>\n<h2 id=\"what-031-fixed\">What 0.3.1 fixed</h2>\n<p>After the 0.3.0 update, the five newest pages showed &quot;Something went wrong&quot; in a\nbrowser that had used an older version. The console served its files with no\ncaching instructions, so the browser kept an old shared module and paired it\nwith the new pages; one missing function was enough to stop all five from\nloading. Every file is now checked with the server on each load.</p>\n<p>Unit tests could not have seen that, so 0.3.1 adds a browser test: it starts the\nreal backend, signs in with a fresh key, and opens every page and tab in a\nheadless Chrome, failing on any error screen, script error, server error or\nfile served without that header. It runs in CI and in a pre-push hook that\nrefuses to push code it has not passed. Its first run from a fresh clone, with\nno lab next to it, found two more bugs: a Dynamo parameter preview that crashed\nwith a server error and Config tabs that reported &quot;Something went wrong&quot; for\nsystems that are simply not deployed.</p>\n<h2 id=\"what-030-added\">What 0.3.0 added</h2>\n<p>Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,\nNeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found\nalong the way: <code>nemo-console stop</code> hung while a browser held a live event\nstream, three status caches skipped their check for the first minute after a\nreboot (a fresh CI runner caught it), and per-GPU charts were empty because a\nlabel held spaces.</p>\n<p>It was written against one deployment, and the README says so: container names\nand paths are settings or constants, and only the parts marked verified-live were\nexercised against the real systems.</p>\n<p>The write-up linked below covers what this console was first built to watch:\nrouting a coding agent between a fast model and a large one.</p>"
+      "html": "<p>My lab runs NVIDIA's routing layer (NeMo Switchyard and NeMo Relay), Dynamo, a\nDCGM exporter on six machines, an OpenShell sandbox gateway, a NeMo Guardrails\nserver and six NVIDIA command-line tools (SkillEvaluator, Data Designer, AIPerf,\nNeMo Evaluator, Model Optimizer, NeMo Gym). Each is configured differently — TOML,\nYAML, CSV, compose files, systemd units — and a bad edit to a routing file takes\nrouting down for every agent at once. Nemo Console puts them on one page: see\nwhat each system is doing, change its config with a diff and an automatic\nrollback, run its checks, and send a test request through it. The thirteenth\nsystem, NVIDIA Flare, has its page and its launcher but has not served a model\nhere yet.</p>\n<h2 id=\"on-main-since-0100\">On main since 0.10.0</h2>\n<p>Three things are merged and running in my lab, and wait for the next tagged\nrelease.</p>\n<p><strong>A trace explorer for NeMo Relay.</strong> Relay writes what agents did through it\nto files on the machine. Five new tabs on the Relay page read them: a trace as\na waterfall, an icicle and a span table that share one selection; every trace\nof an agent session on one timeline, with the context growing call by call;\nanalytics; trajectories step by step; and a Capture tab that says which of\nRelay's capture levels are on and what a reader of the traces is missing.\nViewers get metadata only. Prompts and completions are a separate admin view\nwith secrets scrubbed, and it can be switched off. The charts are\ndependency-free SVG, so the Content-Security-Policy did not change. The story\nis in\n<a href=\"/writing/nemo-relay-tracing-and-trace-views\">Turning up NeMo Relay's tracing, and building a place to read it</a>.</p>\n<p><img src=\"/posts/nemo-relay-traces/trace-waterfall.png\" alt=\"A trace in Nemo Console: an agent run with its turns, model calls, tool calls and a subagent as a waterfall. Rendered from the repository&#39;s mock server, so the data is a canned demo\" /></p>\n<p><strong>Run history.</strong> The eight pages that run something (AIPerf, NeMo Evaluator,\nNeMo Gym, Model Optimizer, SkillEvaluator, Data Designer, GPU diagnostics and\nGuardrails checks) keep their runs: a verdict timeline, the trend of any\nrecorded number across runs, and an A/B compare of two runs that marks each\ndifference better or worse.</p>\n<p><strong>Charts on every system page.</strong> One route returns up to twelve metrics for 15\nminutes, an hour, a day or a week, each bucket's maximum beside its average.\nOn top of it: a heatmap of every GPU on every machine, a decisions-and-models\ntab for Switchyard, latency split into queue, prefill and decode for Dynamo,\npercentile curves for load tests, and a summary of the audit log.</p>\n<h2 id=\"what-0100-added\">What 0.10.0 added</h2>\n<p>NVIDIA Flare, a thirteenth system: NVIDIA's research-prototype inference\nserver, on workstation GPUs and on DGX Sparks. Everything goes through a lab\nlauncher that defines the targets, refuses to start while a target's GPUs look\nbusy and never stops another engine. The page shows each target and whether its\nGPUs are free, Flare's own counters while it serves, and actions to check a\nstart, start, stop and probe. The changelog says plainly what is unverified: no\nFlare package had been prepared or served on any target yet, so the start paths\nare written against upstream's documentation.</p>\n<h2 id=\"what-080-and-090-added\">What 0.8.0 and 0.9.0 added</h2>\n<p>A config editor. TOML and YAML files open in a Form view with one section per\ntable and a typed control per value: switches, drop-downs for fixed choices,\nnumber fields that refuse anything else. An edit rewrites only that value's\ncharacters, so comments and layout survive and the diff shows exactly what\nchanged. A Text view sits beside it, and an Edit checks panel updates as you\ntype: syntax errors with their line, each file's schema rules, cross-references\nbetween routes, and secret-looking values the backend would refuse. The\nserver's validator still decides on Check and before every Apply. Since 0.9.0\nevery setting has an info button that says what it is, what changing it does,\nthe values it accepts and when a change takes effect.</p>\n<h2 id=\"what-060-added\">What 0.6.0 added</h2>\n<p>Twelve systems means twelve sets of rules to remember: which actions spend\ntokens, why a start is refused, what a problem code means. Each system page now\nends with two tabs that answer that on the page itself. Getting started says\nwhat the system is and walks from install to first use in numbered steps; a\nstep that needs a command shows it with a Copy button (the console never runs\nit) and a button that opens the tab the step talks about.</p>\n<p><img src=\"/posts/nemo-console/getting-started.png\" alt=\"The Getting started tab of the Dynamo page: what the system is, then numbered steps, each with a button that opens the tab it needs. Rendered from the repository&#39;s mock server, so the data is a canned demo\" /></p>\n<p>The FAQ tab collects the system's common questions, mostly the problem codes\nand refusals its status and actions can show, and below them the questions\nthat apply on every page. A filter narrows the list and opens what matches.</p>\n<p><img src=\"/posts/nemo-console/faq.png\" alt=\"The FAQ tab of the NeMo Guardrails page: the system&#39;s own questions, then the questions about the console, with a filter and Expand all. Rendered from the mock server\" /></p>\n<p>The text is one plain-text file shown as text only, and the tabs are added once\nin the shared page frame, so a future system gets them too. A test checks that\nevery system has a guide and an FAQ and that every link points at a tab or page\nthat exists; the browser test now opens 77 pages and tabs instead of 53. The\nanswers were written from the console's operations guide and feature matrix,\nnot re-checked against every live system. 0.7.0 gave the console's own pages\n(Overview, Audit and Settings) the same two tabs; by 0.10.0 the browser test\nopens 92 pages and tabs.</p>\n<h2 id=\"what-050-added\">What 0.5.0 added</h2>\n<p>Two more systems, both driven through a lab wrapper and both running their\nwork in the background so a closed tab never stops it. Model Optimizer\ncompresses a pinned checkpoint offline: the console validates the recipe file,\nstarts a job that takes a GPU for hours, then reads its verdict, output size and\ncompression ratio; it never stops a running job. NeMo Gym runs reinforcement\nlearning rollouts in a client whose only way out is a router broker: the console\nchecks that containment, runs a small scored smoke rollout and keeps the\nrewards. A client network that is not internal marks the system down and blocks\na run.</p>\n<h2 id=\"what-031-fixed\">What 0.3.1 fixed</h2>\n<p>After the 0.3.0 update, the five newest pages showed &quot;Something went wrong&quot; in a\nbrowser that had used an older version. The console served its files with no\ncaching instructions, so the browser kept an old shared module and paired it\nwith the new pages; one missing function was enough to stop all five from\nloading. Every file is now checked with the server on each load.</p>\n<p>Unit tests could not have seen that, so 0.3.1 adds a browser test: it starts the\nreal backend, signs in with a fresh key, and opens every page and tab in a\nheadless Chrome, failing on any error screen, script error, server error or\nfile served without that header. It runs in CI and in a pre-push hook that\nrefuses to push code it has not passed. Its first run from a fresh clone, with\nno lab next to it, found two more bugs: a Dynamo parameter preview that crashed\nwith a server error and Config tabs that reported &quot;Something went wrong&quot; for\nsystems that are simply not deployed.</p>\n<h2 id=\"what-030-added\">What 0.3.0 added</h2>\n<p>Six systems joined the original four: Data Designer, OpenShell, DCGM, AIPerf,\nNeMo Guardrails and NeMo Evaluator. The release also fixed three bugs found\nalong the way: <code>nemo-console stop</code> hung while a browser held a live event\nstream, three status caches skipped their check for the first minute after a\nreboot (a fresh CI runner caught it), and per-GPU charts were empty because a\nlabel held spaces.</p>\n<p>It was written against one deployment, and the README says so: container names\nand paths are settings or constants, and only the parts marked verified-live were\nexercised against the real systems.</p>\n<p>The write-up linked below covers what this console was first built to watch:\nrouting a coding agent between a fast model and a large one.</p>"
     },
     {
       "slug": "agent-hub",
       "title": "Agent Hub — one place for what your coding agents know and may do",
-      "summary": "Shared instructions, skills, subagents, MCP servers, permissions and egress for Claude Code, opencode, Hermes Agent and Turnstone. Edit, commit, plan, apply — with a policy floor content can only make stricter.",
+      "summary": "Shared instructions, skills, subagents, MCP servers, permissions and egress for Claude Code, opencode, Hermes Agent, Turnstone and DeepSeek Harness. Edit, commit, plan, apply — with a policy floor content can only make stricter.",
       "tags": [
         "ai-agents",
         "mcp",
@@ -225,10 +232,12 @@
       "date": "2026-10-18",
       "role": "Design and implementation",
       "status": "active",
-      "period": "2026-10",
+      "period": "Oct–Nov 2026",
       "highlights": [
+        "0.5.0 runs the hub's own checks in the browser: its Rust config, YAML and item-model checks compile to a WebAssembly module (about 430 KB gzipped), so the editor reports the server's own rules as you type, and a draft of the hub's env file is checked in the tab and never sent",
+        "0.4.0 adds Getting started and FAQ tabs to every page and a config-file editor: draft, check with the hub's real loaders and export, with an (i) explanation per value; the hub writes no config file itself",
         "0.3.0 rewrites the hub, hubctl and the knowledge service in Rust as a drop-in: the same bytes written into every client's files (PyYAML-exact YAML), 0 differences in 545 side-by-side cases against the last Python code, and three security fixes published as GHSA-7j23-gq83-5j4w",
-        "A git repository of declarative files is the source of truth; the hub compiles it into each client's native format (.claude/skills, .opencode/agent, AGENTS.md, Hermes and Turnstone stages) instead of being a service the agents query",
+        "A git repository of declarative files is the source of truth; the hub compiles it into each client's native format (.claude/skills, .opencode/agent, AGENTS.md, and staged trees for Hermes, Turnstone and DeepSeek Harness) instead of being a service the agents query",
         "Edit, commit, plan, apply: a plan renders the committed tree per client and shows the diff; apply writes only from that plan, only after confirmation, and refuses if anything moved since",
         "A policy floor outside the content repo — credential paths denied, egress deny-by-default, no unscanned MCP server, no catch-all shell allow — that content can only tighten",
         "Import first: it reads what each client already has, and a file edited outside the hub becomes a conflict that is skipped, never silently overwritten; every overwritten file is backed up and rollback restores the last apply",
@@ -237,10 +246,11 @@
       ],
       "stack": [
         "Rust (axum, hyper, tokio)",
+        "WebAssembly (the hub's own checks, in the browser)",
         "git",
         "SQLite",
         "LanceDB + Qdrant (knowledge plane)",
-        "ES modules + web components (no npm)"
+        "ES modules + web components (no runtime dependencies)"
       ],
       "links": {
         "source": "https://github.com/willboyden/agent-hub"
@@ -252,7 +262,7 @@
         },
         {
           "label": "latest release",
-          "value": "v0.3.0 (2026-10-28), backend in Rust"
+          "value": "v0.5.0 (2026-11-14), backend in Rust"
         },
         {
           "label": "loopback trust",
@@ -261,7 +271,7 @@
       ],
       "relatedPost": "building-agent-hub",
       "featured": true,
-      "html": "<p>Each coding agent keeps its instructions, skills, subagents, MCP servers and\npermissions in a different format and place. In my lab that is Claude Code,\nopencode, Hermes Agent and Turnstone, and shared content drifted between them\nwith nothing showing what any one of them was allowed to do. Agent Hub treats\nthat configuration like infrastructure code: reviewed in git, planned, applied\nwith a diff, and checked against a floor of rules that content cannot loosen.</p>\n<p>The README names the limit plainly: the hub cannot protect you from an\nunsandboxed client that runs as your own user. <code>hubctl doctor</code> reports what is\nexposed on the host.</p>"
+      "html": "<p>Each coding agent keeps its instructions, skills, subagents, MCP servers and\npermissions in a different format and place. In my lab that is Claude Code,\nopencode, Hermes Agent, Turnstone and DeepSeek Harness, and shared content\ndrifted between them with nothing showing what any one of them was allowed to\ndo. Agent Hub treats\nthat configuration like infrastructure code: reviewed in git, planned, applied\nwith a diff, and checked against a floor of rules that content cannot loosen.</p>\n<p>The README names the limit plainly: the hub cannot protect you from an\nunsandboxed client that runs as your own user. <code>hubctl doctor</code> reports what is\nexposed on the host.</p>\n<h2 id=\"since-the-rust-rewrite\">Since the Rust rewrite</h2>\n<p><strong>0.4.0</strong> put help on the page. Every page has Getting started and FAQ tabs,\nand Settings has a config-file editor: draft the hub's env file, the knowledge\nservice config or a client spec in a form or as text, check the draft with the\nhub's real loaders, and export it with a diff and the commands to install it.\nThe hub writes no config file and runs no command for this.</p>\n<p><strong>0.5.0</strong> moved those checks into the browser. The hub's own config, YAML and\nitem-model checks are compiled from the same Rust code to a WebAssembly module,\nso the editor's blocking errors are the server's rules instead of a JavaScript\ncopy that can drift, and a draft of the env file never leaves the tab. If the\nmodule does not load, the pages say so and the hub checks every save as before.</p>"
     },
     {
       "slug": "jobpilot",
@@ -374,25 +384,28 @@
       "date": "2026-10-15",
       "role": "Design and implementation",
       "status": "active",
-      "period": "Sep–Oct 2026",
+      "period": "Sep–Nov 2026",
       "highlights": [
-        "0.5.0 rewrites the hub and the node agent in Rust: one 4.7 MB node binary per architecture instead of a Python environment, the same wire protocol in both directions so machines move one at a time, and 0 differences in 674 side-by-side steps against the last Python code",
+        "0.7.0 shows the exact launch command: the preview is the hub's own engine adapter, compiled to WebAssembly and run in the page, with the adapter's cross-field validation listed before you launch; a draft of the env file is checked in the tab and never sent",
+        "0.6.0 adds a Config files page that drafts, validates and exports the machine list, the hub's env file and a node policy without ever writing a file, Getting started and FAQ tabs on every page, four more load suites and a tool-calling quality suite of twelve scenarios scored rule by rule, with no judge model",
+        "0.5.0 rewrites the hub and the node agent in Rust: one node binary per architecture (about 4.5 MB for x86_64 and 3.9 MB for aarch64) instead of a Python environment, the same wire protocol in both directions so machines move one at a time, and 0 differences in 674 side-by-side steps against the last Python code",
         "A hub talks to a small agent on every machine (ecnode) over a restricted ssh key; the node does all Docker, GPU and file work and obeys a local policy file, so a bug in the hub can do at most what each machine's policy allows",
         "Five engines behind one adapter port, each with a pinned image — vLLM 0.27.1, SGLang 0.5.20, TensorRT-LLM 1.2.1, llama.cpp b10156 by digest, Ollama 0.30.11 — and launch forms generated from each adapter's parameter catalog",
         "Engines run on an internal Docker network with no ports and all capabilities dropped, reachable only through a per-instance loopback gateway",
         "A cross-machine model library: Hugging Face search and download, copies between machines, and a VRAM fit estimate that says \"unknown\" instead of guessing",
         "Engines started by your own scripts are discovered read-only and shown beside managed ones, so the console never bypasses an existing start-up script",
         "Learn mode: every setting carries a plain-language explanation, with a beginner wizard and a glossary",
-        "Honest status: the README lists what was verified live (one workstation, two GPUs) and what has only run against fakes (remote machines, launches of engines other than vLLM)"
+        "Honest status: the README says what was verified live (with the Python 0.4.x line: one workstation, and five remote machines monitored over ssh) and what the Rust hub and node have so far proven only by parity runs and a browser suite against fake CLIs"
       ],
       "stack": [
         "Rust (axum, hyper, tokio)",
+        "WebAssembly (the hub's own adapters and checks, in the browser)",
         "SQLite (WAL)",
         "SSE",
         "Prometheus + OTLP",
         "rootless Docker",
         "NVML",
-        "ES modules + web components (no npm)"
+        "ES modules + web components (no runtime dependencies)"
       ],
       "links": {
         "source": "https://github.com/willboyden/engine-console"
@@ -404,16 +417,20 @@
         },
         {
           "label": "architecture decisions recorded",
-          "value": "21 ADRs"
+          "value": "23 ADRs"
+        },
+        {
+          "label": "browser end-to-end",
+          "value": "every page in headless Chrome against the real hub and node, gating every push"
         },
         {
           "label": "latest release",
-          "value": "v0.5.0 (2026-10-28), hub and node in Rust"
+          "value": "v0.7.1 (2026-11-15), hub and node in Rust"
         }
       ],
       "relatedPost": "building-engine-console",
       "featured": true,
-      "html": "<p>I run several inference engines on a workstation with two RTX PRO 6000s,\nnext to a second GPU machine and four DGX Sparks. Every engine had its\nown start script, its own flags and its own way of reporting memory. Engine\nConsole puts them on one page without taking over: it watches by default, and\neach machine decides for itself, in a root-owned policy file, whether the\nconsole may start, stop, download or delete anything there.</p>\n<h2 id=\"how-it-is-built\">How it is built</h2>\n<ul>\n<li><strong>Hub and node.</strong> The hub is a Rust service on loopback (a FastAPI app until\n0.5.0) with a zero-build browser UI. It never runs Docker or reads <code>/proc</code> itself. Every machine,\nincluding its own, is reached through <code>ecnode</code>, a single Rust binary (a\nstandard-library Python agent until 0.5.0), over stdio locally and over ssh with a key restricted to that one\ncommand elsewhere.</li>\n<li><strong>Policy as the hard boundary.</strong> <code>monitor</code> or <code>manage</code> mode, allowed images,\nmodel roots and scripts are set per machine. The node re-reads its policy\nwithin seconds; the hub cannot edit it.</li>\n<li><strong>Engine isolation.</strong> Engines are labelled sibling containers on an\n<code>--internal</code> network with <code>--cap-drop ALL</code>, <code>no-new-privileges</code> and a pids\nlimit. The hub reaches an engine's API only through its node.</li>\n<li><strong>Security posture.</strong> Loopback is not trusted (API key, Host, Origin and\nCSRF checks on every call), secrets are stored as <code>[set]</code> markers or 0600\nfiles, and model files are confined to the policy's roots.</li>\n</ul>\n<h2 id=\"what-is-not-done-yet\">What is not done yet</h2>\n<p>The README is explicit: remote machines over ssh, copies between real\nmachines, multi-GPU launches and launches of any engine but vLLM have run only\nagainst fakes. No penetration test or independent review has been done.</p>"
+      "html": "<p>I run several inference engines on a workstation with two RTX PRO 6000s,\nnext to a second GPU machine and four DGX Sparks. Every engine had its\nown start script, its own flags and its own way of reporting memory. Engine\nConsole puts them on one page without taking over: it watches by default, and\neach machine decides for itself, in a root-owned policy file, whether the\nconsole may start, stop, download or delete anything there.</p>\n<h2 id=\"how-it-is-built\">How it is built</h2>\n<ul>\n<li><strong>Hub and node.</strong> The hub is a Rust service on loopback (a FastAPI app until\n0.5.0) with a browser UI of plain ES modules; its one build step, since 0.7.0,\ncompiles the WebAssembly module. It never runs Docker or reads <code>/proc</code> itself. Every machine,\nincluding its own, is reached through <code>ecnode</code>, a single Rust binary (a\nstandard-library Python agent until 0.5.0), over stdio locally and over ssh with a key restricted to that one\ncommand elsewhere.</li>\n<li><strong>Policy as the hard boundary.</strong> <code>monitor</code> or <code>manage</code> mode, allowed images,\nmodel roots and scripts are set per machine. The node re-reads its policy\nwithin seconds; the hub cannot edit it.</li>\n<li><strong>Engine isolation.</strong> Engines are labelled sibling containers on an\n<code>--internal</code> network with <code>--cap-drop ALL</code>, <code>no-new-privileges</code> and a pids\nlimit. The hub reaches an engine's API only through its node.</li>\n<li><strong>Security posture.</strong> Loopback is not trusted (API key, Host, Origin and\nCSRF checks on every call), secrets are stored as <code>[set]</code> markers or 0600\nfiles, and model files are confined to the policy's roots.</li>\n</ul>\n<h2 id=\"what-06-and-07-added\">What 0.6 and 0.7 added</h2>\n<p><strong>Help and config files (0.6.0).</strong> Every page sits in one frame with Getting\nstarted and FAQ tabs. A Config files page drafts, validates and exports the\nthree files an operator edits by hand: the machine list, the hub's env file and\na node policy. A draft is checked with the same rules the hub and the node\napply, and the page shows the commands to install the result; it never writes a\nfile. The Benchmark page\ngained four load suites and a quality suite: twelve tool-calling scenarios run\nagainst each scenario's own constant tools and scored rule by rule, so a score\nneeds no judge model.</p>\n<p><strong>The hub's own checks in the browser (0.7.0).</strong> The launch form's command\npreview used to be an approximation written in JavaScript. It is now the output\nof the hub's own engine adapter, built from the same Rust code as a WebAssembly\nmodule: the engine's exact arguments and environment, with the adapter's\nvalidation listed under it before you launch. Two things the old preview got\nwrong are fixed by construction: a vLLM switch set to off shows as its\n<code>--no-</code> form, and TensorRT-LLM's options-file settings are no longer shown as\ncommand-line flags. Env-file drafts are checked in the tab and never sent.</p>\n<p><strong>0.7.1</strong> fixes one thing: a request body over the limit now always gets its\n413 answer, instead of a connection reset on a busy machine.</p>\n<h2 id=\"what-is-not-done-yet\">What is not done yet</h2>\n<p>The README is explicit. What it calls verified live was seen with the Python\n0.4.x line: one workstation, mostly in monitor mode, and five remote machines\nmonitored over ssh. Managing a remote machine was never verified. The Rust hub\nand node are proven against that Python release (674 side-by-side HTTP steps,\n665 the same and 9 with allowed differences in headers only, and each of its\n2,487 tests mapped to a Rust test or marked not applicable) and by a browser\nsuite that opens every page against the real hub and node before every push,\nnot yet by a launch on real GPUs. The security reviews so far were done by AI\nauditors reading the code, with probes and protocol fuzzing; no human review\nor penetration test has been done.</p>"
     },
     {
       "slug": "system-monitor",
@@ -463,7 +480,7 @@
     {
       "slug": "gpu-tuner",
       "title": "GPU Tuner — power caps, fan curves and clock caps with a GUI",
-      "summary": "A local web page that shows every NVIDIA GPU live and changes the three settings that are safe on any card. It manages several machines over ssh, and each machine's root daemon enforces its own limits.",
+      "summary": "A local web page that shows every NVIDIA GPU live and changes the three settings that are safe on any card. It manages several machines over ssh, each machine's root daemon enforces its own limits, and a demo mode runs the real page over simulated machines with no GPU at all.",
       "tags": [
         "gpu",
         "nvidia",
@@ -475,13 +492,16 @@
       "date": "2026-10-04",
       "role": "Design and implementation",
       "status": "shipped",
-      "period": "Sep–Oct 2026",
+      "period": "Sep–Nov 2026",
       "highlights": [
         "Power limit, fan curve and core clock cap per card, plus a combined power budget per machine; going over the budget is a confirmed soft limit, never past the card's own hardware range",
         "Every write is validated by a root daemon against a root-owned safety module, never by the page; the page runs as the desktop user and talks to the daemon over a Unix socket that checks the caller's uid",
         "Fan safety floor rescaled per card from that card's own slowdown threshold (85 °C on the lab's RTX PRO 6000s); fans are handed back to the driver on exit, crash or watchdog kill",
         "One page for several machines: a fleet strip plus a tab per machine, reached over ssh with the page's own key restricted to one command and one source address",
         "Measured on four DGX Sparks: NVML exposes no power limit, fans or clock list there, so Sparks join as monitor-only nodes and the page says why",
+        "SoC temperature on system-on-chip GPUs since 1.3.0: on a GB10 the page shows the package's temperature beside the GPU die's; on three Sparks under load it averaged 11 to 14 °C above the die and reached 24 °C above it",
+        "Demo mode since 1.2.0: the real page over three simulated machines, every change still passing the daemon's checks, with NVML, ssh and any real daemon never touched",
+        "Help where the settings are since 1.4.0: Getting started, a searchable FAQ, an (i) explanation on every control, and a builder that drafts, checks and exports the two config files, which the page itself never writes",
         "Deliberately not containerized: rootless Docker maps container root to the desktop user, verified to get \"Insufficient Permissions\" on power writes even with --privileged"
       ],
       "stack": [
@@ -505,12 +525,16 @@
           "value": "6 (2 with controls, 4 Sparks monitor-only)"
         },
         {
+          "label": "offline tests",
+          "value": "75 unit, 38 multi-machine and 18 demo-mode, plus a help and config-builder suite"
+        },
+        {
           "label": "latest release",
-          "value": "v1.1.2 (2026-10-04)"
+          "value": "v1.4.0 (2026-11-05)"
         }
       ],
       "featured": true,
-      "html": "<p>Two RTX PRO 6000s in one workstation need power caps and a fan curve that\nsurvive reboots, driver resets and suspend. The lab first had\ntwo systemd services with numbers baked in. GPU Tuner replaces them with a page\nthat shows what each card is doing and why its clock is limited, and lets you\nchange only what is safe, with the root daemon as the single authority.</p>\n<h2 id=\"the-safety-model\">The safety model</h2>\n<ul>\n<li><strong>Power:</strong> each card's own NVML range, narrowed by a measured profile where\none exists, then the machine's combined budget. Lowering is always allowed.</li>\n<li><strong>Fans:</strong> any curve is evaluated as <code>max(requested, floor(temperature))</code>, with\nhysteresis (up at once, down only after 2 °C of cooling) and the floor\nre-asserted every 30 seconds.</li>\n<li><strong>Clocks:</strong> a cap can only slow the card down.</li>\n<li><strong>Left out on purpose:</strong> clock offsets, thermal targets and toggling ECC, MIG\nor compute mode — no range is known to be stable across arbitrary hardware.</li>\n</ul>\n<p>The installer has a <code>--dry-run</code> that prints every privileged command, rolls\nback on any failure, and <code>--uninstall</code> restores the services it replaced.</p>"
+      "html": "<p>Two RTX PRO 6000s in one workstation need power caps and a fan curve that\nsurvive reboots, driver resets and suspend. The lab first had\ntwo systemd services with numbers baked in. GPU Tuner replaces them with a page\nthat shows what each card is doing and why its clock is limited, and lets you\nchange only what is safe, with the root daemon as the single authority.</p>\n<h2 id=\"the-safety-model\">The safety model</h2>\n<ul>\n<li><strong>Power:</strong> each card's own NVML range, narrowed by a measured profile where\none exists, then the machine's combined budget. Lowering is always allowed.</li>\n<li><strong>Fans:</strong> any curve is evaluated as <code>max(requested, floor(temperature))</code>, with\nhysteresis (up at once, down only after 2 °C of cooling) and the floor\nre-asserted every 30 seconds.</li>\n<li><strong>Clocks:</strong> a cap can only slow the card down.</li>\n<li><strong>Left out on purpose:</strong> clock offsets, thermal targets and toggling ECC, MIG\nor compute mode — no range is known to be stable across arbitrary hardware.</li>\n</ul>\n<p>The installer has a <code>--dry-run</code> that prints every privileged command, rolls\nback on any failure, and <code>--uninstall</code> restores the services it replaced.</p>\n<h2 id=\"what-12-to-14-added\">What 1.2 to 1.4 added</h2>\n<p><strong>Demo mode (1.2.0).</strong> <code>gpu-tuner serve --demo</code> serves the real page over three\nsimulated machines: a workstation with two RTX PRO 6000s, a render box with an\nRTX 5090 and a monitor-only GB10 box. Readings move like training, inference\nand rendering jobs, and every change goes through the same daemon checks as on\nreal hardware before it lands on a simulated card. It never touches NVML, ssh\nor a real daemon, so the page can be tried without a GPU. The README's\nscreenshots are taken in it.</p>\n<p><strong>SoC temperature (1.3.0).</strong> On a GPU that is part of a system-on-chip, such as\nthe GB10 in a DGX Spark, the page shows the package's temperature next to the\nGPU die's: a tile, a dotted line on the temperature chart and a second number\nin the machines table. On three Sparks under load it averaged 11 to 14 °C above\nthe die and reached 24 °C above it, so on a Spark it is the number to watch.\nSince 1.3.1 a fanless card no longer shows an empty Fan tile.</p>\n<p><strong>Help and a config builder (1.4.0).</strong> A Help panel with Getting started and a\nsearchable FAQ, an (i) explanation on every control, and a builder that drafts,\nchecks and exports the two config files with the loaders' own rules. The page\nstill never writes either file: it shows the commands to install a drafted\none. Two independent audits reviewed the change before release.</p>"
     },
     {
       "slug": "ds-core",
@@ -813,7 +837,7 @@
         "benchmarking"
       ],
       "date": "2026-11-14",
-      "readingMinutes": 21,
+      "readingMinutes": 23,
       "series": "AI engineering notes",
       "keyMetric": {
         "value": "1.6×",
@@ -823,8 +847,8 @@
         "one-model-across-five-machines",
         "five-machine-engine-boot-time-and-minimax"
       ],
-      "bodyHash": "f21566b47a47",
-      "excerpt": "Ten days ago I wrote about running one model as one vLLM engine across five machines: four GB10 boxes (DGX Spark class) and a workstation …"
+      "bodyHash": "7d7b7bcabed7",
+      "excerpt": "Update, 2026-11-16: three things have changed since these numbers were measured. The placement now follows the sessions. \"What's next\" …"
     },
     {
       "slug": "nemo-relay-tracing-and-trace-views",
@@ -840,15 +864,15 @@
         "open-source"
       ],
       "date": "2026-11-14",
-      "readingMinutes": 8,
+      "readingMinutes": 9,
       "relatedProject": "nemo-console",
       "relatedPosts": [
         "building-nemo-console",
         "security-reviews-of-a-localhost-control-plane",
         "rewriting-three-python-services-in-rust"
       ],
-      "bodyHash": "e5ca7bd2a8e9",
-      "excerpt": "NeMo Relay is the gateway my coding agents talk to. Requests from opencode, and from Claude Code when I launch it through Relay, pass …"
+      "bodyHash": "2c99f02dce11",
+      "excerpt": "Update, 2026-11-16: both next steps at the end of this post are done. A routed model call proved the logs row on 2026-11-15, and it showed …"
     },
     {
       "slug": "five-machine-engine-boot-time-and-minimax",
@@ -867,7 +891,7 @@
         "local-inference"
       ],
       "date": "2026-11-05",
-      "readingMinutes": 7,
+      "readingMinutes": 8,
       "series": "AI engineering notes",
       "keyMetric": {
         "value": "16 → 3.6 min",
@@ -877,8 +901,8 @@
         "one-model-across-five-machines",
         "hot-experts-on-the-fast-cards"
       ],
-      "bodyHash": "8b1beea404a1",
-      "excerpt": "Yesterday's post, One model across five machines, described a small vLLM patch that gives each pipeline stage its own tensor-parallel size …"
+      "bodyHash": "b1c2f4f7044f",
+      "excerpt": "Update, 2026-11-16: MiniMax-M3.1-Flash now also runs in the layout of Hot experts on the fast cards: the trunk and the 3,720 most-read of …"
     },
     {
       "slug": "northcua-nvfp4-quants",
@@ -930,8 +954,8 @@
         "five-machine-engine-boot-time-and-minimax",
         "hot-experts-on-the-fast-cards"
       ],
-      "bodyHash": "3b0ffdbaaeeb",
-      "excerpt": "Update, 2026-11-14: the same machines now run this model 1.4 to 1.6 times faster on code and 2.3 times faster at 16 requests, with a …"
+      "bodyHash": "89fb8173bde2",
+      "excerpt": "Update, 2026-11-16: where the open items of this post went. Per-rank checkpoint files were not needed: a boot takes 3.6 minutes since each …"
     },
     {
       "slug": "rewriting-three-python-services-in-rust",
@@ -945,7 +969,7 @@
         "open-source"
       ],
       "date": "2026-10-28",
-      "readingMinutes": 10,
+      "readingMinutes": 11,
       "keyMetric": {
         "value": "4,508",
         "label": "Python tests mapped to a Rust test or a written reason"
@@ -955,8 +979,8 @@
         "building-agent-hub",
         "building-engine-console"
       ],
-      "bodyHash": "e3cef8c635b9",
-      "excerpt": "Nemo Console, Agent Hub and Engine Console are three local control planes I run every day. All three started as FastAPI backends with a …"
+      "bodyHash": "cd9f6696cd94",
+      "excerpt": "Update, 2026-11-16: the three services are now at Nemo Console 0.10.0, Agent Hub 0.5.0 and Engine Console 0.7.1, all still Rust, and the …"
     },
     {
       "slug": "dgx-spark-busy-polling-heat",
@@ -972,14 +996,14 @@
         "local-inference"
       ],
       "date": "2026-10-27",
-      "readingMinutes": 11,
+      "readingMinutes": 12,
       "series": "AI engineering notes",
       "keyMetric": {
         "value": "−60%",
         "label": "heating rate of four GB10 boxes, for under 2% speed"
       },
-      "bodyHash": "1ddf40704b0e",
-      "excerpt": "I run DeepSeek-V4.1-Flash-1017 as one engine across four GB10 machines (DGX Spark class: a 20-core Arm CPU and a Blackwell GPU on one …"
+      "bodyHash": "c04c3486c46d",
+      "excerpt": "Update, 2026-11-16: the open measurement at the end was made the next day. With 16 requests in flight for 15 minutes on the fixed lane, the …"
     },
     {
       "slug": "building-agent-hub",
@@ -994,13 +1018,13 @@
         "open-source"
       ],
       "date": "2026-10-26",
-      "readingMinutes": 7,
+      "readingMinutes": 8,
       "relatedProject": "agent-hub",
       "relatedPosts": [
         "building-engine-console",
         "building-nemo-console"
       ],
-      "bodyHash": "67ad57b466ec",
+      "bodyHash": "19ccefeb90a6",
       "excerpt": "Update, 2026-10-28: since 0.3.0 the hub, and the knowledge service are Rust, a drop-in for the FastAPI version described here, and three …"
     },
     {
@@ -1017,13 +1041,13 @@
         "open-source"
       ],
       "date": "2026-10-26",
-      "readingMinutes": 9,
+      "readingMinutes": 10,
       "relatedProject": "engine-console",
       "relatedPosts": [
         "building-nemo-console",
         "building-agent-hub"
       ],
-      "bodyHash": "28f579c80f54",
+      "bodyHash": "f953488986fc",
       "excerpt": "Update, 2026-10-28: since 0.5.0 the hub and the node agent are Rust, a drop-in for the Python version described here, with the same wire …"
     },
     {
@@ -1049,7 +1073,7 @@
         "routing-coding-agent-two-local-models",
         "taking-a-repository-public"
       ],
-      "bodyHash": "ba6e74841b1d",
+      "bodyHash": "89138515fc63",
       "excerpt": "Update, 2026-10-28: since 0.4.0 the backend is Rust, a drop-in for the FastAPI version described here. How that was checked: Rewriting …"
     },
     {
@@ -1073,8 +1097,8 @@
         "mcp-server-for-an-agent-harness",
         "security-reviews-of-a-localhost-control-plane"
       ],
-      "bodyHash": "a4f938ca6aa6",
-      "excerpt": "In October 2026 Google Research released harness2, the code behind the paper Harness²: Recursive Agent Harnessing for an Open World. A …"
+      "bodyHash": "b70db86e71db",
+      "excerpt": "Update, 2026-11-16: the gap this post ends on is partly closed. A model-backed sweep has been run through the Workbench: one LAB task on …"
     },
     {
       "slug": "dependency-cooldown-and-dependabot",
@@ -1139,7 +1163,7 @@
         "evals"
       ],
       "date": "2026-10-24",
-      "readingMinutes": 7,
+      "readingMinutes": 8,
       "series": "Harness² Workbench",
       "keyMetric": {
         "value": "42",
@@ -1150,8 +1174,8 @@
         "building-harness2-workbench",
         "security-reviews-of-a-localhost-control-plane"
       ],
-      "bodyHash": "2009b62effc0",
-      "excerpt": "Google Research's harness2 is a tool for improving AI agents, so it is natural to want an AI agent to drive it: set up a benchmark, preview …"
+      "bodyHash": "7f510af443f0",
+      "excerpt": "Update, 2026-11-16: the server has 43 tools now. 0.1.3 added , which saves a split of exactly the tasks you list, and since 0.1.4 can also …"
     },
     {
       "slug": "private-chat-server-for-ai-agents",
@@ -1165,15 +1189,15 @@
         "self-hosted"
       ],
       "date": "2026-10-24",
-      "readingMinutes": 11,
+      "readingMinutes": 12,
       "series": "AI engineering notes",
       "relatedProject": "lab-chat",
       "relatedPosts": [
         "mcp-production-lessons",
         "security-first-ingest-prompt-injection"
       ],
-      "bodyHash": "6318c871201d",
-      "excerpt": "My workstation runs six coding agents. Three are trusted and run as me: Claude Code, opencode and Codex. Three are contained: a sandboxed …"
+      "bodyHash": "823bc2f400cc",
+      "excerpt": "Update, 2026-11-16: the server has grown since this was written. A seventh agent, DeepSeek Harness, joined on 2026-10-27 as a fourth …"
     },
     {
       "slug": "review-fleet-loop",
@@ -1193,8 +1217,8 @@
         "value": "87",
         "label": "findings from three review rounds, three retracted"
       },
-      "bodyHash": "bd0ee9061768",
-      "excerpt": "I review my own work constantly, which is exactly the problem. The same brain that wrote the code reads it back with the same blind spots …"
+      "bodyHash": "ab308368052f",
+      "excerpt": "Update, 2026-11-16: the wall described near the end has moved. The site now links LinkedIn, GitHub and Hugging Face, and by my decision it …"
     },
     {
       "slug": "routing-coding-agent-two-local-models",
@@ -1216,8 +1240,8 @@
         "label": "bugs hidden behind healthy-looking counters"
       },
       "relatedProject": "nemo-console",
-      "bodyHash": "5c69c03fba6d",
-      "excerpt": "My workstation runs a coding agent (opencode) on local models: a fast 30B-class model — Nemotron Lightning on an RTX 5090 — answers first …"
+      "bodyHash": "a826fc167057",
+      "excerpt": "Update, 2026-11-16: two things have changed since. The route's large tier is now NVIDIA's FP4 build of GLM-5.3-Flash (since 2026-10-30) …"
     },
     {
       "slug": "security-reviews-of-a-localhost-control-plane",
@@ -1362,8 +1386,8 @@
         "duckdb-for-agent-workflows",
         "eval-harness-silent-regressions"
       ],
-      "bodyHash": "23be6c2dffb9",
-      "excerpt": "The honest architecture of most AI systems is: a deterministic shell, a stochastic core, and a prompt holding them together. Testing advice …"
+      "bodyHash": "007a97ef7662",
+      "excerpt": "Update, 2026-11-16: the numbers here are those of October. The same approach now carries 1,097 unit tests and 101 browser checks in 13 spec …"
     },
     {
       "slug": "agent-proof-your-data-layer",
@@ -1402,8 +1426,8 @@
       "readingMinutes": 4,
       "series": "AI engineering notes",
       "relatedProject": "langfuse-dashboard",
-      "bodyHash": "eb6a706244d9",
-      "excerpt": "Every LLM observability demo opens on a gorgeous trace explorer with data in it. Nobody demos the part where the dashboard is the …"
+      "bodyHash": "f3427116231c",
+      "excerpt": "Update, 2026-11-16: the lab's Langfuse has been version 4 since 2026-10-31. Version 4 removed the trace-list endpoint this dashboard's …"
     },
     {
       "slug": "duckdb-for-agent-workflows",
