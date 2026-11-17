@@ -1,5 +1,5 @@
 {
-  "contentHash": "57a089bed062bcd8",
+  "contentHash": "90c067138dafb033",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -173,9 +173,7 @@
         "A browser end-to-end test (the real backend and a headless Chrome, every page and tab) runs in CI and in a pre-push hook that refuses code it has not passed"
       ],
       "stack": [
-        "Rust (axum",
-        "hyper",
-        "tokio)",
+        "Rust (axum, hyper, tokio)",
         "SQLite (WAL)",
         "SSE",
         "Docker",
@@ -238,9 +236,7 @@
         "New clients without code: a declarative YAML spec validated live in the add-client wizard"
       ],
       "stack": [
-        "Rust (axum",
-        "hyper",
-        "tokio)",
+        "Rust (axum, hyper, tokio)",
         "git",
         "SQLite",
         "LanceDB + Qdrant (knowledge plane)",
@@ -390,9 +386,7 @@
         "Honest status: the README lists what was verified live (one workstation, two GPUs) and what has only run against fakes (remote machines, launches of engines other than vLLM)"
       ],
       "stack": [
-        "Rust (axum",
-        "hyper",
-        "tokio)",
+        "Rust (axum, hyper, tokio)",
         "SQLite (WAL)",
         "SSE",
         "Prometheus + OTLP",
@@ -821,6 +815,10 @@
       "date": "2026-11-14",
       "readingMinutes": 21,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "1.6×",
+        "label": "code on one stream, against the layer split"
+      },
       "relatedPosts": [
         "one-model-across-five-machines",
         "five-machine-engine-boot-time-and-minimax"
@@ -871,6 +869,10 @@
       "date": "2026-11-05",
       "readingMinutes": 7,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "16 → 3.6 min",
+        "label": "first log line to a serving API"
+      },
       "relatedPosts": [
         "one-model-across-five-machines",
         "hot-experts-on-the-fast-cards"
@@ -895,6 +897,10 @@
       "date": "2026-11-05",
       "readingMinutes": 14,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "794 → 238 GB",
+        "label": "NorthCUA Pro (397B), BF16 to NVFP4"
+      },
       "bodyHash": "2c403408636a",
       "excerpt": "NorthCUA (Nano, Mini and Pro) is a family of computer-use models from the NorthCUA team, built on Qwen3.5 and released under Apache-2.0 at …"
     },
@@ -915,6 +921,10 @@
       "date": "2026-11-04",
       "readingMinutes": 21,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "786 tok/s",
+        "label": "across 128 requests, one vLLM engine on five machines"
+      },
       "relatedPosts": [
         "dgx-spark-busy-polling-heat",
         "five-machine-engine-boot-time-and-minimax",
@@ -936,6 +946,10 @@
       ],
       "date": "2026-10-28",
       "readingMinutes": 10,
+      "keyMetric": {
+        "value": "4,508",
+        "label": "Python tests mapped to a Rust test or a written reason"
+      },
       "relatedPosts": [
         "building-nemo-console",
         "building-agent-hub",
@@ -960,6 +974,10 @@
       "date": "2026-10-27",
       "readingMinutes": 11,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "−60%",
+        "label": "heating rate of four GB10 boxes, for under 2% speed"
+      },
       "bodyHash": "1ddf40704b0e",
       "excerpt": "I run DeepSeek-V4.1-Flash-1017 as one engine across four GB10 machines (DGX Spark class: a 20-core Arm CPU and a Blackwell GPU on one …"
     },
@@ -1022,6 +1040,10 @@
       ],
       "date": "2026-10-26",
       "readingMinutes": 10,
+      "keyMetric": {
+        "value": "3 → 10",
+        "label": "NVIDIA systems in one console, in a month"
+      },
       "relatedProject": "nemo-console",
       "relatedPosts": [
         "routing-coding-agent-two-local-models",
@@ -1068,6 +1090,10 @@
       "date": "2026-10-24",
       "readingMinutes": 6,
       "series": "Harness² Workbench",
+      "keyMetric": {
+        "value": "14 days",
+        "label": "minimum age of any dependency the project adopts"
+      },
       "relatedProject": "harness2-workbench",
       "relatedPosts": [
         "taking-a-repository-public",
@@ -1089,6 +1115,10 @@
       "date": "2026-10-24",
       "readingMinutes": 7,
       "series": "Harness² Workbench",
+      "keyMetric": {
+        "value": "4",
+        "label": "flaky tests that a fast workstation hid"
+      },
       "relatedProject": "harness2-workbench",
       "relatedPosts": [
         "building-harness2-workbench",
@@ -1111,6 +1141,10 @@
       "date": "2026-10-24",
       "readingMinutes": 7,
       "series": "Harness² Workbench",
+      "keyMetric": {
+        "value": "42",
+        "label": "MCP tools to plan, run and analyse harness2 sweeps"
+      },
       "relatedProject": "harness2-workbench",
       "relatedPosts": [
         "building-harness2-workbench",
@@ -1155,6 +1189,10 @@
       "date": "2026-10-24",
       "readingMinutes": 6,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "87",
+        "label": "findings from three review rounds, three retracted"
+      },
       "bodyHash": "bd0ee9061768",
       "excerpt": "I review my own work constantly, which is exactly the problem. The same brain that wrote the code reads it back with the same blind spots …"
     },
@@ -1173,6 +1211,10 @@
       "date": "2026-10-24",
       "readingMinutes": 10,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "3",
+        "label": "bugs hidden behind healthy-looking counters"
+      },
       "relatedProject": "nemo-console",
       "bodyHash": "5c69c03fba6d",
       "excerpt": "My workstation runs a coding agent (opencode) on local models: a fast 30B-class model — Nemotron Lightning on an RTX 5090 — answers first …"
@@ -1191,6 +1233,10 @@
       "date": "2026-10-24",
       "readingMinutes": 10,
       "series": "Harness² Workbench",
+      "keyMetric": {
+        "value": "27",
+        "label": "issues found by two independent reviews"
+      },
       "relatedProject": "harness2-workbench",
       "relatedPosts": [
         "building-harness2-workbench",
@@ -1213,6 +1259,10 @@
       "date": "2026-10-24",
       "readingMinutes": 7,
       "series": "Harness² Workbench",
+      "keyMetric": {
+        "value": "15",
+        "label": "alerts raised by the first code scan"
+      },
       "relatedProject": "harness2-workbench",
       "relatedPosts": [
         "dependency-cooldown-and-dependabot",
@@ -1254,6 +1304,10 @@
       ],
       "date": "2026-10-16",
       "readingMinutes": 5,
+      "keyMetric": {
+        "value": "32",
+        "label": "patch releases in five weeks"
+      },
       "relatedProject": "orchestrator",
       "relatedPosts": [
         "eval-harness-silent-regressions",
@@ -1276,6 +1330,10 @@
       "date": "2026-10-16",
       "readingMinutes": 8,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "40+",
+        "label": "adversarial payloads in the test matrix"
+      },
       "relatedPosts": [
         "testing-half-your-system-is-a-prompt"
       ],
@@ -1296,6 +1354,10 @@
       "date": "2026-10-06",
       "readingMinutes": 5,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "503",
+        "label": "unit tests, plus 53 browser checks"
+      },
       "relatedPosts": [
         "duckdb-for-agent-workflows",
         "eval-harness-silent-regressions"
@@ -1317,6 +1379,10 @@
       "date": "2026-10-04",
       "readingMinutes": 4,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "279M",
+        "label": "rows in the payroll ETL"
+      },
       "relatedProject": "gov-payroll-workbench",
       "bodyHash": "b1294f9ce6e4",
       "excerpt": "A human analyst learns the hard way that a table's grain is not what its name suggests. An agent never learns it — it queries whatever you …"
@@ -1353,6 +1419,10 @@
       "date": "2026-09-15",
       "readingMinutes": 3,
       "series": "AI engineering notes",
+      "keyMetric": {
+        "value": "27 ms",
+        "label": "100K inserts, one of 14 benchmarks"
+      },
       "relatedProject": "duckdb-mcp",
       "bodyHash": "f041a1ffed0a",
       "excerpt": "When you build tools that let an LLM agent query data, the database choice stops being an architecture-slide decision and becomes a …"
@@ -1395,6 +1465,80 @@
   ],
   "videos": [
     {
+      "slug": "one-model-arm-and-x86",
+      "title": "Splitting an LLM Across ARM and x86 Machines for a 2.35x Speed Boost",
+      "summary": "DeepSeek-V4.1-Flash-1017 is too big for any machine I own, so it runs across four Arm GB10 boxes (DGX Spark class) and an x86 workstation with two RTX PRO 6000 cards. Splitting it by layers left the fast cards computing for under 30% of each step; putting the trunk and the most-read experts on them, and the other experts on the GB10 boxes, made the same six GPUs 2.35 times faster at 16 requests. The narrator's voice and the video's pictures are AI-generated.",
+      "tags": [
+        "video",
+        "vllm",
+        "deepseek",
+        "moe",
+        "dgx-spark",
+        "local-inference",
+        "local-ai"
+      ],
+      "date": "2026-11-15",
+      "url": "https://willboyden.github.io/portfolio/podcasts/one-model-arm-and-x86.mp3",
+      "provider": "audio",
+      "duration": "7 min",
+      "speakers": [
+        "Narrator (AI voice)"
+      ],
+      "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/one-model-arm-and-x86.txt",
+      "videoUrl": "https://www.youtube.com/watch?v=FXo2z-qwjvA",
+      "thumbnail": "/podcasts/one-model-arm-and-x86.webp",
+      "thumbnailAlt": "Cover with the words My fastest GPUs waited 70% of every step and the label Moved the experts: 2.35×, beside an AI-generated picture of a black graphics card with two fans"
+    },
+    {
+      "slug": "dgx-spark-cooking-itself",
+      "title": "Is Your DGX Spark Cooking Itself?",
+      "summary": "One of my four DGX Spark class boxes switched itself off four times in a month with no log, and under 16 requests at once the hottest sensor read 96.7 °C while the GPU sat in the sixties. Three CPU threads per box were busy-waiting on the fast cores; two small fixes cut the heating rate by 60% at 16 requests and cost 1.2% of throughput. The narrator's voice and the video's pictures are AI-generated.",
+      "tags": [
+        "video",
+        "dgx-spark",
+        "thermals",
+        "sglang",
+        "local-inference",
+        "local-ai"
+      ],
+      "date": "2026-11-14",
+      "url": "https://willboyden.github.io/portfolio/podcasts/dgx-spark-cooking-itself.mp3",
+      "provider": "audio",
+      "duration": "6 min",
+      "speakers": [
+        "Narrator (AI voice)"
+      ],
+      "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/dgx-spark-cooking-itself.txt",
+      "videoUrl": "https://www.youtube.com/watch?v=iAkaAHuI8DQ",
+      "thumbnail": "/podcasts/dgx-spark-cooking-itself.webp",
+      "thumbnailAlt": "Cover with the words 97°C, Your Spark is cooking itself and the label 3 threads did this, beside an AI-generated picture of a small gold box glowing orange with flames rising from its top"
+    },
+    {
+      "slug": "northcua-794-gb-to-238-gb",
+      "title": "NorthCUA a 794 GB AI Model Brought Down to 238 GB with NVFP4",
+      "summary": "I quantized NorthCUA-Pro, an open computer-use model with 397 billion parameters, from 794 GB to 238 GB in NVIDIA's 4-bit NVFP4 format and ran it on four DGX Sparks. The video goes through the work on all three NorthCUA models: a format test that could have failed, benchmarks of the two smaller ones against their originals (the smallest lost a quarter of its correct clicks on ScreenSpot-Pro), and the public timestamps behind calling these the first NVFP4 versions on Hugging Face. The narrator's voice and the video's pictures are AI-generated.",
+      "tags": [
+        "video",
+        "quantization",
+        "nvfp4",
+        "vllm",
+        "dgx-spark",
+        "local-inference",
+        "local-ai"
+      ],
+      "date": "2026-11-14",
+      "url": "https://willboyden.github.io/portfolio/podcasts/northcua-794-gb-to-238-gb.mp3",
+      "provider": "audio",
+      "duration": "5 min",
+      "speakers": [
+        "Narrator (AI voice)"
+      ],
+      "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/northcua-794-gb-to-238-gb.txt",
+      "videoUrl": "https://www.youtube.com/watch?v=S-Vn-qjIAP8",
+      "thumbnail": "/podcasts/northcua-794-gb-to-238-gb.webp",
+      "thumbnailAlt": "Cover with the words 397 billion parameters, 4 mini PCs and the label 794 GB squeezed to 238, over an AI-generated picture of four gold-coloured small computers side by side on a shelf"
+    },
+    {
       "slug": "the-local-lab-03-agent-fleets-under-contract",
       "title": "The Local Lab, episode 3: Agent Fleets Under Contract: Reviewers, Phantoms and Re-Running the Report",
       "summary": "Building software with fleets of coding and review agents: contracts out, reports re-run, reviewer lenses and the phantom findings they produce, clean clones, young packages held back by a cooldown, skills that weak models can follow, and the negative results worth publishing. The hosts are AI-generated voices, scripted from Will's write-ups and lab notes.",
@@ -1417,7 +1561,7 @@
       "event": "The Local Lab",
       "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/building-with-agent-fleets.txt",
       "videoUrl": "https://www.youtube.com/watch?v=kciM_DEnsH0",
-      "thumbnail": "/podcasts/building-with-agent-fleets.jpg",
+      "thumbnail": "/podcasts/building-with-agent-fleets.webp",
       "thumbnailAlt": "Episode 3 cover with the title Agent Fleets Under Contract and an AI-generated host at a microphone in front of monitors and a server rack"
     },
     {
@@ -1443,7 +1587,7 @@
       "event": "The Local Lab",
       "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/big-models-home-hardware.txt",
       "videoUrl": "https://www.youtube.com/watch?v=e_4UJlWTfKc",
-      "thumbnail": "/podcasts/big-models-home-hardware.jpg",
+      "thumbnail": "/podcasts/big-models-home-hardware.webp",
       "thumbnailAlt": "Episode 2 cover with the title Big Models, Home Hardware and an AI-generated host at a microphone beside a workstation and server racks"
     },
     {
@@ -1468,7 +1612,7 @@
       "event": "The Local Lab",
       "transcriptUrl": "https://willboyden.github.io/portfolio/podcasts/containment-first-ai-lab.txt",
       "videoUrl": "https://www.youtube.com/watch?v=nKEoWGHO6yg",
-      "thumbnail": "/podcasts/containment-first-ai-lab.jpg",
+      "thumbnail": "/podcasts/containment-first-ai-lab.webp",
       "thumbnailAlt": "Episode 1 cover with the title One Door, No Keys and an AI-generated host at a microphone in front of server racks"
     }
   ],

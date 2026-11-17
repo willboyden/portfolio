@@ -23,6 +23,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, type RouteDefinition } from '@portfolio/router';
 import { AppThemeProvider } from 'app/theme/ThemeProvider';
 import type { Project, SiteContent, Talk, Video } from 'app/content';
+/* The real library, read straight from the build artifact (the module below is mocked). */
+import generated from '../content/generated/content.json';
 
 /* Fixtures + live store must exist before the vi.mock factory is hoisted. */
 const H = vi.hoisted(() => {
@@ -43,7 +45,16 @@ vi.mock('app/content', () => ({
 /* Import pages AFTER the mock so they bind the intercepted module. */
 import { Projects, ProjectCard, projectTagCounts, statusTone, visibleProjects } from './Projects';
 import { ProjectDetail, projectLinkEntries, relatedProjects } from './ProjectDetail';
-import { Videos, VideoRowItem, providerLabel, splitByDate, todayUtcIso, videoHostLabel } from './Videos';
+import {
+  Videos,
+  VideoRowItem,
+  downloadLabel,
+  providerLabel,
+  rowKindLabel,
+  splitByDate,
+  todayUtcIso,
+  videoHostLabel,
+} from './Videos';
 import { Talks, talkResourceEntries, talksByDate } from './Talks';
 
 /* -------------------------------------------------------------------------- */
@@ -331,7 +342,10 @@ describe('Videos audio rows', () => {
   it('plays on the page with download and transcript links, no external title link', () => {
     const html = render(<VideoRowItem video={EPISODE} />, '/videos');
     expect(html).toContain('data-testid="video-audio-player"');
-    expect(html).toContain('preload="metadata"');
+    /* No request while the page loads: the player asks for its length only
+     * once it is on screen after load (LazyAudio). */
+    expect(html).toContain('preload="none"');
+    expect(html).not.toContain('preload="metadata"');
     expect(html).toContain('src="https://example.com/ep-1.mp3"');
     expect(html).toContain('data-testid="video-download"');
     expect(html).toContain('data-testid="video-transcript"');
@@ -528,6 +542,51 @@ describe('Videos helpers', () => {
     expect(providerLabel('youtube')).toBe('YouTube');
     expect(providerLabel('vimeo')).toBe('Vimeo');
     expect(providerLabel('other')).toBe('Other');
+  });
+
+  it('only the first cover on the page is fetched with the page; the rest wait until scrolled near', () => {
+    const video = (generated.videos as Video[])[0];
+    expect(video?.thumbnail).toBeDefined();
+    if (!video) return;
+    const first = render(<VideoRowItem video={video} first />, '/videos');
+    const later = render(<VideoRowItem video={video} />, '/videos');
+    expect(first).toMatch(/<img[^>]*loading="eager"/);
+    expect(later).toMatch(/<img[^>]*loading="lazy"/);
+    expect(later).not.toMatch(/<img[^>]*loading="eager"/);
+  });
+
+  it('a video with a podcast version is badged "Video" and its download says what it is', () => {
+    const videoFirst = { provider: 'audio', videoUrl: 'https://www.youtube.com/watch?v=abc' } as const;
+    expect(rowKindLabel(videoFirst)).toBe('Video');
+    expect(downloadLabel(videoFirst)).toBe('Download podcast version (MP3)');
+    /* A podcast episode stays a podcast, with or without a video of it. */
+    expect(rowKindLabel({ provider: 'podcast', videoUrl: videoFirst.videoUrl })).toBe('Podcast');
+    expect(downloadLabel({ provider: 'podcast', videoUrl: videoFirst.videoUrl })).toBe('Download episode (MP3)');
+    /* Audio with no video is just audio. */
+    expect(rowKindLabel({ provider: 'audio', videoUrl: undefined })).toBe('Audio');
+    expect(downloadLabel({ provider: 'audio', videoUrl: undefined })).toBe('Download audio (MP3)');
+    expect(rowKindLabel({ provider: 'youtube', videoUrl: undefined })).toBe('YouTube');
+  });
+
+  it('the newest videos are in the library, each with its podcast version, transcript and cover', () => {
+    const newest = ['one-model-arm-and-x86', 'northcua-794-gb-to-238-gb', 'dgx-spark-cooking-itself'];
+    for (const slug of newest) {
+      const video = (generated.videos as Video[]).find((v) => v.slug === slug);
+      expect(video, slug).toBeDefined();
+      if (!video) continue;
+      expect(video.provider).toBe('audio');
+      expect(video.url).toBe(`https://willboyden.github.io/portfolio/podcasts/${slug}.mp3`);
+      expect(video.transcriptUrl).toBe(`https://willboyden.github.io/portfolio/podcasts/${slug}.txt`);
+      expect(video.videoUrl).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/);
+      expect(video.thumbnail).toBe(`/podcasts/${slug}.webp`);
+      const html = render(<VideoRowItem video={video} />, '/videos');
+      expect(html).toContain('Download podcast version (MP3)');
+      expect(html).toContain('Watch the video on YouTube');
+      expect(html).toContain('data-testid="video-transcript"');
+    }
+    /* Newest first on the page: these three lead the list. */
+    const order = [...(generated.videos as Video[])].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
+    expect(order.map((v) => v.slug).sort()).toEqual([...newest].sort());
   });
 
   it('todayUtcIso is a YYYY-MM-DD string (and exact for a pinned Date)', () => {

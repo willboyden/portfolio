@@ -1,0 +1,66 @@
+NorthCUA a 794 GB AI Model Brought Down to 238 GB with NVFP4
+
+Transcript, from the video's captions (terms in round brackets are caption notes, not spoken). The narrator is an AI-generated voice, and the pictures in the video are AI-generated. The script was drafted with Claude and checked against Will Boyden's lab notes.
+Length: 4:36
+Video: https://www.youtube.com/watch?v=S-Vn-qjIAP8
+Write-up: https://willboyden.github.io/portfolio/writing/northcua-nvfp4-quants/
+
+Chapters
+0:00 794 GB that nothing here can load
+0:38 What NorthCUA is
+1:03 16 bits down to 4
+1:41 A test that could have failed
+2:15 Against the originals, and where it hurt
+2:59 The 397B model on four DGX Sparks
+3:35 Twice as fast with a drafter
+3:56 Was it really first?
+4:19 Downloads
+
+
+This AI model weighs 794 GB. No machine I own can even load it. Within two days it was running on four computers the size of paperback books.
+
+I had squeezed it down to 238 GB. As far as the public record shows, nobody had done that before. Here is how the squeeze works, the test that could have sunk it, and the one place where it honestly hurt.
+
+[0:38] What NorthCUA is
+
+The model family is called NorthCUA. Show one of them a screenshot and a task, and it answers with a click. There are three sizes. Nano is small, Mini is medium, and Pro has 397 billion parameters. They were released as open weights at full precision. Every single weight takes 16 bits.
+
+[1:03] 16 bits down to 4
+
+The newest NVIDIA graphics chips understand a 4-bit format (NVFP4). Four bits per weight, with one shared scale for every 16 weights.
+
+I did not shrink everything. These models are mixtures of experts, and the experts hold about 97% of Pro's parameters. The experts went down to four bits. The attention layers, the embeddings and the vision encoder stayed at full precision.
+
+No calibration data was needed, which made it fast. Speed mattered, because I wanted to be first.
+
+[1:41] A test that could have failed
+
+Fast is dangerous. A 4-bit file can load perfectly and still be quietly wrong. I built a test that could fail. I cut the giant model down to two layers and compared the serving engine against a reference, number by number.
+
+Then I broke it on purpose. With two matrices swapped, the error jumped 32 times higher. The test could see a broken file, and mine was not broken.
+
+[2:15] Against the originals, and where it hurt
+
+Next came the real exams, against the original models. Mini went from 70 GB down to 24 GB. On nearly 1,600 professional screenshots, the small file clicked the right spot 62% of the time. The original scored 61%. On maths and on following instructions, I found no significant difference either.
+
+Now for the part that hurt. Nano, the smallest model, lost a quarter of its correct clicks. I published that number on the model card, with a warning beside it.
+
+[2:59] The 397B model on four DGX Sparks
+
+Then came the giant. 238 GB, split across four of these little boxes on a fast network. It loaded in about ten minutes and passed every check. It wrote 24 tokens a second. On the screenshot exam it scored 68.5%, the best of the three.
+
+One honest limit. The original is too large for me to run, so I cannot measure exactly what the squeeze cost Pro.
+
+[3:35] Twice as fast with a drafter
+
+24 tokens a second is slow. A small drafter model fixed that. The drafter guesses several tokens ahead, and the big model checks them all in one step. It keeps only the ones it agrees with. Pro became twice as fast, on the same four boxes.
+
+[3:56] Was it really first?
+
+Was I really first? Hugging Face records when every repository is created, and anyone can check. When mine went up, no other copy in this format existed for any of the three. For Pro, there was no other quantization of any kind.
+
+[4:19] Downloads
+
+All three files are free to download. The links, the method and every number are in the description.
+
+Big models are not only for big machines. Sometimes they just need a harder squeeze.

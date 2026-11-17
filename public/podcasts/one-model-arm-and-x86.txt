@@ -1,0 +1,77 @@
+Splitting an LLM Across ARM and x86 Machines for a 2.35x Speed Boost
+
+Transcript, from the video's captions (terms in round brackets are caption notes, not spoken). The narrator is an AI-generated voice, and the pictures in the video are AI-generated. The script was drafted with Claude and checked against Will Boyden's write-ups and lab notes.
+Length: 6:38
+Video: https://www.youtube.com/watch?v=FXo2z-qwjvA
+Write-ups: https://willboyden.github.io/portfolio/writing/one-model-across-five-machines/ and https://willboyden.github.io/portfolio/writing/hot-experts-on-the-fast-cards/
+
+Chapters
+0:00 89 to 244 tokens a second, same weights
+0:42 Arm Sparks + an x86 workstation
+1:28 The layer split, and who was waiting
+2:42 A model made of experts
+3:32 Hot experts on the fast cards
+4:16 Results, same day
+4:51 Same answers?
+5:10 Since the write-up: experts that move
+6:06 The slowest box sets the pace
+6:27 The map
+
+
+This AI model is too big for any machine I own. On four DGX Sparks, its agent loop ran at 89 tokens a second. Today the same model, with the same weights, runs that loop at 244.
+
+I did not quantize it again, and I did not prune it. I only changed which machine holds which piece. Here is the split that wasted my fastest cards, the split that fixed it, and what we found after I published it.
+
+[0:42] Arm Sparks + an x86 workstation
+
+The model is DeepSeek-V4.1-Flash-1017. Its weights are about 500 GB on disk. My mesh is one workstation with two RTX PRO 6000 cards, plus four DGX Sparks on a fast network.
+
+Here is the strange part. The Sparks run Arm processors, the workstation runs x86, and their graphics chips are two different Blackwell versions (sm_121, sm_120). Clusters are usually built from identical machines. This one runs a single model as a single engine across both kinds.
+
+The Sparks alone could run it. If you saw my last video, you know how hot that got.
+
+[1:28] The layer split, and who was waiting
+
+The obvious split is by layers. The Sparks took the first twenty layers, and the workstation took the last twenty. No stock engine I tried lets each machine use its own number of graphics chips. I patched vLLM to do it.
+
+Every rank must run exactly the same Python. Each processor type gets the official vLLM image for it, with my patched files copied in. A checker compares a fingerprint (sha256) of every patched file in both images. Then the hidden states cross between Arm and x86 on every step, over 200 Gb/s RoCE.
+
+It worked. The agent loop went from 89 tokens a second to 133, with up to 128 requests at once.
+
+Then I profiled one step. A token passes through the Sparks first, then through the workstation. The two halves take turns. My two fastest cards were computing for less than a third of each step. The rest of the time, they waited.
+
+[2:42] A model made of experts
+
+The fix came from what the model is made of. DeepSeek is a mixture of experts. Each layer has 384 small expert networks, and every token reads only six of them. The trunk, the part every token needs, is only 6.9 GB. The experts are the other 289 GB.
+
+Reading experts is a memory bandwidth problem. The workstation has 3.3 times the bandwidth of all four Sparks together. The layer split gave it half of the bytes anyway. Some experts are read far more often than others, so I sorted them, hot and cold.
+
+[3:32] Hot experts on the fast cards
+
+The whole trunk, all 40 layers, moved onto the fast cards, along with the 6,400 most-read experts. The other 8,960 experts went to the Sparks.
+
+At every layer, the workstation sends the tokens out and runs its own experts at the same time. Then it adds the Sparks' answers. One round trip to all four Sparks takes about 74 microseconds. Nobody waits for their turn anymore. Each Spark also holds a quarter slice of every cold expert, so all four read it together.
+
+[4:16] Results, same day
+
+Same machines, same day, same benchmarks. Code went from 135 tokens a second to 218. The agent loop went from 143 to 244. With 16 requests at once, it went from 241 tokens a second to 566. That is 2.35 times. At 128 requests, it served more than 1,200 tokens a second.
+
+[4:51] Same answers?
+
+Faster is worthless if the answers change. Against the old layout, the new one differs about as much as the old one differs from itself. Then it served 16 requests for a full hour. 224 rounds, zero failures.
+
+[5:10] Since the write-up: experts that move
+
+That is where my write-up ended. Since then, we found the hot experts were not one fixed set. Code reads different experts than prose. Fitted to code, the placement made prose read 12 experts per layer from the Sparks, instead of less than one.
+
+So now the experts move while the model runs. A quarter of each layer's slots is held in reserve, and experts swap in between two steps. Write code for five minutes, and code gets 11% faster. Over 2,000 swaps, none were dropped, and the answers still pass every check.
+
+It is not free. Prose after a long run of code was about 2% slower, and four parallel requests about 6%.
+
+[6:06] The slowest box sets the pace
+
+One more lesson. When part of a cache went cold on just one Spark, the whole mesh ran 16% slower. In a mesh, the slowest box sets the pace for everyone. Now the launcher checks every box before it starts.
+
+[6:27] The map
+
+None of the hardware changed. Only the map did. The full write-ups and every number are linked below.

@@ -1,0 +1,65 @@
+Is Your DGX Spark Cooking Itself?
+
+Transcript, from the video's captions (terms in round brackets are caption notes, not spoken). The narrator is an AI-generated voice, and the pictures in the video are AI-generated. The script was drafted with Claude and checked against Will Boyden's lab notes.
+Length: 5:38
+Video: https://www.youtube.com/watch?v=iAkaAHuI8DQ
+Write-up: https://willboyden.github.io/portfolio/writing/dgx-spark-busy-polling-heat/
+
+Chapters
+0:00 It just switched off
+0:36 56 to 91 °C in 49 seconds
+1:12 The GPU was not the hot part
+2:05 Spinning threads on an idle box
+2:50 The two fixes
+3:47 Results at 16 requests
+4:23 How to check your own Spark
+5:24 The takeaway
+
+
+This little gold box is an AI supercomputer. Mine switched itself off four times in one month. There was no crash, no error and no log. It simply went dark.
+
+Every time, the hottest sensor inside had passed 92 °C. That is a thermal safety cut. I went looking for the cause and found three culprits. Fixing them cost me less than 2% of my speed.
+
+[0:36] 56 to 91 °C in 49 seconds
+
+I run four of these boxes as one cluster. Together they serve a single large language model. A faster serving engine arrived, and the speed was wonderful. It wrote code at almost 90 tokens a second.
+
+The heat was not wonderful. One single request took a box from 56 °C to 91 °C, in 49 seconds. Under real traffic, 16 requests at once, the hottest box read nearly 97 °C. I shut the engine down myself.
+
+[1:12] The GPU was not the hot part
+
+Here is the strange part. The graphics chip stayed in the sixties the whole time. That matters, because the usual dashboards show only the graphics chip. The number to watch is the system chip (SoC) temperature. On this machine the processor and the graphics chip share one package. Heat from either one lands in the same place.
+
+I looked at the processor instead. On every box, three threads were stuck at 100%. They were not doing any work. They were waiting, by spinning in a tight loop as fast as they could. Two of them were network threads, polling the cluster link. The third was the scheduler, spinning while it waited for the graphics chip.
+
+[2:05] Spinning threads on an idle box
+
+Spinning exists for a reason. A thread that goes to sleep wakes up late, and late means slow. I tested the idea on an idle box. Two spinning threads raised its temperature by 9 °C, almost at once.
+
+This chip has ten fast cores and ten efficient ones. I moved the same two threads onto the efficient cores. The same spinning now added less than 2 °C. That is about one fifth of the heat.
+
+That was the real lesson. By default, nothing stops these waiting threads from landing on the fast cores.
+
+[2:50] The two fixes
+
+Fix number one is a single line of configuration. It pins the network threads to the ten efficient cores. One warning before you copy it. Write out every core number in full, because a range or a mask is silently misread. The price was 1.5% of my speed. The heating rate fell by 38%.
+
+Fix number two is for the scheduler. Arm processors have an instruction called wait-for-event (WFE). The core dozes until one exact word of memory is written. I made the graphics chip write that word when its work is done. It woke just as quickly as spinning did. I could not measure a speed cost, and the heating rate fell by another 38%.
+
+[3:47] Results at 16 requests
+
+Then I tested both fixes together, at 16 requests at once. The boxes now heat up 60% more slowly. The total cost was 1.2% of throughput.
+
+Finally I kept 16 requests running for 15 minutes. The hottest box settled just under 84 °C, with zero errors. In my own daily use afterwards, hours of agent work ran roughly 15 °C cooler. That figure is an eyeball estimate, not a controlled test.
+
+[4:23] How to check your own Spark
+
+If you own one of these, here is a test for tonight. Start a long generation, then open top in its threads view. Look for threads stuck near 100% while the model is only writing its answer. Then check which cores they sit on. Cores 5 to 9 and 15 to 19 are the fast, hot ones.
+
+One honest note. I measured all of this on a cluster of four, and a single box has no cluster network threads. The method still holds for one box. Find the spinners, move them, and measure the heat as a rate.
+
+One more confession. These boxes had gone eight months without a dust clean, and cleaning them was worth about 5 °C. The thread fixes were worth 10 to 15 °C. Both of those are rough estimates, so do both.
+
+[5:24] The takeaway
+
+The hardware was never the villain. It was busy doing nothing, on its hottest cores. The full write-up, with the code and every number, is linked below.
