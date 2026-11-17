@@ -236,17 +236,35 @@ export class Page {
   }
 
   /** Wait until the app has hydrated and painted its first route. */
+  /**
+   * The page is ready to be used: its root has content, and if the app
+   * started (src/main.tsx stamps data-boot on <html> as it begins), its first
+   * commit has landed (data-ready). A prerendered page has content from the
+   * first byte, so content alone would say "ready" before the app is: the app
+   * adopts the markup in short steps and may still be at it when `load` fires.
+   * With scripts disabled the app never starts, and content is the answer.
+   */
   async waitForAppReady({ rootSelector = '#root', timeoutMs = 15_000 } = {}) {
     const deadline = Date.now() + timeoutMs;
+    let last = null;
     while (Date.now() < deadline) {
-      const ready = await this.evaluate(`
+      last = await this.evaluate(`
         const el = document.querySelector(${JSON.stringify(rootSelector)});
-        return Boolean(el && el.children.length > 0);
+        const html = document.documentElement;
+        return {
+          content: Boolean(el && el.children.length > 0),
+          started: html.hasAttribute('data-boot'),
+          ready: html.hasAttribute('data-ready'),
+        };
       `);
-      if (ready) return;
-      await sleep(60);
+      if (last.content && (!last.started || last.ready)) return;
+      await sleep(30);
     }
-    throw new Error(`app never rendered children into ${rootSelector}`);
+    throw new Error(
+      last?.content
+        ? `the app started but its first commit never landed in ${rootSelector}`
+        : `app never rendered children into ${rootSelector}`,
+    );
   }
 
   async waitForSelector(selector, timeoutMs = 8_000) {

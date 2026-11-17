@@ -94,7 +94,23 @@ jobs:
       # ships to Pages, not only the root-base intermediate (they are not the
       # same HTML: asset hrefs, canonical/OG and the 404 root copy differ).
       # e2e/run.mjs serves the existing dist/ as-is.
+      # The pages name local stand-in fonts (Arial / Liberation Sans, Times New
+      # Roman / Liberation Serif) scaled to take the same room as IBM Plex, so
+      # text does not move when the web font arrives (src/theme/fonts.ts). The
+      # e2e layout-shift test can only measure that where one of them is
+      # installed; make sure one is, and have the test fail if it is not
+      # (REQUIRE_FONT_STANDINS) instead of passing on a looser limit.
+      - name: Fonts for the layout-shift test
+        run: |
+          if ! fc-list | grep -qi 'liberation'; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends fonts-liberation
+          fi
+          fc-list | grep -i 'liberation' | head -3
+
       - name: E2E (CDP harness, headless Chromium, Pages-base artifact)
+        env:
+          REQUIRE_FONT_STANDINS: '1'
         run: node e2e/run.mjs
 
       - uses: actions/upload-pages-artifact@v3

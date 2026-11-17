@@ -9,8 +9,13 @@
  */
 import { describe, test } from '../harness/framework.mjs';
 
-const LIGHT_BG = 'rgb(238, 241, 246)'; /* #eef1f6 */
-const DARK_BG = 'rgb(11, 14, 20)'; /* #0b0e14 */
+/* The page colours of the two default themes and of one generated theme
+ * (src/theme/tokens.ts: lightTheme.color.bg, darkTheme.color.bg and
+ * RECIPES.blueprint.paper). Literal on purpose: this spec proves what the
+ * BROWSER painted, so it must not read the value back from the page. */
+const LIGHT_BG = 'rgb(251, 251, 249)'; /* #fbfbf9, "Paper" */
+const DARK_BG = 'rgb(19, 19, 17)'; /* #131311, "Night" */
+const BLUEPRINT_BG = 'rgb(15, 37, 66)'; /* #0f2542, "Blueprint" */
 
 async function firstPaint(page, baseUrl, { system, stored }) {
   await page.evaluate(`(() => {
@@ -52,12 +57,12 @@ describe('fouc (pre-paint theme resolution)', () => {
     const dark = await firstPaint(page, baseUrl, { system: 'dark', stored: null });
     if (dark.attr !== 'dark') throw new Error(`system dark: data-theme=${dark.attr}`);
     if (dark.bg !== DARK_BG) throw new Error(`system dark: body bg ${dark.bg}, expected ${DARK_BG}`);
-    if (dark.token !== '#0b0e14') throw new Error(`system dark: --c-bg ${dark.token}`);
+    if (dark.token !== '#131311') throw new Error(`system dark: --c-bg ${dark.token}`);
 
     const light = await firstPaint(page, baseUrl, { system: 'light', stored: null });
     if (light.attr !== 'light') throw new Error(`system light: data-theme=${light.attr}`);
     if (light.bg !== LIGHT_BG) throw new Error(`system light: body bg ${light.bg}, expected ${LIGHT_BG}`);
-    if (light.token !== '#eef1f6') throw new Error(`system light: --c-bg ${light.token}`);
+    if (light.token !== '#fbfbf9') throw new Error(`system light: --c-bg ${light.token}`);
   });
 
   test('stored preference beats system, pre-paint', async ({ page, baseUrl }) => {
@@ -68,6 +73,34 @@ describe('fouc (pre-paint theme resolution)', () => {
     if (r.attr !== 'light' || r.bg !== LIGHT_BG) {
       throw new Error(`stored light + system dark -> ${r.attr}/${r.bg}`);
     }
+  });
+
+  test('a stored theme other than the two defaults resolves before paint, with its mode', async ({ page, baseUrl }) => {
+    /* Blueprint is a dark theme: stored while the device prefers light, it
+     * must still be the palette of frame one, and native controls go dark. */
+    const r = await firstPaint(page, baseUrl, {
+      system: 'light',
+      stored: JSON.stringify({ theme: 'blueprint' }),
+    });
+    if (r.attr !== 'blueprint' || r.bg !== BLUEPRINT_BG) {
+      throw new Error(`stored blueprint + system light -> ${r.attr}/${r.bg}`);
+    }
+    const scheme = await page.evaluate(`return document.documentElement.style.colorScheme`);
+    if (scheme !== 'dark') throw new Error(`blueprint is a dark theme, color-scheme was "${scheme}"`);
+  });
+
+  test('a stored theme that no longer exists falls back to the device, not to an unstyled page', async ({
+    page,
+    baseUrl,
+  }) => {
+    const r = await firstPaint(page, baseUrl, {
+      system: 'light',
+      stored: JSON.stringify({ theme: 'retired-theme' }),
+    });
+    if (r.attr !== 'light' || r.bg !== LIGHT_BG) {
+      throw new Error(`unknown stored theme + system light -> ${r.attr}/${r.bg}`);
+    }
+    await page.evaluate(`localStorage.removeItem('portfolio.theme')`);
   });
 
   test('legacy bare-string pref is honored (no wrong pre-paint palette)', async ({ page, baseUrl }) => {

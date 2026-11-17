@@ -94,30 +94,73 @@ describe('a11y', () => {
     if (!target) throw new Error(`skip link target for "${shape.skipHref}" not found in document`);
   });
 
-  test('theme toggle keeps accessible name and does not trap focus', async ({ goto, page }) => {
+  test('theme control: names the theme, opens a list, picks by keyboard, Escape returns focus', async ({
+    goto,
+    page,
+  }) => {
+    await page.evaluate(`localStorage.removeItem('portfolio.theme')`);
     await goto('/');
-    const before = await page.evaluate(`
-      (() => {
-        const b = [...document.querySelectorAll('button')].find(x => /theme|dark|light/i.test(x.getAttribute('aria-label') ?? ''));
-        return b ? (b.getAttribute('aria-label') ?? '') : null;
+    const toggle = '[data-testid="theme-toggle"]';
+    const label = () => page.attribute(toggle, 'aria-label');
+    const before = await label();
+    if (!before || !/^Theme: /.test(before)) throw new Error(`theme button label was "${before}"`);
+    if ((await page.attribute(toggle, 'aria-expanded')) !== 'false') throw new Error('panel open before any press');
+
+    /* Open: the list appears, is the element the button controls, and focus
+     * lands on the option in effect so arrow keys work at once. */
+    await page.click(toggle);
+    await page.waitForSelector('[data-testid="theme-panel"]');
+    if ((await page.attribute(toggle, 'aria-expanded')) !== 'true') throw new Error('aria-expanded not true when open');
+    const controls = await page.attribute(toggle, 'aria-controls');
+    const owned = await page.evaluate(
+      `return document.getElementById(${JSON.stringify(controls)})?.getAttribute('data-testid') ?? null`,
+    );
+    if (owned !== 'theme-panel') throw new Error(`aria-controls="${controls}" does not point at the panel`);
+    const focused = await page.evaluate(
+      `return (() => { const a = document.activeElement; return a?.tagName === 'INPUT' && a.type === 'radio' && a.checked ? a.value : null; })()`,
+    );
+    if (focused !== 'system') throw new Error(`focus should start on the checked option, was ${focused}`);
+
+    /* Every option is a labelled radio in ONE group. */
+    const group = await page.evaluate(`
+      return (() => {
+        const radios = [...document.querySelectorAll('[data-testid="theme-panel"] input[type=radio]')];
+        const unnamed = radios.filter(r => !(r.closest('label')?.textContent || '').trim()).length;
+        return { count: radios.length, names: new Set(radios.map(r => r.name)).size, unnamed };
       })()
     `);
-    if (before === null) throw new Error('no theme toggle button found with theme-related aria-label');
-    await page.evaluate(`
-      (() => {
-        const b = [...document.querySelectorAll('button')].find(x => /theme|dark|light/i.test(x.getAttribute('aria-label') ?? ''));
-        b.click();
-      })()
-    `);
-    await page.waitForAppReady();
-    const after = await page.evaluate(`
-      (() => {
-        const b = [...document.querySelectorAll('button')].find(x => /theme|dark|light/i.test(x.getAttribute('aria-label') ?? ''));
-        return b ? (b.getAttribute('aria-label') ?? '') : null;
-      })()
-    `);
-    if (after === null) throw new Error('theme toggle disappeared after activation');
-    if (after === before)
-      throw new Error(`aria-label unchanged after toggle ("${after}") — label should describe the new state`);
+    if (group.count < 11 || group.names !== 1 || group.unnamed !== 0) {
+      throw new Error(`theme options malformed: ${JSON.stringify(group)}`);
+    }
+
+    /* Arrow keys move through the group and apply as they go. */
+    await page.pressKey('ArrowDown');
+    await page.waitForFunction(`return document.documentElement.getAttribute('data-theme') === 'light'`);
+    await page.pressKey('ArrowDown');
+    await page.waitForFunction(`return document.documentElement.getAttribute('data-theme') === 'legal'`);
+    const after = await label();
+    if (after !== 'Theme: Legal pad. Choose a theme') throw new Error(`label after picking: "${after}"`);
+    const announced = await page.textContent('[data-testid="theme-announcement"]');
+    if (!/Legal pad/.test(announced ?? '')) throw new Error(`live region said "${announced}"`);
+    const stored = await page.evaluate(`return localStorage.getItem('portfolio.theme')`);
+    if (stored !== JSON.stringify({ theme: 'legal' })) throw new Error(`stored preference was ${stored}`);
+
+    /* Escape closes and hands focus back: no trap, no lost focus. */
+    await page.pressKey('Escape');
+    if ((await page.attribute(toggle, 'aria-expanded')) !== 'false') throw new Error('Escape did not close the panel');
+    if (await page.exists('[data-testid="theme-panel"]')) throw new Error('panel still in the page after Escape');
+    const back = await page.activeElementInfo();
+    if (back?.testid !== 'theme-toggle') {
+      throw new Error(`focus did not return to the theme button after Escape (it is on ${back?.tag} ${back?.testid})`);
+    }
+
+    /* "Match device" forgets the choice. */
+    await page.click(toggle);
+    await page.waitForSelector('[data-testid="theme-panel"]');
+    await page.click('[data-testid="theme-option-system"] input', { force: true });
+    await page.waitForFunction(`return localStorage.getItem('portfolio.theme') === null`);
+    const followed = await label();
+    if (!/matching your device/.test(followed ?? '')) throw new Error(`label after Match device: "${followed}"`);
+    await page.pressKey('Escape');
   });
 });

@@ -29,7 +29,9 @@ describe('responsive', () => {
     expectVisible,
   }) => {
     await goto375('/');
-    const burger = 'button[aria-label*="menu" i], button[aria-expanded]';
+    /* The menu button is the one that opens a dialog (the theme control also
+     * carries aria-expanded, so that attribute alone no longer identifies it). */
+    const burger = 'button[aria-label*="menu" i], button[aria-haspopup="dialog"]';
     await expectVisible(burger);
     const expandedBefore = await page.attribute(burger, 'aria-expanded');
     if (expandedBefore !== 'false')
@@ -162,7 +164,9 @@ describe('responsive', () => {
 
   test('mobile chrome works at 320x568: menu opens, all its links are thumb-sized', async ({ page, goto320 }) => {
     await goto320('/');
-    const burger = 'button[aria-label*="menu" i], button[aria-expanded]';
+    /* The menu button is the one that opens a dialog (the theme control also
+     * carries aria-expanded, so that attribute alone no longer identifies it). */
+    const burger = 'button[aria-label*="menu" i], button[aria-haspopup="dialog"]';
     await page.click(burger);
     const report = await page.evaluate(`
       (() => {
