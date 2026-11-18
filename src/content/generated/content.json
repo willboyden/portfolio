@@ -1,5 +1,5 @@
 {
-  "contentHash": "4340598dcaf00752",
+  "contentHash": "ae7d843682ef1f3a",
   "projects": [
     {
       "slug": "harness2-workbench",
@@ -1777,7 +1777,7 @@
       "oneLiner": "GLM-5.3-Flash, DeepSeek-V4.1-Flash, Qwen and Nemotron models on vLLM, SGLang and Dynamo across a heterogeneous GPU lab — with the operator tools I needed released as open source.",
       "status": "shipped",
       "stack": [
-        "vLLM 0.27",
+        "vLLM 0.27 and 0.32",
         "SGLang 0.5.20",
         "NVIDIA Dynamo 1.5.0",
         "llama.cpp",
@@ -1795,7 +1795,7 @@
       ],
       "howItWorks": [
         "A workstation with two 96 GB RTX PRO 6000s runs the big local model across both cards (GLM-5.3-Flash with tensor parallelism over PCIe, about a 1M-token window), picked with one script that stops whatever else is loaded and starts engines in a safe order.",
-        "Four DGX Sparks join as one engine (tensor parallel across all four over ConnectX-7) for models too big for one box — DeepSeek-V4.1-Flash in NVFP4 with speculative decoding, or the Nemotron models — with weights read from the workstation over NFS.",
+        "DeepSeek-V4.1-Flash runs as one vLLM engine across five machines. The parts every token needs and the most-read experts sit on the two RTX PRO 6000s; the other experts sit on the four DGX Sparks, which serve them layer by layer over ConnectX-7. Experts move between the two tiers as the running sessions read them, and from five parallel requests on, a step verifies only the drafts worth their cost. Other models too big for one box run tensor parallel across the four Sparks, with weights read from the workstation over NFS.",
         "An RTX 5090 in a second machine serves the fast Nemotron Lightning model that answers first and judges routing.",
         "Every engine sits behind the LiteLLM router as an alias, so switching models changes no client; Prometheus scrapes every engine and every machine's DCGM exporter, Grafana shows tokens, queues, KV cache and GPU temperature, and Nemo Console runs AIPerf load tests, NeMo Evaluator benchmarks and per-GPU DCGM diagnostics.",
         "Kernels are checked per GPU architecture — the RTX PRO 6000s and the 5090 share sm_120, so one NVFP4 checkpoint and the same flags run on both, while the Sparks (sm_121) need their own builds."
@@ -1810,7 +1810,7 @@
           "url": "https://github.com/willboyden/gpu-tuner"
         },
         {
-          "claim": "DeepSeek-V4.1-Flash on four Sparks at about 67 tokens/s single-stream for code; moving its lookup tables to 16K records on NFS roughly halved prefill time (100K-token prompt 36 s to 20 s)"
+          "claim": "DeepSeek-V4.1-Flash on one stream of code went from 67 tokens/s on four Sparks (October) to about 200 as one engine across all five machines (November), and about 1,000 tokens/s in total across 128 agent loops"
         },
         {
           "claim": "Model share over NFS to three Sparks from about 9 to 15.3 GB/s by finding ZFS cache churn on the server, not the NIC that was first blamed"
@@ -1825,11 +1825,13 @@
       ],
       "limits": [
         "One big model at a time on the workstation; switching takes minutes of loading, and nothing schedules it automatically.",
-        "The Sparks run one lane at a time (GLM, Nemotron or DeepSeek), and the hottest node needs long benchmarks paused at 82 °C GPU or 90 °C SoC.",
+        "The DeepSeek engine holds all four Sparks and both RTX PRO 6000s while it runs, so the other big models wait their turn; the Sparks run one lane at a time, and long benchmarks run under a thermal guard that pauses them on the hottest box.",
         "Single-tenant — it serves my agents and apps, not a team, and there is no autoscaling or high availability.",
         "There is no cloud fallback — when every engine a route can use is down, the route fails."
       ],
       "relatedPosts": [
+        "hot-experts-on-the-fast-cards",
+        "one-model-across-five-machines",
         "broker-forensics-nvfp4",
         "eval-harness-silent-regressions",
         "routing-coding-agent-two-local-models"
@@ -1840,7 +1842,7 @@
         "nemo-console",
         "model-quality-harness"
       ],
-      "html": "<p>Serving open-weight models is the easy part. Knowing what is actually up, how\nfast, and why something failed is the work, and most of it is measurement:\ncounting bytes at the NIC instead of trusting client-reported rates, profiling\nthe NFS server under real multi-client load before blaming hardware, and\nsending a real completion instead of trusting a health check.</p>\n<h3 id=\"the-machines\">The machines</h3>\n<table>\n<thead><tr><th>Machine</th><th>GPUs</th><th>Role</th></tr></thead>\n<tbody>\n<tr><td>Workstation (Threadripper PRO, 246 GB RAM)</td><td>2× RTX PRO 6000 Blackwell, 96 GB each</td><td>the main local model (tensor parallel across both), the router, observability, model storage over NFS</td></tr>\n<tr><td>Four DGX Sparks</td><td>GB10, 128 GB unified memory each</td><td>one tensor-parallel engine across all four for the largest models</td></tr>\n<tr><td>Second workstation</td><td>RTX 5090, 32 GB</td><td>the fast routing tier and judge; video rendering when idle</td></tr>\n</tbody>\n</table>\n<p>The machines share a ConnectX-7 fabric. The workstation's two cards have no\nNVLink, so tensor parallelism between them runs over PCIe peer-to-peer, which\nneeds <code>iommu=pt</code> on the kernel command line — a check script proves it after\nevery kernel or BIOS change.</p>"
+      "html": "<p>Serving open-weight models is the easy part. Knowing what is actually up, how\nfast, and why something failed is the work, and most of it is measurement:\ncounting bytes at the NIC instead of trusting client-reported rates, profiling\nthe NFS server under real multi-client load before blaming hardware, and\nsending a real completion instead of trusting a health check.</p>\n<h3 id=\"the-machines\">The machines</h3>\n<table>\n<thead><tr><th>Machine</th><th>GPUs</th><th>Role</th></tr></thead>\n<tbody>\n<tr><td>Workstation (Threadripper PRO, 246 GB RAM)</td><td>2× RTX PRO 6000 Blackwell, 96 GB each</td><td>the main local model (tensor parallel across both), or the fast tier of the five-machine DeepSeek engine; the router, observability, model storage over NFS</td></tr>\n<tr><td>Four DGX Sparks</td><td>GB10, 128 GB unified memory each</td><td>one tensor-parallel engine across all four, or the cold experts of the five-machine DeepSeek engine</td></tr>\n<tr><td>Second workstation</td><td>RTX 5090, 32 GB</td><td>the fast routing tier and judge; video rendering when idle</td></tr>\n</tbody>\n</table>\n<p>The machines share a ConnectX-7 fabric. The workstation's two cards have no\nNVLink, so tensor parallelism between them runs over PCIe peer-to-peer, which\nneeds <code>iommu=pt</code> on the kernel command line — a check script proves it after\nevery kernel or BIOS change.</p>"
     },
     {
       "slug": "smart-routing",
